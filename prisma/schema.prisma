@@ -1,0 +1,18 @@
+// schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url = env("DATABASE_URL") // uses connection pooling
+}
+
+model OnboardingData {
+  id                 Int      @id @default(autoincrement())
+  dietaryPreference  String
+  goal               String
+  householdSize      Int
+  cuisinePreferences String[]
+}
