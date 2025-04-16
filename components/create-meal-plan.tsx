@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { GenerateMealPlanInput } from '@/ai/flows/generate-meal-plan';
 import { generatePersonalizedMealPlan } from '@/ai/flows/generate-meal-plan';
 import {
@@ -57,8 +57,21 @@ const CreateMealPlan = ({ preferences }: CreateMealPlanProps) => {
   const [mealsPerDay, setMealsPerDay] = useState<number>(3);
   const [mealPlan, setMealPlan] = useState<DayMealPlan[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
+  const [savingMealPlan, setSavingMealPlan] = useState<boolean>(false);
   const [userPreferences, setUserPreferences] = useState<UserPreference[]>([]);
   const [openAlertDialog, setOpenAlertDialog] = useState(false);
+
+  // Set initial preferences when component mounts
+  useEffect(() => {
+    if (preferences && preferences.length > 0) {
+      setUserPreferences(preferences);
+    }
+
+    
+
+
+
+  }, [preferences]);
 
   const generateMealPlan = async () => {
     try {
@@ -94,39 +107,55 @@ const CreateMealPlan = ({ preferences }: CreateMealPlanProps) => {
       setLoading(false);
     }
   };
-
   const handleSaveMealPlan = async () => {
-    console.log("Save button clicked"); // 👈 Add this
+    setSavingMealPlan(true);
+    
     try {
-      const payload = {
-        duration,
-        mealsPerDay,
-        days: mealPlan,
-        createdAt: new Date().toISOString()
-      };
-  
-      const savedMealPlan = await SaveMealPlan(payload);
-  
-      if (!savedMealPlan) {
-        throw new Error('Failed to save meal plan');
+      const response = await fetch('/api/savemealplan', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          duration,
+          mealsPerDay,
+          days: mealPlan,
+          createdAt: new Date().toISOString()
+        })
+      });
+      
+      // Check if the response is ok
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `Server responded with status: ${response.status}`);
       }
-  
+      
+      // Parse the response
+      const result = await response.json();
+      
+      // Check if the operation was successful
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to save meal plan');
+      }
+      
       toast({
         title: 'Meal plan saved!',
         description: 'You can access it in your dashboard.'
       });
+      
+      console.log("Meal plan saved successfully:", result.data);
+      return result.data;
     } catch (error) {
       console.error('Error saving meal plan:', error);
       toast({
         title: 'Failed to save meal plan',
-        description: 'Please try again.',
+        description: error instanceof Error ? error.message : 'Please try again.',
         variant: 'destructive'
       });
+    } finally {
+      setSavingMealPlan(false);
     }
   };
-  
-  
-
   const handleDurationChange = (value: string) => {
     setDuration(parseInt(value, 10));
   };
@@ -241,11 +270,24 @@ const CreateMealPlan = ({ preferences }: CreateMealPlanProps) => {
           </CardContent>
         </Card>
       )}
-      <div className=' flex '>
-        <Button onClick={handleSaveMealPlan} variant="outline" className='px-4 m-2 bg-green-500'>Save Meal Plan</Button>
-        <Button  variant="outline" className='px-4 m-2 bg-green-500'>Reject</Button>
+      <div className='flex'>
+        <Button 
+          onClick={handleSaveMealPlan} 
+          variant="outline" 
+          disabled={savingMealPlan || mealPlan.length === 0}
+          className={`px-4 m-2 ${savingMealPlan ? 'bg-gray-400' : 'bg-green-500'}`}
+        >
+          {savingMealPlan ? (
+            <>
+              <span>Saving...</span>
+              <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+            </>
+          ) : (
+            'Save Meal Plan'
+          )}
+        </Button>
+        <Button variant="outline" className='px-4 m-2 bg-green-500'>Reject</Button>
       </div>
-      
     </div>
   );
 };
