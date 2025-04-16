@@ -16,3 +16,30 @@ model OnboardingData {
   householdSize      Int
   cuisinePreferences String[]
 }
+
+
+model MealPlan {
+  id          String      @id @default(cuid())
+  duration    Int
+  mealsPerDay Int
+  days        DayMeal[]   // One-to-many: each meal plan has many days
+  createdAt   DateTime    @default(now())
+}
+
+model DayMeal {
+  id         String   @id @default(cuid())
+  date       DateTime
+  meals      Meal[]
+  mealPlan   MealPlan @relation(fields: [mealPlanId], references: [id])
+  mealPlanId String
+}
+
+model Meal {
+  id         String   @id @default(cuid())
+  name       String
+  type       String
+  description String
+  calories   Int
+  dayMeal    DayMeal @relation(fields: [dayMealId], references: [id])
+  dayMealId  String
+}

@@ -1,9 +1,15 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { GenerateMealPlanInput } from '@/ai/flows/generate-meal-plan';
 import { generatePersonalizedMealPlan } from '@/ai/flows/generate-meal-plan';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle
+} from '@/components/ui/card';
 import { Label } from '@/components/ui/lable';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -29,7 +35,7 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select';
-import { fetchOnboardingData } from '@/data';
+import { SaveMealPlan } from '@/data';
 
 interface Meal {
   name: string;
@@ -37,19 +43,16 @@ interface Meal {
   instructions: string;
 }
 
-interface DayMealPlan {
+export interface DayMealPlan {
   day: number;
-  meals: Meal[];  
+  meals: Meal[];
 }
 
 interface CreateMealPlanProps {
   preferences: UserPreference[];
-  // Add any props you need here
 }
 
-
-
-const CreateMealPlan  = ( {preferences}:CreateMealPlanProps) => {
+const CreateMealPlan = ({ preferences }: CreateMealPlanProps) => {
   const [duration, setDuration] = useState<number>(7);
   const [mealsPerDay, setMealsPerDay] = useState<number>(3);
   const [mealPlan, setMealPlan] = useState<DayMealPlan[]>([]);
@@ -57,20 +60,10 @@ const CreateMealPlan  = ( {preferences}:CreateMealPlanProps) => {
   const [userPreferences, setUserPreferences] = useState<UserPreference[]>([]);
   const [openAlertDialog, setOpenAlertDialog] = useState(false);
 
-  // Fetch user preferences on mount
-  
   const generateMealPlan = async () => {
-    setLoading(true);
-    setUserPreferences(preferences);
     try {
-      if (!userPreferences || userPreferences.length === 0) {
-        setOpenAlertDialog(true);
-        toast({
-          title: 'No preferences set',
-          description: 'Please set your preferences before generating a meal plan.'
-        });
-        return;
-      }
+      setLoading(true);
+      setUserPreferences(preferences);
 
       const input: GenerateMealPlanInput = {
         duration,
@@ -96,11 +89,43 @@ const CreateMealPlan  = ( {preferences}:CreateMealPlanProps) => {
         variant: 'destructive'
       });
       console.error('Error generating meal plan:', error);
-      setMealPlan([]); // Clear the meal plan on error
+      setMealPlan([]);
     } finally {
       setLoading(false);
     }
   };
+
+  const handleSaveMealPlan = async () => {
+    console.log("Save button clicked"); // 👈 Add this
+    try {
+      const payload = {
+        duration,
+        mealsPerDay,
+        days: mealPlan,
+        createdAt: new Date().toISOString()
+      };
+  
+      const savedMealPlan = await SaveMealPlan(payload);
+  
+      if (!savedMealPlan) {
+        throw new Error('Failed to save meal plan');
+      }
+  
+      toast({
+        title: 'Meal plan saved!',
+        description: 'You can access it in your dashboard.'
+      });
+    } catch (error) {
+      console.error('Error saving meal plan:', error);
+      toast({
+        title: 'Failed to save meal plan',
+        description: 'Please try again.',
+        variant: 'destructive'
+      });
+    }
+  };
+  
+  
 
   const handleDurationChange = (value: string) => {
     setDuration(parseInt(value, 10));
@@ -111,20 +136,22 @@ const CreateMealPlan  = ( {preferences}:CreateMealPlanProps) => {
   };
 
   return (
-    <div className="container mx-auto p-4">
-      <Card className="shadow-md">
-        <CardHeader>
-          <CardTitle className="text-lg font-semibold">Meal Plan Configuration</CardTitle>
-          <CardDescription>
-            Configure the duration and meals per day for your personalized meal plan.
+    <div className="container max-w-4xl mx-auto p-6 space-y-8">
+      <Card className="border border-muted shadow-xl">
+        <CardHeader className="bg-muted/30 rounded-t-lg px-6 py-4">
+          <CardTitle className="text-2xl font-bold text-foreground">
+            Meal Plan Configuration
+          </CardTitle>
+          <CardDescription className="text-muted-foreground mt-1">
+            Set your preferences and generate a personalized plan.
           </CardDescription>
         </CardHeader>
-        <CardContent className="grid gap-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="duration">Duration (days)</Label>
+        <CardContent className="p-6 space-y-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <Label htmlFor="duration" className="text-base font-medium">Duration</Label>
               <Select onValueChange={handleDurationChange} defaultValue={duration.toString()}>
-                <SelectTrigger className="mt-1">
+                <SelectTrigger className="bg-background border rounded-lg px-4 py-2 text-foreground">
                   <SelectValue placeholder={`${duration} days`} />
                 </SelectTrigger>
                 <SelectContent>
@@ -136,10 +163,10 @@ const CreateMealPlan  = ( {preferences}:CreateMealPlanProps) => {
                 </SelectContent>
               </Select>
             </div>
-            <div>
-              <Label htmlFor="mealsPerDay">Meals per day</Label>
+            <div className="space-y-2">
+              <Label htmlFor="mealsPerDay" className="text-base font-medium">Meals per day</Label>
               <Select onValueChange={handleMealsPerDayChange} defaultValue={mealsPerDay.toString()}>
-                <SelectTrigger className="mt-1">
+                <SelectTrigger className="bg-background border rounded-lg px-4 py-2 text-foreground">
                   <SelectValue placeholder={`${mealsPerDay} meals`} />
                 </SelectTrigger>
                 <SelectContent>
@@ -155,11 +182,11 @@ const CreateMealPlan  = ( {preferences}:CreateMealPlanProps) => {
           <Button
             onClick={generateMealPlan}
             disabled={loading}
-            className="bg-accent text-accent-foreground font-bold py-2 px-4 rounded"
+            className="w-full sm:w-auto bg-gradient-to-r from-green-500 to-emerald-600 hover:brightness-110 text-white font-semibold px-6 py-3 rounded-lg transition-all duration-200"
           >
             {loading ? (
               <>
-                Generating Meal Plan...
+                Generating...
                 <Loader2 className="ml-2 h-4 w-4 animate-spin" />
               </>
             ) : (
@@ -170,39 +197,43 @@ const CreateMealPlan  = ( {preferences}:CreateMealPlanProps) => {
       </Card>
 
       {mealPlan.length > 0 && (
-        <Card className="mt-6 shadow-md">
-          <CardHeader>
-            <CardTitle className="text-lg font-semibold">Generated Meal Plan</CardTitle>
-            <CardDescription>
-              Here is your personalized meal plan for {duration} days with {mealsPerDay} meals per
-              day.
+        <Card className="shadow-xl border border-muted">
+          <CardHeader className="bg-muted/30 px-6 py-4 rounded-t-lg">
+            <CardTitle className="text-xl font-bold">Your Meal Plan</CardTitle>
+            <CardDescription className="text-muted-foreground mt-1">
+              {duration} days • {mealsPerDay} meals per day
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <ScrollArea className="h-[400px] w-full rounded-md border">
-              <div className="grid gap-4 p-4">
+          <CardContent className="p-4">
+            <ScrollArea className="h-[400px] rounded-md border">
+              <div className="space-y-6 p-4">
                 {mealPlan.map((dayPlan) => (
-                  <div key={dayPlan.day} className="mb-4">
-                    <h3 className="text-md font-semibold mb-2">Day {dayPlan.day}</h3>
-                    {dayPlan.meals.map((meal, index) => (
-                      <div key={index} className="mb-3 p-3 rounded-md border border-border">
-                        <h4 className="text-sm font-semibold">{meal.name}</h4>
-                        <div className="mt-1">
-                          <Badge variant="secondary">Ingredients:</Badge>
-                          <ul className="list-disc pl-5 mt-1">
-                            {meal.ingredients.map((ingredient, i) => (
-                              <li key={i} className="text-sm">
-                                {ingredient}
-                              </li>
-                            ))}
-                          </ul>
+                  <div key={dayPlan.day}>
+                    <h3 className="text-lg font-semibold text-primary mb-3">Day {dayPlan.day}</h3>
+                    <div className="grid gap-4">
+                      {dayPlan.meals.map((meal, index) => (
+                        <div
+                          key={index}
+                          className="bg-muted/10 border border-border rounded-xl p-4 space-y-3 shadow-sm"
+                        >
+                          <h4 className="text-base font-semibold">{meal.name}</h4>
+                          <div>
+                            <Badge variant="secondary" className="mb-1">Ingredients</Badge>
+                            <ul className="list-disc pl-5 text-sm text-muted-foreground">
+                              {meal.ingredients.map((ingredient, i) => (
+                                <li key={i}>{ingredient}</li>
+                              ))}
+                            </ul>
+                          </div>
+                          <div>
+                            <Badge variant="secondary" className="mb-1">Instructions</Badge>
+                            <p className="text-sm text-muted-foreground">
+                              {meal.instructions}
+                            </p>
+                          </div>
                         </div>
-                        <div className="mt-1">
-                          <Badge variant="secondary">Instructions:</Badge>
-                          <p className="text-sm mt-1">{meal.instructions}</p>
-                        </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -210,27 +241,11 @@ const CreateMealPlan  = ( {preferences}:CreateMealPlanProps) => {
           </CardContent>
         </Card>
       )}
-
-      <AlertDialog open={openAlertDialog} onOpenChange={setOpenAlertDialog}>
-        <AlertDialogTrigger asChild>
-          <Button variant="outline" className="mt-4">
-            Set Preferences
-          </Button>
-        </AlertDialogTrigger>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Preferences Required</AlertDialogTitle>
-            <AlertDialogDescription>
-              To generate a personalized meal plan, please set your dietary restrictions and
-              allergies.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction>Set Preferences</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <div className=' flex '>
+        <Button onClick={handleSaveMealPlan} variant="outline" className='px-4 m-2 bg-green-500'>Save Meal Plan</Button>
+        <Button  variant="outline" className='px-4 m-2 bg-green-500'>Reject</Button>
+      </div>
+      
     </div>
   );
 };
