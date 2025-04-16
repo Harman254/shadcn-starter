@@ -1,16 +1,15 @@
 import { prisma } from "@/lib/prisma";
-import { MealPlan } from "@/types";
+import { MealPlan, UserPreference } from "@/types";
 
 
 
 
-export const fetchOnboardingData = async () => {
+export async function fetchOnboardingData(): Promise<UserPreference[]> {
 const data = await prisma.onboardingData.findMany({
   where: {
     id: 3
   }
 });
-console.log("Fetched Onboarding Data:", data);
 return data;
 }
 

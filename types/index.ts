@@ -30,3 +30,11 @@ export interface MealPlan {
   description: string;
   days: DayPlan[];
 }
+
+
+export interface UserPreference {
+  dietaryPreference: string;
+  goal: string;
+  householdSize: number;
+  cuisinePreferences: string[];
+}
