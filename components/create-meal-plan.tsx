@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { GenerateMealPlanInput } from '@/ai/flows/generate-meal-plan';
 import { generatePersonalizedMealPlan } from '@/ai/flows/generate-meal-plan';
 import {
@@ -27,7 +27,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { toast } from '@/hooks/use-toast';
 import { UserPreference } from '@/types';
-import { Loader2 } from 'lucide-react';
+import { Loader2, RefreshCcw } from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -35,7 +35,6 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select';
-import { SaveMealPlan } from '@/data';
 
 interface Meal {
   name: string;
@@ -58,30 +57,16 @@ const CreateMealPlan = ({ preferences }: CreateMealPlanProps) => {
   const [mealPlan, setMealPlan] = useState<DayMealPlan[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [savingMealPlan, setSavingMealPlan] = useState<boolean>(false);
-  const [userPreferences, setUserPreferences] = useState<UserPreference[]>([]);
-  const [openAlertDialog, setOpenAlertDialog] = useState(false);
-
-  // Set initial preferences when component mounts
-  useEffect(() => {
-    if (preferences && preferences.length > 0) {
-      setUserPreferences(preferences);
-    }
-
-    
-
-
-
-  }, [preferences]);
+  const [regenerating, setRegenerating] = useState<boolean>(false);
 
   const generateMealPlan = async () => {
     try {
       setLoading(true);
-      setUserPreferences(preferences);
 
       const input: GenerateMealPlanInput = {
         duration,
         mealsPerDay,
-        preferences: userPreferences
+        preferences
       };
 
       const result = await generatePersonalizedMealPlan(input);
@@ -91,6 +76,7 @@ const CreateMealPlan = ({ preferences }: CreateMealPlanProps) => {
       }
 
       setMealPlan(result.mealPlan);
+
       toast({
         title: 'Meal plan generated successfully!',
         description: 'Your personalized meal plan is ready to view.'
@@ -107,15 +93,14 @@ const CreateMealPlan = ({ preferences }: CreateMealPlanProps) => {
       setLoading(false);
     }
   };
+
   const handleSaveMealPlan = async () => {
     setSavingMealPlan(true);
-    
+
     try {
       const response = await fetch('/api/savemealplan', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           duration,
           mealsPerDay,
@@ -123,27 +108,24 @@ const CreateMealPlan = ({ preferences }: CreateMealPlanProps) => {
           createdAt: new Date().toISOString()
         })
       });
-      
-      // Check if the response is ok
+
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || `Server responded with status: ${response.status}`);
       }
-      
-      // Parse the response
+
       const result = await response.json();
-      
-      // Check if the operation was successful
+
       if (!result.success) {
         throw new Error(result.error || 'Failed to save meal plan');
       }
-      
+
       toast({
         title: 'Meal plan saved!',
         description: 'You can access it in your dashboard.'
       });
-      
-      console.log("Meal plan saved successfully:", result.data);
+
+      console.log('Meal plan saved successfully:', result.data);
       return result.data;
     } catch (error) {
       console.error('Error saving meal plan:', error);
@@ -156,6 +138,30 @@ const CreateMealPlan = ({ preferences }: CreateMealPlanProps) => {
       setSavingMealPlan(false);
     }
   };
+
+  const handleRejectPlan = async () => {
+    try {
+      setRegenerating(true);
+      setMealPlan([]);
+
+      await generateMealPlan();
+
+      toast({
+        title: 'New meal plan generated!',
+        description: 'We’ve replaced the old one with a fresh plan.'
+      });
+    } catch (error) {
+      console.error('Error regenerating plan:', error);
+      toast({
+        title: 'Error regenerating plan',
+        description: 'Something went wrong. Try again.',
+        variant: 'destructive'
+      });
+    } finally {
+      setRegenerating(false);
+    }
+  };
+
   const handleDurationChange = (value: string) => {
     setDuration(parseInt(value, 10));
   };
@@ -165,7 +171,8 @@ const CreateMealPlan = ({ preferences }: CreateMealPlanProps) => {
   };
 
   return (
-    <div className="container max-w-4xl mx-auto p-6 space-y-8">
+    <div className="container max-w-5xl mx-auto p-6 space-y-8">
+      {/* Configuration Card */}
       <Card className="border border-muted shadow-xl">
         <CardHeader className="bg-muted/30 rounded-t-lg px-6 py-4">
           <CardTitle className="text-2xl font-bold text-foreground">
@@ -184,7 +191,7 @@ const CreateMealPlan = ({ preferences }: CreateMealPlanProps) => {
                   <SelectValue placeholder={`${duration} days`} />
                 </SelectTrigger>
                 <SelectContent>
-                  {[3, 5, 7, 10, 14].map((day) => (
+                  {[2, 3, 5, 7, 10, 14].map((day) => (
                     <SelectItem key={day} value={day.toString()}>
                       {day} days
                     </SelectItem>
@@ -225,16 +232,17 @@ const CreateMealPlan = ({ preferences }: CreateMealPlanProps) => {
         </CardContent>
       </Card>
 
+      {/* Meal Plan UI */}
       {mealPlan.length > 0 && (
         <Card className="shadow-xl border border-muted">
           <CardHeader className="bg-muted/30 px-6 py-4 rounded-t-lg">
-            <CardTitle className="text-xl font-bold">Your Meal Plan</CardTitle>
-            <CardDescription className="text-muted-foreground mt-1">
+            <CardTitle className="text-xl tracking-tight font-bold">Your Meal Plan</CardTitle>
+            <CardDescription className="text-muted-foreground mt-1 text-md">
               {duration} days • {mealsPerDay} meals per day
             </CardDescription>
           </CardHeader>
           <CardContent className="p-4">
-            <ScrollArea className="h-[400px] rounded-md border">
+            <ScrollArea className="h-screen rounded-md border border-muted">
               <div className="space-y-6 p-4">
                 {mealPlan.map((dayPlan) => (
                   <div key={dayPlan.day}>
@@ -243,20 +251,22 @@ const CreateMealPlan = ({ preferences }: CreateMealPlanProps) => {
                       {dayPlan.meals.map((meal, index) => (
                         <div
                           key={index}
-                          className="bg-muted/10 border border-border rounded-xl p-4 space-y-3 shadow-sm"
+                          className="bg-muted/10 border border-border rounded-xl p-4 space-y-3 shadow-md"
                         >
                           <h4 className="text-base font-semibold">{meal.name}</h4>
                           <div>
-                            <Badge variant="secondary" className="mb-1">Ingredients</Badge>
+                            <Badge variant="secondary" className="mb-1 text-md">Ingredients</Badge>
                             <ul className="list-disc pl-5 text-sm text-muted-foreground">
                               {meal.ingredients.map((ingredient, i) => (
-                                <li key={i}>{ingredient}</li>
+                                <li className="text-md text-foreground/80" key={i}>
+                                  {ingredient}
+                                </li>
                               ))}
                             </ul>
                           </div>
                           <div>
-                            <Badge variant="secondary" className="mb-1">Instructions</Badge>
-                            <p className="text-sm text-muted-foreground">
+                          <Badge variant="secondary" className="mb-1 text-lg tracking-tighter font-semibold leading-3">Cooking Procedure</Badge>
+                            <p className="text-md text-foreground/80">
                               {meal.instructions}
                             </p>
                           </div>
@@ -270,23 +280,42 @@ const CreateMealPlan = ({ preferences }: CreateMealPlanProps) => {
           </CardContent>
         </Card>
       )}
-      <div className='flex'>
-        <Button 
-          onClick={handleSaveMealPlan} 
-          variant="outline" 
+
+      {/* Buttons */}
+      <div className="flex">
+        <Button
+          onClick={handleSaveMealPlan}
+          variant="outline"
           disabled={savingMealPlan || mealPlan.length === 0}
           className={`px-4 m-2 ${savingMealPlan ? 'bg-gray-400' : 'bg-green-500'}`}
         >
           {savingMealPlan ? (
             <>
-              <span>Saving...</span>
+              Saving...
               <Loader2 className="ml-2 h-4 w-4 animate-spin" />
             </>
           ) : (
             'Save Meal Plan'
           )}
         </Button>
-        <Button variant="outline" className='px-4 m-2 bg-green-500'>Reject</Button>
+        <Button
+          onClick={handleRejectPlan}
+          disabled={regenerating || mealPlan.length === 0}
+          variant="destructive"
+          className="px-4 m-2"
+        >
+          {regenerating ? (
+            <>
+              <RefreshCcw className="mr-2 h-4 w-4 animate-spin" />
+              Regenerating...
+            </>
+          ) : (
+            <>
+              <RefreshCcw className="mr-2 h-4 w-4" />
+              Reject & Regenerate
+            </>
+          )}
+        </Button>
       </div>
     </div>
   );

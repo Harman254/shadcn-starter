@@ -7,6 +7,7 @@ import { TailwindIndicator } from "@/components/tailwind-indicator"
 import { ThemeProvider } from "@/components/theme-provider"
 import Navbar5 from "@/components/Nav"
 import Footer2 from "@/components/footer"
+import ClerkPRovider from "@/lib/clerk"
 
 
 
@@ -25,6 +26,8 @@ export default function RootLayout({ children }: RootLayoutProps) {
             fontSans.variable
           )}
         >
+        <ClerkPRovider >  
+        
           <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
             <div className="relative flex min-h-screen flex-col">
               <Navbar5 />
@@ -32,6 +35,8 @@ export default function RootLayout({ children }: RootLayoutProps) {
               <Footer2 />
             </div>
           </ThemeProvider>
+        </ClerkPRovider>
+
         </body>
       </html>
     </>

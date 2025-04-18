@@ -4,35 +4,12 @@ import { useRouter } from "next/navigation";
 import { ClipboardList, Calendar, Clock, ChevronRight, Plus } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { mockMealPlan } from "@/data";
 
 // This would come from your state management in the future
-const usePlans = () => {
-  // For now, return an array with just the mock meal plan
-  return [
-    {
-      id: mockMealPlan.id,
-      name: mockMealPlan.name,
-      createdAt: new Date().toISOString(),
-      days: mockMealPlan.days,
-      mealsPerDay: mockMealPlan.days.length > 0 
-        ? mockMealPlan.days[0].meals.length 
-        : 4,
-    }
-  ];
-};
 
-function formatDate(dateString: string) {
-  return new Date(dateString).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  });
-}
 
 const MealPlanList = () => {
     const router = useRouter();
-  const plans = usePlans();
 
   const handleViewPlan = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -56,21 +33,8 @@ const MealPlanList = () => {
           </Button>
         </div>
 
-        {plans.length === 0 ? (
-          <EmptyState onCreateClick={() => router.push('/meal-plans/new')} />
-        ) : (
-          <div 
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-          >
-            {plans.map((plan) => (
-              <MealPlanCard
-                key={plan.id}
-                plan={plan}
-                onViewClick={(e) => handleViewPlan(plan.id, e)}
-              />
-            ))}
-          </div>
-        )}
+        
+       
       </div>
     </div>
   );
@@ -94,7 +58,7 @@ const MealPlanCard = ({ plan, onViewClick }: MealPlanCardProps) => {
         <div className="flex items-start justify-between mb-4">
           <div>
             <h3 className="text-xl font-semibold text-gray-900 mb-1">{plan.name}</h3>
-            <p className="text-sm text-gray-500">Created {formatDate(plan.createdAt)}</p>
+            <p className="text-sm text-gray-500">Created {plan.createdAt}</p>
           </div>
           <div className="bg-green-100 rounded-full p-2">
             <Calendar className="w-5 h-5 text-green-600" />

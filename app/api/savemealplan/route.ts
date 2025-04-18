@@ -3,6 +3,7 @@
 // Define the interface for meal data
 import { prisma } from "@/lib/prisma";
 import {NextResponse} from "next/server";
+import { auth } from '@clerk/nextjs/server'
 
 
 interface Meal {
@@ -27,7 +28,19 @@ interface SaveMealPlanInput {
 
 // This is the API route handler for POST requests
 export async function POST(request:Request) {
+
+
+
   try {
+
+
+
+    const { userId } = await auth();
+
+    if (!userId){
+      throw new Error("User not authenticated");
+    }
+
     // Parse the request body
     const input: SaveMealPlanInput = await request.json();
     
@@ -36,11 +49,13 @@ export async function POST(request:Request) {
     // Create the main MealPlan record
     const mealPlan = await prisma.mealPlan.create({
       data: {
+        userId: userId,
         duration: input.duration,
         mealsPerDay: input.mealsPerDay,
         createdAt: new Date(input.createdAt),
       },
     });
+    
     
     console.log("Created MealPlan record:", mealPlan);
 

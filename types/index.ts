@@ -33,8 +33,12 @@ export interface MealPlan {
 
 
 export interface UserPreference {
+  id: number;
+  userId: string;
   dietaryPreference: string;
   goal: string;
   householdSize: number;
   cuisinePreferences: string[];
+
+  // Add other user preferences here
 }

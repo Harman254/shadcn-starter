@@ -4,7 +4,8 @@ import Feature17 from "@/components/features";
 import Testimonial14 from "@/components/testimonials";
 
 
-export default function IndexPage() {
+export default async function IndexPage() {
+ 
   return (
     <>
     <Hero8 />

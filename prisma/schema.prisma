@@ -11,6 +11,7 @@ datasource db {
 
 model OnboardingData {
   id                 Int      @id @default(autoincrement())
+  userId             String   // Clerk user ID
   dietaryPreference  String
   goal               String
   householdSize      Int
@@ -18,13 +19,18 @@ model OnboardingData {
 }
 
 
+
+
+
 model MealPlan {
   id          String      @id @default(cuid())
+  userId      String      // Clerk user ID
   duration    Int
   mealsPerDay Int
   days        DayMeal[]   // One-to-many: each meal plan has many days
   createdAt   DateTime    @default(now())
 }
+
 
 model DayMeal {
   id         String   @id @default(cuid())
