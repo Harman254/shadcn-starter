@@ -8,6 +8,7 @@ import { ThemeProvider } from "@/components/theme-provider"
 import Navbar5 from "@/components/Nav"
 import Footer2 from "@/components/footer"
 import ClerkPRovider from "@/lib/clerk"
+import { Toaster } from "@/components/ui/sonner"
 
 
 
@@ -30,6 +31,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
         
           <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
             <div className="relative flex min-h-screen flex-col">
+              <Toaster />
               <Navbar5 />
               <div className="flex-1">{children}</div>
               <Footer2 />

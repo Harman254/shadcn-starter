@@ -25,7 +25,7 @@ import {
   AlertDialogTrigger
 } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
-import { toast } from '@/hooks/use-toast';
+import { Toast } from '@/hooks/use-toast';
 import { UserPreference } from '@/types';
 import { Loader2, RefreshCcw } from 'lucide-react';
 import {
@@ -77,14 +77,12 @@ const CreateMealPlan = ({ preferences }: CreateMealPlanProps) => {
 
       setMealPlan(result.mealPlan);
 
-      toast({
+      Toast({
         title: 'Meal plan generated successfully!',
-        description: 'Your personalized meal plan is ready to view.'
       });
     } catch (error) {
-      toast({
+      Toast({
         title: 'Error generating meal plan',
-        description: 'Failed to generate meal plan. Please try again.',
         variant: 'destructive'
       });
       console.error('Error generating meal plan:', error);
@@ -120,18 +118,16 @@ const CreateMealPlan = ({ preferences }: CreateMealPlanProps) => {
         throw new Error(result.error || 'Failed to save meal plan');
       }
 
-      toast({
+      Toast({
         title: 'Meal plan saved!',
-        description: 'You can access it in your dashboard.'
       });
 
       console.log('Meal plan saved successfully:', result.data);
       return result.data;
     } catch (error) {
       console.error('Error saving meal plan:', error);
-      toast({
+      Toast({
         title: 'Failed to save meal plan',
-        description: error instanceof Error ? error.message : 'Please try again.',
         variant: 'destructive'
       });
     } finally {
@@ -146,15 +142,13 @@ const CreateMealPlan = ({ preferences }: CreateMealPlanProps) => {
 
       await generateMealPlan();
 
-      toast({
+      Toast({
         title: 'New meal plan generated!',
-        description: 'We’ve replaced the old one with a fresh plan.'
       });
     } catch (error) {
       console.error('Error regenerating plan:', error);
-      toast({
+      Toast({
         title: 'Error regenerating plan',
-        description: 'Something went wrong. Try again.',
         variant: 'destructive'
       });
     } finally {

@@ -14,7 +14,6 @@ const MealNew = async () => {
   
   const preferences: UserPreference[]= await fetchOnboardingData(userId)
 
-  console.log(preferences)
 
   if (preferences) {
     return (

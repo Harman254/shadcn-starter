@@ -8,29 +8,33 @@ export interface OnboardingData {
   export type OnboardingStep = 'dietary' | 'goals' | 'household' | 'cuisine';
 
 
-  export type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack';
+  export type MealType = "breakfast" | "lunch" | "dinner" | "snack";
 
-export interface Meal {
-  id: string;
-  type: MealType;
-  name: string;
-  description: string;
-  calories: number;
-}
-
-export interface DayPlan {
-  id: string;
-  date: string;
-  meals: Meal[];
-}
-
-export interface MealPlan {
-  id: string;
-  name: string;
-  description: string;
-  days: DayPlan[];
-}
-
+  export type MealPlan = {
+    id: string;
+    userId: string;
+    duration: number;
+    mealsPerDay: number;
+    createdAt: Date;
+  };
+  
+  export type DayMeal = {
+    id: string;
+    date: Date;
+    mealPlanId: string;
+    mealPlan: MealPlan;
+  };
+  
+  export type Meal = {
+    id: string;
+    type: MealType;
+    name: string;
+    description: string;
+    calories: number;
+    dayMealId: string;
+    dayMeal: DayMeal;
+  };
+  
 
 export interface UserPreference {
   id: number;

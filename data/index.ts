@@ -6,7 +6,6 @@ import { MealPlan, UserPreference } from "@/types";
 
 
 export async function fetchOnboardingData(userid: string): Promise<UserPreference[]> {
-  console.log("fetchOnboardingData function called with userid:", userid);
 const data = await prisma.onboardingData.findMany({
   where: {
     userId: userid,
@@ -14,6 +13,29 @@ const data = await prisma.onboardingData.findMany({
 });
 return data;
 }
+export const getMealsByUserId = async (userId: string) => {
+  const meals = await prisma.meal.findMany({
+    where: {
+      dayMeal: {
+        mealPlan: {
+          userId: userId,
+        },
+      },
+    },
+    include: {
+      dayMeal: {
+        include: {
+          mealPlan: true,
+        },
+      },
+    },
+  });
+
+  return meals;
+};
+
+
+
 
 
 // interface Meal {

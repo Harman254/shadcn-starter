@@ -1,6 +1,5 @@
 "use client";
 
-import { useRouter } from 'next/navigation';
 
 import React from 'react';
 import { 
@@ -12,19 +11,21 @@ import {
   ArrowRight,
   Link
 } from 'lucide-react';
+import { useUser } from '@clerk/nextjs';
+import MealPlanStatusCard from '@/components/meal-plan-status';
 
 // Mock user data - in production this would come from your backend
-const user = {
-  name: "Haman",
-  hasMealPlan: false,
-  mealPlan: {
-    days: 7,
-    mealsPerDay: 3
-  }
-};
 
-export default function Dashboard() {
-  const router = useRouter();
+export default function Dashboard({  mealPlan }: any) {
+  const  [hasMealPlan, setHasMealPlan ] = React.useState(false);
+
+  const { isSignedIn, user, isLoaded } = useUser()
+
+
+  if(mealPlan)
+    setHasMealPlan(true)
+
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-50">
@@ -34,54 +35,17 @@ export default function Dashboard() {
         {/* Welcome Section */}
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold text-gray-800 mb-2">
-            Welcome back, {user.name}! 👋
+            Welcome back, {user?.firstName}! 👋
           </h1>
           <p className="text-gray-600">
             Let's make your meal planning journey delicious and easy.
           </p>
         </div>
+          {/* Meal Plan Status Card */}
 
-        {/* Meal Plan Status Card */}
-        <div className="bg-white rounded-2xl shadow-lg p-8 mb-12">
-          {user.hasMealPlan ? (
-            <div className="text-center">
-              <h2 className="text-2xl font-semibold text-gray-800 mb-4">
-                Your Current Meal Plan
-              </h2>
-              <div className="flex justify-center items-center gap-8 mb-6">
-                <div className="text-center">
-                  <p className="text-4xl font-bold text-emerald-600">{user.mealPlan.days}</p>
-                  <p className="text-gray-600">Days</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-4xl font-bold text-emerald-600">{user.mealPlan.mealsPerDay}</p>
-                  <p className="text-gray-600">Meals per day</p>
-                </div>
-              </div>
-              <div className="flex justify-center gap-4">
-                <button className="px-6 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors flex items-center gap-2">
-                  View Plan <ArrowRight size={20} />
-                </button>
-                <button className="px-6 py-3 border border-emerald-600 text-emerald-600 rounded-lg hover:bg-emerald-50 transition-colors">
-                  Edit Plan
-                </button>
-              </div>
-            </div>
-          ) : (
-            <div className="text-center">
-              <h2 className="text-2xl font-semibold text-gray-800 mb-4">
-                Start Your Meal Planning Journey
-              </h2>
-              <p className="text-gray-600 mb-6">
-                Create your first meal plan and make healthy eating effortless.
-              </p>
-              <button onClick={() => router.push('/meal-plans/new')} className="px-8 py-4 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors flex items-center gap-2 mx-auto">
-                <Plus size={24} />
-                Generate Meal Plan
-              </button>
-            </div>
-          )}
-        </div>
+          <MealPlanStatusCard hasMealPlan={hasMealPlan} mealPlan={mealPlan} />
+        
+        
 
         {/* Quick Navigation Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
