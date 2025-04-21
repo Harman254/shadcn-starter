@@ -1,10 +1,6 @@
-
-
-
 "use client";
 
 import { MenuIcon } from "lucide-react";
-
 import {
   Accordion,
   AccordionContent,
@@ -29,56 +25,52 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { ThemeToggle } from "./theme-toggle";
+import { useUser } from '@clerk/nextjs';
+import { Skeleton } from "./ui/skeleton";
 
 const Navbar5 = () => {
+  const { isSignedIn, isLoaded, user } = useUser();
+
   const features = [
     {
       title: "Dashboard",
       description: "Overview of your activity",
-      href: "#",
+      href: "/dashboard",
     },
     {
       title: "Analytics",
       description: "Track your performance",
-      href: "#",
+      href: "/dashboard/analytics",
     },
     {
       title: "Settings",
       description: "Configure your preferences",
-      href: "#",
-    },
-    {
-      title: "Integrations",
-      description: "Connect with other tools",
-      href: "#",
-    },
-    {
-      title: "Storage",
-      description: "Manage your files",
-      href: "#",
+      href: "/dashboard/settings",
     },
     {
       title: "Support",
       description: "Get help when needed",
-      href: "#",
+      href: "/support",
     },
   ];
+
+
+if(!isLoaded || !isSignedIn) 
+  return <Skeleton />
+
 
   return (
     <section className="py-4">
       <div className="container">
         <nav className="flex items-center justify-between">
-          <a
-            href="https://www.shadcnblocks.com"
-            className="flex items-center gap-2"
-          >
+          <a href="/" className="flex items-center gap-2">
             <img
               src="https://shadcnblocks.com/images/block/logos/shadcnblockscom-icon.svg"
               className="max-h-8"
               alt="Shadcn UI Navbar"
             />
             <span className="text-lg font-semibold tracking-tighter">
-              RecipeAi
+              MealWise
             </span>
           </a>
           <ThemeToggle />
@@ -134,10 +126,27 @@ const Navbar5 = () => {
               </NavigationMenuItem>
             </NavigationMenuList>
           </NavigationMenu>
+
           <div className="hidden items-center gap-4 lg:flex">
-            <Button variant="outline">Sign in</Button>
-            <Button>Start for free</Button>
+            {isLoaded && isSignedIn ? (
+              <>
+                <span className="text-sm">Hi, {user?.firstName}</span>
+                <Button asChild variant="outline">
+                  <a href="/dashboard">Go to Dashboard</a>
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button asChild variant="outline">
+                  <a href="/sign-in">Sign in</a>
+                </Button>
+                <Button asChild>
+                  <a href="/sign-up">Start for free</a>
+                </Button>
+              </>
+            )}
           </div>
+
           <Sheet>
             <SheetTrigger asChild className="lg:hidden">
               <Button variant="outline" size="icon">
@@ -148,7 +157,7 @@ const Navbar5 = () => {
               <SheetHeader>
                 <SheetTitle>
                   <a
-                    href="https://www.shadcnblocks.com"
+                    href="/"
                     className="flex items-center gap-2"
                   >
                     <img
@@ -202,8 +211,23 @@ const Navbar5 = () => {
                   </a>
                 </div>
                 <div className="mt-6 flex flex-col gap-4">
-                  <Button variant="outline">Sign in</Button>
-                  <Button>Start for free</Button>
+                  {isLoaded && isSignedIn ? (
+                    <>
+                      <span className="text-sm">Hi, {user?.firstName}</span>
+                      <Button asChild variant="outline">
+                        <a href="/dashboard">Go to Dashboard</a>
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <Button asChild variant="outline">
+                        <a href="/sign-in">Sign in</a>
+                      </Button>
+                      <Button asChild>
+                        <a href="/sign-up">Start for free</a>
+                      </Button>
+                    </>
+                  )}
                 </div>
               </div>
             </SheetContent>

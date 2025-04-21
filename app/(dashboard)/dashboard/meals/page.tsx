@@ -12,17 +12,19 @@ import React from 'react'
 const Meals = async () => {
     const { userId} = await auth()
 
-    const meals = (await getMealsByUserId(userId as string)).map((meal) => ({
+    const meals: Meal[] = (await getMealsByUserId(userId as string)).map((meal) => ({
         ...meal,
         type: meal.type as MealType,
       }))
   return (
-    <>
-    
-    <MealPlans mealPlans={meals}/>
     
     
-    </>
+<div>
+<MealPlans mealPlans={meals}/>
+
+</div>    
+    
+    
       
   )
 }

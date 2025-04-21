@@ -1,11 +1,11 @@
-'use client';
+"use client";
 
 import { cn } from "@/lib/utils";
-import { HomeIcon, UserCog } from "lucide-react";
+import { HomeIcon, UserCog, Utensils, Package, Sliders } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-export const dashboardLinks = [
+const dashboardLinks = [
   {
     id: 0,
     name: "Dashboard",
@@ -22,28 +22,31 @@ export const dashboardLinks = [
     id: 2,
     name: "Meals",
     href: "/dashboard/meals",
-    icon: UserCog,
+    icon: Utensils,
   },
   {
-    id: 2,
+    id: 3,
     name: "Products",
-    href: "/dashboard/meals",
-    icon: UserCog,
+    href: "/dashboard/products",
+    icon: Package,
   },
   {
-    id: 2,
+    id: 4,
     name: "Preferences",
-    href: "/dashboard/meals",
-    icon: UserCog,
+    href: "/dashboard/preferences",
+    icon: Sliders,
   },
 ];
 
 export function DashboardLinks() {
   const pathname = usePathname();
+
   return (
     <>
       {dashboardLinks.map((link) => {
-        const isActive = pathname === link.href;
+        // Check if the current pathname starts with the link's href
+        const isActive = pathname === link.href || pathname.startsWith(`${link.href}/`);
+
         return (
           <Link
             key={link.id}

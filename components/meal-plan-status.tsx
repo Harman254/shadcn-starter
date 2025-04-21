@@ -1,23 +1,27 @@
-'use client'
+'use client';
 
 import React from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowRight, Plus } from 'lucide-react';
+import { Meal } from '@/types';
 
-type MealPlan = {
-  days: number;
+export type MealPlan = {
+  id: string;
+  userId: string;
+  duration: number;
   mealsPerDay: number;
+  createdAt: string; // string is safer for JSON
 };
 
 type Props = {
   hasMealPlan: boolean;
-  mealPlan?: MealPlan | null;
+  mealPlan: MealPlan | undefined;
+  meals: Meal[];
 };
 
 const MealPlanStatusCard = ({ hasMealPlan, mealPlan }: Props) => {
   const router = useRouter();
-  console.log(mealPlan);
-
+  console.log('hasMealPlan', hasMealPlan);
   return (
     <div className="bg-white rounded-2xl shadow-lg p-8 mb-12">
       {hasMealPlan && mealPlan ? (
@@ -27,7 +31,7 @@ const MealPlanStatusCard = ({ hasMealPlan, mealPlan }: Props) => {
           </h2>
           <div className="flex justify-center items-center gap-8 mb-6">
             <div className="text-center">
-              <p className="text-4xl font-bold text-emerald-600">{mealPlan.days}</p>
+              <p className="text-4xl font-bold text-emerald-600">{mealPlan.duration}</p>
               <p className="text-gray-600">Days</p>
             </div>
             <div className="text-center">
@@ -36,7 +40,7 @@ const MealPlanStatusCard = ({ hasMealPlan, mealPlan }: Props) => {
             </div>
           </div>
           <div className="flex justify-center gap-4">
-            <button className="px-6 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors flex items-center gap-2">
+            <button onClick={() => router.push(`/dashboard/meals`)} className="px-6 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors flex items-center gap-2">
               View Plan <ArrowRight size={20} />
             </button>
             <button className="px-6 py-3 border border-emerald-600 text-emerald-600 rounded-lg hover:bg-emerald-50 transition-colors">
