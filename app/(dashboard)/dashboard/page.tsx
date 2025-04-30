@@ -56,7 +56,7 @@ export default function Dashboard() {
         {/* Welcome Section */}
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold text-primary mb-3">
-            Welcome back, {user?.firstName}! 👋
+            Welcome back, {user?.firstName}   
           </h1>
           <p className="text-gray-600">
             Let's make your meal planning journey delicious and easy.
