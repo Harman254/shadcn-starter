@@ -24,12 +24,12 @@ export interface OnboardingData {
     mealPlanId: string;
     mealPlan: MealPlan;
   };
-  
   export type Meal = {
     id: string;
     type: MealType;
     name: string;
     description: string;
+    ingredients: string[];
     calories: number;
     dayMealId: string;
     dayMeal: DayMeal;
@@ -46,3 +46,10 @@ export interface UserPreference {
 
   // Add other user preferences here
 }
+
+
+
+
+
+
+  // 1Lj8dVPG3L5eqlD2

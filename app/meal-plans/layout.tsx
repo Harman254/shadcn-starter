@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 import Link from "next/link";
-import { DashboardLinks } from "../dashboard-links";
+import { DashboardLinks } from "../(dashboard)/dashboard-links";
 import {
   Sheet,
   SheetContent,
@@ -56,7 +56,7 @@ export default async function DashboardLayout({
         </div>
 
         {/* Main Content */}
-        <div className="flex flex-col">
+        <div className="relative flex min-h-screen flex-col bg-gradient-to-br from-white via-cyan-50 to-slate-100 dark:from-zinc-900 dark:via-zinc-800 dark:to-zinc-950 transition-colors duration-300">
           <header className="flex h-14 items-center gap-4 border-b bg-muted/40 px-4 lg:h-[60px] lg:px-6">
             {/* Mobile Menu */}
             <Sheet>
@@ -66,7 +66,7 @@ export default async function DashboardLayout({
                 </Button>
               </SheetTrigger>
               <SheetContent side="left">
-              <SheetTitle>
+                <SheetTitle>
                   <div className="flex items-center gap-2 mb-4">
                     <p className="text-2xl font-bold">
                         Meal

@@ -11,13 +11,12 @@ datasource db {
 
 model OnboardingData {
   id                 Int      @id @default(autoincrement())
-  userId             String   // Clerk user ID
+  userId             String   @unique // 👈 make this unique
   dietaryPreference  String
   goal               String
   householdSize      Int
   cuisinePreferences String[]
 }
-
 
 
 
@@ -45,6 +44,7 @@ model Meal {
   name       String
   type       String
   description String
+  ingredients String[]
   calories   Int
   dayMeal    DayMeal @relation(fields: [dayMealId], references: [id])
   dayMealId  String

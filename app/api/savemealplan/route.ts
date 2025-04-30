@@ -88,9 +88,10 @@ export async function POST(request:Request) {
           data: {
             name: meal.name,
             type: mealType,
-            description: meal.instructions, // Map instructions to description
-            calories: calculateCalories(meal.ingredients), // Helper function to estimate calories
-            dayMealId: dayMeal.id, // Direct field assignment
+            description: meal.instructions,
+            calories: calculateCalories(meal.ingredients),
+            ingredients: meal.ingredients, // ✅ save ingredients here
+            dayMealId: dayMeal.id,
           },
         });
       }

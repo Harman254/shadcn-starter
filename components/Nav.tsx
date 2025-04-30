@@ -39,13 +39,13 @@ const Navbar5 = () => {
     },
     {
       title: "Analytics",
-      description: "Track your performance",
+      description: "Track Meal Plans,Recipes and progress",
       href: "/dashboard/analytics",
     },
     {
       title: "Settings",
       description: "Configure your preferences",
-      href: "/dashboard/settings",
+      href: "/dashboard/preferences",
     },
     {
       title: "Support",

@@ -1,11 +1,13 @@
+import  Pricing4  from '@/components/prices'
 import React from 'react'
 
-const InvoicesPage = () => {
+const Pricing = () => {
   return (
-    <div>
-      Invoices page
-    </div>
+    <>
+    <Pricing4 />
+      
+    </>
   )
 }
 
-export default InvoicesPage
+export default Pricing

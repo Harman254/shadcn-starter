@@ -80,19 +80,3 @@ type MealPlanProps= {
     return object;
   };
 
-
-  const meal = async () => {
-    const data = await generateMealPlan({
-      duration: 7,
-      mealsPerDay: 3,
-      preferences: {
-        dietaryPreference: "vegetarian",
-        goal: "weight_loss",
-        householdSize: 2,
-        cuisinePreferences: ["Italian", "Mexican"],
-      },
-    });
-    console.log(data);
-  }
-
-    meal()

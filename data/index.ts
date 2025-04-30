@@ -1,6 +1,10 @@
+'use server';
+
 import { prisma } from "@/lib/prisma";
 import { MealPlan, UserPreference } from "@/types";
 
+
+import { revalidatePath } from "next/cache";
 
 
 
@@ -33,6 +37,107 @@ export const getMealsByUserId = async (userId: string) => {
 
   return meals;
 };
+
+
+export const fetchMealPlansByUserId = async (userId: string) => {
+  const mealPlans = await prisma.mealPlan.findMany({
+    where: {
+      userId: userId,
+    },
+    include: {
+      days: {
+        include: {
+          meals: true,
+        },
+      },
+    },
+  });
+
+  return mealPlans;
+};
+
+export const fetchMealPlanById = async (mealPlanId: string) => {
+  const mealPlan = await prisma.mealPlan.findUnique({
+    where: {
+      id: mealPlanId,
+    },
+    include: {
+      days: {
+        include: {
+          meals: true,
+        },
+      },
+    },
+  });
+  return mealPlan;
+};
+
+
+
+
+export const deleteMealPlanById = async (formData: FormData) => {
+  const mealPlanId = formData.get("id") as string;
+  if (!mealPlanId) throw new Error("Meal Plan ID is required");
+
+  console.log("Deleting meal plan:", mealPlanId);
+
+  // Step 1: Delete Meals linked through DayMeals
+  await prisma.meal.deleteMany({
+    where: {
+      dayMeal: {
+        mealPlanId: mealPlanId,
+      },
+    },
+  });
+
+  // Step 2: Delete DayMeals linked to MealPlan
+  await prisma.dayMeal.deleteMany({
+    where: {
+      mealPlanId: mealPlanId,
+    },
+  });
+
+  // Step 3: Delete MealPlan itself
+  await prisma.mealPlan.delete({
+    where: {
+      id: mealPlanId,
+    },
+  });
+
+  // Step 4 (Optional): Revalidate relevant page
+  revalidatePath('/meal-plans');
+};
+
+
+
+export async function getLatestFullMealPlanByUserId(userId: string) {
+  return await prisma.mealPlan.findFirst({
+    where: { userId },
+    orderBy: {
+      createdAt: "desc",
+    },
+    include: {
+      days: {
+        orderBy: { date: "asc" },
+        include: {
+          meals: {
+            orderBy: { name: "asc" },
+            select: {
+              name: true,
+              ingredients: true,
+              description: true,
+            },
+          },
+        },
+      },
+    },
+  });
+}
+
+
+
+
+
 
 
 

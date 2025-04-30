@@ -8,7 +8,7 @@ import { ThemeProvider } from "@/components/theme-provider"
 import Navbar5 from "@/components/Nav"
 import Footer2 from "@/components/footer"
 import ClerkPRovider from "@/lib/clerk"
-import { Toaster } from "@/components/ui/sonner"
+import { Toaster } from "react-hot-toast"
 
 
 
@@ -30,10 +30,10 @@ export default function RootLayout({ children }: RootLayoutProps) {
         <ClerkPRovider >  
         
           <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-            <div className="relative flex min-h-screen flex-col">
+          <div className="relative flex min-h-screen flex-col bg-gradient-to-br from-white via-cyan-50 to-slate-100 dark:from-zinc-900 dark:via-zinc-800 dark:to-zinc-950 transition-colors duration-300">
               <Toaster />
               <Navbar5 />
-              <div className="flex-1">{children}</div>
+              <div className="flex-1 ">{children}</div>
               <Footer2 />
             </div>
           </ThemeProvider>

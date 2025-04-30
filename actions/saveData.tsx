@@ -14,8 +14,15 @@ const { userId } = await auth();
   if (!userId) throw new Error("Unauthorized");
 
   const { dietaryPreference, goal, householdSize, cuisinePreferences } = formData;
-  await prisma.onboardingData.create({
-    data: {
+  await prisma.onboardingData.upsert({
+    where: { userId }, // assumes userId is a unique field
+    update: {
+      dietaryPreference,
+      goal,
+      householdSize,
+      cuisinePreferences, // assuming string[]
+    },
+    create: {
       userId,
       dietaryPreference,
       goal,

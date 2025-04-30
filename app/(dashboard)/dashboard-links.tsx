@@ -21,7 +21,7 @@ const dashboardLinks = [
   {
     id: 2,
     name: "Meals",
-    href: "/dashboard/meals",
+    href: "/meal-plans",
     icon: Utensils,
   },
   {
@@ -54,7 +54,7 @@ export function DashboardLinks() {
             className={cn(
               "flex items-center gap-3 rounded-lg px-3 py-2 transition-all",
               isActive
-                ? "bg-primary/20 text-primary font-medium hover:bg-primary/30 shadow-md"
+                ? "bg-primary/10 text-primary font-medium hover:bg-primary/30 shadow-md"
                 : "text-muted-foreground hover:text-foreground"
             )}
           >
