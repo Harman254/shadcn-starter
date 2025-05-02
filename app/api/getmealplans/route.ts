@@ -2,7 +2,6 @@ import { getLatestMealPlanByUserId,  getMealsByUserId} from "@/data"; // make su
 import { MealType } from "@/types";
 import { NextResponse } from "next/server";
 import { auth } from '@clerk/nextjs/server';
-import { prisma } from "@/lib/prisma";
 
 
 
