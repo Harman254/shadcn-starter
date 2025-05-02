@@ -3,7 +3,6 @@ import { Metadata } from "next"
 
 import { fontSans } from "@/lib/fonts"
 import { cn } from "@/lib/utils"
-import { TailwindIndicator } from "@/components/tailwind-indicator"
 import { ThemeProvider } from "@/components/theme-provider"
 import Navbar5 from "@/components/Nav"
 import Footer2 from "@/components/footer"
@@ -19,13 +18,11 @@ interface RootLayoutProps {
 export default function RootLayout({ children }: RootLayoutProps) {
   return (
     <>
-      <html lang="en" suppressHydrationWarning>
+      <html lang="en" >
         <head />
         <body
-          className={cn(
-            "min-h-screen bg-background font-sans antialiased",
-            fontSans.variable
-          )}
+        suppressHydrationWarning={true}
+         
         >
         <ClerkPRovider >  
         

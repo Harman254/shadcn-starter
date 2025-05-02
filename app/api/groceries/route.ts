@@ -1,6 +1,6 @@
 // app/api/groceries/route.ts
 import { generateGroceryListFromLatest } from '@/ai/flows/generate-grocery-list';
-import { NextResponse } from 'next/server';
+import { NextResponse } from "next/server";
 
 export async function GET(request: Request) {
   try {

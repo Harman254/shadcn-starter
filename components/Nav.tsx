@@ -25,7 +25,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { ThemeToggle } from "./theme-toggle";
-import { useUser } from '@clerk/nextjs';
+import { useUser } from "@clerk/nextjs";
 import { Skeleton } from "./ui/skeleton";
 
 const Navbar5 = () => {
@@ -39,7 +39,7 @@ const Navbar5 = () => {
     },
     {
       title: "Analytics",
-      description: "Track Meal Plans,Recipes and progress",
+      description: "Track Meal Plans, Recipes, and progress",
       href: "/dashboard/analytics",
     },
     {
@@ -54,27 +54,27 @@ const Navbar5 = () => {
     },
   ];
 
-
-if(!isLoaded || !isSignedIn) 
-  return <Skeleton />
-
+  // Show skeleton loading if user data is not loaded or signed in
+  if (!isLoaded || !isSignedIn) return <Skeleton />;
 
   return (
     <section className="py-4">
       <div className="container">
         <nav className="flex items-center justify-between">
+          {/* Logo and app name */}
           <a href="/" className="flex items-center gap-2">
             <img
               src="https://shadcnblocks.com/images/block/logos/shadcnblockscom-icon.svg"
               className="max-h-8"
-              alt="Shadcn UI Navbar"
+              alt="MealWise Logo"
             />
-            <span className="text-lg font-semibold tracking-tighter">
-              MealWise
-            </span>
+            <span className="text-lg font-semibold tracking-tighter">MealWise</span>
           </a>
+
+          {/* Theme toggle */}
           <ThemeToggle />
 
+          {/* Desktop navigation menu */}
           <NavigationMenu className="hidden lg:block">
             <NavigationMenuList>
               <NavigationMenuItem>
@@ -87,7 +87,7 @@ if(!isLoaded || !isSignedIn)
                         key={index}
                         className="rounded-md p-3 transition-colors hover:bg-muted/70"
                       >
-                        <div key={feature.title}>
+                        <div>
                           <p className="mb-1 font-semibold text-foreground">
                             {feature.title}
                           </p>
@@ -102,7 +102,7 @@ if(!isLoaded || !isSignedIn)
               </NavigationMenuItem>
               <NavigationMenuItem>
                 <NavigationMenuLink
-                  href="#"
+                  href="/products"
                   className={navigationMenuTriggerStyle()}
                 >
                   Products
@@ -110,7 +110,7 @@ if(!isLoaded || !isSignedIn)
               </NavigationMenuItem>
               <NavigationMenuItem>
                 <NavigationMenuLink
-                  href="#"
+                  href="/resources"
                   className={navigationMenuTriggerStyle()}
                 >
                   Resources
@@ -118,7 +118,7 @@ if(!isLoaded || !isSignedIn)
               </NavigationMenuItem>
               <NavigationMenuItem>
                 <NavigationMenuLink
-                  href="#"
+                  href="/contact"
                   className={navigationMenuTriggerStyle()}
                 >
                   Contact
@@ -127,6 +127,7 @@ if(!isLoaded || !isSignedIn)
             </NavigationMenuList>
           </NavigationMenu>
 
+          {/* User profile and authentication buttons */}
           <div className="hidden items-center gap-4 lg:flex">
             {isLoaded && isSignedIn ? (
               <>
@@ -147,6 +148,7 @@ if(!isLoaded || !isSignedIn)
             )}
           </div>
 
+          {/* Mobile navigation menu */}
           <Sheet>
             <SheetTrigger asChild className="lg:hidden">
               <Button variant="outline" size="icon">
@@ -156,21 +158,20 @@ if(!isLoaded || !isSignedIn)
             <SheetContent side="top" className="max-h-screen overflow-auto">
               <SheetHeader>
                 <SheetTitle>
-                  <a
-                    href="/"
-                    className="flex items-center gap-2"
-                  >
+                  <a href="/" className="flex items-center gap-2">
                     <img
                       src="https://shadcnblocks.com/images/block/logos/shadcnblockscom-icon.svg"
                       className="max-h-8"
-                      alt="Shadcn UI Navbar"
+                      alt="MealWise Logo"
                     />
                     <span className="text-lg font-semibold tracking-tighter">
-                      RecipeAi
+                      MealWise
                     </span>
                   </a>
                 </SheetTitle>
               </SheetHeader>
+
+              {/* Accordion menu for mobile */}
               <div className="flex flex-col p-4">
                 <Accordion type="single" collapsible className="mt-4 mb-2">
                   <AccordionItem value="solutions" className="border-none">
@@ -185,7 +186,7 @@ if(!isLoaded || !isSignedIn)
                             key={index}
                             className="rounded-md p-3 transition-colors hover:bg-muted/70"
                           >
-                            <div key={feature.title}>
+                            <div>
                               <p className="mb-1 font-semibold text-foreground">
                                 {feature.title}
                               </p>
@@ -199,6 +200,8 @@ if(!isLoaded || !isSignedIn)
                     </AccordionContent>
                   </AccordionItem>
                 </Accordion>
+
+                {/* Additional links for mobile */}
                 <div className="flex flex-col gap-6">
                   <a href="#" className="font-medium">
                     Templates
@@ -210,6 +213,8 @@ if(!isLoaded || !isSignedIn)
                     Pricing
                   </a>
                 </div>
+
+                {/* User profile and authentication buttons for mobile */}
                 <div className="mt-6 flex flex-col gap-4">
                   {isLoaded && isSignedIn ? (
                     <>

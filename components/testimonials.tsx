@@ -15,23 +15,23 @@ import {
 const testimonials = [
   {
     id: "testimonial-1",
-    text: "Lorem ipsum dolor sit amet consectetur adipisicing elit. Elig doloremque mollitia fugiat omnis! Porro facilis quo animi consequatur. Explicabo.",
-    name: "Customer Name",
-    role: "Position at Company",
+    text: "This meal planning app has transformed how I eat! I save time, eat healthier, and its always personalized to my needs. A real game-changer!",
+    name: "Jane Doe",
+    role: "Home Chef",
     avatar: "https://shadcnblocks.com/images/block/avatar-1.webp",
   },
   {
     id: "testimonial-2",
-    text: "Lorem ipsum dolor sit amet consectetur adipisicing elit. Elig doloremque mollitia fugiat omnis! Porro facilis quo animi consequatur. Explicabo.",
-    name: "Customer Name",
-    role: "Position at Company",
+    text: "I love how easy it is to stay on track with my fitness goals. The app's AI suggests meal plans that are perfect for my workouts!",
+    name: "Mark Smith",
+    role: "Fitness Enthusiast",
     avatar: "https://shadcnblocks.com/images/block/avatar-2.webp",
   },
   {
     id: "testimonial-3",
-    text: "Lorem ipsum dolor sit amet consectetur adipisicing elit. Elig doloremque mollitia fugiat omnis! Porro facilis quo animi consequatur. Explicabo.",
-    name: "Customer Name",
-    role: "Position at Company",
+    text: "As a busy professional, this app saves me so much time. I no longer stress over meal planning, and the shopping list feature is a bonus!",
+    name: "Emily White",
+    role: "Professional",
     avatar: "https://shadcnblocks.com/images/block/avatar-3.webp",
   },
 ];

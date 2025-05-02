@@ -16,16 +16,16 @@ interface Cta10Props {
 }
 
 const Cta10 = ({
-  heading = "Call to Action",
-  description = "Lorem ipsum dolor sit amet consectetur adipisicing elit. Elig doloremque mollitia fugiat omnis!",
+  heading = "Start Your Meal Planning Journey",
+  description = "Save time, eat healthier, and enjoy personalized meal plans crafted just for you. Ready to begin?",
   buttons = {
     primary: {
       text: "Get Started",
-      url: "https://www.shadcnblocks.com",
+      url: "/meal-plans/new", // Adjusted to direct users to meal plan creation
     },
     secondary: {
       text: "Learn More",
-      url: "https://www.shadcnblocks.com",
+      url: "/about", // Adjusted to link to a page with more info about the app
     },
   },
 }: Cta10Props) => {

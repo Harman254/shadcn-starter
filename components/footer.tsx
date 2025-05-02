@@ -25,11 +25,11 @@ interface MenuItem {
   const Footer2 = ({
     logo = {
       src: "https://www.shadcnblocks.com/images/block/block-1.svg",
-      alt: "blocks for shadcn/ui",
-      title: "RecipeAi",
-      url: "https://www.shadcnblocks.com",
+      alt: "Mealwise",
+      title: "Mealwise",
+      url: "/",
     },
-    tagline = "seamlessly plan your meals with recipeAi",
+    tagline = "The best meal planning app",
     menuItems = [
       {
         title: "Product",
@@ -70,7 +70,7 @@ interface MenuItem {
         ],
       },
     ],
-    copyright = "© 2024 Shadcnblocks.com. All rights reserved.",
+    copyright = "© 2025 Mealwise. All rights reserved.",
     bottomLinks = [
       { text: "Terms and Conditions", url: "#" },
       { text: "Privacy Policy", url: "#" },
@@ -83,7 +83,7 @@ interface MenuItem {
             <div className="grid grid-cols-2 gap-8 lg:grid-cols-6">
               <div className="col-span-2 mb-8 lg:mb-0">
                 <div className="flex items-center gap-2 lg:justify-start">
-                  <a href="https://shadcnblocks.com">
+                  <a href="/">
                     <img
                       src={logo.src}
                       alt={logo.alt}

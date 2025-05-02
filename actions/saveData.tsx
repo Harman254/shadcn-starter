@@ -3,7 +3,7 @@
 
 import { auth, clerkClient } from '@clerk/nextjs/server'
 import { prisma } from "@/lib/prisma";
-import {  NextResponse } from 'next/server';
+import { NextResponse } from "next/server";
 
 
 export async function saveOnboardingData(formData: any) {
