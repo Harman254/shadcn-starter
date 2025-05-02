@@ -56,10 +56,10 @@ export default function Dashboard() {
         {/* Welcome Section */}
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold text-primary mb-3">
-            Welcome back, {user?.firstName}   
+            Welcome back, {user?.firstName}
           </h1>
           <p className="text-gray-600">
-            Let's make your meal planning journey delicious and easy.
+            Let&apos;s make your meal planning journey delicious and easy.
           </p>
         </div>
 
@@ -73,11 +73,11 @@ export default function Dashboard() {
         {/* Quick Navigation Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-10">
           <Link href="/meal-plans/new">
-          <QuickNavCard
-            icon={<ChefHat className="w-8 h-8" />}
-            title="Create New Plan"
-            description="Start fresh with a new meal plan"
-          />
+            <QuickNavCard
+              icon={<ChefHat className="w-8 h-8" />}
+              title="Create New Plan"
+              description="Start fresh with a new meal plan"
+            />
           </Link>
           <QuickNavCard
             icon={<Heart className="w-8 h-8" />}
@@ -90,11 +90,11 @@ export default function Dashboard() {
             description="View your shopping needs"
           />
           <Link href="/dashboard/preferences">
-          <QuickNavCard
-            icon={<Settings className="w-8 h-8" />}
-            title="Preferences"
-            description="Update your profile settings"
-          />
+            <QuickNavCard
+              icon={<Settings className="w-8 h-8" />}
+              title="Preferences"
+              description="Update your profile settings"
+            />
           </Link>
         </div>
       </div>

@@ -127,7 +127,7 @@ const OnboardingPage = () => {
             <div className="space-y-4">
               <div className="flex items-center gap-2 mb-6">
                 <Target className="w-5 h-5 text-primary" />
-                <span className="text-sm text-muted-foreground">What's your main goal?</span>
+                <span className="text-sm text-muted-foreground">What&apos;s your main goal?</span>
               </div>
               <RadioGroup
                 value={formData.goal}
