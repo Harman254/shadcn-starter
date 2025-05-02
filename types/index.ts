@@ -34,6 +34,16 @@ export interface OnboardingData {
     dayMealId: string;
     dayMeal: DayMeal;
   };
+  export type FullMealPlanWithDays = {
+    days: {
+      date: Date;
+      meals: {
+        name: string;
+        ingredients: string[];
+        description: string;
+      }[];
+    }[];
+  };
   
 
 export interface UserPreference {

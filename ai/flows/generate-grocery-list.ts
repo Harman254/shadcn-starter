@@ -1,9 +1,10 @@
 'use server'; // For Next.js Server Actions
 
-import { ai } from '../instance'; // Your Genkit instance
+import { ai } from '../instance';
 import { z } from 'genkit';
 import { getLatestFullMealPlanByUserId } from '@/data';
-import { auth } from "@clerk/nextjs/server";
+import { auth } from '@clerk/nextjs/server';
+import type { FullMealPlanWithDays } from '@/types'; // Make sure this path matches your actual type location
 
 /* ========================== */
 /*       INPUT SCHEMA         */
@@ -12,7 +13,7 @@ import { auth } from "@clerk/nextjs/server";
 const MealSchema = z.object({
   name: z.string().describe('Name of the meal.'),
   ingredients: z.array(z.string()).describe('Ingredients of the meal.'),
-  instructions: z.string().describe('Cooking instructions for the meal.'), // Added 'instructions'
+  instructions: z.string().describe('Cooking instructions for the meal.'),
 });
 
 const DayMealPlanSchema = z.object({
@@ -106,23 +107,17 @@ const generateGroceryListFlow = ai.defineFlow<
 /*     EXPORTED FUNCTIONS     */
 /* ========================== */
 
-/**
- * Generates a grocery list from the given meal plan input.
- */
 export async function generateGroceryList(
   input: GenerateGroceryListInput
 ): Promise<GenerateGroceryListOutput> {
   return generateGroceryListFlow(input);
 }
 
-/**
- * Generates a grocery list from the latest full meal plan for the authenticated user.
- */
 export async function generateGroceryListFromLatest(): Promise<GenerateGroceryListOutput> {
   const { userId } = await auth();
   if (!userId) throw new Error("Unauthorized");
 
-  const latestMealPlan = await getLatestFullMealPlanByUserId(userId);
+  const latestMealPlan: FullMealPlanWithDays | null = await getLatestFullMealPlanByUserId(userId);
   if (!latestMealPlan || !latestMealPlan.days) {
     throw new Error("No meal plan found");
   }
@@ -133,34 +128,10 @@ export async function generateGroceryListFromLatest(): Promise<GenerateGroceryLi
       meals: day.meals.map(meal => ({
         name: meal.name,
         ingredients: meal.ingredients,
-        instructions: meal.description
+        instructions: meal.description,
       })),
     })),
   };
 
   return generateGroceryListFlow(input);
 }
-
-// export async function getLatestFullMealPlanByUserId(userId: string) {
-//   return await prisma.mealPlan.findFirst({
-//     where: { userId },
-//     orderBy: {
-//       createdAt: "desc",
-//     },
-//     include: {
-//       days: {
-//         orderBy: { date: "asc" },
-//         include: {
-//           meals: {
-//             orderBy: { name: "asc" },
-//             select: {
-//               name: true,
-//               ingredients: true,
-//               description: true,
-//             },
-//           },
-//         },
-//       },
-//     },
-//   });
-// }
