@@ -135,6 +135,17 @@ export async function getLatestFullMealPlanByUserId(userId: string) {
 }
 
 
+export async function getLatestMealPlanByUserId(userId: string) {
+    
+  return await prisma.mealPlan.findFirst({
+    where: { userId },
+    orderBy: {
+      createdAt: 'desc',
+    },
+  });
+}
+
+
 
 
 
