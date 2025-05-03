@@ -1,16 +1,8 @@
 import { fetchMealPlanById } from "@/data";
-import { Calendar as CalendarIcon, Utensils, Clock, ChevronRight, Info, Award, Activity, ChevronLeft } from "lucide-react";
+import { Calendar as CalendarIcon, Utensils, Clock, ChevronRight, Info, Award, Activity } from "lucide-react";
 
 // Add TypeScript types based on Prisma schema
 type MealType = string;
-
-
-type DayMeal = {
-  id: string;
-  date: Date;
-  mealPlanId: string;
-  meals: Meal[];
-};
 
 type Meal = {
   id: string;
@@ -22,12 +14,27 @@ type Meal = {
   dayMealId: string;
 };
 
+type DayMeal = {
+  id: string;
+  date: Date;
+  mealPlanId: string;
+  meals: Meal[];
+};
+
+type MealPlan = {
+  id: string;
+  duration: number;
+  mealsPerDay: number;
+  createdAt: Date;
+  days: DayMeal[];
+};
+
 const MealPlanDetailPage = async (props: { params: Promise<{ id: string }> }) => {
   const params = await props.params;
   const { id } = params;
-  const mealPlan = await fetchMealPlanById(id);
+  const mealPlan: MealPlan | null = await fetchMealPlanById(id);
 
-  if (!mealPlan) 
+  if (!mealPlan) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 p-4">
         <div className="text-center space-y-4 max-w-md w-full p-6 md:p-8 bg-white rounded-2xl shadow-lg border border-gray-100">
@@ -45,6 +52,7 @@ const MealPlanDetailPage = async (props: { params: Promise<{ id: string }> }) =>
         </div>
       </div>
     );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
@@ -70,33 +78,33 @@ const MealPlanDetailPage = async (props: { params: Promise<{ id: string }> }) =>
             </div>
           </div>
         </header>
-  
+
         {/* Plan Summary Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-8">
           {[
             {
               icon: <CalendarIcon className="h-6 w-6 text-primary" />,
-              label: 'Duration',
+              label: "Duration",
               value: `${mealPlan.duration} days`,
-              bg: 'bg-primary/10',
+              bg: "bg-primary/10",
             },
             {
               icon: <Utensils className="h-6 w-6 text-indigo-600" />,
-              label: 'Meals Per Day',
+              label: "Meals Per Day",
               value: mealPlan.mealsPerDay,
-              bg: 'bg-indigo-50',
+              bg: "bg-indigo-50",
             },
             {
               icon: <Award className="h-6 w-6 text-amber-600" />,
-              label: 'Goal',
-              value: 'N/A',
-              bg: 'bg-amber-50',
+              label: "Goal",
+              value: "N/A",
+              bg: "bg-amber-50",
             },
             {
               icon: <Clock className="h-6 w-6 text-teal-600" />,
-              label: 'Created On',
+              label: "Created On",
               value: new Date(mealPlan.createdAt).toLocaleDateString(),
-              bg: 'bg-teal-50',
+              bg: "bg-teal-50",
             },
           ].map(({ icon, label, value, bg }, i) => (
             <div key={i} className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow">
@@ -110,7 +118,7 @@ const MealPlanDetailPage = async (props: { params: Promise<{ id: string }> }) =>
             </div>
           ))}
         </div>
-  
+
         {/* Calendar View */}
         <div className="bg-white rounded-2xl shadow-md border border-gray-100 mb-8">
           <div className="p-6 border-b border-gray-100">
@@ -119,7 +127,7 @@ const MealPlanDetailPage = async (props: { params: Promise<{ id: string }> }) =>
           </div>
           <div className="p-4 overflow-x-auto">
             <div className="flex gap-3 min-w-max">
-              {mealPlan.days.map((day) => {
+              {mealPlan.days.map((day: DayMeal) => {
                 const date = new Date(day.date);
                 const isToday = new Date().toDateString() === date.toDateString();
                 const totalCalories = day.meals.reduce((sum, meal) => sum + meal.calories, 0);
@@ -129,16 +137,16 @@ const MealPlanDetailPage = async (props: { params: Promise<{ id: string }> }) =>
                     href={`#day-${day.id}`}
                     className={`flex flex-col items-center p-4 min-w-[84px] rounded-xl transition-all ${
                       isToday
-                        ? 'bg-gradient-to-b from-primary to-primary/90 text-white shadow-lg'
-                        : 'bg-white hover:bg-gray-50 text-gray-800 border border-gray-100 shadow-sm hover:shadow-md'
+                        ? "bg-gradient-to-b from-primary to-primary/90 text-white shadow-lg"
+                        : "bg-white hover:bg-gray-50 text-gray-800 border border-gray-100 shadow-sm hover:shadow-md"
                     }`}
                   >
-                    <span className="text-xs font-medium mb-1">{date.toLocaleDateString(undefined, { weekday: 'short' })}</span>
+                    <span className="text-xs font-medium mb-1">{date.toLocaleDateString(undefined, { weekday: "short" })}</span>
                     <span className="text-2xl font-bold">{date.getDate()}</span>
-                    <span className="text-xs mt-1">{date.toLocaleDateString(undefined, { month: 'short' })}</span>
+                    <span className="text-xs mt-1">{date.toLocaleDateString(undefined, { month: "short" })}</span>
                     <div
                       className={`mt-2 px-2 py-1 rounded-full text-xs ${
-                        isToday ? 'bg-white/20 text-white' : 'bg-primary/10 text-primary'
+                        isToday ? "bg-white/20 text-white" : "bg-primary/10 text-primary"
                       }`}
                     >
                       {totalCalories} cal
@@ -149,10 +157,10 @@ const MealPlanDetailPage = async (props: { params: Promise<{ id: string }> }) =>
             </div>
           </div>
         </div>
-  
+
         {/* Daily Meals */}
         <div className="space-y-6">
-          {mealPlan.days.map((day, index) => (
+          {mealPlan.days.map((day: DayMeal, index: number) => (
             <div id={`day-${day.id}`} key={day.id} className="bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden scroll-mt-24">
               <div className="bg-gradient-to-r from-primary/5 to-primary/20 px-6 py-5 border-b sticky top-0 backdrop-blur-sm z-10">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -160,7 +168,7 @@ const MealPlanDetailPage = async (props: { params: Promise<{ id: string }> }) =>
                     <span className="inline-flex items-center justify-center bg-primary text-white w-10 h-10 rounded-full mr-3 font-bold text-sm shadow-sm">
                       {index + 1}
                     </span>
-                    {new Date(day.date).toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}
+                    {new Date(day.date).toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })}
                   </h2>
                   <div className="flex flex-wrap gap-2 items-center">
                     <span className="text-sm font-medium text-primary bg-white px-4 py-2 rounded-full border border-primary/20 shadow-sm flex items-center">
@@ -173,26 +181,27 @@ const MealPlanDetailPage = async (props: { params: Promise<{ id: string }> }) =>
                   </div>
                 </div>
               </div>
-  
+
               <div className="divide-y divide-gray-100">
-                {day.meals.map((meal) => {
+                {day.meals.map((meal: Meal) => {
                   const type = meal.type.toLowerCase();
-                  const colorMap = {
-                    breakfast: ['amber'],
-                    lunch: ['emerald'],
-                    dinner: ['indigo'],
-                    default: ['purple'],
-                  }[type] || ['purple'];
+                  const colorMap: { [key: string]: string[] } = {
+                    breakfast: ["amber"],
+                    lunch: ["emerald"],
+                    dinner: ["indigo"],
+                    default: ["purple"],
+                  };
+                  const color = colorMap[type] || colorMap["default"];
                   return (
                     <div key={meal.id} className="p-6 hover:bg-gray-50 transition-colors">
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-3">
                         <div className="flex items-start gap-4">
-                          <div className={`p-4 rounded-xl shadow-sm bg-${colorMap[0]}-50 text-${colorMap[0]}-600`}>
+                          <div className={`p-4 rounded-xl shadow-sm bg-${color[0]}-50 text-${color[0]}-600`}>
                             <Utensils className="h-6 w-6" />
                           </div>
                           <div>
                             <div className="flex items-center gap-2 mb-1">
-                              <span className={`inline-block px-3 py-1 text-xs font-medium rounded-full bg-${colorMap[0]}-100 text-${colorMap[0]}-800`}>
+                              <span className={`inline-block px-3 py-1 text-xs font-medium rounded-full bg-${color[0]}-100 text-${color[0]}-800`}>
                                 {meal.type.charAt(0).toUpperCase() + meal.type.slice(1)}
                               </span>
                               <span className="text-xs text-gray-500">•</span>
@@ -210,7 +219,7 @@ const MealPlanDetailPage = async (props: { params: Promise<{ id: string }> }) =>
                           </button>
                         </div>
                       </div>
-  
+
                       {meal.description && (
                         <div className="pl-0 sm:pl-16">
                           <p className="text-gray-600 mb-3">{meal.description}</p>
@@ -224,7 +233,10 @@ const MealPlanDetailPage = async (props: { params: Promise<{ id: string }> }) =>
                               </h4>
                               <div className="flex flex-wrap gap-2">
                                 {meal.ingredients.map((ingredient, idx) => (
-                                  <span key={idx} className="inline-flex items-center px-3 py-1 text-xs bg-white text-gray-700 rounded-full border border-gray-200 shadow-sm hover:bg-gray-50">
+                                  <span
+                                    key={idx}
+                                    className="inline-flex items-center px-3 py-1 text-xs bg-white text-gray-700 rounded-full border border-gray-200 shadow-sm hover:bg-gray-50"
+                                  >
                                     <span className="w-2 h-2 bg-primary/70 rounded-full mr-1.5"></span>
                                     {ingredient}
                                   </span>
@@ -241,7 +253,7 @@ const MealPlanDetailPage = async (props: { params: Promise<{ id: string }> }) =>
             </div>
           ))}
         </div>
-  
+
         {/* CTA */}
         <div className="mt-10 flex justify-center">
           <a
@@ -255,7 +267,6 @@ const MealPlanDetailPage = async (props: { params: Promise<{ id: string }> }) =>
       </div>
     </div>
   );
-}
-    
+};
 
 export default MealPlanDetailPage;
