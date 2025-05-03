@@ -1,34 +1,45 @@
-import React from 'react'
-import { auth } from '@clerk/nextjs/server'
+import React from 'react';
+import { auth } from '@clerk/nextjs/server';
 import { fetchMealPlansByUserId } from '@/data';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { CalendarIcon, UtensilsIcon } from 'lucide-react';
 import DeleteButton from '@/components/delete-button';
 import Link from 'next/link';
+import { MealPlan } from '@/types'; // ✅ adjust path based on your project structure
 
 const MealPlans = async () => {
   const { userId } = await auth();
-  
+
   if (!userId) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center p-6 bg-muted/20 rounded-lg max-w-md">
           <h3 className="text-xl font-medium mb-2">Authentication Required</h3>
-          <p className="text-muted-foreground">You must be logged in to view your meal plans.</p>
+          <p className="text-muted-foreground">
+            You must be logged in to view your meal plans.
+          </p>
         </div>
       </div>
     );
   }
 
-  const mealPlans = await fetchMealPlansByUserId(userId);
+  const mealPlans: MealPlan[] = await fetchMealPlansByUserId(userId);
 
   if (mealPlans.length === 0) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center p-6 bg-muted/20 rounded-lg max-w-md">
           <h3 className="text-xl font-medium mb-2">No Meal Plans Found</h3>
-          <p className="text-muted-foreground mb-4">Please generate a meal plan first.</p>
+          <p className="text-muted-foreground mb-4">
+            Please generate a meal plan first.
+          </p>
           <Link
             href="/meal-plans/new"
             className="px-4 py-2 bg-primary rounded-md font-medium text-sm inline-block text-primary-foreground hover:bg-primary/80 transition duration-200"
@@ -46,21 +57,27 @@ const MealPlans = async () => {
 
       <div className="grid gap-6">
         {mealPlans.map((mealPlan) => (
-          <Card key={mealPlan.id} className="border border-border overflow-hidden cursor-pointer hover:shadow-xl hover:bg-muted/20 transition-all duration-200 p-4 rounded-lg">
+          <Card
+            key={mealPlan.id}
+            className="border border-border overflow-hidden cursor-pointer hover:shadow-xl hover:bg-muted/20 transition-all duration-200 p-4 rounded-lg"
+          >
             <CardHeader className="bg-muted/10 border-b border-border pb-4">
               <Link href={`/meal-plans/${mealPlan.id}`} className="hover:underline">
                 <div className="flex items-center justify-between mb-1">
-                  <CardTitle className="text-xl font-semibold">{mealPlan.duration}-Day Meal Plan</CardTitle>
+                  <CardTitle className="text-xl font-semibold">
+                    {mealPlan.duration}-Day Meal Plan
+                  </CardTitle>
                   <Badge variant="outline" className="bg-background/80">
                     {mealPlan.mealsPerDay} meals/day
                   </Badge>
                 </div>
                 <CardDescription className="flex items-center text-sm text-muted-foreground">
                   <CalendarIcon className="w-3.5 h-3.5 mr-1.5" />
-                  Created on {new Date(mealPlan.createdAt).toLocaleDateString('en-US', {
+                  Created on{' '}
+                  {new Date(mealPlan.createdAt).toLocaleDateString('en-US', {
                     year: 'numeric',
                     month: 'long',
-                    day: 'numeric'
+                    day: 'numeric',
                   })}
                 </CardDescription>
               </Link>
