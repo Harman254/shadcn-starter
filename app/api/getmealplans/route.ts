@@ -1,5 +1,5 @@
 import { getLatestMealPlanByUserId,  getMealsByUserId} from "@/data"; // make sure this exists
-import { MealType } from "@/types";
+import { Meal, MealType } from "@/types";
 import { NextResponse } from "next/server";
 import { auth } from '@clerk/nextjs/server';
 
@@ -15,12 +15,12 @@ export async function GET(request: Request) {
     return NextResponse.json({ meals: [], mealPlan: null });
   }
 
-  const meals = (await getMealsByUserId(userId)).map((meal) => ({
+  const meals = (await getMealsByUserId(userId) as Meal[]).map((meal) => ({
     ...meal,
-    type: meal.type as MealType,
+    type: meal.type as MealType, // May not be needed if already a MealType
   }));
 
-  const mealPlan = await getLatestMealPlanByUserId(userId); // you need to implement this if it doesn't exist
+  const mealPlan = await getLatestMealPlanByUserId(userId);
 
   return NextResponse.json({ meals, mealPlan });
 }
