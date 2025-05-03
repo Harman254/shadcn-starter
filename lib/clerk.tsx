@@ -1,3 +1,7 @@
+
+
+
+'use client';
 import { ClerkProvider } from "@clerk/nextjs";
 
 
@@ -5,12 +9,12 @@ import { ClerkProvider } from "@clerk/nextjs";
 
 const ClerkPRovider = ({ children }: { children: React.ReactNode }) => {
   return (
-    <div>
-      <ClerkProvider>
+    <ClerkProvider>
+
         {children}
-      </ClerkProvider>
       
-    </div>
+    </ClerkProvider>
+
   )
 }
 
