@@ -2,6 +2,7 @@ import Hero from "@/components/hero";
 import Cta10 from "../components/cta";
 import Feature17 from "@/components/features";
 import Testimonial14 from "@/components/testimonials";
+import SignOut from "@/components/auth/sign-out";
 
 
 export default async function IndexPage() {

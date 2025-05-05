@@ -8,14 +8,14 @@ import {
   Heart,
   Settings,
 } from 'lucide-react';
-import { useUser } from '@clerk/nextjs';
 import MealPlanStatusCard, { MealPlan } from '@/components/meal-plan-status';
 import { Meal } from '@/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
+import { useSession } from '@/lib/auth-client';
 
 export default function Dashboard() {
-  const { isSignedIn, user, isLoaded } = useUser();
+  const {data: session, isPending, error} = useSession();
   const [mealPlan, setMealPlan] = useState<MealPlan>();
   const [meals, setMeals] = useState<Meal[]>([]);
   const [hasMealPlan, setHasMealPlan] = useState(false);
@@ -39,12 +39,12 @@ export default function Dashboard() {
       }
     };
 
-    if (isLoaded && isSignedIn) {
+    if (!isPending && session) {
       fetchMealPlans();
     }
-  }, [isLoaded, isSignedIn]);
+  }, [!isPending, session]);
 
-  if (!isLoaded || isFetching) {
+  if (isPending || isFetching) {
     return (
       <Skeleton className="h-full w-full" />
     );
@@ -56,7 +56,7 @@ export default function Dashboard() {
         {/* Welcome Section */}
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold text-primary mb-3">
-            Welcome back, {user?.firstName}
+            Welcome back, {session?.user?.name}
           </h1>
           <p className="text-gray-600">
             Let&apos;s make your meal planning journey delicious and easy.

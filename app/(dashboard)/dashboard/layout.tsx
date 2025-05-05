@@ -19,20 +19,31 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { SignOutButton } from "@clerk/nextjs";
 import { redirect } from "next/navigation";
-import { auth, currentUser } from "@clerk/nextjs/server";
 import { getMealsByUserId } from "@/data";
 import { Toaster } from "@/components/ui/sonner";
+import { authClient } from "@/lib/auth-client";
+import { headers } from "next/headers";
+import { auth } from "@/lib/auth";
+import SignOut from "@/components/auth/sign-out";
+
 
 export default async function DashboardLayout({
   children,
 }: {
   children: ReactNode;
 }) {
-  const user = await currentUser();
+  
+  
+  
 
-  if (!user) {
+  const session = await auth.api.getSession({
+    headers: await headers() // you need to pass the headers object.
+});
+
+  if (!session) {
     redirect("/sign-in");
   }
+  const user = session.user;
 
   const meals = await getMealsByUserId(user.id);
 
@@ -105,7 +116,7 @@ export default async function DashboardLayout({
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
-                    <SignOutButton />
+                      <SignOut />
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>

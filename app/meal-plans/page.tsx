@@ -1,5 +1,4 @@
 import React from 'react';
-import { auth } from '@clerk/nextjs/server';
 import { fetchMealPlansByUserId } from '@/data';
 import {
   Card,
@@ -12,10 +11,20 @@ import { Badge } from '@/components/ui/badge';
 import { CalendarIcon, UtensilsIcon } from 'lucide-react';
 import DeleteButton from '@/components/delete-button';
 import Link from 'next/link';
-import { MealPlan } from '@/types'; // ✅ adjust path based on your project structure
+import { MealPlan } from '@/types'; 
+import { headers } from 'next/headers';
+import { auth } from '@/lib/auth';
 
 const MealPlans = async () => {
-  const { userId } = await auth();
+
+  const session = await auth.api.getSession({
+    headers: await headers() // you need to pass the headers object.
+})
+
+const userId = session?.user?.id
+
+
+
 
   if (!userId) {
     return (

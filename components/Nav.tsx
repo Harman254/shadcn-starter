@@ -25,11 +25,14 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { ThemeToggle } from "./theme-toggle";
-import { useUser } from "@clerk/nextjs";
 import { Skeleton } from "./ui/skeleton";
+import { useSession } from "@/lib/auth-client";
 
 const Navbar5 = () => {
-  const { isSignedIn, isLoaded, user } = useUser();
+  const { data, isPending, error } = useSession();
+
+  const user = data?.user;
+  const isSignedIn = !!user;
 
   const features = [
     {
@@ -54,14 +57,12 @@ const Navbar5 = () => {
     },
   ];
 
-  // Show skeleton loading if user data is not loaded or signed in
-  if (!isLoaded || !isSignedIn) return <Skeleton />;
+  if (isPending) return <Skeleton className="h-12 w-full" />;
 
   return (
     <section className="py-4">
       <div className="container">
         <nav className="flex items-center justify-between">
-          {/* Logo and app name */}
           <a href="/" className="flex items-center gap-2">
             <img
               src="https://shadcnblocks.com/images/block/logos/shadcnblockscom-icon.svg"
@@ -71,10 +72,9 @@ const Navbar5 = () => {
             <span className="text-lg font-semibold tracking-tighter">MealWise</span>
           </a>
 
-          {/* Theme toggle */}
           <ThemeToggle />
 
-          {/* Desktop navigation menu */}
+          {/* Desktop Nav */}
           <NavigationMenu className="hidden lg:block">
             <NavigationMenuList>
               <NavigationMenuItem>
@@ -87,51 +87,36 @@ const Navbar5 = () => {
                         key={index}
                         className="rounded-md p-3 transition-colors hover:bg-muted/70"
                       >
-                        <div>
-                          <p className="mb-1 font-semibold text-foreground">
-                            {feature.title}
-                          </p>
-                          <p className="text-sm text-muted-foreground">
-                            {feature.description}
-                          </p>
-                        </div>
+                        <p className="mb-1 font-semibold text-foreground">{feature.title}</p>
+                        <p className="text-sm text-muted-foreground">{feature.description}</p>
                       </NavigationMenuLink>
                     ))}
                   </div>
                 </NavigationMenuContent>
               </NavigationMenuItem>
               <NavigationMenuItem>
-                <NavigationMenuLink
-                  href="/products"
-                  className={navigationMenuTriggerStyle()}
-                >
+                <NavigationMenuLink href="/products" className={navigationMenuTriggerStyle()}>
                   Products
                 </NavigationMenuLink>
               </NavigationMenuItem>
               <NavigationMenuItem>
-                <NavigationMenuLink
-                  href="/resources"
-                  className={navigationMenuTriggerStyle()}
-                >
+                <NavigationMenuLink href="/resources" className={navigationMenuTriggerStyle()}>
                   Resources
                 </NavigationMenuLink>
               </NavigationMenuItem>
               <NavigationMenuItem>
-                <NavigationMenuLink
-                  href="/contact"
-                  className={navigationMenuTriggerStyle()}
-                >
+                <NavigationMenuLink href="/contact" className={navigationMenuTriggerStyle()}>
                   Contact
                 </NavigationMenuLink>
               </NavigationMenuItem>
             </NavigationMenuList>
           </NavigationMenu>
 
-          {/* User profile and authentication buttons */}
+          {/* Desktop Auth Actions */}
           <div className="hidden items-center gap-4 lg:flex">
-            {isLoaded && isSignedIn ? (
+            {isSignedIn ? (
               <>
-                <span className="text-sm">Hi, {user?.firstName}</span>
+                <span className="text-sm">Hi, {user?.name}</span>
                 <Button asChild variant="outline">
                   <a href="/dashboard">Go to Dashboard</a>
                 </Button>
@@ -148,7 +133,7 @@ const Navbar5 = () => {
             )}
           </div>
 
-          {/* Mobile navigation menu */}
+          {/* Mobile Menu */}
           <Sheet>
             <SheetTrigger asChild className="lg:hidden">
               <Button variant="outline" size="icon">
@@ -164,14 +149,11 @@ const Navbar5 = () => {
                       className="max-h-8"
                       alt="MealWise Logo"
                     />
-                    <span className="text-lg font-semibold tracking-tighter">
-                      MealWise
-                    </span>
+                    <span className="text-lg font-semibold tracking-tighter">MealWise</span>
                   </a>
                 </SheetTitle>
               </SheetHeader>
 
-              {/* Accordion menu for mobile */}
               <div className="flex flex-col p-4">
                 <Accordion type="single" collapsible className="mt-4 mb-2">
                   <AccordionItem value="solutions" className="border-none">
@@ -186,14 +168,8 @@ const Navbar5 = () => {
                             key={index}
                             className="rounded-md p-3 transition-colors hover:bg-muted/70"
                           >
-                            <div>
-                              <p className="mb-1 font-semibold text-foreground">
-                                {feature.title}
-                              </p>
-                              <p className="text-sm text-muted-foreground">
-                                {feature.description}
-                              </p>
-                            </div>
+                            <p className="mb-1 font-semibold text-foreground">{feature.title}</p>
+                            <p className="text-sm text-muted-foreground">{feature.description}</p>
                           </a>
                         ))}
                       </div>
@@ -201,7 +177,6 @@ const Navbar5 = () => {
                   </AccordionItem>
                 </Accordion>
 
-                {/* Additional links for mobile */}
                 <div className="flex flex-col gap-6">
                   <a href="#" className="font-medium">
                     Templates
@@ -214,11 +189,10 @@ const Navbar5 = () => {
                   </a>
                 </div>
 
-                {/* User profile and authentication buttons for mobile */}
                 <div className="mt-6 flex flex-col gap-4">
-                  {isLoaded && isSignedIn ? (
+                  {isSignedIn ? (
                     <>
-                      <span className="text-sm">Hi, {user?.firstName}</span>
+                      <span className="text-sm">Hi, {user?.name}</span>
                       <Button asChild variant="outline">
                         <a href="/dashboard">Go to Dashboard</a>
                       </Button>

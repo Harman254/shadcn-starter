@@ -1,14 +1,18 @@
 import CreateMealPlan from '@/components/create-meal-plan'
 import { fetchOnboardingData } from '@/data'
+import { auth } from '@/lib/auth'
 import { UserPreference } from '@/types'
+import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 import React from 'react'
-import { auth, currentUser } from '@clerk/nextjs/server'
 
 
 const MealNew = async () => {
-  const { userId } =await auth();
+  const session = await auth.api.getSession({
+    headers: await headers() // you need to pass the headers object.
+})
 
+  const userId = session?.user?.id
 
   if (!userId) redirect('/sign-in');
   

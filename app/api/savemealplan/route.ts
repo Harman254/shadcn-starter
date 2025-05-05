@@ -3,7 +3,10 @@
 // Define the interface for meal data
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
-import { auth } from '@clerk/nextjs/server'
+import { redirect } from "next/navigation";
+import { headers } from "next/headers";
+import { auth } from '@/lib/auth'
+
 
 
 interface Meal {
@@ -33,9 +36,16 @@ export async function POST(request:Request) {
 
   try {
 
+    const session = await auth.api.getSession({
+      headers: await headers() // you need to pass the headers object.
+  });
+  
+    if (!session) {
+      redirect("/sign-in");
+    }
+    const userId = session.user.id;
 
-
-    const { userId } = await auth();
+    
 
     if (!userId){
       throw new Error("User not authenticated");

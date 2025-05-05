@@ -1,8 +1,9 @@
 "use client";
 
+import { useSession } from "@/lib/auth-client";
 import { useTheme } from "next-themes";
-import { useAuth } from "@clerk/nextjs";
 import Link from "next/link";
+import { Skeleton } from "./ui/skeleton";
 
 const Button = ({
   variant = "default",
@@ -16,8 +17,10 @@ const Button = ({
   const baseStyles =
     "inline-flex items-center justify-center px-6 py-3 rounded-lg font-medium transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-opacity-50";
   const variants = {
-    default: "bg-indigo-600 text-white hover:bg-indigo-700 focus:ring-indigo-500 shadow-md",
-    ghost: "bg-transparent border border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 dark:text-gray-200 focus:ring-gray-400",
+    default:
+      "bg-indigo-600 text-white hover:bg-indigo-700 focus:ring-indigo-500 shadow-md",
+    ghost:
+      "bg-transparent border border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 dark:text-gray-200 focus:ring-gray-400",
   };
 
   return (
@@ -29,7 +32,7 @@ const Button = ({
 
 const Hero = () => {
   const { theme } = useTheme();
-  const { isSignedIn } = useAuth();
+  const { data: session, isPending } = useSession();
 
   return (
     <section
@@ -92,9 +95,9 @@ const Hero = () => {
 
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href={isSignedIn ? "/dashboard" : "/sign-up"}>
+            <Link href={session?.user ? "/dashboard" : "/sign-up"}>
               <Button>
-                {isSignedIn ? "Go to Dashboard" : "Get Started"}
+                {session?.user ? "Go to Dashboard" : "Get Started"}
                 <svg
                   className="ml-2 w-5 h-5"
                   fill="none"
@@ -143,16 +146,7 @@ const Hero = () => {
               Trusted by nutritionists, home chefs, and fitness communities
             </p>
             <div className="flex justify-center gap-8 opacity-70">
-              {Array(4)
-                .fill(null)
-                .map((_, idx) => (
-                  <img
-                    key={idx}
-                    src={`/api/placeholder/120/30?i=${idx}`}
-                    alt="Logo"
-                    className="h-8 w-auto"
-                  />
-                ))}
+              <Skeleton className="w-full h-full rounded-full" />
             </div>
           </div>
         </div>
