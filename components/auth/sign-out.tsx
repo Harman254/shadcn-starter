@@ -11,7 +11,7 @@ const SignOut = () => {
     onClick={async() => {await signOut({
       fetchOptions: {
         onSuccess: () => {
-          router.push("/signin")
+          router.push("/sign-in")
         }
       }
     })}}

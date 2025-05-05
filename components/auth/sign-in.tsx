@@ -63,7 +63,7 @@ const SignIn = () => {
             cardTitle='Sign In'
             cardDescription='Enter your email below to login to your account'
             cardFooterDescription="Don't have an account?"
-            cardFooterLink='/signup'
+            cardFooterLink='/sign-up'
             cardFooterLinkTitle='Sign up'
         >
             <Form {...form}>
