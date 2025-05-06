@@ -1,7 +1,7 @@
 
 //import  Create a singleton instance of PrismaClient
 // Define the interface for meal data
-import { prisma } from "@/lib/prisma";
+import  prisma  from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
