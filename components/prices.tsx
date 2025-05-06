@@ -27,7 +27,7 @@ const Pricing4 = () => {
               <RadioGroup
                 defaultValue="monthly"
                 className="h-full grid-cols-2"
-                onValueChange={(value) => {
+                onValueChange={(value: string) => {
                   setIsAnnually(value === "annually");
                 }}
               >

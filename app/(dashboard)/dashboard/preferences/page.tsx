@@ -22,9 +22,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { auth } from "@clerk/nextjs/server";
 import { UserPreference } from "@/types";
 import toast from "react-hot-toast";
+import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
 
 const cuisines = [
   { id: "italian", label: "Italian" },
@@ -55,8 +56,15 @@ const goalOptions = [
 ];
 
 export default async function PreferencesPage() {
-  const { userId } = await auth();
-  if (!userId) redirect("/sign-in");
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  if (!session?.user?.id || typeof session.user.id !== "string") {
+    redirect("/sign-in");
+  }
+  
+  const userId = session.user.id;
 
   // Fetch the user preferences, if they exist
   const prefs: UserPreference[] = await fetchOnboardingData(userId);
@@ -77,7 +85,7 @@ export default async function PreferencesPage() {
   
     const cuisinePreferences = cuisines
       .filter((c) => formData.get(c.id) === "on")
-      .map((c) => c.id);
+      .map((c) => c.id) 
   
     // Validate data
     if (!dietaryPreference || !goal || isNaN(householdSize)) {
@@ -85,7 +93,6 @@ export default async function PreferencesPage() {
     }
   
     await saveOnboardingData({
-      userId, // make sure this is accessible in this scope
       dietaryPreference,
       goal,
       householdSize,
@@ -101,7 +108,7 @@ export default async function PreferencesPage() {
   return (
     <div className="min-h-screen bg-background">
       <main className="container py-8">
-        <form action={updatePreferences} className="mx-auto max-w-2xl">
+      <form action={updatePreferences as unknown as string} className="mx-auto max-w-2xl">
           <Card className="border-2 shadow-lg">
             <CardHeader className="space-y-1 bg-muted/50">
               <CardTitle className="text-2xl">Taste Preferences</CardTitle>

@@ -7,7 +7,7 @@ import {
   CardTitle,
   CardDescription,
 } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { Badge } from '@/components/ui/badge'
 import { CalendarIcon, UtensilsIcon } from 'lucide-react';
 import DeleteButton from '@/components/delete-button';
 import Link from 'next/link';

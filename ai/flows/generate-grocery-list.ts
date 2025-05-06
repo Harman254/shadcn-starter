@@ -3,8 +3,9 @@
 import { ai } from '../instance';
 import { z } from 'genkit';
 import { getLatestFullMealPlanByUserId } from '@/data';
-import { auth } from '@clerk/nextjs/server';
 import type { FullMealPlanWithDays } from '@/types'; // Make sure this path matches your actual type location
+import { headers } from 'next/headers';
+import { auth } from '@/lib/auth';
 
 /* ========================== */
 /*       INPUT SCHEMA         */
@@ -114,7 +115,14 @@ export async function generateGroceryList(
 }
 
 export async function generateGroceryListFromLatest(): Promise<GenerateGroceryListOutput> {
-  const { userId } = await auth();
+
+  const session = await auth.api.getSession({
+    headers: await headers() // you need to pass the headers object.
+})
+
+const userId = session?.user?.id
+
+
   if (!userId) throw new Error("Unauthorized");
 
   const latestMealPlan: FullMealPlanWithDays | null = await getLatestFullMealPlanByUserId(userId);

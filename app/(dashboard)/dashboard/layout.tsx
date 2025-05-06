@@ -17,7 +17,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { SignOutButton } from "@clerk/nextjs";
 import { redirect } from "next/navigation";
 import { getMealsByUserId } from "@/data";
 import { Toaster } from "@/components/ui/sonner";
