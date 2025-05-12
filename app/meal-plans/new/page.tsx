@@ -1,5 +1,5 @@
 import CreateMealPlan from '@/components/create-meal-plan'
-import { fetchOnboardingData } from '@/data'
+import { fetchOnboardingData, getDBSession } from '@/data'
 import { auth } from '@/lib/auth'
 import { UserPreference } from '@/types'
 import { headers } from 'next/headers'
@@ -17,6 +17,14 @@ const MealNew = async () => {
   if (!userId) redirect('/sign-in');
   
   const preferences: UserPreference[]= await fetchOnboardingData(userId)
+
+  const DbSession = await getDBSession(userId)
+  const isOnboarded = DbSession?.isOnboardingComplete
+
+  if (!isOnboarded) {
+    redirect('/onboarding')
+  }
+
 
 
   if (preferences) {

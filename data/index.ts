@@ -147,6 +147,17 @@ export async function getLatestMealPlanByUserId(userId: string) {
 
 
 
+export async function getDBSession(userId: string) {
+  const session = await prisma.session.findFirst({
+    where: {
+      userId: userId,
+    },
+  });
+  return session;
+
+}
+
+
 
 
 

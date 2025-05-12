@@ -49,7 +49,7 @@ export default async function DashboardLayout({
           <div className="flex flex-col max-h-screen h-full gap-2">
             <div className="h-14 flex items-center border-b px-4 lg:h-[60px] lg:px-6">
               <Link href="/" className="flex items-center gap-2">
-                <p className="text-2xl font-bold">Mealwise</p>
+              <span className="text-2xl font-semibold tracking-tighter">Meal<span className="text-green-500 text-2xl">Wise</span></span> 
               </Link>
             </div>
             <div className="flex-1">
@@ -85,36 +85,6 @@ export default async function DashboardLayout({
               </SheetContent>
             </Sheet>
 
-            {/* User Menu */}
-            <div className="flex items-center ml-auto">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button className="rounded-full" variant="outline" size="icon">
-                    <UserCog />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuLabel>My Account</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild>
-                    <Link href="/dashboard">Dashboard</Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href="/dashboard/profile">Profile</Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href="/dashboard/settings">Settings</Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href="/dashboard/support">Support</Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild>
-                    
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
           </header>
 
           {/* Full-width Main Section */}

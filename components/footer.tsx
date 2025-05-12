@@ -26,7 +26,7 @@ interface MenuItem {
     logo = {
       src: "https://www.shadcnblocks.com/images/block/block-1.svg",
       alt: "Mealwise",
-      title: "Mealwise",
+      title: "Meal",
       url: "/",
     },
     tagline = "The best meal planning app",
@@ -91,7 +91,7 @@ interface MenuItem {
                       className="h-10"
                     />
                   </a>
-                  <p className="text-xl font-semibold">{logo.title}</p>
+                  <p className="text-xl font-semibold">{logo.title}<span className="text-green-500 text-lg">Wise</span></p>
                 </div>
                 <p className="mt-4 font-bold">{tagline}</p>
               </div>

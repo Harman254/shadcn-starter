@@ -1,10 +1,13 @@
 // app/actions/saveOnboardingData.ts
 "use server";
 
+import { getDBSession } from "@/data";
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
+import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import toast from "react-hot-toast";
 
 export async function saveOnboardingData(formData: {
   dietaryPreference: string;
@@ -40,4 +43,21 @@ export async function saveOnboardingData(formData: {
       cuisinePreferences,
     },
   });
+
+  await prisma.session.updateMany({
+    where: {
+      userId,
+    },
+    data: {
+      isOnboardingComplete: true,
+    },
+  });
+
+
+
+  revalidatePath('/onboarding'); 
+  redirect('/meal-plans/new'); // Redirect to the new meal plan page after saving data
+  
+  
+  // Revalidate the onboarding page to reflect the new data
 }

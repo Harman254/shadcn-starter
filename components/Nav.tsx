@@ -1,5 +1,4 @@
-"use client";
-
+import Link from "next/link";
 import { MenuIcon } from "lucide-react";
 import {
   Accordion,
@@ -26,12 +25,14 @@ import {
 } from "@/components/ui/sheet";
 import { ThemeToggle } from "./theme-toggle";
 import { Skeleton } from "./ui/skeleton";
-import { useSession } from "@/lib/auth-client";
 
-const Navbar5 = () => {
-  const { data, isPending, error } = useSession();
+// Client components to handle interactive elements
+import MobileMenuTrigger from "./mobile-menu";
+import NavMenuTriggerClient from "./nav-menu";
+import { requireUser } from "@/lib/user";
 
-  const user = data?.user;
+const Navbar = async () => {
+  const user = await requireUser();
   const isSignedIn = !!user;
 
   const features = [
@@ -57,20 +58,18 @@ const Navbar5 = () => {
     },
   ];
 
-  if (isPending) return <Skeleton className="h-12 w-full" />;
-
   return (
-    <section className="py-4">
+    <section className="py-4 border-b">
       <div className="container">
         <nav className="flex items-center justify-between">
-          <a href="/" className="flex items-center gap-2">
+          <Link href="/" className="flex items-center gap-2">
             <img
               src="https://shadcnblocks.com/images/block/logos/shadcnblockscom-icon.svg"
               className="max-h-8"
               alt="MealWise Logo"
             />
-            <span className="text-lg font-semibold tracking-tighter">MealWise</span>
-          </a>
+            <span className="text-lg font-semibold tracking-tighter">Meal<span className="text-green-500 text-lg">Wise</span></span> 
+          </Link>
 
           <ThemeToggle />
 
@@ -78,36 +77,45 @@ const Navbar5 = () => {
           <NavigationMenu className="hidden lg:block">
             <NavigationMenuList>
               <NavigationMenuItem>
-                <NavigationMenuTrigger>Features</NavigationMenuTrigger>
+                <NavMenuTriggerClient>Features</NavMenuTriggerClient>
                 <NavigationMenuContent>
                   <div className="grid w-[600px] grid-cols-2 p-3">
                     {features.map((feature, index) => (
-                      <NavigationMenuLink
+                      <Link
                         href={feature.href}
                         key={index}
-                        className="rounded-md p-3 transition-colors hover:bg-muted/70"
+                        legacyBehavior
+                        passHref
                       >
-                        <p className="mb-1 font-semibold text-foreground">{feature.title}</p>
-                        <p className="text-sm text-muted-foreground">{feature.description}</p>
-                      </NavigationMenuLink>
+                        <NavigationMenuLink className="rounded-md p-3 transition-colors hover:bg-muted/70">
+                          <p className="mb-1 font-semibold text-foreground">{feature.title}</p>
+                          <p className="text-sm text-muted-foreground">{feature.description}</p>
+                        </NavigationMenuLink>
+                      </Link>
                     ))}
                   </div>
                 </NavigationMenuContent>
               </NavigationMenuItem>
               <NavigationMenuItem>
-                <NavigationMenuLink href="/products" className={navigationMenuTriggerStyle()}>
-                  Products
-                </NavigationMenuLink>
+                <Link href="/products" legacyBehavior passHref>
+                  <NavigationMenuLink className={navigationMenuTriggerStyle()}>
+                    Products
+                  </NavigationMenuLink>
+                </Link>
               </NavigationMenuItem>
               <NavigationMenuItem>
-                <NavigationMenuLink href="/resources" className={navigationMenuTriggerStyle()}>
-                  Resources
-                </NavigationMenuLink>
+                <Link href="/resources" legacyBehavior passHref>
+                  <NavigationMenuLink className={navigationMenuTriggerStyle()}>
+                    Resources
+                  </NavigationMenuLink>
+                </Link>
               </NavigationMenuItem>
               <NavigationMenuItem>
-                <NavigationMenuLink href="/contact" className={navigationMenuTriggerStyle()}>
-                  Contact
-                </NavigationMenuLink>
+                <Link href="/contact" legacyBehavior passHref>
+                  <NavigationMenuLink className={navigationMenuTriggerStyle()}>
+                    Contact
+                  </NavigationMenuLink>
+                </Link>
               </NavigationMenuItem>
             </NavigationMenuList>
           </NavigationMenu>
@@ -118,16 +126,16 @@ const Navbar5 = () => {
               <>
                 <span className="text-sm">Hi, {user?.name}</span>
                 <Button asChild variant="outline">
-                  <a href="/dashboard">Go to Dashboard</a>
+                  <Link href="/dashboard">Go to Dashboard</Link>
                 </Button>
               </>
             ) : (
               <>
                 <Button asChild variant="outline">
-                  <a href="/sign-in">Sign in</a>
+                  <Link href="/sign-in">Sign in</Link>
                 </Button>
                 <Button asChild>
-                  <a href="/sign-up">Start for free</a>
+                  <Link href="/sign-up">Start for free</Link>
                 </Button>
               </>
             )}
@@ -135,22 +143,18 @@ const Navbar5 = () => {
 
           {/* Mobile Menu */}
           <Sheet>
-            <SheetTrigger asChild className="lg:hidden">
-              <Button variant="outline" size="icon">
-                <MenuIcon className="h-4 w-4" />
-              </Button>
-            </SheetTrigger>
+            <MobileMenuTrigger />
             <SheetContent side="top" className="max-h-screen overflow-auto">
               <SheetHeader>
                 <SheetTitle>
-                  <a href="/" className="flex items-center gap-2">
+                  <Link href="/" className="flex items-center gap-2">
                     <img
                       src="https://shadcnblocks.com/images/block/logos/shadcnblockscom-icon.svg"
                       className="max-h-8"
                       alt="MealWise Logo"
                     />
                     <span className="text-lg font-semibold tracking-tighter">MealWise</span>
-                  </a>
+                  </Link>
                 </SheetTitle>
               </SheetHeader>
 
@@ -163,14 +167,14 @@ const Navbar5 = () => {
                     <AccordionContent>
                       <div className="grid md:grid-cols-2">
                         {features.map((feature, index) => (
-                          <a
+                          <Link
                             href={feature.href}
                             key={index}
                             className="rounded-md p-3 transition-colors hover:bg-muted/70"
                           >
                             <p className="mb-1 font-semibold text-foreground">{feature.title}</p>
                             <p className="text-sm text-muted-foreground">{feature.description}</p>
-                          </a>
+                          </Link>
                         ))}
                       </div>
                     </AccordionContent>
@@ -178,15 +182,15 @@ const Navbar5 = () => {
                 </Accordion>
 
                 <div className="flex flex-col gap-6">
-                  <a href="#" className="font-medium">
+                  <Link href="/templates" className="font-medium">
                     Templates
-                  </a>
-                  <a href="#" className="font-medium">
+                  </Link>
+                  <Link href="/blog" className="font-medium">
                     Blog
-                  </a>
-                  <a href="#" className="font-medium">
+                  </Link>
+                  <Link href="/pricing" className="font-medium">
                     Pricing
-                  </a>
+                  </Link>
                 </div>
 
                 <div className="mt-6 flex flex-col gap-4">
@@ -194,16 +198,16 @@ const Navbar5 = () => {
                     <>
                       <span className="text-sm">Hi, {user?.name}</span>
                       <Button asChild variant="outline">
-                        <a href="/dashboard">Go to Dashboard</a>
+                        <Link href="/dashboard">Go to Dashboard</Link>
                       </Button>
                     </>
                   ) : (
                     <>
                       <Button asChild variant="outline">
-                        <a href="/sign-in">Sign in</a>
+                        <Link href="/sign-in">Sign in</Link>
                       </Button>
                       <Button asChild>
-                        <a href="/sign-up">Start for free</a>
+                        <Link href="/sign-up">Start for free</Link>
                       </Button>
                     </>
                   )}
@@ -217,4 +221,4 @@ const Navbar5 = () => {
   );
 };
 
-export default Navbar5;
+export default Navbar;

@@ -6,11 +6,13 @@ import {
   Zap,
   ZoomIn,
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface Feature {
   title: string;
   description: string;
   icon: React.ReactNode;
+  color?: string;
 }
 
 interface Feature17Props {
@@ -19,7 +21,16 @@ interface Feature17Props {
   features?: Feature[];
 }
 
-const Feature17 = ({
+const iconColors = [
+  "bg-blue-100 text-blue-600 dark:bg-blue-950 dark:text-blue-300",
+  "bg-purple-100 text-purple-600 dark:bg-purple-950 dark:text-purple-300",
+  "bg-green-100 text-green-600 dark:bg-green-950 dark:text-green-300",
+  "bg-amber-100 text-amber-600 dark:bg-amber-950 dark:text-amber-300",
+  "bg-rose-100 text-rose-600 dark:bg-rose-950 dark:text-rose-300",
+  "bg-cyan-100 text-cyan-600 dark:bg-cyan-950 dark:text-cyan-300",
+];
+
+const FeatureComponent = ({
   heading = "Smarter Meal Planning",
   subheading = "Why You'll Love It",
   features = [
@@ -44,7 +55,7 @@ const Feature17 = ({
     {
       title: "For Everyone",
       description:
-        "Solo, family, fit, or new—we’ve got the perfect plan for you.",
+        "Solo, family, fit, or new—we've got the perfect plan for you.",
       icon: <PersonStanding className="size-4 md:size-6" />,
     },
     {
@@ -62,26 +73,35 @@ const Feature17 = ({
   ],
 }: Feature17Props) => {
   return (
-    <section className="py-32">
-      <div className="container mx-auto max-w-screen-xl">
-        <p className="mb-4 text-xs text-muted-foreground md:pl-5">
-          {subheading}
-        </p>
-        <h2 className="text-3xl font-medium md:pl-5 lg:text-4xl">{heading}</h2>
-        <div className="mx-auto mt-14 grid gap-x-20 gap-y-8 md:grid-cols-2 md:gap-y-6 lg:mt-20">
+    <section className="py-20 md:py-28 lg:py-32 bg-gradient-to-b from-background to-muted/30">
+      <div className="container mx-auto max-w-screen-xl px-4">
+        <div className="max-w-2xl mx-auto text-center mb-12 md:mb-16 lg:mb-20">
+          <p className="inline-block px-3 py-1 mb-4 text-sm font-medium rounded-full bg-muted text-muted-foreground">
+            {subheading}
+          </p>
+          <h2 className="text-3xl font-bold tracking-tight md:text-4xl lg:text-5xl">{heading}</h2>
+          <div className="w-16 h-1 mx-auto mt-6 rounded-full bg-primary"></div>
+        </div>
+        
+        <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
           {features.map((feature, idx) => (
-            <div className="flex gap-6 rounded-lg md:block md:p-5" key={idx}>
-              <span className="mb-8 flex size-10 shrink-0 items-center justify-center rounded-full bg-accent md:size-12">
+            <div 
+              className="group relative flex flex-col p-6 bg-background border rounded-2xl shadow-sm transition-all duration-200 hover:shadow-md hover:-translate-y-1" 
+              key={idx}
+            >
+              <span className={cn(
+                "mb-5 flex size-12 items-center justify-center rounded-xl",
+                iconColors[idx % iconColors.length]
+              )}>
                 {feature.icon}
               </span>
-              <div>
-                <h3 className="font-medium md:mb-2 md:text-xl">
-                  {feature.title}
-                </h3>
-                <p className="text-sm text-muted-foreground md:text-base">
-                  {feature.description}
-                </p>
-              </div>
+              <h3 className="text-xl font-semibold mb-3 group-hover:text-primary transition-colors">
+                {feature.title}
+              </h3>
+              <p className="text-muted-foreground leading-relaxed">
+                {feature.description}
+              </p>
+              <div className="absolute top-0 left-0 w-full h-full rounded-2xl border-primary/0 transition-all duration-300 group-hover:border group-hover:border-primary/20"></div>
             </div>
           ))}
         </div>
@@ -90,4 +110,4 @@ const Feature17 = ({
   );
 };
 
-export default Feature17;
+export default FeatureComponent;

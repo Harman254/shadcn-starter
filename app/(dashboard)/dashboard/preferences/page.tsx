@@ -1,4 +1,3 @@
-// pages/preferences.tsx
 import { fetchOnboardingData } from "@/data";
 import { saveOnboardingData } from "@/actions/saveData";
 import { redirect } from "next/navigation";
@@ -13,7 +12,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/lable";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -22,38 +21,55 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { UserPreference } from "@/types";
-import toast from "react-hot-toast";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
+import { CUISINE_OPTIONS, DIETARY_OPTIONS, GOAL_OPTIONS } from "@/lib/constants";
+import SaveButton from "@/components/save-preferences";
 
-const cuisines = [
-  { id: "italian", label: "Italian" },
-  { id: "mexican", label: "Mexican" },
-  { id: "indian", label: "Indian" },
-  { id: "chinese", label: "Chinese" },
-  { id: "american", label: "American" },
-  { id: "japanese", label: "Japanese" },
-  { id: "thai", label: "Thai" },
-  { id: "kenyan", label: "Kenyan" },
-  { id: "moroccan", label: "Moroccan" },
-  { id: "spanish", label: "Spanish" },
-  { id: "french", label: "French" },
-  { id: "greek", label: "Greek" },
-  { id: "turkish", label: "Turkish" },
-];
+// Define UserPreference interface
+interface UserPreference {
+  dietaryPreference: string;
+  goal: string;
+  householdSize: number;
+  cuisinePreferences: string[];
+}
 
-const dietaryOptions = [
-  { value: "vegan", label: "Vegan" },
-  { value: "vegetarian", label: "Vegetarian" },
-  { value: "omnivore", label: "Omnivore" },
-];
+// Server-side form validation and processing
+async function updatePreferences(formData: FormData): Promise<void> {
+  "use server";
 
-const goalOptions = [
-  { value: "weight_loss", label: "Weight Loss" },
-  { value: "muscle_gain", label: "Muscle Gain" },
-  { value: "maintenance", label: "Maintenance" },
-];
+  const dietaryPreference = formData.get("dietaryPreference");
+  const goal = formData.get("goal");
+  const householdSizeRaw = formData.get("householdSize");
+
+  // Form validation
+  if (typeof dietaryPreference !== "string" || !DIETARY_OPTIONS.some(d => d.value === dietaryPreference)) {
+    redirect(`/preferences?error=${encodeURIComponent("Please select a valid dietary preference")}`);
+  }
+  
+  if (typeof goal !== "string" || !GOAL_OPTIONS.some(g => g.value === goal)) {
+    redirect(`/preferences?error=${encodeURIComponent("Please select a valid goal")}`);
+  }
+  
+  const householdSize = Number(householdSizeRaw);
+  if (isNaN(householdSize) || householdSize < 1 || householdSize > 8) {
+    redirect(`/preferences?error=${encodeURIComponent("Please select a valid household size (1-8)")}`);
+  }
+
+  // Get selected cuisines
+  const cuisinePreferences = CUISINE_OPTIONS
+    .filter((c) => formData.get(c.id) === "on")
+    .map((c) => c.id);
+
+  await saveOnboardingData({
+    dietaryPreference,
+    goal,
+    householdSize,
+    cuisinePreferences,
+  });
+
+  revalidatePath("/preferences");
+}
 
 export default async function PreferencesPage() {
   const session = await auth.api.getSession({
@@ -63,52 +79,46 @@ export default async function PreferencesPage() {
   if (!session?.user?.id || typeof session.user.id !== "string") {
     redirect("/sign-in");
   }
-  
+
   const userId = session.user.id;
 
-  // Fetch the user preferences, if they exist
-  const prefs: UserPreference[] = await fetchOnboardingData(userId);
+  // Get existing preferences with error handling
+  let prefs: UserPreference[] = [];
+  let fetchError: string | null = null;
+  
+  try {
+    prefs = await fetchOnboardingData(userId);
+  } catch (e) {
+    console.error("Failed to fetch preferences:", e);
+    fetchError = "Failed to load your preferences. Default values will be shown.";
+  }
 
-  const defaultPreferences = {
-    dietaryPreference: prefs?.[0]?.dietaryPreference ?? "omnivore",
-    goal: prefs?.[0]?.goal ?? "maintenance",
-    householdSize: prefs?.[0]?.householdSize ?? 1,
-    cuisinePreferences: prefs?.[0]?.cuisinePreferences ?? [],
+  const defaultPreferences: UserPreference = {
+    dietaryPreference: prefs[0]?.dietaryPreference ?? "omnivore",
+    goal: prefs[0]?.goal ?? "eat_healthier",
+    householdSize: prefs[0]?.householdSize ?? 1,
+    cuisinePreferences: prefs[0]?.cuisinePreferences ?? [],
   };
 
-  async function updatePreferences(formData: FormData) {
-    "use server";
-  
-    const dietaryPreference = formData.get("dietaryPreference") as string;
-    const goal = formData.get("goal") as string;
-    const householdSize = Number(formData.get("householdSize"));
-  
-    const cuisinePreferences = cuisines
-      .filter((c) => formData.get(c.id) === "on")
-      .map((c) => c.id) 
-  
-    // Validate data
-    if (!dietaryPreference || !goal || isNaN(householdSize)) {
-      throw new Error("Invalid form data submitted.");
-    }
-  
-    await saveOnboardingData({
-      dietaryPreference,
-      goal,
-      householdSize,
-      cuisinePreferences,
-    });
-  
-    // ⚠️ This will error: `toast` is client-side only
-    // toast.success("Preferences updated successfully!");
-  
-    revalidatePath("/preferences");
-  }
+  // Get error from query param
+  const searchParams = new URLSearchParams(await headers().then(h => h.get("x-url") || ""));
+  const formError = searchParams.get("error");
 
   return (
     <div className="min-h-screen bg-background">
       <main className="container py-8">
-      <form action={updatePreferences as unknown as string} className="mx-auto max-w-2xl">
+        {fetchError && (
+          <div className="mb-6 max-w-2xl mx-auto bg-red-100 p-4 rounded">
+            <p>{fetchError}</p>
+          </div>
+        )}
+        {formError && (
+          <div className="mb-6 max-w-2xl mx-auto bg-red-100 p-4 rounded">
+            <p>{decodeURIComponent(formError)}</p>
+          </div>
+        )}
+        
+        <form action={updatePreferences} className="mx-auto max-w-2xl">
           <Card className="border-2 shadow-lg">
             <CardHeader className="space-y-1 bg-muted/50">
               <CardTitle className="text-2xl">Taste Preferences</CardTitle>
@@ -116,7 +126,8 @@ export default async function PreferencesPage() {
                 Customize your meal recommendations based on your preferences.
               </CardDescription>
             </CardHeader>
-            <CardContent className="pt-6 space-y-6">
+            
+            <CardContent className="pt-6 space-y-8">
               {/* Dietary Preference */}
               <div className="space-y-2">
                 <Label htmlFor="dietaryPreference">Dietary Preference</Label>
@@ -124,13 +135,22 @@ export default async function PreferencesPage() {
                   name="dietaryPreference"
                   defaultValue={defaultPreferences.dietaryPreference}
                 >
-                  <SelectTrigger id="dietaryPreference">
-                    <SelectValue placeholder="Select a dietary preference" />
+                  <SelectTrigger id="dietaryPreference" aria-label="Select dietary preference">
+                    <SelectValue placeholder="Select a dietary preference">
+                      {
+                        DIETARY_OPTIONS.find(
+                          (option) => option.value === defaultPreferences.dietaryPreference
+                        )?.label
+                      }
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
-                    {dietaryOptions.map((option) => (
+                    {DIETARY_OPTIONS.map((option) => (
                       <SelectItem key={option.value} value={option.value}>
-                        {option.label}
+                        <div className="flex items-center space-x-2">
+                          <span>{option.icon}</span>
+                          <span>{option.label}</span>
+                        </div>
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -141,13 +161,22 @@ export default async function PreferencesPage() {
               <div className="space-y-2">
                 <Label htmlFor="goal">Primary Goal</Label>
                 <Select name="goal" defaultValue={defaultPreferences.goal}>
-                  <SelectTrigger id="goal">
-                    <SelectValue placeholder="Select a goal" />
+                  <SelectTrigger id="goal" aria-label="Select your primary goal">
+                    <SelectValue placeholder="Select a goal">
+                      {
+                        GOAL_OPTIONS.find(
+                          (option) => option.value === defaultPreferences.goal
+                        )?.label
+                      }
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
-                    {goalOptions.map((option) => (
+                    {GOAL_OPTIONS.map((option) => (
                       <SelectItem key={option.value} value={option.value}>
-                        {option.label}
+                        <div className="flex items-center space-x-2">
+                          <span>{option.icon}</span>
+                          <span>{option.label}</span>
+                        </div>
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -155,10 +184,13 @@ export default async function PreferencesPage() {
               </div>
 
               {/* Household Size */}
-              <div className="space-y-2">
-                <Label htmlFor="householdSize">
-                  Household Size: {defaultPreferences.householdSize}
-                </Label>
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <Label htmlFor="householdSize">Household Size</Label>
+                  <span className="font-medium text-lg bg-primary/10 px-3 py-1 rounded-full">
+                    {defaultPreferences.householdSize} {defaultPreferences.householdSize === 1 ? 'person' : 'people'}
+                  </span>
+                </div>
                 <Input
                   type="range"
                   id="householdSize"
@@ -166,34 +198,48 @@ export default async function PreferencesPage() {
                   min={1}
                   max={8}
                   defaultValue={defaultPreferences.householdSize}
+                  className="cursor-pointer"
+                  aria-label={`Select household size, current value: ${defaultPreferences.householdSize}`}
                 />
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>1</span>
+                  <span>2</span>
+                  <span>3</span>
+                  <span>4</span>
+                  <span>5</span>
+                  <span>6</span>
+                  <span>7</span>
+                  <span>8</span>
+                </div>
               </div>
 
               {/* Cuisine Preferences */}
               <div className="space-y-4">
                 <Label>Cuisine Preferences</Label>
-                <div className="grid grid-cols-2 gap-4">
-                  {cuisines.map((cuisine) => (
-                    <div key={cuisine.id} className="flex items-center space-x-2">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {CUISINE_OPTIONS.map((cuisine) => (
+                    <div key={cuisine.id} className="flex items-center spacedo-x-2">
                       <Checkbox
                         id={cuisine.id}
                         name={cuisine.id}
                         defaultChecked={defaultPreferences.cuisinePreferences.includes(
                           cuisine.id
                         )}
+                        aria-label={`Select ${cuisine.label} cuisine`}
                       />
-                      <Label htmlFor={cuisine.id} className="cursor-pointer">
-                        {cuisine.label}
+                      <Label htmlFor={cuisine.id} className="cursor-pointer flex items-center space-x-2">
+                        <span>{cuisine.icon}</span>
+                        <span>{cuisine.label}</span>
                       </Label>
                     </div>
                   ))}
                 </div>
               </div>
             </CardContent>
-            <CardFooter className="border-t bg-muted/30 p-4">
-              <Button type="submit" className="ml-auto">
-                Save Preferences
-              </Button>
+            
+            <CardFooter className="border-t bg-muted/30 p-4 flex justify-between">
+              
+              <SaveButton />
             </CardFooter>
           </Card>
         </form>
