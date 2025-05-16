@@ -154,7 +154,7 @@ const OnboardingPage = () => {
   const stepDescriptions = [
     "Tell us about your dietary needs so we can customize your meal plans.",
     "Choose what matters most to you for better meal recommendations.",
-    "We'll adjust portion sizes and planning based on your household.",
+    "We&apos;ll adjust portion sizes and planning based on your household.",
     "Select cuisines you enjoy to personalize your recipe suggestions."
   ];
 
@@ -334,7 +334,7 @@ const OnboardingPage = () => {
                   <div className="flex flex-col items-center">
                     <span className="text-5xl font-bold tabular-nums">{formData.householdSize}</span>
                     <span className="text-sm font-medium text-muted-foreground mt-1">
-                      {formData.householdSize === 1 ? 'Person' : 'People'}
+                      {formData.householdSize === 1 ? "Person" : "People"}
                     </span>
                   </div>
                   
@@ -370,10 +370,10 @@ const OnboardingPage = () => {
               <div className="bg-muted/30 p-5 rounded-lg border border-border/50">
                 <div className="flex items-center gap-2.5 mb-2">
                   <CheckCircle className="w-5 h-5 text-primary" />
-                  <p className="text-base font-medium">Our recommendations will be tailored for {formData.householdSize} {formData.householdSize === 1 ? 'person' : 'people'}</p>
+                  <p className="text-base font-medium">Our recommendations will be tailored for {formData.householdSize} {formData.householdSize === 1 ? "person" : "people"}</p>
                 </div>
                 <p className="text-sm text-muted-foreground pl-7 leading-relaxed">
-                  We'll adjust recipe portions and shopping lists accordingly
+                  We&apos;ll adjust recipe portions and shopping lists accordingly
                 </p>
               </div>
             </div>
