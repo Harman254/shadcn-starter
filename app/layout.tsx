@@ -1,6 +1,6 @@
 
 import { ThemeProvider } from '@/components/theme-provider';
-import Navbar5 from '@/components/Nav';
+import Navbar from '@/components/Nav';
 import Footer2 from '@/components/footer';
 import { Toaster } from 'react-hot-toast';
 import '@/styles/globals.css';
@@ -22,7 +22,7 @@ export default async function  RootLayout({ children }: RootLayoutProps) {
           <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
             <div className="relative flex min-h-screen flex-col bg-gradient-to-br from-white via-cyan-50 to-slate-100 dark:from-zinc-900 dark:via-zinc-800 dark:to-zinc-950 transition-colors duration-300">
               <Toaster />
-              <Navbar5 />
+              <Navbar />
               <div className="flex-1">{children}</div>
               <Footer2 />
             </div>
