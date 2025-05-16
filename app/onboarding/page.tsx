@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation'
 import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
 import { getDBSession } from '@/data';
+import OnboardingPage from './Onboard';
 
 
 const Onboarding =async () => {
@@ -18,15 +19,15 @@ const Onboarding =async () => {
   if (!userId) redirect('/sign-in')
 
 
-  const DBsession = await getDBSession(userId)
-  const isOnboarded = DBsession?.isOnboardingComplete
-  if (isOnboarded) {
-    redirect('/meal-plans/new')
-  }
+  // const DBsession = await getDBSession(userId)
+  // const isOnboarded = DBsession?.isOnboardingComplete
+  // if (isOnboarded) {
+  //   redirect('/meal-plans/new')
+  // }
 
 
   return (
-      <Onboard/>
+    <OnboardingPage />
       
   )
 }

@@ -1,17 +1,11 @@
 "use client";
 
-import { Star, Quote } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Star, Quote, ChevronLeft, ChevronRight } from "lucide-react";
+import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import {
-  Carousel,
-  CarouselApi,
-  CarouselContent,
-  CarouselItem,
-} from "@/components/ui/carousel";
 
 const testimonials = [
   {
@@ -41,23 +35,28 @@ const testimonials = [
 ];
 
 const TestimonialCarousel = () => {
-  const [api, setApi] = useState<CarouselApi>();
   const [current, setCurrent] = useState(0);
+  
+  const nextTestimonial = () => {
+    setCurrent((prev) => (prev === testimonials.length - 1 ? 0 : prev + 1));
+  };
+  
+  const prevTestimonial = () => {
+    setCurrent((prev) => (prev === 0 ? testimonials.length - 1 : prev - 1));
+  };
+  
+  const goToTestimonial = (index: any) => {
+    setCurrent(index);
+  };
 
+  // Set up auto-rotation
   useEffect(() => {
-    if (!api) {
-      return;
-    }
-
-    const updateCurrent = () => {
-      setCurrent(api.selectedScrollSnap());
-    };
-
-    api.on("select", updateCurrent);
-    return () => {
-      api.off("select", updateCurrent);
-    };
-  }, [api]);
+    const timer = setInterval(() => {
+      nextTestimonial();
+    }, 5000); // Rotate every 5 seconds
+    
+    return () => clearInterval(timer);
+  }, []);
 
   return (
     <section className="py-16 md:py-24 lg:py-32 bg-gradient-to-b from-background via-background to-muted/20 overflow-hidden">
@@ -76,59 +75,81 @@ const TestimonialCarousel = () => {
             What Our Users Say
           </h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Real stories from real people who've transformed their meal planning experience
+            Real stories from real people who&apos;ve transformed their meal planning experience
           </p>
         </div>
 
         {/* Testimonial carousel */}
         <div className="relative bg-card shadow-xl rounded-2xl p-6 md:p-10 max-w-5xl mx-auto border border-muted mb-10">
-          <Carousel setApi={setApi} className="w-full">
-            <CarouselContent>
+          {/* Navigation arrows */}
+          <button 
+            onClick={prevTestimonial}
+            className="absolute left-2 md:left-4 top-1/2 -translate-y-1/2 p-2 rounded-full bg-background/80 backdrop-blur shadow-md border border-border hover:bg-primary/10 transition-colors z-10"
+            aria-label="Previous testimonial"
+          >
+            <ChevronLeft className="size-5 md:size-6" />
+          </button>
+          
+          <button 
+            onClick={nextTestimonial}
+            className="absolute right-2 md:right-4 top-1/2 -translate-y-1/2 p-2 rounded-full bg-background/80 backdrop-blur shadow-md border border-border hover:bg-primary/10 transition-colors z-10"
+            aria-label="Next testimonial"
+          >
+            <ChevronRight className="size-5 md:size-6" />
+          </button>
+          
+          {/* Testimonial content with animation */}
+          <div className="overflow-hidden">
+            <div 
+              className="transition-all duration-500 ease-in-out flex"
+              style={{ transform: `translateX(-${current * 100}%)` }}
+            >
               {testimonials.map((testimonial) => (
-                <CarouselItem key={testimonial.id}>
-                  <div className="flex flex-col items-center text-center">
-                    <div className="mb-8 relative">
-                      <Avatar className="size-16 md:size-24 ring-4 ring-background border border-primary/20 shadow-lg">
-                        <AvatarImage src={testimonial.avatar} alt={testimonial.name} />
-                        <AvatarFallback className="bg-primary/10 text-primary font-semibold">
-                          {testimonial.name.split(' ').map(n => n[0]).join('')}
-                        </AvatarFallback>
-                      </Avatar>
-                    </div>
-                    
-                    <div className="flex items-center gap-0.5 mb-6">
-                      {[...Array(testimonial.rating)].map((_, i) => (
-                        <Star key={i} className="size-5 fill-amber-400 text-amber-400" />
-                      ))}
-                    </div>
-                    
-                    <p className="mb-8 text-lg md:text-xl lg:text-2xl font-medium leading-relaxed italic">
-                      &ldquo;{testimonial.text}&rdquo;
-                    </p>
-                    
-                    <div className="mt-2">
-                      <p className="text-base font-bold md:text-lg">
-                        {testimonial.name}
-                      </p>
-                      <p className="text-sm text-muted-foreground md:text-base">
-                        {testimonial.role}
-                      </p>
-                    </div>
+                <div 
+                  key={testimonial.id} 
+                  className="w-full flex-shrink-0 flex flex-col items-center text-center px-4"
+                >
+                  <div className="mb-8 relative">
+                    <Avatar className="size-16 md:size-24 ring-4 ring-background border border-primary/20 shadow-lg">
+                      <AvatarImage src={testimonial.avatar} alt={testimonial.name} />
+                      <AvatarFallback className="bg-primary/10 text-primary font-semibold">
+                        {testimonial.name.split(' ').map(n => n[0]).join('')}
+                      </AvatarFallback>
+                    </Avatar>
                   </div>
-                </CarouselItem>
+                  
+                  <div className="flex items-center gap-0.5 mb-6">
+                    {[...Array(testimonial.rating)].map((_, i) => (
+                      <Star key={i} className="size-5 fill-amber-400 text-amber-400" />
+                    ))}
+                  </div>
+                  
+                  <p className="mb-8 text-lg md:text-xl lg:text-2xl font-medium leading-relaxed italic">
+                    &ldquo;{testimonial.text}&rdquo;
+                  </p>
+                  
+                  <div className="mt-2">
+                    <p className="text-base font-bold md:text-lg">
+                      {testimonial.name}
+                    </p>
+                    <p className="text-sm text-muted-foreground md:text-base">
+                      {testimonial.role}
+                    </p>
+                  </div>
+                </div>
               ))}
-            </CarouselContent>
-          </Carousel>
+            </div>
+          </div>
         </div>
 
-        {/* Carousel navigation */}
-        <div className="flex justify-center items-center gap-2">
+        {/* Carousel indicators */}
+        <div className="flex justify-center items-center gap-3">
           {testimonials.map((testimonial, index) => (
             <Button
               key={testimonial.id}
               variant="ghost"
               size="sm"
-              onClick={() => api?.scrollTo(index)}
+              onClick={() => goToTestimonial(index)}
               className={cn(
                 "rounded-full h-3 w-3 p-0 transition-all duration-300",
                 index === current ? "bg-primary scale-125" : "bg-muted hover:bg-primary/50"

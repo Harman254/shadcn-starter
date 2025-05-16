@@ -55,7 +55,7 @@ export async function saveOnboardingData(formData: {
 
 
 
-  revalidatePath('/onboarding'); 
+  revalidatePath('/preferences'); // Revalidate the preferences page to reflect the new data
   redirect('/meal-plans/new'); // Redirect to the new meal plan page after saving data
   
   
