@@ -138,10 +138,10 @@ const OnboardingPage = () => {
   const progressPercentage = (step / 4) * 100;
 
   const stepIcons = [
-    <UtensilsCrossed key="step1" className="w-6 h-6" />,
-    <Target key="step2" className="w-6 h-6" />,
-    <Users key="step3" className="w-6 h-6" />,
-    <Cookie key="step4" className="w-6 h-6" />
+    { icon: "&#x1F374;", label: "Utensils" }, // 🍴
+    { icon: "&#x1F3AF;", label: "Target" }, // 🎯
+    { icon: "&#x1F465;", label: "Users" }, // 👥
+    { icon: "&#x1F36A;", label: "Cookie" } // 🍪
   ];
 
   const stepTitles = [
@@ -163,7 +163,12 @@ const OnboardingPage = () => {
       <div className="w-full max-w-3xl mb-8">
         <div className="flex items-center gap-3 mb-6">
           <div className="flex items-center justify-center h-14 w-14 rounded-full bg-primary text-primary-foreground shadow-sm">
-            {stepIcons[step-1]}
+            <span 
+              className="text-2xl" 
+              role="img" 
+              aria-label={stepIcons[step-1].label}
+              dangerouslySetInnerHTML={{ __html: stepIcons[step-1].icon }}
+            />
           </div>
           <div>
             <h1 className="text-3xl font-bold tracking-tight leading-tight">Create Your Profile</h1>
