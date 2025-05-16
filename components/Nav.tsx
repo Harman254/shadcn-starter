@@ -147,7 +147,7 @@ const Navbar = async () => {
             <SheetContent side="top" className="max-h-screen overflow-auto">
               <SheetHeader>
                 <SheetTitle>
-                  <Link href="/" className="flex items-center gap-2">
+                  <Link href="/" className="flex items-center gap-2" legacyBehavior>
                     <img
                       src="https://shadcnblocks.com/images/block/logos/shadcnblockscom-icon.svg"
                       className="max-h-8"
@@ -171,7 +171,7 @@ const Navbar = async () => {
                             href={feature.href}
                             key={index}
                             className="rounded-md p-3 transition-colors hover:bg-muted/70"
-                          >
+                            legacyBehavior>
                             <p className="mb-1 font-semibold text-foreground">{feature.title}</p>
                             <p className="text-sm text-muted-foreground">{feature.description}</p>
                           </Link>

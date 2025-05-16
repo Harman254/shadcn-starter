@@ -57,7 +57,7 @@ export function DashboardLinks() {
                 ? "bg-primary/10 text-primary font-medium hover:bg-primary/30 shadow-md"
                 : "text-muted-foreground hover:text-foreground"
             )}
-          >
+            >
             <link.icon className="size-4" />
             {link.name}
           </Link>

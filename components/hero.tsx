@@ -11,7 +11,7 @@ export default async function Hero() {
       <div className="container px-4 md:px-6 mx-auto">
         <div className="flex flex-col items-center justify-center space-y-4 text-center">
           <div className="space-y-2">
-            <Link href="/meal-plans/new">
+            <Link href="/meal-plans/new" legacyBehavior>
               <div className="inline-block text-green-800 rounded-lg bg-green-100 px-3 py-1 text-sm dark:bg-green-900 dark:text-green-200">
                 New Feature!  Generate grocery list for your meal plan
               </div>
@@ -50,5 +50,5 @@ export default async function Hero() {
         </div>
       </div>
     </section>
-  )
+  );
 }

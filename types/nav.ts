@@ -4,3 +4,12 @@ export interface NavItem {
   disabled?: boolean
   external?: boolean
 }
+
+export interface NavItemWithIcon extends NavItem {
+  icon: string
+  description: string
+}
+
+export interface NavItemWithChildren extends NavItem {
+  items: NavItem[]
+}

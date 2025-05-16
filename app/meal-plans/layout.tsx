@@ -48,7 +48,7 @@ export default async function DashboardLayout({
         <div className="hidden border-r bg-muted/40 md:block">
           <div className="flex flex-col max-h-screen h-full gap-2">
             <div className="h-14 flex items-center border-b px-4 lg:h-[60px] lg:px-6">
-              <Link href="/" className="flex items-center gap-2">
+              <Link href="/" className="flex items-center gap-2" >
               <span className="text-2xl font-semibold tracking-tighter">Meal<span className="text-green-500 text-2xl">Wise</span></span> 
               </Link>
             </div>
@@ -93,7 +93,6 @@ export default async function DashboardLayout({
           </main>
         </div>
       </div>
-
       <Toaster richColors closeButton theme="light" />
     </>
   );

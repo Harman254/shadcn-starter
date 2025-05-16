@@ -63,7 +63,6 @@ const userId = session?.user?.id
   return (
     <div className="container max-w-4xl mx-auto py-8 px-4">
       <h1 className="text-3xl font-bold mb-6">Your Meal Plans</h1>
-
       <div className="grid gap-6">
         {mealPlans.map((mealPlan) => (
           <Card
@@ -71,7 +70,10 @@ const userId = session?.user?.id
             className="border border-border overflow-hidden cursor-pointer hover:shadow-xl hover:bg-muted/20 transition-all duration-200 p-4 rounded-lg"
           >
             <CardHeader className="bg-muted/10 border-b border-border pb-4">
-              <Link href={`/meal-plans/${mealPlan.id}`} className="hover:underline">
+              <Link
+                href={`/meal-plans/${mealPlan.id}`}
+                className="hover:underline"
+                legacyBehavior>
                 <div className="flex items-center justify-between mb-1">
                   <CardTitle className="text-xl font-semibold">
                     {mealPlan.duration}-Day Meal Plan

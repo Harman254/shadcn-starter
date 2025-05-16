@@ -72,7 +72,7 @@ export default function Dashboard() {
 
         {/* Quick Navigation Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-10">
-          <Link href="/meal-plans/new">
+          <Link href="/meal-plans/new" legacyBehavior>
             <QuickNavCard
               icon={<ChefHat className="w-8 h-8" />}
               title="Create New Plan"
@@ -89,7 +89,7 @@ export default function Dashboard() {
             title="Grocery List"
             description="View your shopping needs"
           />
-          <Link href="/dashboard/preferences">
+          <Link href="/dashboard/preferences" legacyBehavior>
             <QuickNavCard
               icon={<Settings className="w-8 h-8" />}
               title="Preferences"
