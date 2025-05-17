@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import { MenuIcon } from "lucide-react";
 import {
@@ -29,34 +31,25 @@ import { Skeleton } from "./ui/skeleton";
 // Client components to handle interactive elements
 import MobileMenuTrigger from "./mobile-menu";
 import NavMenuTriggerClient from "./nav-menu";
-import { requireUser } from "@/lib/user";
 
-const Navbar = async () => {
-  const user = await requireUser();
+interface Feature {
+  title: string;
+  description: string;
+  href: string;
+}
+
+interface User {
+  name?: string;
+  [key: string]: any; // For other user properties
+}
+
+interface NavbarClientProps {
+  user: User | null;
+  features: Feature[];
+}
+
+const NavbarClient = ({ user, features }: NavbarClientProps) => {
   const isSignedIn = !!user;
-
-  const features = [
-    {
-      title: "Dashboard",
-      description: "Overview of your activity",
-      href: "/dashboard",
-    },
-    {
-      title: "Analytics",
-      description: "Track Meal Plans, Recipes, and progress",
-      href: "/dashboard/analytics",
-    },
-    {
-      title: "Settings",
-      description: "Configure your preferences",
-      href: "/dashboard/preferences",
-    },
-    {
-      title: "Support",
-      description: "Get help when needed",
-      href: "/support",
-    },
-  ];
 
   return (
     <section className="py-4 border-b">
@@ -81,41 +74,32 @@ const Navbar = async () => {
                 <NavigationMenuContent>
                   <div className="grid w-[600px] grid-cols-2 p-3">
                     {features.map((feature, index) => (
-                      <Link
-                        href={feature.href}
+                      <NavigationMenuLink 
                         key={index}
-                        legacyBehavior
-                        passHref
+                        href={feature.href}
+                        className="rounded-md p-3 transition-colors hover:bg-muted/70"
                       >
-                        <NavigationMenuLink className="rounded-md p-3 transition-colors hover:bg-muted/70">
-                          <p className="mb-1 font-semibold text-foreground">{feature.title}</p>
-                          <p className="text-sm text-muted-foreground">{feature.description}</p>
-                        </NavigationMenuLink>
-                      </Link>
+                        <p className="mb-1 font-semibold text-foreground">{feature.title}</p>
+                        <p className="text-sm text-muted-foreground">{feature.description}</p>
+                      </NavigationMenuLink>
                     ))}
                   </div>
                 </NavigationMenuContent>
               </NavigationMenuItem>
               <NavigationMenuItem>
-                <Link href="/products" legacyBehavior passHref>
-                  <NavigationMenuLink className={navigationMenuTriggerStyle()}>
-                    Products
-                  </NavigationMenuLink>
-                </Link>
+                <NavigationMenuLink className={navigationMenuTriggerStyle()} href="/products">
+                  Products
+                </NavigationMenuLink>
               </NavigationMenuItem>
               <NavigationMenuItem>
-                <Link href="/resources" legacyBehavior passHref>
-                  <NavigationMenuLink className={navigationMenuTriggerStyle()}>
-                    Resources
-                  </NavigationMenuLink>
-                </Link>
+                <NavigationMenuLink className={navigationMenuTriggerStyle()} href="/resources">
+                  Resources
+                </NavigationMenuLink>
               </NavigationMenuItem>
               <NavigationMenuItem>
-                <Link href="/contact" legacyBehavior passHref>
-                  <NavigationMenuLink className={navigationMenuTriggerStyle()}>
-                    Contact
-                  </NavigationMenuLink>
-                </Link>
+                <NavigationMenuLink className={navigationMenuTriggerStyle()} href="/contact">
+                  Contact
+                </NavigationMenuLink>
               </NavigationMenuItem>
             </NavigationMenuList>
           </NavigationMenu>
@@ -147,7 +131,7 @@ const Navbar = async () => {
             <SheetContent side="top" className="max-h-screen overflow-auto">
               <SheetHeader>
                 <SheetTitle>
-                  <Link href="/" className="flex items-center gap-2" legacyBehavior>
+                  <Link href="/" className="flex items-center gap-2">
                     <img
                       src="https://shadcnblocks.com/images/block/logos/shadcnblockscom-icon.svg"
                       className="max-h-8"
@@ -171,7 +155,7 @@ const Navbar = async () => {
                             href={feature.href}
                             key={index}
                             className="rounded-md p-3 transition-colors hover:bg-muted/70"
-                            legacyBehavior>
+                          >
                             <p className="mb-1 font-semibold text-foreground">{feature.title}</p>
                             <p className="text-sm text-muted-foreground">{feature.description}</p>
                           </Link>
@@ -221,4 +205,4 @@ const Navbar = async () => {
   );
 };
 
-export default Navbar;
+export default NavbarClient;

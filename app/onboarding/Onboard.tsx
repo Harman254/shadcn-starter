@@ -138,10 +138,10 @@ const OnboardingPage = () => {
   const progressPercentage = (step / 4) * 100;
 
   const stepIcons = [
-    { icon: "&#x1F374;", label: "Utensils" }, // 🍴
-    { icon: "&#x1F3AF;", label: "Target" }, // 🎯
-    { icon: "&#x1F465;", label: "Users" }, // 👥
-    { icon: "&#x1F36A;", label: "Cookie" } // 🍪
+    { icon: "&#x1F374;", label: "Utensils" }, 
+    { icon: "&#x1F3AF;", label: "Target" }, 
+    { icon: "&#x1F465;", label: "Users" },
+    { icon: "&#x1F36A;", label: "Cookie" } 
   ];
 
   const stepTitles = [
