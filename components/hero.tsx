@@ -6,7 +6,7 @@ import { requireUser } from "@/lib/user"
 import Image from "next/image"
 import { useSession } from "@/lib/auth-client"
 
-export default async function Hero() {
+export default  function Hero() {
  const session = useSession()
   const user = session?.data?.user
   return (
