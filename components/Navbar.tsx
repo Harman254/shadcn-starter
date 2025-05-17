@@ -6,7 +6,7 @@ interface Feature {
   href: string;
 }
 
-const Navbar = async () => {
+const NaVBar = async () => {
   const user = await requireUser();
   
   // Define features data here so it's available to the client component
@@ -37,4 +37,4 @@ const Navbar = async () => {
   return <NavbarClient user={user} features={features} />;
 };
 
-export default Navbar;
+export default NaVBar;
