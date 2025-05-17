@@ -73,7 +73,7 @@ const userId = session?.user?.id
               <Link
                 href={`/meal-plans/${mealPlan.id}`}
                 className="hover:underline"
-                legacyBehavior>
+                >
                 <div className="flex items-center justify-between mb-1">
                   <CardTitle className="text-xl font-semibold">
                     {mealPlan.duration}-Day Meal Plan

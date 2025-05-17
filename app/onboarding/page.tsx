@@ -1,5 +1,4 @@
 import React from 'react'
-import Onboard from './Onboard'
 import { redirect } from 'next/navigation'
 import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
@@ -19,11 +18,11 @@ const Onboarding =async () => {
   if (!userId) redirect('/sign-in')
 
 
-  // const DBsession = await getDBSession(userId)
-  // const isOnboarded = DBsession?.isOnboardingComplete
-  // if (isOnboarded) {
-  //   redirect('/meal-plans/new')
-  // }
+  const DBsession = await getDBSession(userId)
+  const isOnboarded = DBsession?.isOnboardingComplete
+  if (isOnboarded) {
+    redirect('/meal-plans/new')
+  }
 
 
   return (

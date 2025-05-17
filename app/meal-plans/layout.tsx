@@ -48,8 +48,10 @@ export default async function DashboardLayout({
         <div className="hidden border-r bg-muted/40 md:block">
           <div className="flex flex-col max-h-screen h-full gap-2">
             <div className="h-14 flex items-center border-b px-4 lg:h-[60px] lg:px-6">
-              <Link href="/" className="flex items-center gap-2" >
-              <span className="text-2xl font-semibold tracking-tighter">Meal<span className="text-green-500 text-2xl">Wise</span></span> 
+              <Link href="/" className="flex items-center gap-2">
+                <span className="text-2xl font-semibold tracking-tighter">
+                  Meal<span className="text-green-500 text-2xl">Wise</span>
+                </span>
               </Link>
             </div>
             <div className="flex-1">
@@ -73,10 +75,11 @@ export default async function DashboardLayout({
               <SheetContent side="left">
                 <SheetTitle>
                   <div className="flex items-center gap-2 mb-4">
-                    <p className="text-2xl font-bold">
-                        Meal
-                        <span className="text-green-600">Wise</span>
-                    </p>
+                    <Link href="/" className="flex items-center gap-2">
+                      <span className="text-2xl font-bold">
+                        Meal<span className="text-green-600">Wise</span>
+                      </span>
+                    </Link>
                   </div>
                 </SheetTitle>
                 <nav className="grid gap-2">
