@@ -1,11 +1,14 @@
+
+'use client'
 import Link from "next/link"
 import { Button } from "./ui/button"
 import { requireUser } from "@/lib/user"
 import Image from "next/image"
+import { useSession } from "@/lib/auth-client"
 
 export default async function Hero() {
-  const user = await requireUser()
-
+ const session = useSession()
+  const user = session?.data?.user
   return (
     <section className="w-full min-h-screen py-12 md:py-24 lg:py-32 container">
       <div className="container px-4 md:px-6 mx-auto">
