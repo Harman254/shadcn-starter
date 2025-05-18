@@ -7,15 +7,11 @@ import { useSession } from "@/lib/auth-client"
 import { auth } from "@/lib/auth"
 import { headers } from "next/headers"
 
-export default async function Hero() {
+export default async function Hero( { user }: { user: string | null }) {
 
 
 
-  const session = await auth.api.getSession({
-    headers: await headers()
-  })
-
-  const user = session?.user
+ 
 
   return (
     <section className="w-full min-h-screen py-12 md:py-24 lg:py-32 container">
