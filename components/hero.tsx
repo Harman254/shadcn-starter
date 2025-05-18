@@ -12,13 +12,14 @@ export default function Hero() {
         <div className="inline-block text-green-800 rounded-lg bg-green-100 px-3 py-1 text-sm dark:bg-green-900 dark:text-green-200">
           New Feature! Generate grocery list for your meal plan
         </div>
-        <h1 className="text-4xl sm:text-6xl lg:text-7xl font-bold tracking-tight mb-8">
-          MealPlanning
+        <h1 className="text-4xl sm:text-6xl lg:text-7xl  font-bold tracking-tight mb-8">
+         <span className="text-green-400"> Meal</span>Planning
           <br />
           <span className="text-gray-400">made easy for you with Ai</span>
         </h1>
         <p className="max-w-2xl mx-auto text-lg sm:text-xl text-gray-400 mb-10">
-          Huly, an open-source platform, serves as an all-in-one replacement of Linear, Jira, Slack, and Notion.
+          Say goodbye to the stress of meal planning and hello to
+          delicious, healthy meals!
         </p>
 
         {user ? (

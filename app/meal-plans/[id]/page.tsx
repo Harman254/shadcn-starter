@@ -55,8 +55,10 @@ const MealPlanDetailPage = async (props: { params: Promise<{ id: string }> }) =>
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      <div className="max-w-6xl mx-auto px-4 py-8 md:py-12">
+    <div className="min-h-screen w-full bg-gradient-to-br from-gray-50 to-gray-100 px-2 sm:px-4">
+
+<div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
+
         {/* Header */}
         <header className="bg-white rounded-2xl shadow-md border border-gray-100 p-6 md:p-8 mb-8">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -119,46 +121,59 @@ const MealPlanDetailPage = async (props: { params: Promise<{ id: string }> }) =>
           ))}
         </div>
 
-        {/* Calendar View */}
+        {/* Calendar View - Improved with fixed height and smooth scrolling */}
         <div className="bg-white rounded-2xl shadow-md border border-gray-100 mb-8">
           <div className="p-6 border-b border-gray-100">
             <h2 className="text-xl font-bold text-gray-800">Calendar View</h2>
             <p className="text-gray-600 text-sm">Select a day to view your scheduled meals</p>
           </div>
-          <div className="p-4 overflow-x-auto">
-            <div className="flex gap-3 min-w-max">
-              {mealPlan.days.map((day: DayMeal) => {
-                const date = new Date(day.date);
-                const isToday = new Date().toDateString() === date.toDateString();
-                const totalCalories = day.meals.reduce((sum, meal) => sum + meal.calories, 0);
-                return (
-                  <a
-                    key={day.id}
-                    href={`#day-${day.id}`}
-                    className={`flex flex-col items-center p-4 min-w-[84px] rounded-xl transition-all ${
-                      isToday
-                        ? "bg-gradient-to-b from-primary to-primary/90 text-white shadow-lg"
-                        : "bg-white hover:bg-gray-50 text-gray-800 border border-gray-100 shadow-sm hover:shadow-md"
-                    }`}
-                  >
-                    <span className="text-xs font-medium mb-1">{date.toLocaleDateString(undefined, { weekday: "short" })}</span>
-                    <span className="text-2xl font-bold">{date.getDate()}</span>
-                    <span className="text-xs mt-1">{date.toLocaleDateString(undefined, { month: "short" })}</span>
-                    <div
-                      className={`mt-2 px-2 py-1 rounded-full text-xs ${
-                        isToday ? "bg-white/20 text-white" : "bg-primary/10 text-primary"
+          
+          {/* Calendar container with fixed height and improved scrolling */}
+          <div className="relative">
+            {/* Scroll indicators */}
+            <div className="absolute left-0 top-1/2 -translate-y-1/2 z-10 pointer-events-none h-full flex items-center">
+              <div className="w-12 h-full bg-gradient-to-r from-white to-transparent"></div>
+            </div>
+            <div className="absolute right-0 top-1/2 -translate-y-1/2 z-10 pointer-events-none h-full flex items-center">
+              <div className="w-12 h-full bg-gradient-to-l from-white to-transparent"></div>
+            </div>
+            
+            {/* Scrollable container with fixed height */}
+            <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent py-4 px-4">
+              <div className="flex gap-3 min-w-max pb-1">
+                {mealPlan.days.map((day: DayMeal) => {
+                  const date = new Date(day.date);
+                  const isToday = new Date().toDateString() === date.toDateString();
+                  const totalCalories = day.meals.reduce((sum, meal) => sum + meal.calories, 0);
+                  return (
+                    <a
+                      key={day.id}
+                      href={`#day-${day.id}`}
+                      className={`flex flex-col items-center p-4 w-[84px] flex-shrink-0 rounded-xl transition-all ${
+                        isToday
+                          ? "bg-gradient-to-b from-primary to-primary/90 text-white shadow-lg"
+                          : "bg-white hover:bg-gray-50 text-gray-800 border border-gray-100 shadow-sm hover:shadow-md"
                       }`}
                     >
-                      {totalCalories} cal
-                    </div>
-                  </a>
-                );
-              })}
+                      <span className="text-xs font-medium mb-1">{date.toLocaleDateString(undefined, { weekday: "short" })}</span>
+                      <span className="text-2xl font-bold">{date.getDate()}</span>
+                      <span className="text-xs mt-1">{date.toLocaleDateString(undefined, { month: "short" })}</span>
+                      <div
+                        className={`mt-2 px-2 py-1 rounded-full text-xs ${
+                          isToday ? "bg-white/20 text-white" : "bg-primary/10 text-primary"
+                        }`}
+                      >
+                        {totalCalories} cal
+                      </div>
+                    </a>
+                  );
+                })}
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Daily Meals */}
+        {/* Daily Meals - Improved for mobile text wrapping */}
         <div className="space-y-6">
           {mealPlan.days.map((day: DayMeal, index: number) => (
             <div id={`day-${day.id}`} key={day.id} className="bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden scroll-mt-24">
@@ -168,7 +183,9 @@ const MealPlanDetailPage = async (props: { params: Promise<{ id: string }> }) =>
                     <span className="inline-flex items-center justify-center bg-primary text-white w-10 h-10 rounded-full mr-3 font-bold text-sm shadow-sm">
                       {index + 1}
                     </span>
-                    {new Date(day.date).toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })}
+                    <span className="break-words">
+                      {new Date(day.date).toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })}
+                    </span>
                   </h2>
                   <div className="flex flex-wrap gap-2 items-center">
                     <span className="text-sm font-medium text-primary bg-white px-4 py-2 rounded-full border border-primary/20 shadow-sm flex items-center">
@@ -196,18 +213,18 @@ const MealPlanDetailPage = async (props: { params: Promise<{ id: string }> }) =>
                     <div key={meal.id} className="p-6 hover:bg-gray-50 transition-colors">
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-3">
                         <div className="flex items-start gap-4">
-                          <div className={`p-4 rounded-xl shadow-sm bg-${color[0]}-50 text-${color[0]}-600`}>
+                          <div className={`p-4 rounded-xl shadow-sm bg-${color[0]}-50 text-${color[0]}-600 flex-shrink-0`}>
                             <Utensils className="h-6 w-6" />
                           </div>
-                          <div>
-                            <div className="flex items-center gap-2 mb-1">
+                          <div className="min-w-0"> {/* Added min-w-0 to allow text truncation */}
+                            <div className="flex flex-wrap items-center gap-2 mb-1">
                               <span className={`inline-block px-3 py-1 text-xs font-medium rounded-full bg-${color[0]}-100 text-${color[0]}-800`}>
                                 {meal.type.charAt(0).toUpperCase() + meal.type.slice(1)}
                               </span>
                               <span className="text-xs text-gray-500">•</span>
                               <span className="text-xs text-gray-500">{meal.calories} calories</span>
                             </div>
-                            <h3 className="text-xl font-semibold text-gray-800">{meal.name}</h3>
+                            <h3 className="text-xl font-semibold text-gray-800 break-words">{meal.name}</h3>
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
@@ -222,7 +239,8 @@ const MealPlanDetailPage = async (props: { params: Promise<{ id: string }> }) =>
 
                       {meal.description && (
                         <div className="pl-0 sm:pl-16">
-                          <p className="text-gray-600 mb-3">{meal.description}</p>
+                          {/* Added break-words and max-w-full for proper text wrapping */}
+                          <p className="text-gray-600 mb-3 break-words whitespace-normal max-w-full">{meal.description}</p>
                           {meal.ingredients?.length > 0 && (
                             <div className="mt-5 p-4 bg-gray-50 rounded-xl border border-gray-100">
                               <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center">
@@ -235,10 +253,10 @@ const MealPlanDetailPage = async (props: { params: Promise<{ id: string }> }) =>
                                 {meal.ingredients.map((ingredient, idx) => (
                                   <span
                                     key={idx}
-                                    className="inline-flex items-center px-3 py-1 text-xs bg-white text-gray-700 rounded-full border border-gray-200 shadow-sm hover:bg-gray-50"
+                                    className="inline-flex items-center px-3 py-1 text-xs bg-white text-gray-700 rounded-full border border-gray-200 shadow-sm hover:bg-gray-50 break-words max-w-full"
                                   >
-                                    <span className="w-2 h-2 bg-primary/70 rounded-full mr-1.5"></span>
-                                    {ingredient}
+                                    <span className="w-2 h-2 bg-primary/70 rounded-full mr-1.5 flex-shrink-0"></span>
+                                    <span className="truncate">{ingredient}</span>
                                   </span>
                                 ))}
                               </div>
