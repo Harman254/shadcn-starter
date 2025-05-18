@@ -12,11 +12,7 @@ module.exports = {
   			'2xl': '1400px'
   		}
 
-  	}, 
-	  colors: {
-		      'primary': '#4F46E5', // Customize this as needed
-		    'primary-300': '#A5B4FC', // Lighter version for dark mode
-	  },
+  	},
   	extend: {
   		colors: {
   			border: 'hsl(var(--border))',
