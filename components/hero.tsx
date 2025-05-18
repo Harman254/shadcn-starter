@@ -8,7 +8,7 @@ import { auth } from "@/lib/auth"
 import { headers } from "next/headers"
 
 
-const Hero = ( { user }: { user: string | undefined }) => {
+const Hero = ( { user }: { user: any }) => {
 
 
 
