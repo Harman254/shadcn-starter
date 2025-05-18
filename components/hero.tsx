@@ -9,22 +9,14 @@ import { headers } from "next/headers"
 
 
 type HeroProps = {
-  user: {
-    id: string;
-    name: string;
-    email: string;
-    emailVerified: boolean;
-    createdAt: Date;
-    updatedAt: Date;
-    image?: string | null;
- 
-};
+  username: string | undefined
+    
 
 }
 
 
 
-const Hero = ( { user }: HeroProps) => {
+const Hero = ( {username}: HeroProps) => {
 
 
 
@@ -54,7 +46,7 @@ const Hero = ( { user }: HeroProps) => {
             >
               Create Your Meal Plan
             </Link>
-            {!user && (
+            {!username && (
               <Button>
                 <Link href="/sign-in">Login</Link>
               </Button>
