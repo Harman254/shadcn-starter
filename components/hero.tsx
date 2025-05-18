@@ -8,7 +8,23 @@ import { auth } from "@/lib/auth"
 import { headers } from "next/headers"
 
 
-const Hero = ( { user }: { user: any }) => {
+type HeroProps = {
+  user: {
+    id: string;
+    name: string;
+    email: string;
+    emailVerified: boolean;
+    createdAt: Date;
+    updatedAt: Date;
+    image?: string | null;
+ 
+};
+
+}
+
+
+
+const Hero = ( { user }: HeroProps) => {
 
 
 
