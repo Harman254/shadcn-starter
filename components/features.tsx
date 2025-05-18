@@ -12,23 +12,13 @@ interface Feature {
   title: string;
   description: string;
   icon: React.ReactNode;
-  color?: string;
 }
 
-interface Feature17Props {
+interface FeatureProps {
   heading?: string;
   subheading?: string;
   features?: Feature[];
 }
-
-const iconColors = [
-  "bg-blue-100 text-blue-600 dark:bg-blue-950 dark:text-blue-300",
-  "bg-purple-100 text-purple-600 dark:bg-purple-950 dark:text-purple-300",
-  "bg-green-100 text-green-600 dark:bg-green-950 dark:text-green-300",
-  "bg-amber-100 text-amber-600 dark:bg-amber-950 dark:text-amber-300",
-  "bg-rose-100 text-rose-600 dark:bg-rose-950 dark:text-rose-300",
-  "bg-cyan-100 text-cyan-600 dark:bg-cyan-950 dark:text-cyan-300",
-];
 
 const FeatureComponent = ({
   heading = "Smarter Meal Planning",
@@ -36,72 +26,63 @@ const FeatureComponent = ({
   features = [
     {
       title: "Fast Planning",
-      description:
-        "No more stress or dinner dread—get smart plans in seconds instead.",
-      icon: <Timer className="size-4 md:size-6" />,
+      description: "No more stress or dinner dread—get smart plans in seconds instead.",
+      icon: <Timer className="size-5 md:size-6" aria-hidden="true" />,
     },
     {
       title: "Smart Recipes",
-      description:
-        "AI picks meals that match your goal—from bulking up to self-control.",
-      icon: <Zap className="size-4 md:size-6" />,
+      description: "AI picks meals that match your goal—from bulking up to self-control.",
+      icon: <Zap className="size-5 md:size-6" aria-hidden="true" />,
     },
     {
       title: "Healthy Choices",
-      description:
-        "Eat with balance, taste, and flair—our plans are built with expert care.",
-      icon: <ZoomIn className="size-4 md:size-6" />,
+      description: "Eat with balance, taste, and flair—our plans are built with expert care.",
+      icon: <ZoomIn className="size-5 md:size-6" aria-hidden="true" />,
     },
     {
       title: "For Everyone",
-      description:
-        "Solo, family, fit, or new—we've got the perfect plan for you.",
-      icon: <PersonStanding className="size-4 md:size-6" />,
+      description: "Solo, family, fit, or new—we've got the perfect plan for you.",
+      icon: <PersonStanding className="size-5 md:size-6" aria-hidden="true" />,
     },
     {
       title: "Budget Friendly",
-      description:
-        "Stick to meals that save you cash—without dull food or boring hash.",
-      icon: <DollarSign className="size-4 md:size-6" />,
+      description: "Stick to meals that save you cash—without dull food or boring hash.",
+      icon: <DollarSign className="size-5 md:size-6" aria-hidden="true" />,
     },
     {
       title: "Live Support",
-      description:
-        "Questions? Feedback? Hit us fast—our friendly help is built to last.",
-      icon: <MessageSquare className="size-4 md:size-6" />,
+      description: "Questions? Feedback? Hit us fast—our friendly help is built to last.",
+      icon: <MessageSquare className="size-5 md:size-6" aria-hidden="true" />,
     },
   ],
-}: Feature17Props) => {
+}: FeatureProps) => {
   return (
-    <section className="py-20 md:py-28 lg:py-32 bg-gradient-to-b from-background to-muted/30">
-      <div className="container mx-auto max-w-screen-xl px-4">
-        <div className="max-w-2xl mx-auto text-center mb-12 md:mb-16 lg:mb-20">
-          <p className="inline-block px-3 py-1 mb-4 text-sm font-medium rounded-full bg-muted text-muted-foreground">
-            {subheading}
-          </p>
-          <h2 className="text-3xl font-bold tracking-tight md:text-4xl lg:text-5xl">{heading}</h2>
-          <div className="w-16 h-1 mx-auto mt-6 rounded-full bg-primary"></div>
+    <section className="relative py-24 sm:py-32 bg-gradient-to-b from-muted/30 to-muted/20">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        <div className="inline-block text-green-800 rounded-lg bg-green-100 px-3 py-1 text-sm dark:bg-green-900 dark:text-green-200 mb-6">
+          {subheading}
         </div>
-        
+        <h2 className="text-4xl sm:text-6xl font-bold tracking-tight mb-8">
+          {heading}
+        </h2>
+        <p className="max-w-2xl mx-auto text-lg sm:text-xl text-muted-foreground mb-16">
+          Discover what makes our AI-powered plans the easiest way to eat well, save time, and stay on track.
+        </p>
+
         <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
           {features.map((feature, idx) => (
-            <div 
-              className="group relative flex flex-col p-6 bg-background border rounded-2xl shadow-sm transition-all duration-200 hover:shadow-md hover:-translate-y-1" 
+            <div
               key={idx}
+              className="relative group rounded-2xl border border-border bg-background/80 backdrop-blur-lg shadow-md hover:shadow-lg transition-all duration-300 p-6"
             >
-              <span className={cn(
-                "mb-5 flex size-12 items-center justify-center rounded-xl",
-                iconColors[idx % iconColors.length]
-              )}>
+              <div className="flex items-center justify-center size-12 mb-4 rounded-xl bg-white/10 border border-white/10 backdrop-blur-md shadow-inner text-primary">
                 {feature.icon}
-              </span>
-              <h3 className="text-xl font-semibold mb-3 group-hover:text-primary transition-colors">
+              </div>
+              <h3 className="text-xl font-semibold mb-2 group-hover:text-primary transition-colors">
                 {feature.title}
               </h3>
-              <p className="text-muted-foreground leading-relaxed">
-                {feature.description}
-              </p>
-              <div className="absolute top-0 left-0 w-full h-full rounded-2xl border-primary/0 transition-all duration-300 group-hover:border group-hover:border-primary/20"></div>
+              <p className="text-muted-foreground">{feature.description}</p>
+              <div className="absolute inset-0 rounded-2xl border border-transparent group-hover:border-primary/30 transition duration-300" />
             </div>
           ))}
         </div>

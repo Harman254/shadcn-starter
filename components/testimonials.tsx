@@ -59,7 +59,7 @@ const TestimonialCarousel = () => {
   }, []);
 
   return (
-    <section className="py-16 md:py-24 lg:py-32 bg-gradient-to-b from-background via-background to-muted/20 overflow-hidden">
+    <section className="py-16 md:py-24 lg:py-32 bg-gradient-to-b from-muted/30 via-background to-muted/20 overflow-hidden">
       <div className="container mx-auto px-4 relative">
         {/* Decorative elements */}
         <div className="absolute top-0 left-0 -translate-x-1/2 opacity-10">
