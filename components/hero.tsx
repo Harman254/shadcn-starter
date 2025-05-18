@@ -7,7 +7,8 @@ import { useSession } from "@/lib/auth-client"
 import { auth } from "@/lib/auth"
 import { headers } from "next/headers"
 
-export default async function Hero( { user }: { user: string | null }) {
+
+const Hero = ( { user }: { user: string | undefined }) => {
 
 
 
@@ -59,3 +60,5 @@ export default async function Hero( { user }: { user: string | null }) {
     </section>
   );
 }
+
+export default Hero;
