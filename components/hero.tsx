@@ -1,20 +1,28 @@
 
-'use client'
 import Link from "next/link"
 import { Button } from "./ui/button"
 import { requireUser } from "@/lib/user"
 import Image from "next/image"
 import { useSession } from "@/lib/auth-client"
+import { auth } from "@/lib/auth"
+import { headers } from "next/headers"
 
-export default  function Hero() {
- const session = useSession()
-  const user = session?.data?.user
+export default async function Hero() {
+
+
+
+  const session = await auth.api.getSession({
+    headers: await headers()
+  })
+
+  const user = session?.user
+
   return (
     <section className="w-full min-h-screen py-12 md:py-24 lg:py-32 container">
       <div className="container px-4 md:px-6 mx-auto">
         <div className="flex flex-col items-center justify-center space-y-4 text-center">
           <div className="space-y-2">
-            <Link href="/meal-plans/new" legacyBehavior>
+            <Link href="/meal-plans/new" className="inline-block">
               <div className="inline-block text-green-800 rounded-lg bg-green-100 px-3 py-1 text-sm dark:bg-green-900 dark:text-green-200">
                 New Feature!  Generate grocery list for your meal plan
               </div>

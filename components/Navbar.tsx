@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { MenuIcon } from "lucide-react";
 import {
   Accordion,
   AccordionContent,
