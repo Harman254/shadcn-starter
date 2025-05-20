@@ -22,7 +22,7 @@ type Props = {
 const MealPlanStatusCard = ({ hasMealPlan, mealPlan }: Props) => {
   const router = useRouter();
   return (
-    <div className="bg-white rounded-2xl shadow-lg p-8 mb-12">
+    <div className="bg-muted-foreground rounded-2xl shadow-lg p-8 mb-12">
       {hasMealPlan && mealPlan ? (
         <div className="text-center">
           <h2 className="text-2xl font-semibold text-gray-800 mb-4">

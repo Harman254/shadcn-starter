@@ -28,11 +28,9 @@ export default async function DashboardLayout({
 }: {
   children: ReactNode;
 }) {
-  
-
   const session = await auth.api.getSession({
     headers: await headers() // you need to pass the headers object.
-});
+  });
 
   if (!session) {
     redirect("/sign-in");
@@ -62,7 +60,7 @@ export default async function DashboardLayout({
           </div>
         </div>
 
-        {/* Main Content */}
+        {/* Main Content - Improved mobile responsiveness */}
         <div className="relative flex min-h-screen flex-col bg-gradient-to-br from-white via-cyan-50 to-slate-100 dark:from-zinc-900 dark:via-zinc-800 dark:to-zinc-950 transition-colors duration-300">
           <header className="flex h-14 items-center gap-4 border-b bg-muted/40 px-4 lg:h-[60px] lg:px-6">
             {/* Mobile Menu */}
@@ -87,12 +85,14 @@ export default async function DashboardLayout({
                 </nav>
               </SheetContent>
             </Sheet>
-
           </header>
 
-          {/* Full-width Main Section */}
-          <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6 w-full">
-            {children}
+          {/* Improved Main Section with better mobile containment */}
+          <main className="flex flex-1 flex-col gap-4 p-4 md:p-6 lg:gap-6 w-full max-w-full overflow-x-hidden">
+            {/* Content container with improved mobile width constraints */}
+            <div className="w-full mx-auto px-0 sm:px-2 md:px-4 max-w-[100%] sm:max-w-[540px] md:max-w-[720px] lg:max-w-[960px] xl:max-w-[1140px] 2xl:max-w-[1320px]">
+              {children}
+            </div>
           </main>
         </div>
       </div>

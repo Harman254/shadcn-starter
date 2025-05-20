@@ -112,12 +112,12 @@ function QuickNavCard({
   description: string;
 }) {
   return (
-    <div className="bg-white rounded-xl p-6 shadow-md hover:shadow-lg transition-shadow cursor-pointer group">
+    <div className="bg-gradient-to-b from-muted/30 to-muted/15 rounded-xl p-6 shadow-md hover:shadow-lg transition-shadow cursor-pointer group">
       <div className="text-emerald-600 mb-4 group-hover:scale-110 transition-transform">
         {icon}
       </div>
-      <h3 className="text-lg font-semibold text-gray-800 mb-2">{title}</h3>
-      <p className="text-gray-600 text-sm">{description}</p>
+      <h3 className="text-lg font-semibold text-foreground mb-2">{title}</h3>
+      <p className="text-foreground/85 text-sm">{description}</p>
     </div>
   );
 }

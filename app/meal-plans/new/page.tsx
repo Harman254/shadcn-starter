@@ -29,9 +29,7 @@ const MealNew = async () => {
 
   if (preferences) {
     return (
-      <div>
         <CreateMealPlan preferences={preferences}/>
-      </div>
     )
   }
 

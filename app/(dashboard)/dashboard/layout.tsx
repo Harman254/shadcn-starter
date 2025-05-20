@@ -24,6 +24,7 @@ import { authClient } from "@/lib/auth-client";
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import SignOut from "@/components/auth/sign-out";
+import { Sign } from "crypto";
 
 
 export default async function DashboardLayout({
@@ -71,6 +72,8 @@ if (!isOnboarded) {
             </div>
             <div className="flex-1">
               <nav className="grid items-start px-2 text-sm font-medium lg:px-4">
+                <SignOut />
+
                 <DashboardLinks />
               </nav>
             </div>
@@ -99,67 +102,15 @@ if (!isOnboarded) {
                 </SheetTitle>
                 <nav className="grid gap-2">
                   <DashboardLinks />
+                <SignOut />
+
+                    
+
                 </nav>
               </SheetContent>
             </Sheet>
 
-            <div className="flex items-center ml-auto">
-  <DropdownMenu>
-    <DropdownMenuTrigger asChild>
-      <Button
-        className="rounded-full border-muted-foreground/20 hover:border-muted-foreground/40 transition"
-        variant="outline"
-        size="icon"
-      >
-        <UserCog className="h-5 w-5 text-muted-foreground" />
-      </Button>
-    </DropdownMenuTrigger>
-    <DropdownMenuContent align="end" className="w-48 shadow-lg border border-muted p-1">
-      <DropdownMenuLabel className="text-xs text-muted-foreground uppercase tracking-wide px-2 py-1">
-        My Account
-      </DropdownMenuLabel>
-      <DropdownMenuSeparator />
-      <DropdownMenuItem asChild>
-        <Link
-          href="/dashboard"
-          className="w-full px-2 py-1.5 rounded-md hover:bg-muted/50 transition"
-        >
-          Dashboard
-        </Link>
-      </DropdownMenuItem>
-      <DropdownMenuItem asChild>
-        <Link
-          href="/dashboard/profile"
-          className="w-full px-2 py-1.5 rounded-md hover:bg-muted/50 transition"
-        >
-          Profile
-        </Link>
-      </DropdownMenuItem>
-      <DropdownMenuItem asChild>
-        <Link
-          href="/dashboard/settings"
-          className="w-full px-2 py-1.5 rounded-md hover:bg-muted/50 transition"
-        >
-          Settings
-        </Link>
-      </DropdownMenuItem>
-      <DropdownMenuItem asChild>
-        <Link
-          href="/dashboard/support"
-          className="w-full px-2 py-1.5 rounded-md hover:bg-muted/50 transition"
-        >
-          Support
-        </Link>
-      </DropdownMenuItem>
-      <DropdownMenuSeparator />
-      <DropdownMenuItem asChild>
-        <div className="w-full px-2 py-1.5 rounded-md hover:bg-destructive/10 transition text-destructive">
-          <SignOut />
-        </div>
-      </DropdownMenuItem>
-    </DropdownMenuContent>
-  </DropdownMenu>
-</div>
+          
           </header>
 
           {/* Full-width Main Section */}

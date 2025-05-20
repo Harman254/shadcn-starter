@@ -118,7 +118,7 @@ export default async function PreferencesPage() {
           </div>
         )}
         
-        <form action={updatePreferences} className="mx-auto max-w-2xl">
+        <form action={updatePreferences} className="mx-auto bg-gradient-to-b from-muted/35 to-muted/15 max-w-2xl">
           <Card className="border-2 shadow-lg">
             <CardHeader className="space-y-1 bg-muted/50">
               <CardTitle className="text-2xl">Taste Preferences</CardTitle>

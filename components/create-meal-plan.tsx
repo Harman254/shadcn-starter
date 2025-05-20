@@ -160,10 +160,10 @@ const CreateMealPlan = ({ preferences }: CreateMealPlanProps) => {
 
   if (loading || regenerating) {
     return (
-      <div className="container max-w-5xl mx-auto py-8 px-4 space-y-10">
+      <div className="container max-w-5xl mx-auto py-8 px-4 min-h-screen">
         {/* Skeleton for the Configuration UI */}
         <Card className="border-neutral-200 dark:border-neutral-800 shadow-md overflow-hidden">
-          <CardHeader className="bg-neutral-50 dark:bg-neutral-900 px-6 pt-5 pb-4 border-b border-neutral-200 dark:border-neutral-800">
+          <CardHeader className="bg-neutral-50 dark:bg-neutral-900 px-3 py-3 border-b border-neutral-200 dark:border-neutral-800">
             <CardTitle className="text-2xl font-bold tracking-tight">
               <Skeleton className="w-48 h-7" />
             </CardTitle>
@@ -375,7 +375,7 @@ const CreateMealPlan = ({ preferences }: CreateMealPlanProps) => {
               <div className="p-6 space-y-8">
                 {mealPlan.map((dayPlan) => (
                   <div key={dayPlan.day} className="space-y-4">
-                    <h3 className="text-lg font-semibold text-green-600 dark:text-green-400">
+                    <h3 className="text-xl font-semibold text-green-600 dark:text-green-400">
                       Day {dayPlan.day}
                     </h3>
                     <div className="space-y-4">
@@ -388,11 +388,11 @@ const CreateMealPlan = ({ preferences }: CreateMealPlanProps) => {
                           <div className="space-y-2">
                             <Badge 
                               variant="secondary" 
-                              className="mb-1.5 bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 font-medium text-xs px-2.5 py-0.5"
+                              className="mb-1.5 bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 font-medium text-sm px-2.5 py-0.5"
                             >
                               Ingredients
                             </Badge>
-                            <ul className="list-disc pl-5 text-sm text-neutral-600 dark:text-neutral-400 space-y-1">
+                            <ul className="list-disc pl-5 text-md text-neutral-600 dark:text-neutral-400 space-y-1">
                               {meal.ingredients.map((ing, i) => (
                                 <li key={i}>{ing}</li>
                               ))}
@@ -401,11 +401,11 @@ const CreateMealPlan = ({ preferences }: CreateMealPlanProps) => {
                           <div className="space-y-2">
                             <Badge 
                               variant="secondary"
-                              className="mb-1.5 bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 font-medium text-xs px-2.5 py-0.5"
+                              className="mb-1.5 bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 font-medium text-sm px-2.5 py-0.5"
                             >
                               Cooking Procedure
                             </Badge>
-                            <p className="text-sm text-neutral-600 dark:text-neutral-400 leading-relaxed">
+                            <p className="text-md text-neutral-600 dark:text-neutral-400 leading-relaxed">
                               {meal.instructions}
                             </p>
                           </div>

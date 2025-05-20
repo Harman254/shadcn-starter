@@ -9,7 +9,7 @@ export default function Hero() {
   return (
     <div className="relative pt-32 pb-20 sm:pt-40 sm:pb-24">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-        <div className="inline-block text-green-800 rounded-lg bg-green-100 px-3 py-1 text-sm dark:bg-green-900 dark:text-green-200">
+        <div className="inline-block text-green-800 rounded-lg  px-3 py-1 text-sm dark:bg-green-900 dark:text-green-200">
           New Feature! Generate grocery list for your meal plan
         </div>
         <h1 className="text-4xl sm:text-6xl lg:text-7xl  font-bold tracking-tight mb-8">

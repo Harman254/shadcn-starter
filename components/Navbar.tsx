@@ -32,6 +32,7 @@ import { Skeleton } from "./ui/skeleton";
 import MobileMenuTrigger from "./mobile-menu";
 import NavMenuTriggerClient from "./nav-menu";
 import { useSession } from "@/lib/auth-client";
+import SignOut from "./auth/sign-out";
 
 // You can replace this with your actual session hook
 // import { useSession } from "your-auth-library";
@@ -77,7 +78,7 @@ const Navbar = () => {
   ];
 
   return (
-    <section className="py-4 border-b">
+    <section className="py-4 border-none w-full">
       <div className="container">
         <nav className="flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
@@ -206,9 +207,8 @@ const Navbar = () => {
                   {isSignedIn ? (
                     <>
                       <span className="text-sm">Hi, {user?.name}</span>
-                      <Button asChild variant="outline">
-                        <Link href="/dashboard">Go to Dashboard</Link>
-                      </Button>
+                      <SignOut />
+
                     </>
                   ) : (
                     <>
