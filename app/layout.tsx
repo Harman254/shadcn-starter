@@ -19,13 +19,11 @@ export default async function  RootLayout({ children }: RootLayoutProps) {
       <html suppressHydrationWarning
         lang="en">
         <body suppressHydrationWarning >
-          <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-            <div className="relative flex min-h-screen flex-col bg-gradient-to-br from-white via-cyan-50 to-slate-100 dark:from-zinc-900 dark:via-zinc-800 dark:to-zinc-950 transition-colors duration-300">
+          <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
               <Toaster />
               <Navbar />
               {children}
               <Footer2 />
-            </div>
           </ThemeProvider>
         </body>
       </html>
