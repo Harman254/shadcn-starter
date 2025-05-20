@@ -72,7 +72,6 @@ if (!isOnboarded) {
             </div>
             <div className="flex-1">
               <nav className="grid items-start px-2 text-sm font-medium lg:px-4">
-                <SignOut />
 
                 <DashboardLinks />
               </nav>
@@ -102,7 +101,6 @@ if (!isOnboarded) {
                 </SheetTitle>
                 <nav className="grid gap-2">
                   <DashboardLinks />
-                <SignOut />
 
                     
 

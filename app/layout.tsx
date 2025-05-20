@@ -16,16 +16,18 @@ export default async function  RootLayout({ children }: RootLayoutProps) {
 
 
   return (
-      <html suppressHydrationWarning
-        lang="en">
-        <body suppressHydrationWarning >
-          <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
-              <Toaster />
-              <Navbar />
-              {children}
-              <Footer2 />
-          </ThemeProvider>
-        </body>
-      </html>
+    <html suppressHydrationWarning lang="en">
+    <body suppressHydrationWarning>
+      <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+        {/* Single container for the entire application */}
+        <div className="flex min-h-screen flex-col">
+          <Navbar />
+          {children}
+          <Footer2 />
+        </div>
+        <Toaster />
+      </ThemeProvider>
+    </body>
+  </html>
   );
 }
