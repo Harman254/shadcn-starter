@@ -40,63 +40,58 @@ export default async function MealLayout({
   const meals = await getMealsByUserId(user.id);
 
   return (
-    <>
-      <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
-        {/* Sidebar */}
-        <div className="hidden border-r bg-muted/40 md:block">
-          <div className="flex flex-col max-h-screen h-full gap-2">
-            <div className="h-14 flex items-center border-b px-4 lg:h-[60px] lg:px-6">
-              <Link href="/" className="flex items-center gap-2">
-                <span className="text-2xl font-semibold tracking-tighter">
-                  Meal<span className="text-green-500 text-2xl">Wise</span>
-                </span>
-              </Link>
-            </div>
-            <div className="flex-1">
-              <nav className="grid items-start px-2 text-sm font-medium lg:px-4">
-                <DashboardLinks />
-              </nav>
-            </div>
+    <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
+      {/* Sidebar */}
+      <div className="hidden border-r bg-muted/40 md:block">
+        <div className="flex flex-col max-h-screen h-full gap-2">
+          <div className="h-14 flex items-center border-b px-4 lg:h-[60px] lg:px-6">
+            <Link href="/" className="flex items-center gap-2">
+              <span className="text-2xl font-semibold tracking-tighter">
+                Meal<span className="text-green-500 text-2xl">Wise</span>
+              </span>
+            </Link>
+          </div>
+          <div className="flex-1">
+            <nav className="grid items-start px-2 text-sm font-medium lg:px-4">
+              <DashboardLinks />
+            </nav>
           </div>
         </div>
+      </div>
 
-        {/* Main Content - Improved mobile responsiveness */}
-        <div className="relative mx-auto w-full flex min-h-screen flex-col bg-gradient-to-br from-white via-cyan-50 to-slate-100 dark:from-zinc-900 dark:via-zinc-800 dark:to-zinc-950 transition-colors duration-300">
-          <header className="flex h-14 items-center gap-4 border-b bg-muted/40 px-4 lg:h-[60px] lg:px-6">
-            {/* Mobile Menu */}
-            <Sheet>
-              <SheetTrigger asChild>
-                <Button variant="outline" size="icon" className="md:hidden">
-                  <Menu className="size-5" />
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="left">
-                <SheetTitle>
-                  <div className="flex items-center gap-2 mb-4">
-                    <Link href="/" className="flex items-center gap-2">
-                      <span className="text-2xl font-bold">
-                        Meal<span className="text-green-600">Wise</span>
-                      </span>
-                    </Link>
-                  </div>
-                </SheetTitle>
-                <nav className="grid gap-2">
-                  <DashboardLinks />
-                </nav>
-              </SheetContent>
-            </Sheet>
-          </header>
+      {/* Main Content - Removed duplicate background gradient */}
+      <div className="relative w-full flex min-h-screen flex-col">
+        <header className="flex h-14 items-center gap-4 border-b bg-muted/40 px-4 lg:h-[60px] lg:px-6">
+          {/* Mobile Menu */}
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button variant="outline" size="icon" className="md:hidden">
+                <Menu className="size-5" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left">
+              <SheetTitle>
+                <div className="flex items-center gap-2 mb-4">
+                  <Link href="/" className="flex items-center gap-2">
+                    <span className="text-2xl font-bold">
+                      Meal<span className="text-green-600">Wise</span>
+                    </span>
+                  </Link>
+                </div>
+              </SheetTitle>
+              <nav className="grid gap-2">
+                <DashboardLinks />
+              </nav>
+            </SheetContent>
+          </Sheet>
+        </header>
 
-          {/* Improved Main Section with better mobile containment */}
-          {/* <main className="flex flex-1 flex-col gap-4 p-4 md:p-6 lg:gap-6 w-full max-w-full overflow-x-hidden"> */}
-            {/* Content container with improved mobile width constraints */}
-            <div className="relative flex min-h-screen flex-col bg-gradient-to-br from-white via-cyan-50 to-slate-100 dark:from-zinc-900 dark:via-zinc-800 dark:to-zinc-950 transition-colors duration-300">
-              {children}
-            </div>
-          {/* </main> */}
-        </div>
+        {/* Main content area - simplified structure */}
+        <main className="flex-1">
+          {children}
+        </main>
       </div>
       <Toaster richColors closeButton theme="light" />
-    </>
+    </div>
   );
 }

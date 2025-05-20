@@ -34,9 +34,6 @@ import NavMenuTriggerClient from "./nav-menu";
 import { useSession } from "@/lib/auth-client";
 import SignOut from "./auth/sign-out";
 
-// You can replace this with your actual session hook
-// import { useSession } from "your-auth-library";
-
 interface Feature {
   title: string;
   description: string;
@@ -44,15 +41,9 @@ interface Feature {
 }
 
 const Navbar = () => {
-  // Replace this with your actual session hook
-  // const { data: session } = useSession();
-  
-  // Example of how you might fetch session client-side
-  // Remove this and use your actual session hook
   const session = useSession();
-
   const isSignedIn = !!session;
-    const user = session?.data?.user
+  const user = session?.data?.user;
 
   const features: Feature[] = [
     {
@@ -78,9 +69,9 @@ const Navbar = () => {
   ];
 
   return (
-    <section className="py-4 border-none w-full">
-      <div className="container">
-        <nav className="flex items-center justify-between">
+    <div className="w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+        <nav className="flex items-center justify-between py-4">
           <Link href="/" className="flex items-center gap-2">
             <img
               src="https://shadcnblocks.com/images/block/logos/shadcnblockscom-icon.svg"
@@ -208,7 +199,6 @@ const Navbar = () => {
                     <>
                       <span className="text-sm">Hi, {user?.name}</span>
                       <SignOut />
-
                     </>
                   ) : (
                     <>
@@ -226,7 +216,7 @@ const Navbar = () => {
           </Sheet>
         </nav>
       </div>
-    </section>
+    </div>
   );
 };
 
