@@ -16,9 +16,7 @@ import { SignupSchema } from '@/lib/helpers/zod/sign-up-schema'
 import { signUp } from '@/lib/auth-client'
 import { useRouter } from 'next/navigation'
 import FormSuccess from '../form-success'
-
 const SignUp = () => {
-    const router = useRouter()
     const { error, success, loading, setLoading, setError, setSuccess, resetState } = useAuthState();
 
     const form = useForm<z.infer<typeof SignupSchema>>({
@@ -36,6 +34,7 @@ const SignUp = () => {
                 name: values.name,
                 email: values.email,
                 password: values.password,
+                callbackURL:'/' // redirect the user after email is verified
             }, {
                 onResponse: () => {
                     setLoading(false)
@@ -45,8 +44,9 @@ const SignUp = () => {
                     setLoading(true)
                 },
                 onSuccess: () => {
-                    setSuccess("User has been created")
-                    router.replace('/')
+                    // setSuccess("User has been created")
+                    // router.replace('/')
+                    setSuccess("Verification link has been sent to your mail")
                 },
                 onError: (ctx) => {
                     setError(ctx.error.message);
@@ -125,8 +125,13 @@ const SignUp = () => {
                     />
                     <FormError message={error} />
                     <FormSuccess message={success} />
+                     //ignore this if your not adding Oauth
                     <Button disabled={loading} type="submit" className='w-full'>Submit</Button>
-                 </form>
+                    <div className='flex gap-x-2'>
+                        <SocialButton onClick={() => {}} provider="google" icon={<FcGoogle />} label="Sign in with Google" />
+                        <SocialButton onClick={() => {}} provider="github" icon={<FaGithub />} label="Sign in with GitHub" />
+                    </div>
+                </form>
             </Form>
         </CardWrapper>
     )

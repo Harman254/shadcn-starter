@@ -17,11 +17,10 @@ import { Button } from '../ui/button'
 import { signIn, } from '@/lib/auth-client'
 import { useRouter } from 'next/navigation'
 import FormSuccess from '../form-success'
-
+import Link from 'next/link'
 const SignIn = () => {
     const router = useRouter()
     const { error, success, loading, setSuccess, setError, setLoading, resetState } = useAuthState();
-   
 
     const form = useForm<z.infer<typeof LoginSchema>>({
         resolver: zodResolver(LoginSchema),
@@ -44,11 +43,17 @@ const SignIn = () => {
               resetState()
               setLoading(true)
             },
-            onSuccess: (ctx) => {
+            onSuccess: () => {
                 setSuccess("LoggedIn successfully")
-                router.push('/dashboard')
+                router.replace('/')
             },
+// changes were made on onError option
             onError: (ctx) => {
+                /* Whenever user tried to signin but email is not verified it catches the error and display the error */
+                if(ctx.error.status === 403) {
+                    setError("Please verify your email address")
+                }
+                /* handles other error */
               setError(ctx.error.message);
             },
           });
@@ -57,6 +62,61 @@ const SignIn = () => {
           setError("Something went wrong")
         }
       }
+
+
+      const googleSignIn = async () => {
+        try {
+            await signIn.social({
+                provider: "google"
+            }, {
+                onResponse: () => {
+                    setLoading(false)
+                },
+                onRequest: () => {
+                    setSuccess("")
+                    setError("")
+                    setLoading(true)
+                },
+                onSuccess: () => {
+                    setSuccess("Your are loggedIn successfully")
+                    router.push('/')
+                },
+                onError: (ctx) => {
+                    setError(ctx.error.message)
+                }
+            })
+        } catch (error: unknown) {
+            console.error(error)
+            setError("Something went wrong")
+        }
+    }
+
+    const githubSignIn = async () => {
+        try {
+            await signIn.social({
+                provider: "github",
+                callbackURL: "/"
+            }, {
+                onResponse: () => {
+                    setLoading(false)
+                },
+                onRequest: () => {
+                    setSuccess("")
+                    setError("")
+                    setLoading(true)
+                },
+                onSuccess: () => {
+                    setSuccess("Your are loggedIn successfully")
+                },
+                onError: (ctx) => {
+                    setError(ctx.error.message)
+                }
+            })
+        } catch (error: unknown) {
+            console.log(error)
+            setError("Something went wrong")
+        }
+    }
 
     return (
         <CardWrapper
@@ -108,6 +168,13 @@ const SignIn = () => {
                     <FormError message={error} />
                     <FormSuccess message={success} />
                     <Button disabled={loading} type="submit" className='w-full'>Login</Button>
+                    <Link href="/forgot-password" className="text-xs underline ml-60">Forgot Password?</Link>
+                
+                    <div className='flex gap-x-2'>
+                        <SocialButton onClick={() => googleSignIn()} provider="google" icon={<FcGoogle />} label="Sign in with Google" />
+                        <SocialButton onClick={() => githubSignIn()} provider="github" icon={<FaGithub />} label="Sign in with GitHub" />
+                    </div>
+                
                 </form>
             </Form>
         </CardWrapper>
