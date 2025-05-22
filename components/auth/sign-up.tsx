@@ -125,7 +125,6 @@ const SignUp = () => {
                     />
                     <FormError message={error} />
                     <FormSuccess message={success} />
-                     //ignore this if your not adding Oauth
                     <Button disabled={loading} type="submit" className='w-full'>Submit</Button>
                     <div className='flex gap-x-2'>
                         <SocialButton onClick={() => {}} provider="google" icon={<FcGoogle />} label="Sign in with Google" />
