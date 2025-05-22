@@ -127,8 +127,8 @@ const SignUp = () => {
                     <FormSuccess message={success} />
                     <Button disabled={loading} type="submit" className='w-full'>Submit</Button>
                     <div className='flex gap-x-2'>
-                        <SocialButton onClick={() => {}} provider="google" icon={<FcGoogle />} label="Sign in with Google" />
-                        <SocialButton onClick={() => {}} provider="github" icon={<FaGithub />} label="Sign in with GitHub" />
+                        <SocialButton onClick={() => {}} provider="google"  label="Sign in with Google" />
+                        <SocialButton onClick={() => {}} provider="github"  label="Sign in with GitHub" />
                     </div>
                 </form>
             </Form>
