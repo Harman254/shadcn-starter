@@ -58,7 +58,7 @@ const ResetPassword = () => {
         <CardWrapper
             cardTitle='Reset Password'
             cardDescription='create a new password'
-            cardFooterLink='/signin'
+            cardFooterLink='/sign-in'
             cardFooterDescription='Remember your password?'
             cardFooterLinkTitle='Signin'
         >

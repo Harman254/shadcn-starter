@@ -57,7 +57,7 @@ const ForgotPassword = () => {
       cardTitle='Forgot Password'
       cardDescription='Enter your email to send link to reset password'
       cardFooterDescription="Remember your password?"
-      cardFooterLink='/signin'
+      cardFooterLink='/sign-in'
       cardFooterLinkTitle='Signin'
     >
       <Form {...form}>

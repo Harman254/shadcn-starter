@@ -3,7 +3,9 @@ import React from 'react'
 
 const ForgotPasswordPage = () => {
   return (
-    <ForgotPassword />
+    <div className='flex justify-center items-center h-screen'>
+      <ForgotPassword />
+    </div>
   )
 }
 
