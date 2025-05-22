@@ -2,9 +2,7 @@
 import React from 'react'
 import CardWrapper from '../card-wrapper'
 import FormError from '../form-error'
-import { FcGoogle } from 'react-icons/fc'
 import SocialButton from './social-button'
-import { FaGithub } from 'react-icons/fa'
 import { useAuthState } from '@/lib/use-AuthState'
 
 import LoginSchema from '@/lib/helpers/zod/login-schema'
@@ -171,8 +169,8 @@ const SignIn = () => {
                     <Link href="/forgot-password" className="text-xs underline ml-60">Forgot Password?</Link>
                 
                     <div className='flex gap-x-2'>
-                        <SocialButton onClick={() => googleSignIn()} provider="google" icon={<FcGoogle />} label="Sign in with Google" />
-                        <SocialButton onClick={() => githubSignIn()} provider="github" icon={<FaGithub />} label="Sign in with GitHub" />
+                        <SocialButton onClick={() => googleSignIn()} provider="google"  label="Sign in with Google" />
+                        <SocialButton onClick={() => githubSignIn()} provider="github"  label="Sign in with GitHub" />
                     </div>
                 
                 </form>
