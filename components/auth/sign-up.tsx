@@ -3,7 +3,7 @@ import React from 'react'
 import CardWrapper from '../card-wrapper'
 import FormError from '../form-error'
 import { FcGoogle } from 'react-icons/fc'
-import SocialButton from './social-button'
+import { SignInButton } from './social-button'
 import { FaGithub } from 'react-icons/fa'
 import { useAuthState } from '@/lib/use-AuthState'
 import { useForm } from 'react-hook-form'
@@ -16,6 +16,7 @@ import { SignupSchema } from '@/lib/helpers/zod/sign-up-schema'
 import { signUp } from '@/lib/auth-client'
 import { useRouter } from 'next/navigation'
 import FormSuccess from '../form-success'
+import { LogoIcons } from '../icons'
 const SignUp = () => {
     const { error, success, loading, setLoading, setError, setSuccess, resetState } = useAuthState();
 
@@ -127,8 +128,9 @@ const SignUp = () => {
                     <FormSuccess message={success} />
                     <Button disabled={loading} type="submit" className='w-full'>Submit</Button>
                     <div className='flex gap-x-2'>
-                        <SocialButton onClick={() => {}} provider="google"  label="Sign in with Google" />
-                        <SocialButton onClick={() => {}} provider="github"  label="Sign in with GitHub" />
+                    <SignInButton title="Sign in with Google"  provider="google"  callbackURL="/" icon={<LogoIcons.Google />} loading={loading} setLoading={setLoading} />
+
+
                     </div>
                 </form>
             </Form>

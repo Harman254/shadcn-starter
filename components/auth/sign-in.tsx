@@ -2,7 +2,7 @@
 import React from 'react'
 import CardWrapper from '../card-wrapper'
 import FormError from '../form-error'
-import SocialButton from './social-button'
+import { SignInButton } from './social-button'
 import { useAuthState } from '@/lib/use-AuthState'
 
 import LoginSchema from '@/lib/helpers/zod/login-schema'
@@ -16,6 +16,8 @@ import { signIn, } from '@/lib/auth-client'
 import { useRouter } from 'next/navigation'
 import FormSuccess from '../form-success'
 import Link from 'next/link'
+import { FcGoogle } from 'react-icons/fc'
+import { LogoIcons } from '../icons'
 const SignIn = () => {
     const router = useRouter()
     const { error, success, loading, setSuccess, setError, setLoading, resetState } = useAuthState();
@@ -169,8 +171,7 @@ const SignIn = () => {
                     <Link href="/forgot-password" className="text-xs underline ml-60">Forgot Password?</Link>
                 
                     <div className='flex gap-x-2'>
-                        <SocialButton onClick={() => googleSignIn()} provider="google"  label="Sign in with Google" />
-                        <SocialButton onClick={() => githubSignIn()} provider="github"  label="Sign in with GitHub" />
+                        <SignInButton title="Sign in with Google"  provider="google"  callbackURL="/" icon={<LogoIcons.Google />} loading={loading} setLoading={setLoading} />
                     </div>
                 
                 </form>
