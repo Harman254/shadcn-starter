@@ -169,10 +169,10 @@ const SignIn = () => {
                     <FormSuccess message={success} />
                     <Button disabled={loading} type="submit" className='w-full'>Login</Button>
                     <Link href="/forgot-password" className="text-xs underline ml-60">Forgot Password?</Link>
-                
-                    <div className='flex gap-x-2'>
-                        <SignInButton title="Sign in with Google"  provider="google"  callbackURL="/" icon={<LogoIcons.Google />} loading={loading} setLoading={setLoading} />
-                    </div>
+                 <div className='flex items-center justify-between'>
+                 <SignInButton title="Sign in with Google"  provider="google"  callbackURL="/" icon={<LogoIcons.Google />} loading={loading} setLoading={setLoading} />
+
+                 </div>
                 
                 </form>
             </Form>
