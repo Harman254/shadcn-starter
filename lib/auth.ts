@@ -2,6 +2,7 @@ import { betterAuth } from 'better-auth';
 import  prisma from '../lib/prisma'
 import { prismaAdapter } from 'better-auth/adapters/prisma';
 import { resend } from './helpers/email/resend';
+import { nextCookies } from 'better-auth/next-js';
 
 export const auth = betterAuth({
     appName: "better_auth_nextjs",
@@ -33,12 +34,13 @@ export const auth = betterAuth({
       google: {
         clientId: process.env.GOOGLE_CLIENT_ID!,
         clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-        redirectURI: process.env.BETTER_AUTH_URL + "api/auth/callback/google",
+        // redirectURI: process.env.BETTER_AUTH_URL + "api/auth/callback/google",
       },
       github: {
         clientId: process.env.GITHUB_CLIENT_ID!,
         clientSecret: process.env.GITHUB_CLIENT_SECRET!,
-        redirectURI: process.env.BETTER_AUTH_URL + "api/auth/callback/github",
+        // redirectURI: process.env.BETTER_AUTH_URL + "api/auth/callback/github",
       },
     },
+    cookies: nextCookies(),
   });
