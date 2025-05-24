@@ -20,6 +20,8 @@ import FormSuccess from '../form-success'
 import { LogoIcons } from '../icons'
 const SignUp = () => {
     const { error, success, loading, setLoading, setError, setSuccess, resetState } = useAuthState();
+    const [googleLoading, setGoogleLoading] = React.useState(false)
+    const [githubLoading, setGithubLoading] = React.useState(false)
 
     const form = useForm<z.infer<typeof SignupSchema>>({
         resolver: zodResolver(SignupSchema),
@@ -130,7 +132,8 @@ const SignUp = () => {
                     <Button disabled={loading} type="submit" className='w-full'>Submit</Button>
                     <div>
                         <div>
-                        <SignInButton title="Sign in with github"  provider="github"  callbackURL="/" icon={<LogoIcons.Github />} loading={loading} setLoading={setLoading} />
+                        <SignInButton title="Sign in with github"  provider="github"  callbackURL="/" icon={<LogoIcons.Github />} loading={githubLoading} setLoading={setGithubLoading}/>
+                        <SignInButton title="Sign in with Google"  provider="google"  callbackURL="/" icon={<LogoIcons.Google />} loading={googleLoading} setLoading={setGoogleLoading} />
 
                             
                         </div>

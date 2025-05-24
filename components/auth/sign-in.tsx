@@ -19,8 +19,11 @@ import Link from 'next/link'
 import { FcGoogle } from 'react-icons/fc'
 import { LogoIcons } from '../icons'
 const SignIn = () => {
+
     const router = useRouter()
     const { error, success, loading, setSuccess, setError, setLoading, resetState } = useAuthState();
+ const [googleLoading, setGoogleLoading] = React.useState(false)
+    const [githubLoading, setGithubLoading] = React.useState(false)
 
     const form = useForm<z.infer<typeof LoginSchema>>({
         resolver: zodResolver(LoginSchema),
@@ -169,8 +172,8 @@ const SignIn = () => {
                     <FormSuccess message={success} />
                     <Button disabled={loading} type="submit" className='w-full'>Login</Button>
                     <Link href="/forgot-password" className="text-xs underline ml-60">Forgot Password?</Link>
-                 <SignInButton title="Sign in with Google"  provider="google"  callbackURL="/" icon={<LogoIcons.Google />} loading={loading} setLoading={setLoading} />
-                 <SignInButton title="Sign in with github"  provider="github"  callbackURL="/" icon={<LogoIcons.Github />} loading={loading} setLoading={setLoading} />
+                 <SignInButton title="Sign in with Google"  provider="google"  callbackURL="/" icon={<LogoIcons.Google />} loading={googleLoading} setLoading={setGoogleLoading} />
+                 <SignInButton title="Sign in with github"  provider="github"  callbackURL="/" icon={<LogoIcons.Github />} loading={githubLoading} setLoading={setGithubLoading} />
 
                 
                 </form>
