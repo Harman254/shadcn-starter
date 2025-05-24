@@ -4,6 +4,7 @@ import CardWrapper from '../card-wrapper'
 import FormError from '../form-error'
 import { FcGoogle } from 'react-icons/fc'
 import { SignInButton } from './social-button'
+
 import { FaGithub } from 'react-icons/fa'
 import { useAuthState } from '@/lib/use-AuthState'
 import { useForm } from 'react-hook-form'
@@ -127,11 +128,14 @@ const SignUp = () => {
                     <FormError message={error} />
                     <FormSuccess message={success} />
                     <Button disabled={loading} type="submit" className='w-full'>Submit</Button>
-                    <div className='flex gap-x-2'>
-                    <SignInButton title="Sign in with Google"  provider="google"  callbackURL="/" icon={<LogoIcons.Google />} loading={loading} setLoading={setLoading} />
+                    <div>
+                        <div>
+                        <SignInButton title="Sign in with github"  provider="github"  callbackURL="/" icon={<LogoIcons.Github />} loading={loading} setLoading={setLoading} />
 
-
+                            
+                        </div>
                     </div>
+                    
                 </form>
             </Form>
         </CardWrapper>

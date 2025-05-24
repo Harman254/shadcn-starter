@@ -45,6 +45,8 @@ import { nextCookies } from 'better-auth/next-js';
 //     cookies: nextCookies(),
 //   });
 
+const redirectURI = process.env.BETTER_AUTH_URL + "api/auth/callback/google";
+
 
 export const auth = betterAuth({
   appName: "better_auth_nextjs",
@@ -53,14 +55,13 @@ export const auth = betterAuth({
     }),
 
     socialProviders: {
-      // github: {
-      //   clientId: env.GITHUB_CLIENT_ID,
-      //   clientSecret: env.GITHUB_CLIENT_SECRET,
-      // },
+      github: {
+        clientId: process.env.GITHUB_CLIENT_ID!,
+        clientSecret: process.env.GITHUB_CLIENT_SECRET!,
+      },
       google: {
         clientId: process.env.GOOGLE_CLIENT_ID!,
         clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-        redirectURI: process.env.BETTER_AUTH_URL + "api/auth/callback/google",
       },
       // discord: {
       //   clientId: env.DISCORD_CLIENT_ID,
