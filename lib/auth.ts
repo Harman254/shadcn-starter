@@ -21,7 +21,7 @@ export const auth = betterAuth({
     // Change from passwordReset to sendResetPassword
     sendResetPassword: async ({ user, url }: { user: User; url: string }) => {
       await resend.emails.send({
-        from: "MealWise <aiMealwise.com>",
+        from: "MealWise <onboarding@resend.dev>",
         to: user.email,
         subject: "Reset your MealWise password",
         html: `
