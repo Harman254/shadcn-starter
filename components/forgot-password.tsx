@@ -25,12 +25,10 @@ const ForgotPassword = () => {
 
   const onSubmit = async (values: z.infer<typeof ForgotPasswordSchema>) => {
     try {
-        // Call the authClient's forgetPassword method, passing the email and a redirect URL.
-        await authClient.forgetPassword({
-        email: values.email, // Email to which the reset password link should be sent.
-        redirectTo: "/reset-password" // URL to redirect the user after resetting the password.
+      await authClient.forgetPassword({
+        email: values.email,
+        redirectTo: "/reset-password"
       }, {
-        // Lifecycle hooks to handle different stages of the request.
         onResponse: () => {
           setLoading(false)
         },
@@ -42,12 +40,11 @@ const ForgotPassword = () => {
           setSuccess("Reset password link has been sent")
         },
         onError: (ctx) => {
-          setError(ctx.error.message);
+          setError(ctx.error.message)
         },
-      });
-
-    } catch (error) { // catch the error
-      console.log(error)
+      })
+    } catch (error) {
+      console.error(error)
       setError("Something went wrong")
     }
   }
@@ -58,7 +55,7 @@ const ForgotPassword = () => {
       cardDescription='Enter your email to send link to reset password'
       cardFooterDescription="Remember your password?"
       cardFooterLink='/sign-in'
-      cardFooterLinkTitle='Signin'
+      cardFooterLinkTitle='Sign in'
     >
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -82,10 +79,15 @@ const ForgotPassword = () => {
           />
           <FormError message={error} />
           <FormSuccess message={success} />
-          <Button disabled={loading} type="submit" className='w-full'>Submit</Button>
+          <Button 
+            disabled={loading} 
+            type="submit" 
+            className='w-full'
+          >
+            {loading ? "Sending..." : "Send Reset Link"}
+          </Button>
         </form>
       </Form>
-
     </CardWrapper>
   )
 }
