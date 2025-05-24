@@ -41,7 +41,7 @@ const ResetPassword = () => {
                 },
                 onSuccess: () => {
                     setSuccess("New password has been created")
-                    router.replace('/signin')
+                    router.replace('/sign-in')
                 },
                 onError: (ctx) => {
                     setError(ctx.error.message);

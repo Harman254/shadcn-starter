@@ -18,40 +18,38 @@ export const auth = betterAuth({
     minPasswordLength: 8,
     maxPasswordLength: 20,
     requireEmailVerification: true,
-    // Enable password reset
-    passwordReset: {
-      enabled: true,
-      sendResetEmail: async ({ user, url }: { user: User; url: string }) => {
-        await resend.emails.send({
-          from: "MealWise <onboarding@resend.dev>",
-          to: user.email,
-          subject: "Reset your MealWise password",
-          html: `
-            <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
-              <h1 style="color: #16a34a;">Reset Your Password</h1>
-              <p>You requested to reset your password. Click the link below to set a new password:</p>
-              <a href="${url}" 
-                 style="display: inline-block; 
-                        background-color: #16a34a; 
-                        color: white; 
-                        padding: 12px 24px; 
-                        text-decoration: none; 
-                        border-radius: 6px; 
-                        margin: 16px 0;">
-                Reset Password
-              </a>
-              <p>If you didn't request this password reset, you can safely ignore this email.</p>
-              <p style="color: #666; font-size: 14px; margin-top: 24px;">
-                This link will expire in 1 hour for security reasons.
-              </p>
-            </div>
-          `,
-        });
-      },
-      // Optional: Customize reset token expiration (default is 1 hour)
-      tokenExpiration: 3600, // in seconds
+    // Change from passwordReset to sendResetPassword
+    sendResetPassword: async ({ user, url }: { user: User; url: string }) => {
+      await resend.emails.send({
+        from: "MealWise <aiMealwise.com>",
+        to: user.email,
+        subject: "Reset your MealWise password",
+        html: `
+          <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+            <h1 style="color: #16a34a;">Reset Your Password</h1>
+            <p>You requested to reset your password. Click the link below to set a new password:</p>
+            <a href="${url}" 
+               style="display: inline-block; 
+                      background-color: #16a34a; 
+                      color: white; 
+                      padding: 12px 24px; 
+                      text-decoration: none; 
+                      border-radius: 6px; 
+                      margin: 16px 0;">
+              Reset Password
+            </a>
+            <p>If you didn't request this password reset, you can safely ignore this email.</p>
+            <p style="color: #666; font-size: 14px; margin-top: 24px;">
+              This link will expire in 1 hour for security reasons.
+            </p>
+          </div>
+        `,
+      });
     },
+    // You can still set token expiration if needed
+    tokenExpiration: 3600, // in seconds
   },
+  
 
   // Email Verification Settings
   emailVerification: {
