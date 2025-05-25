@@ -32,18 +32,19 @@ export const getUserIpAddressById = async (userId: string) => {
     }
 
 
-export const getUserIpAddress = async (userId: string) => {
-        const user = await prisma.session.findUnique({
-            where: {
-                id: userId
-            },
-            
+    export const getUserIpAddress = async (sessionId: string): Promise<string> => {
+        const session = await prisma.session.findUnique({
+          where: {
+            id: sessionId,
+          },
+        });
+        if (!session || !session.ipAddress) {
+          throw new Error("Session not found or IP address not available");
         }
 
-      )
-        if (!user) {
-            throw new Error('User not found')
-        }
-        return user.ipAddress
+        console.log(`User IP Address for session ${sessionId}: ${session.ipAddress}`);
+      
         
-    }
+        return session.ipAddress;
+      };
+      

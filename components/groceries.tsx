@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { generateGroceryListFromLatest } from '@/ai/flows/generate-grocery-list';
+import {  generateGroceryListFromMealPlan } from '@/ai/flows/generate-grocery-list';
 import type { GenerateGroceryListOutput } from '@/ai/flows/generate-grocery-list';
 import { Search, ShoppingBag, Check, Filter } from 'lucide-react';
 
@@ -12,7 +12,7 @@ interface GroceryItem {
   checked: boolean; // Added for check functionality
 }
 
-export default function GroceryList() {
+const GroceryList = ({id}: {id: string | null}) => {
   const [groceryList, setGroceryList] = useState<GroceryItem[]>([]);
   const [filteredList, setFilteredList] = useState<GroceryItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -29,8 +29,13 @@ export default function GroceryList() {
   useEffect(() => {
     const fetchGroceryList = async () => {
       try {
+      if (!id) {
+          setError('Invalid meal plan ID');
+          setIsLoading(false);
+          return;
+        }
         setIsLoading(true);
-        const result: GenerateGroceryListOutput = await generateGroceryListFromLatest();
+        const result: GenerateGroceryListOutput = await generateGroceryListFromMealPlan(id);
         
         // Add checked property to each item
         const groceryItems = result.groceryList.map(item => ({
@@ -296,3 +301,7 @@ export default function GroceryList() {
     </div>
   );
 }
+
+
+export default GroceryList;
+

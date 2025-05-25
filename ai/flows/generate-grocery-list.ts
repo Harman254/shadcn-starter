@@ -2,7 +2,7 @@
 
 import { ai } from '../instance';
 import { z } from 'genkit';
-import { getLatestFullMealPlanByUserId} from '@/data';
+import { fetchMealPlanById} from '@/data';
 import type { FullMealPlanWithDays } from '@/types';
 import { headers } from 'next/headers';
 import { auth } from '@/lib/auth';
@@ -150,7 +150,10 @@ export async function generateGroceryList(
   return generateGroceryListFlow(input);
 }
 
-export async function generateGroceryListFromLatest(): Promise<GenerateGroceryListOutput> {
+// Modified function to accept mealplanId as a parameter
+export async function generateGroceryListFromMealPlan(
+  mealplanId: string
+): Promise<GenerateGroceryListOutput> {
   try {
     // Get user session
     const session = await auth.api.getSession({
@@ -160,15 +163,16 @@ export async function generateGroceryListFromLatest(): Promise<GenerateGroceryLi
     const userId = session?.user?.id;
     if (!userId) throw new Error("Unauthorized");
 
-    // Get the user's meal plan from database
-    const latestMealPlan: FullMealPlanWithDays | null = await getLatestFullMealPlanByUserId(userId);
-    if (!latestMealPlan || !latestMealPlan.days) {
+    // Get the user's meal plan from database using the provided mealplanId
+    const MealPlan = await fetchMealPlanById(mealplanId);
+    if (!MealPlan || !MealPlan.days) {
       throw new Error("No meal plan found");
     }
 
     // Get location data
-    const sessionID = 'SxFpZB2PfuXQT8BS8xcR1Bbbnxe4jOao';
-    const userIpAddress = await getUserIpAddress(sessionID);
+
+    console.log(session.session.id)
+    const userIpAddress = await getUserIpAddress(session.session.id);
     if (!userIpAddress) {
       throw new Error("User IP address not found");
     }
@@ -177,7 +181,7 @@ export async function generateGroceryListFromLatest(): Promise<GenerateGroceryLi
     
     // Extract only meal names and ingredients from the existing meal plan
     const simplifiedMeals = [];
-    for (const day of latestMealPlan.days) {
+    for (const day of MealPlan.days) {
       for (const meal of day.meals) {
         simplifiedMeals.push({
           name: meal.name,
@@ -220,6 +224,26 @@ export async function generateGroceryListFromLatest(): Promise<GenerateGroceryLi
 
     // Generate grocery list from existing meal plan data
     return generateGroceryListFlow(input);
+  } catch (error) {
+    console.error("Error in generateGroceryListFromMealPlan:", error);
+    throw error;
+  }
+}
+
+// Keep the original function for backward compatibility but update it to use the new function
+export async function generateGroceryListFromLatest(): Promise<GenerateGroceryListOutput> {
+  try {
+    // Get user session
+    const session = await auth.api.getSession({
+      headers: await headers()
+    });
+
+    const userId = session?.user?.id;
+    if (!userId) throw new Error("Unauthorized");
+
+    // This function would typically get the latest meal plan
+    // For now, we'll throw an error suggesting to use the new function
+    throw new Error("This function is deprecated. Please use generateGroceryListFromMealPlan with a mealplanId parameter.");
   } catch (error) {
     console.error("Error in generateGroceryListFromLatest:", error);
     throw error;

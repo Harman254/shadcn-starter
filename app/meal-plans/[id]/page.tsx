@@ -1,3 +1,5 @@
+import { generateGroceryListFromMealPlan } from "@/ai/flows/generate-grocery-list";
+import GroceryListButton from "@/components/groceries-button";
 import { Button } from "@/components/ui/button";
 import { fetchMealPlanById } from "@/data";
 import { Calendar as CalendarIcon, Utensils, Clock, ChevronRight, Info, Award, Activity, ChevronLeft, CarIcon } from "lucide-react";
@@ -30,10 +32,32 @@ type MealPlan = {
   days: DayMeal[];
 };
 
+
+
+
+
 const MealPlanDetailPage = async (props: { params: Promise<{ id: string }> }) => {
   const params = await props.params;
   const { id } = params;
   const mealPlan: MealPlan | null = await fetchMealPlanById(id);
+
+
+const handleGenerateGroceryList = (mealPlanId: string) => async () => {
+  try {
+
+    if (!mealPlanId) {
+      throw new Error("Meal plan ID is required to generate grocery list.");
+    }
+   const groceries = await generateGroceryListFromMealPlan(mealPlanId);
+
+    
+  } catch (error) {
+    
+  }
+
+}
+
+
 
   if (!mealPlan) {
     return (
@@ -83,10 +107,7 @@ const MealPlanDetailPage = async (props: { params: Promise<{ id: string }> }) =>
               <p className="text-base sm:text-lg text-gray-600 dark:text-gray-300">Personalized nutrition for your fitness journey</p>
             </div>
             <div className="flex flex-wrap items-center justify-start md:justify-end gap-2 sm:gap-3">
-              <Button className="inline-flex items-center px-3 sm:px-4 py-1.5 sm:py-2 bg-green-50 dark:bg-green-800/30 text-green-700 dark:text-green-300 text-xs sm:text-sm font-medium rounded-full shadow-sm border border-green-100 dark:border-green-800/50">
-                <CarIcon className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
-                <span className="whitespace-nowrap">Grocery List</span>
-              </Button>
+            <GroceryListButton  mealplanId={mealPlan.id}   />
               <span className="inline-flex items-center px-3 sm:px-4 py-1.5 sm:py-2 bg-green-50 dark:bg-green-800/30 text-green-700 dark:text-green-300 text-xs sm:text-sm font-medium rounded-full shadow-sm border border-green-100 dark:border-green-800/50">
                 <Activity className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
                 Active
