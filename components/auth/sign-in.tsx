@@ -19,6 +19,7 @@ import Link from 'next/link'
 import { FcGoogle } from 'react-icons/fc'
 import { LogoIcons } from '../icons'
 import { FiEye, FiEyeOff } from 'react-icons/fi'
+import { Eye,  EyeOff } from 'lucide-react'
 
 const SignIn = () => {
 
@@ -178,9 +179,9 @@ const SignIn = () => {
                                             aria-label={showPassword ? "Hide password" : "Show password"}
                                         >
                                             {showPassword ? (
-                                                <FiEyeOff className="h-5 w-5 text-gray-500 hover:text-gray-700" />
+                                                <EyeOff className="h-5 w-5 text-gray-500 hover:text-gray-700" />
                                             ) : (
-                                                <FiEye className="h-5 w-5 text-gray-500 hover:text-gray-700" />
+                                                <Eye className="h-5 w-5 text-gray-500 hover:text-gray-700" />
                                             )}
                                         </button>
                                     </div>
