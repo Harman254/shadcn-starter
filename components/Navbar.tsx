@@ -26,7 +26,6 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { ThemeToggle } from "./theme-toggle";
-import { Skeleton } from "./ui/skeleton";
 
 // Client components to handle interactive elements
 import MobileMenuTrigger from "./mobile-menu";
@@ -42,7 +41,8 @@ interface Feature {
 
 const Navbar = () => {
   const session = useSession();
-  const isSignedIn = !!session;
+  // Ensure isSignedIn is strictly checking for a valid session with user data
+  const isSignedIn = !!(session && session.data && session.data.user);
   const user = session?.data?.user;
 
   const features: Feature[] = [
@@ -129,6 +129,7 @@ const Navbar = () => {
                 <Button asChild variant="outline">
                   <Link href="/dashboard">Go to Dashboard</Link>
                 </Button>
+                <SignOut />
               </>
             ) : (
               <>
@@ -198,6 +199,9 @@ const Navbar = () => {
                   {isSignedIn ? (
                     <>
                       <span className="text-sm">Hi, {user?.name}</span>
+                      <Button asChild variant="outline">
+                        <Link href="/dashboard">Go to Dashboard</Link>
+                      </Button>
                       <SignOut />
                     </>
                   ) : (

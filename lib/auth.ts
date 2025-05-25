@@ -17,11 +17,11 @@ export const auth = betterAuth({
     autoSignIn: true,
     minPasswordLength: 8,
     maxPasswordLength: 20,
-    requireEmailVerification: true,
+    // requireEmailVerification: true,
     // Change from passwordReset to sendResetPassword
     sendResetPassword: async ({ user, url }: { user: User; url: string }) => {
       await resend.emails.send({
-        from: "MealWise <onboarding@resend.dev>",
+        from: "MealWise <https://mealwise-lemon.vercel.app/>",
         to: user.email,
         subject: "Reset your MealWise password",
         html: `

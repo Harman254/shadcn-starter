@@ -1,5 +1,5 @@
 "use client"
-import React from 'react'
+import React, { useState } from 'react'
 import CardWrapper from '../card-wrapper'
 import FormError from '../form-error'
 import { SignInButton } from './social-button'
@@ -18,12 +18,15 @@ import FormSuccess from '../form-success'
 import Link from 'next/link'
 import { FcGoogle } from 'react-icons/fc'
 import { LogoIcons } from '../icons'
+import { FiEye, FiEyeOff } from 'react-icons/fi'
+
 const SignIn = () => {
 
     const router = useRouter()
     const { error, success, loading, setSuccess, setError, setLoading, resetState } = useAuthState();
- const [googleLoading, setGoogleLoading] = React.useState(false)
+    const [googleLoading, setGoogleLoading] = React.useState(false)
     const [githubLoading, setGithubLoading] = React.useState(false)
+    const [showPassword, setShowPassword] = useState(false)
 
     const form = useForm<z.infer<typeof LoginSchema>>({
         resolver: zodResolver(LoginSchema),
@@ -121,6 +124,10 @@ const SignIn = () => {
         }
     }
 
+    const togglePasswordVisibility = () => {
+        setShowPassword(!showPassword)
+    }
+
     return (
         <CardWrapper
             cardTitle='Sign In'
@@ -139,6 +146,7 @@ const SignIn = () => {
                                 <FormLabel>Email</FormLabel>
                                 <FormControl>
                                     <Input
+                                    className='leading-6 text-md'
                                         disabled={loading}
                                         type="email"
                                         placeholder='example@gmail.com'
@@ -156,12 +164,26 @@ const SignIn = () => {
                             <FormItem>
                                 <FormLabel>Password</FormLabel>
                                 <FormControl>
-                                    <Input
-                                        disabled={loading}
-                                        type="password"
-                                        placeholder='********'
-                                        {...field}
-                                    />
+                                    <div className="relative">
+                                        <Input
+                                            disabled={loading}
+                                            type={showPassword ? "text" : "password"}
+                                            placeholder='********'
+                                            {...field}
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={togglePasswordVisibility}
+                                            className="absolute inset-y-0 right-0 pr-3 flex items-center text-sm leading-5"
+                                            aria-label={showPassword ? "Hide password" : "Show password"}
+                                        >
+                                            {showPassword ? (
+                                                <FiEyeOff className="h-5 w-5 text-gray-500 hover:text-gray-700" />
+                                            ) : (
+                                                <FiEye className="h-5 w-5 text-gray-500 hover:text-gray-700" />
+                                            )}
+                                        </button>
+                                    </div>
                                 </FormControl>
                                 <FormMessage />
                             </FormItem>
@@ -173,7 +195,7 @@ const SignIn = () => {
                     <Button disabled={loading} type="submit" className='w-full'>Login</Button>
                     <Link href="/forgot-password" className="text-xs underline ml-60">Forgot Password?</Link>
                  <SignInButton title="Sign in with Google"  provider="google"  callbackURL="/" icon={<LogoIcons.Google />} loading={googleLoading} setLoading={setGoogleLoading} />
-                 <SignInButton title="Sign in with github"  provider="github"  callbackURL="/" icon={<LogoIcons.Github />} loading={githubLoading} setLoading={setGithubLoading} />
+                 <SignInButton title="Sign in with Github"  provider="github"  callbackURL="/" icon={<LogoIcons.Github />} loading={githubLoading} setLoading={setGithubLoading} />
 
                 
                 </form>
