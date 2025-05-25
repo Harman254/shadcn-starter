@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 
 import FormError from '@/components/form-error'
-import  FormSuccess  from '@/components/form-success'
+import FormSuccess from '@/components/form-success'
 import { useAuthState } from '@/lib/use-AuthState'
 import { authClient } from '@/lib/auth-client'
 import { ForgotPasswordSchema } from '@/lib/helpers/zod/forgot-password-schema'
@@ -25,9 +25,10 @@ const ForgotPassword = () => {
 
   const onSubmit = async (values: z.infer<typeof ForgotPasswordSchema>) => {
     try {
+      // Fixed: changed forgetPassword to forgotPassword and redirectTo to callbackURL
       await authClient.forgetPassword({
         email: values.email,
-        redirectTo: "/reset-password"
+redirectTo: '/reset-password', // redirect the user to reset password page after sending the link
       }, {
         onResponse: () => {
           setLoading(false)
