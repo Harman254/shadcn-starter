@@ -7,7 +7,9 @@ const Details = async (props: { params: Promise<{ id: string }> }) => {
   return (
 
 
+      <>
       <MealPlanDetailPage id={id} />
+      </>
   )
 }
 
