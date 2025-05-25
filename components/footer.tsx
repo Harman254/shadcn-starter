@@ -6,7 +6,7 @@ export default function Footer() {
     <footer className="border-t">
       <div className="container flex flex-col gap-8 py-8 md:flex-row md:py-12">
         <div className="flex-1 space-y-4">
-          <h2 className="font-bold">Mealwise</h2>
+          <h2 className="font-bold">Meal<span className="text-green-500">Wise</span></h2>
           <p className="text-sm text-muted-foreground">Your meal is your bestfriend.</p>
         </div>
         <div className="grid flex-1 grid-cols-2 gap-12 sm:grid-cols-3">
@@ -17,6 +17,11 @@ export default function Footer() {
                 <Link href="/dashboard/analytics" className="text-muted-foreground transition-colors hover:text-primary">
                  Analytics
                 </Link>
+                <li>
+                <Link href="/meal-plans" className="text-muted-foreground transition-colors hover:text-primary">
+                 Mealplanning
+                </Link>
+              </li>
               </li>
               <li>
                 <Link href="/contact" className="text-muted-foreground transition-colors hover:text-primary">
@@ -70,7 +75,7 @@ export default function Footer() {
       </div>
       <div className="container border-t py-6">
         <p className="text-center text-sm text-muted-foreground">
-          © {new Date().getFullYear()} Amane Soft, Inc. All rights reserved.
+          © {new Date().getFullYear()} Mealwise Inc. All rights reserved.
         </p>
       </div>
     </footer>

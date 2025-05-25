@@ -87,7 +87,7 @@ export default async function MealLayout({
         </header>
 
         {/* Main content area - simplified structure */}
-        <main className="flex-1">
+        <main>
           {children}
         </main>
       </div>
