@@ -44,7 +44,7 @@ export async function saveOnboardingData(formData: {
     },
   });
 
-  await prisma.session.updateMany({
+  await prisma.account.updateMany({
     where: {
       userId,
     },
