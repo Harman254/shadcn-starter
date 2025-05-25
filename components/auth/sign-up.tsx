@@ -1,148 +1,117 @@
-"use client"
-import React from 'react'
-import CardWrapper from '../card-wrapper'
-import FormError from '../form-error'
-import { FcGoogle } from 'react-icons/fc'
-import { SignInButton } from './social-button'
+import { betterAuth } from 'better-auth';
+import prisma from '@/lib/prisma';
+import { prismaAdapter } from 'better-auth/adapters/prisma';
+import { resend } from '@/lib/helpers/email/resend';
+import { nextCookies } from 'better-auth/next-js';
+import type { User } from 'better-auth';
 
-import { FaGithub } from 'react-icons/fa'
-import { useAuthState } from '@/lib/use-AuthState'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../ui/form'
-import { Input } from '../ui/input'
-import { Button } from '../ui/button'
-import { SignupSchema } from '@/lib/helpers/zod/sign-up-schema'
-import { signUp } from '@/lib/auth-client'
-import { useRouter } from 'next/navigation'
-import FormSuccess from '../form-success'
-import { LogoIcons } from '../icons'
-const SignUp = () => {
-    const { error, success, loading, setLoading, setError, setSuccess, resetState } = useAuthState();
-    const [googleLoading, setGoogleLoading] = React.useState(false)
-    const [githubLoading, setGithubLoading] = React.useState(false)
+export const auth = betterAuth({
+  appName: "MealWise",
+  database: prismaAdapter(prisma, {
+    provider: "postgresql",
+  }),
+  
+  // API route path - must match the route file location
+  apiPath: "/api/auth",
+  
+  // Email and Password Configuration
+  emailAndPassword: {
+    enabled: true,
+    autoSignIn: true,
+    minPasswordLength: 8,
+    maxPasswordLength: 20,
+    requireEmailVerification: true,
+    sendResetPassword: async ({ user, url }: { user: User; url: string }) => {
+      await resend.emails.send({
+        from: "MealWise <onboarding@resend.dev>",
+        to: user.email,
+        subject: "Reset your MealWise password",
+        html: `
+          <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+            <h1 style="color: #16a34a;">Reset Your Password</h1>
+            <p>You requested to reset your password. Click the link below to set a new password:</p>
+            <a href="${url}" 
+               style="display: inline-block; 
+                      background-color: #16a34a; 
+                      color: white; 
+                      padding: 12px 24px; 
+                      text-decoration: none; 
+                      border-radius: 6px; 
+                      margin: 16px 0;">
+              Reset Password
+            </a>
+            <p>If you didn't request this password reset, you can safely ignore this email.</p>
+            <p style="color: #666; font-size: 14px; margin-top: 24px;">
+              This link will expire in 1 hour for security reasons.
+            </p>
+          </div>
+        `,
+      });
+    },
+    tokenExpiration: 3600, // in seconds
+  },
+  
+  // Email Verification Settings
+  emailVerification: {
+    sendOnSignUp: true,
+    autoSignInAfterVerification: true,
+    sendVerificationEmail: async ({ user, url }: { user: User; url: string }) => {
+      await resend.emails.send({
+        from: "MealWise <onboarding@resend.dev>",
+        to: user.email,
+        subject: "Verify your MealWise account",
+        html: `
+          <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+            <h1 style="color: #16a34a;">Welcome to MealWise!</h1>
+            <p>Please verify your email address by clicking the link below:</p>
+            <a href="${url}" 
+               style="display: inline-block; 
+                      background-color: #16a34a; 
+                      color: white; 
+                      padding: 12px 24px; 
+                      text-decoration: none; 
+                      border-radius: 6px; 
+                      margin: 16px 0;">
+              Verify Email Address
+            </a>
+            <p>If you didn't create this account, you can safely ignore this email.</p>
+          </div>
+        `,
+      });
+    },
+  },
 
-    const form = useForm<z.infer<typeof SignupSchema>>({
-        resolver: zodResolver(SignupSchema),
-        defaultValues: {
-            name: '',
-            email: '',
-            password: '',
-        }
-    })
+  // Social Authentication Providers
+  socialProviders: {
+    github: {
+      clientId: process.env.GITHUB_CLIENT_ID!,
+      clientSecret: process.env.GITHUB_CLIENT_SECRET!,
+redirectURI: "https://mealwise-lemon.vercel.app/api/auth/callback/github",
+    },
+    google: {
+      clientId: process.env.GOOGLE_CLIENT_ID!,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      redirectURI: "https://mealwise-lemon.vercel.app/api/auth/callback/google",
+    },
+  },
 
-    const onSubmit = async (values: z.infer<typeof SignupSchema>) => {
-        try {
-            await signUp.email({
-                name: values.name,
-                email: values.email,
-                password: values.password,
-                callbackURL:'/' // redirect the user after email is verified
-            }, {
-                onResponse: () => {
-                    setLoading(false)
-                },
-                onRequest: () => {
-                    resetState()
-                    setLoading(true)
-                },
-                onSuccess: () => {
-                    // setSuccess("User has been created")
-                    // router.replace('/')
-                    setSuccess("Verification link has been sent to your mail")
-                },
-                onError: (ctx) => {
-                    setError(ctx.error.message);
-                },
-            });
-        } catch (error) {
-            console.error(error)
-            setError("Something went wrong")
-        }
+  // Session configuration
+  session: {
+    // How long until the session expires (in seconds)
+    expiresIn: 60 * 60 * 24 * 30, 
+    // Whether to use a refresh token to extend the session
+    refreshToken: true,
+    // Cookie settings
+    cookie: {
+      // Cookie name prefix
+      prefix: "mealwise",
+      // Cookie security settings
+      sameSite: "lax",
+      // Set to true in production
+      secure: process.env.NODE_ENV === "production",
+    },
+  },
 
-    }
-
-    return (
-        <CardWrapper
-        cardTitle='SignUp'
-        cardDescription='Create an new account'
-        cardFooterLink='/sign-in'
-        cardFooterDescription='Already have an account?'
-        cardFooterLinkTitle='Login'
-        >
-            <Form {...form}>
-                <form className='space-y-4' onSubmit={form.handleSubmit(onSubmit)}>
-                <FormField
-                        control={form.control}
-                        name="name"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Name</FormLabel>
-                                <FormControl>
-                                    <Input
-                                        disabled={loading}
-                                        type="text"
-                                        placeholder='john'
-                                        {...field} />
-                                </FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-                    <FormField
-                        control={form.control}
-                        name="email"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Email</FormLabel>
-                                <FormControl>
-                                    <Input
-                                        disabled={loading}
-                                        type="email"
-                                        placeholder='example@gmail.com'
-                                        {...field}
-                                    />
-                                </FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-                    <FormField
-                        control={form.control}
-                        name="password"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Password</FormLabel>
-                                <FormControl>
-                                    <Input
-                                        disabled={loading}
-                                        type="password"
-                                        placeholder='********'
-                                        {...field}
-                                    />
-                                </FormControl>
-                                <FormMessage />
-                            </FormItem>
-
-                        )}
-                    />
-                    <FormError message={error} />
-                    <FormSuccess message={success} />
-                    <Button disabled={loading} type="submit" className='w-full'>Submit</Button>
-                    <div>
-                        <div>
-                        <SignInButton title="Sign in with github"  provider="github"  callbackURL="/" icon={<LogoIcons.Github />} loading={githubLoading} setLoading={setGithubLoading}/>
-                        <SignInButton title="Sign in with Google"  provider="google"  callbackURL="/" icon={<LogoIcons.Google />} loading={googleLoading} setLoading={setGoogleLoading} />
-
-                            
-                        </div>
-                    </div>
-                    
-                </form>
-            </Form>
-        </CardWrapper>
-    )
-}
-
-export default SignUp
+  // Cookie Configuration - essential for Next.js integration
+  plugins: [nextCookies()], // Make sure this is the last plugin in the array
+});

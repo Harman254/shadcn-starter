@@ -12,17 +12,14 @@ import { z } from 'zod'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../ui/form'
 import { Input } from '../ui/input'
 import { Button } from '../ui/button'
-import { signIn, } from '@/lib/auth-client'
+import { signIn } from '@/lib/auth-client'
 import { useRouter } from 'next/navigation'
 import FormSuccess from '../form-success'
 import Link from 'next/link'
-import { FcGoogle } from 'react-icons/fc'
 import { LogoIcons } from '../icons'
-import { FiEye, FiEyeOff } from 'react-icons/fi'
-import { Eye,  EyeOff } from 'lucide-react'
+import { Eye, EyeOff } from 'lucide-react'
 
 const SignIn = () => {
-
     const router = useRouter()
     const { error, success, loading, setSuccess, setError, setLoading, resetState } = useAuthState();
     const [googleLoading, setGoogleLoading] = React.useState(false)
@@ -39,91 +36,55 @@ const SignIn = () => {
 
     const onSubmit = async (values: z.infer<typeof LoginSchema>) => {
         try {
-          await signIn.email({
+          resetState()
+          setLoading(true)
+          
+          // Using the signIn method from auth-client.ts
+          const result = await signIn.email({
             email: values.email,
-            password: values.password
+            password: values.password,
           }, {
-            onResponse: () => {
-              setLoading(false)
-            },
+            // Callbacks to handle different states of the authentication process
             onRequest: () => {
-              resetState()
-              setLoading(true)
+              console.log("Login request started");
+              // Already set loading state above
+            },
+            onResponse: () => {
+              console.log("Login response received");
+              // Keep loading state until we process the response
             },
             onSuccess: () => {
-                setSuccess("LoggedIn successfully")
-                router.push('/')
+              console.log("Login successful");
+              setLoading(false);
+              setSuccess("Logged in successfully");
+              router.push('/');
             },
-// changes were made on onError option
             onError: (ctx) => {
-                /* Whenever user tried to signin but email is not verified it catches the error and display the error */
-                if(ctx.error.status === 403) {
-                    setError("Please verify your email address")
-                }
-                /* handles other error */
-              setError(ctx.error.message);
-            },
+              console.error("Login error:", ctx.error);
+              setLoading(false);
+              
+              // Handle specific error cases
+              if (ctx.error.status === 403) {
+                setError("Please verify your email address before logging in");
+              } else if (ctx.error.status === 401) {
+                setError("Invalid email or password");
+              } else {
+                setError(ctx.error.message || "Login failed. Please try again.");
+              }
+            }
           });
-        } catch (error) {
-          console.log(error)
-          setError("Something went wrong")
+          
+          // This code will only run if the callbacks above don't handle the response
+          if (!result.data && !error) {
+            setLoading(false);
+            setError("Login failed. Please check your credentials.");
+          }
+        } catch (error: any) {
+          console.error("Unexpected login error:", error);
+          setLoading(false);
+          setError(error?.message || "Something went wrong during login");
         }
-      }
-
-
-    //   const googleSignIn = async () => {
-    //     try {
-    //         await signIn.social({
-    //             provider: "google"
-    //         }, {
-    //             onResponse: () => {
-    //                 setLoading(false)
-    //             },
-    //             onRequest: () => {
-    //                 setSuccess("")
-    //                 setError("")
-    //                 setLoading(true)
-    //             },
-    //             onSuccess: () => {
-    //                 setSuccess("Your are loggedIn successfully")
-    //                 router.push('/')
-    //             },
-    //             onError: (ctx) => {
-    //                 setError(ctx.error.message)
-    //             }
-    //         })
-    //     } catch (error: unknown) {
-    //         console.error(error)
-    //         setError("Something went wrong")
-    //     }
-    // }
-
-    // const githubSignIn = async () => {
-    //     try {
-    //         await signIn.social({
-    //             provider: "github",
-    //             callbackURL: "/"
-    //         }, {
-    //             onResponse: () => {
-    //                 setLoading(false)
-    //             },
-    //             onRequest: () => {
-    //                 setSuccess("")
-    //                 setError("")
-    //                 setLoading(true)
-    //             },
-    //             onSuccess: () => {
-    //                 setSuccess("Your are loggedIn successfully")
-    //             },
-    //             onError: (ctx) => {
-    //                 setError(ctx.error.message)
-    //             }
-    //         })
-    //     } catch (error: unknown) {
-    //         console.log(error)
-    //         setError("Something went wrong")
-    //     }
-    // }
+    }
 
     const togglePasswordVisibility = () => {
         setShowPassword(!showPassword)
@@ -188,17 +149,30 @@ const SignIn = () => {
                                 </FormControl>
                                 <FormMessage />
                             </FormItem>
-
                         )}
                     />
                     <FormError message={error} />
                     <FormSuccess message={success} />
-                    <Button disabled={loading} type="submit" className='w-full'>Login</Button>
+                    <Button disabled={loading} type="submit" className='w-full'>
+                        {loading ? "Logging in..." : "Login"}
+                    </Button>
                     <Link href="/forgot-password" className="text-xs underline ml-60">Forgot Password?</Link>
-                 <SignInButton title="Sign in with Google"  provider="google"  callbackURL="https://mealwise-lemon.vercel.app/api/auth/callback/google" icon={<LogoIcons.Google />} loading={googleLoading} setLoading={setGoogleLoading} />
-                 <SignInButton title="Sign in with Github"  provider="github"  callbackURL="https://mealwise-lemon.vercel.app/api/auth/callback/github" icon={<LogoIcons.Github />} loading={githubLoading} setLoading={setGithubLoading} />
-
-                
+                    <SignInButton 
+                        title="Sign in with Google" 
+                        provider="google" 
+                        callbackURL="https://mealwise-lemon.vercel.app/api/auth/callback/google" 
+                        icon={<LogoIcons.Google />} 
+                        loading={googleLoading} 
+                        setLoading={setGoogleLoading} 
+                    />
+                    <SignInButton 
+                        title="Sign in with Github" 
+                        provider="github" 
+                        callbackURL="https://mealwise-lemon.vercel.app/api/auth/callback/github" 
+                        icon={<LogoIcons.Github />} 
+                        loading={githubLoading} 
+                        setLoading={setGithubLoading} 
+                    />
                 </form>
             </Form>
         </CardWrapper>
