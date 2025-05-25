@@ -52,7 +52,7 @@ const SignIn = () => {
             },
             onSuccess: () => {
                 setSuccess("LoggedIn successfully")
-                router.replace('/')
+                router.push('/')
             },
 // changes were made on onError option
             onError: (ctx) => {
