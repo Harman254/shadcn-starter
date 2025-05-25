@@ -11,14 +11,16 @@ export const auth = betterAuth({
     provider: "postgresql",
   }),
   
+  // API route path - must match the route file location
+  apiPath: "/api/auth",
+  
   // Email and Password Configuration
   emailAndPassword: {
     enabled: true,
     autoSignIn: true,
     minPasswordLength: 8,
     maxPasswordLength: 20,
-    // requireEmailVerification: true,
-    // Change from passwordReset to sendResetPassword
+    requireEmailVerification: true,
     sendResetPassword: async ({ user, url }: { user: User; url: string }) => {
       await resend.emails.send({
         from: "MealWise <onboarding@resend.dev>",
@@ -46,11 +48,9 @@ export const auth = betterAuth({
         `,
       });
     },
-    // You can still set token expiration if needed
     tokenExpiration: 3600, // in seconds
   },
   
-
   // Email Verification Settings
   emailVerification: {
     sendOnSignUp: true,
@@ -86,18 +86,32 @@ export const auth = betterAuth({
     github: {
       clientId: process.env.GITHUB_CLIENT_ID!,
       clientSecret: process.env.GITHUB_CLIENT_SECRET!,
+      redirectURI: "https://mealwise-lemon.vercel.app/api/auth/callback/github",
     },
     google: {
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      redirectURI: "https://mealwise-lemon.vercel.app/api/auth/callback/google",
     },
-    // discord: {
-    //   clientId: env.DISCORD_CLIENT_ID,
-    //   clientSecret: env.DISCORD_CLIENT_SECRET,
-    // }
   },
 
-  // Cookie Configuration
-  plugins: [nextCookies()],
+  // Session configuration
+  session: {
+    // How long until the session expires (in seconds)
+    expiresIn: 30 * 24 * 60 * 60, // 30 days
+    // Whether to use a refresh token to extend the session
+    refreshToken: true,
+    // Cookie settings
+    cookie: {
+      // Cookie name prefix
+      prefix: "mealwise",
+      // Cookie security settings
+      sameSite: "lax",
+      // Set to true in production
+      secure: process.env.NODE_ENV === "production",
+    },
+  },
+
+  // Cookie Configuration - essential for Next.js integration
+  plugins: [nextCookies()], // Make sure this is the last plugin in the array
 });
-  

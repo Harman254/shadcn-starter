@@ -17,7 +17,7 @@ import { useRouter } from 'next/navigation'
 import FormSuccess from '../form-success'
 import Link from 'next/link'
 import { LogoIcons } from '../icons'
-import { Eye, EyeOff } from 'lucide-react'
+import {  EyeIcon, EyeOffIcon } from 'lucide-react'
 
 const SignIn = () => {
     const router = useRouter()
@@ -140,9 +140,9 @@ const SignIn = () => {
                                             aria-label={showPassword ? "Hide password" : "Show password"}
                                         >
                                             {showPassword ? (
-                                                <EyeOff className="h-5 w-5 text-gray-500 hover:text-gray-700" />
+                                                <EyeOffIcon className="h-5 w-5 text-gray-500 hover:text-gray-700" />
                                             ) : (
-                                                <Eye className="h-5 w-5 text-gray-500 hover:text-gray-700" />
+                                                <EyeIcon className="h-5 w-5 text-gray-500 hover:text-gray-700" />
                                             )}
                                         </button>
                                     </div>

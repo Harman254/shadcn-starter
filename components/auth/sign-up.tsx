@@ -1,117 +1,196 @@
-import { betterAuth } from 'better-auth';
-import prisma from '@/lib/prisma';
-import { prismaAdapter } from 'better-auth/adapters/prisma';
-import { resend } from '@/lib/helpers/email/resend';
-import { nextCookies } from 'better-auth/next-js';
-import type { User } from 'better-auth';
+"use client"
+import React from 'react'
+import CardWrapper from '../card-wrapper'
+import FormError from '../form-error'
+import { SignInButton } from './social-button'
+import { useAuthState } from '@/lib/use-AuthState'
 
-export const auth = betterAuth({
-  appName: "MealWise",
-  database: prismaAdapter(prisma, {
-    provider: "postgresql",
-  }),
-  
-  // API route path - must match the route file location
-  apiPath: "/api/auth",
-  
-  // Email and Password Configuration
-  emailAndPassword: {
-    enabled: true,
-    autoSignIn: true,
-    minPasswordLength: 8,
-    maxPasswordLength: 20,
-    requireEmailVerification: true,
-    sendResetPassword: async ({ user, url }: { user: User; url: string }) => {
-      await resend.emails.send({
-        from: "MealWise <onboarding@resend.dev>",
-        to: user.email,
-        subject: "Reset your MealWise password",
-        html: `
-          <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
-            <h1 style="color: #16a34a;">Reset Your Password</h1>
-            <p>You requested to reset your password. Click the link below to set a new password:</p>
-            <a href="${url}" 
-               style="display: inline-block; 
-                      background-color: #16a34a; 
-                      color: white; 
-                      padding: 12px 24px; 
-                      text-decoration: none; 
-                      border-radius: 6px; 
-                      margin: 16px 0;">
-              Reset Password
-            </a>
-            <p>If you didn't request this password reset, you can safely ignore this email.</p>
-            <p style="color: #666; font-size: 14px; margin-top: 24px;">
-              This link will expire in 1 hour for security reasons.
-            </p>
-          </div>
-        `,
-      });
-    },
-    tokenExpiration: 3600, // in seconds
-  },
-  
-  // Email Verification Settings
-  emailVerification: {
-    sendOnSignUp: true,
-    autoSignInAfterVerification: true,
-    sendVerificationEmail: async ({ user, url }: { user: User; url: string }) => {
-      await resend.emails.send({
-        from: "MealWise <onboarding@resend.dev>",
-        to: user.email,
-        subject: "Verify your MealWise account",
-        html: `
-          <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
-            <h1 style="color: #16a34a;">Welcome to MealWise!</h1>
-            <p>Please verify your email address by clicking the link below:</p>
-            <a href="${url}" 
-               style="display: inline-block; 
-                      background-color: #16a34a; 
-                      color: white; 
-                      padding: 12px 24px; 
-                      text-decoration: none; 
-                      border-radius: 6px; 
-                      margin: 16px 0;">
-              Verify Email Address
-            </a>
-            <p>If you didn't create this account, you can safely ignore this email.</p>
-          </div>
-        `,
-      });
-    },
-  },
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { z } from 'zod'
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../ui/form'
+import { Input } from '../ui/input'
+import { Button } from '../ui/button'
+import { SignupSchema } from '@/lib/helpers/zod/sign-up-schema'
+import { signUp } from '@/lib/auth-client'
+import { useRouter } from 'next/navigation'
+import FormSuccess from '../form-success'
+import { LogoIcons } from '../icons'
+import { Eye, EyeOff } from 'lucide-react'
 
-  // Social Authentication Providers
-  socialProviders: {
-    github: {
-      clientId: process.env.GITHUB_CLIENT_ID!,
-      clientSecret: process.env.GITHUB_CLIENT_SECRET!,
-redirectURI: "https://mealwise-lemon.vercel.app/api/auth/callback/github",
-    },
-    google: {
-      clientId: process.env.GOOGLE_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-      redirectURI: "https://mealwise-lemon.vercel.app/api/auth/callback/google",
-    },
-  },
+const SignUp = () => {
+    const router = useRouter();
+    const { error, success, loading, setLoading, setError, setSuccess, resetState } = useAuthState();
+    const [googleLoading, setGoogleLoading] = React.useState(false);
+    const [githubLoading, setGithubLoading] = React.useState(false);
+    const [showPassword, setShowPassword] = React.useState(false);
 
-  // Session configuration
-  session: {
-    // How long until the session expires (in seconds)
-    expiresIn: 60 * 60 * 24 * 30, 
-    // Whether to use a refresh token to extend the session
-    refreshToken: true,
-    // Cookie settings
-    cookie: {
-      // Cookie name prefix
-      prefix: "mealwise",
-      // Cookie security settings
-      sameSite: "lax",
-      // Set to true in production
-      secure: process.env.NODE_ENV === "production",
-    },
-  },
+    const form = useForm<z.infer<typeof SignupSchema>>({
+        resolver: zodResolver(SignupSchema),
+        defaultValues: {
+            name: '',
+            email: '',
+            password: '',
+        }
+    });
 
-  // Cookie Configuration - essential for Next.js integration
-  plugins: [nextCookies()], // Make sure this is the last plugin in the array
-});
+    const onSubmit = async (values: z.infer<typeof SignupSchema>) => {
+        try {
+            resetState();
+            setLoading(true);
+            
+            // Using the signUp method from auth-client.ts with proper callbacks
+            await signUp.email({
+                name: values.name,
+                email: values.email,
+                password: values.password,
+            }, {
+                // Callbacks to handle different states of the signup process
+                onRequest: () => {
+                    console.log("Signup request started");
+                    // Already set loading state above
+                },
+                onResponse: () => {
+                    console.log("Signup response received");
+                    // Keep loading state until we process the response
+                },
+                onSuccess: () => {
+                    console.log("Signup successful");
+                    setLoading(false);
+                    setSuccess("Verification link has been sent to your email");
+                },
+                onError: (ctx) => {
+                    console.error("Signup error:", ctx.error);
+                    setLoading(false);
+                    
+                    // Handle specific error cases
+                    if (ctx.error.status === 409) {
+                        setError("Email already in use. Please try a different email or sign in.");
+                    } else if (ctx.error.status === 400) {
+                        setError("Invalid signup data. Please check your information.");
+                    } else {
+                        setError(ctx.error.message || "Signup failed. Please try again.");
+                    }
+                }
+            });
+        } catch (error: any) {
+            console.error("Unexpected signup error:", error);
+            setLoading(false);
+            setError(error?.message || "Something went wrong during signup");
+        }
+    };
+
+    const togglePasswordVisibility = () => {
+        setShowPassword(!showPassword);
+    };
+
+    return (
+        <CardWrapper
+            cardTitle='SignUp'
+            cardDescription='Create a new account'
+            cardFooterLink='/sign-in'
+            cardFooterDescription='Already have an account?'
+            cardFooterLinkTitle='Login'
+        >
+            <Form {...form}>
+                <form className='space-y-4' onSubmit={form.handleSubmit(onSubmit)}>
+                    <FormField
+                        control={form.control}
+                        name="name"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Name</FormLabel>
+                                <FormControl>
+                                    <Input
+                                        disabled={loading}
+                                        type="text"
+                                        placeholder='John'
+                                        {...field} 
+                                    />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name="email"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Email</FormLabel>
+                                <FormControl>
+                                    <Input
+                                        disabled={loading}
+                                        type="email"
+                                        placeholder='example@gmail.com'
+                                        {...field}
+                                    />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name="password"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Password</FormLabel>
+                                <FormControl>
+                                    <div className="relative">
+                                        <Input
+                                            disabled={loading}
+                                            type={showPassword ? "text" : "password"}
+                                            placeholder='********'
+                                            {...field}
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={togglePasswordVisibility}
+                                            className="absolute inset-y-0 right-0 pr-3 flex items-center text-sm leading-5"
+                                            aria-label={showPassword ? "Hide password" : "Show password"}
+                                        >
+                                            {showPassword ? (
+                                                <EyeOff className="h-5 w-5 text-gray-500 hover:text-gray-700" />
+                                            ) : (
+                                                <Eye className="h-5 w-5 text-gray-500 hover:text-gray-700" />
+                                            )}
+                                        </button>
+                                    </div>
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                    <FormError message={error} />
+                    <FormSuccess message={success} />
+                    <Button disabled={loading} type="submit" className='w-full'>
+                        {loading ? "Creating account..." : "Submit"}
+                    </Button>
+                    <div>
+                        <div>
+                            <SignInButton 
+                                title="Sign in with Github" 
+                                provider="github" 
+                                callbackURL="https://mealwise-lemon.vercel.app/api/auth/callback/github" 
+                                icon={<LogoIcons.Github />} 
+                                loading={githubLoading} 
+                                setLoading={setGithubLoading}
+                            />
+                            <SignInButton 
+                                title="Sign in with Google" 
+                                provider="google" 
+                                callbackURL="https://mealwise-lemon.vercel.app/api/auth/callback/google" 
+                                icon={<LogoIcons.Google />} 
+                                loading={googleLoading} 
+                                setLoading={setGoogleLoading} 
+                            />
+                        </div>
+                    </div>
+                </form>
+            </Form>
+        </CardWrapper>
+    )
+}
+
+export default SignUp

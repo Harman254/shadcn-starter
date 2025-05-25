@@ -18,7 +18,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { redirect } from "next/navigation";
-import { getDBSession, getMealsByUserId } from "@/data";
+import { getAccount, getDBSession, getMealsByUserId } from "@/data";
 import { Toaster } from "@/components/ui/sonner";
 import { authClient } from "@/lib/auth-client";
 import { headers } from "next/headers";
@@ -43,10 +43,9 @@ export default async function DashboardLayout({
   if (!session) {
     redirect("/sign-in");
   }
-const DBsession  = await getDBSession(session.user.id);
+const CheckOnbaord  = await getAccount(session.user.id);
 
-const isOnboarded = DBsession?.isOnboardingComplete;
-console.log("isOnboarded", isOnboarded);
+const isOnboarded = CheckOnbaord?.isOnboardingComplete 
 if (!isOnboarded) {
   
     redirect("/onboarding");

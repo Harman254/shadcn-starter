@@ -157,6 +157,15 @@ export async function getDBSession(userId: string) {
 
 }
 
+export const getAccount = async (userId: string) => {
+  return await prisma.account.findFirst({
+    where: {
+      userId,
+    },
+  });
+};
+
+
 
 
 
