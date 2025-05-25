@@ -21,6 +21,7 @@ export const SignInButton = ({
 }) => {
   return (
     <Button
+    type="button"
       variant="outline"
       size="lg"
       className={cn(

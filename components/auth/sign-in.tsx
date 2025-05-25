@@ -71,59 +71,59 @@ const SignIn = () => {
       }
 
 
-      const googleSignIn = async () => {
-        try {
-            await signIn.social({
-                provider: "google"
-            }, {
-                onResponse: () => {
-                    setLoading(false)
-                },
-                onRequest: () => {
-                    setSuccess("")
-                    setError("")
-                    setLoading(true)
-                },
-                onSuccess: () => {
-                    setSuccess("Your are loggedIn successfully")
-                    router.push('/')
-                },
-                onError: (ctx) => {
-                    setError(ctx.error.message)
-                }
-            })
-        } catch (error: unknown) {
-            console.error(error)
-            setError("Something went wrong")
-        }
-    }
+    //   const googleSignIn = async () => {
+    //     try {
+    //         await signIn.social({
+    //             provider: "google"
+    //         }, {
+    //             onResponse: () => {
+    //                 setLoading(false)
+    //             },
+    //             onRequest: () => {
+    //                 setSuccess("")
+    //                 setError("")
+    //                 setLoading(true)
+    //             },
+    //             onSuccess: () => {
+    //                 setSuccess("Your are loggedIn successfully")
+    //                 router.push('/')
+    //             },
+    //             onError: (ctx) => {
+    //                 setError(ctx.error.message)
+    //             }
+    //         })
+    //     } catch (error: unknown) {
+    //         console.error(error)
+    //         setError("Something went wrong")
+    //     }
+    // }
 
-    const githubSignIn = async () => {
-        try {
-            await signIn.social({
-                provider: "github",
-                callbackURL: "/"
-            }, {
-                onResponse: () => {
-                    setLoading(false)
-                },
-                onRequest: () => {
-                    setSuccess("")
-                    setError("")
-                    setLoading(true)
-                },
-                onSuccess: () => {
-                    setSuccess("Your are loggedIn successfully")
-                },
-                onError: (ctx) => {
-                    setError(ctx.error.message)
-                }
-            })
-        } catch (error: unknown) {
-            console.log(error)
-            setError("Something went wrong")
-        }
-    }
+    // const githubSignIn = async () => {
+    //     try {
+    //         await signIn.social({
+    //             provider: "github",
+    //             callbackURL: "/"
+    //         }, {
+    //             onResponse: () => {
+    //                 setLoading(false)
+    //             },
+    //             onRequest: () => {
+    //                 setSuccess("")
+    //                 setError("")
+    //                 setLoading(true)
+    //             },
+    //             onSuccess: () => {
+    //                 setSuccess("Your are loggedIn successfully")
+    //             },
+    //             onError: (ctx) => {
+    //                 setError(ctx.error.message)
+    //             }
+    //         })
+    //     } catch (error: unknown) {
+    //         console.log(error)
+    //         setError("Something went wrong")
+    //     }
+    // }
 
     const togglePasswordVisibility = () => {
         setShowPassword(!showPassword)
@@ -195,8 +195,8 @@ const SignIn = () => {
                     <FormSuccess message={success} />
                     <Button disabled={loading} type="submit" className='w-full'>Login</Button>
                     <Link href="/forgot-password" className="text-xs underline ml-60">Forgot Password?</Link>
-                 <SignInButton title="Sign in with Google"  provider="google"  callbackURL="/" icon={<LogoIcons.Google />} loading={googleLoading} setLoading={setGoogleLoading} />
-                 <SignInButton title="Sign in with Github"  provider="github"  callbackURL="/" icon={<LogoIcons.Github />} loading={githubLoading} setLoading={setGithubLoading} />
+                 <SignInButton title="Sign in with Google"  provider="google"  callbackURL="https://mealwise-lemon.vercel.app/api/auth/callback/google" icon={<LogoIcons.Google />} loading={googleLoading} setLoading={setGoogleLoading} />
+                 <SignInButton title="Sign in with Github"  provider="github"  callbackURL="https://mealwise-lemon.vercel.app/api/auth/callback/github" icon={<LogoIcons.Github />} loading={githubLoading} setLoading={setGithubLoading} />
 
                 
                 </form>
