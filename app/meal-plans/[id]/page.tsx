@@ -2,7 +2,7 @@ import GroceryListButton from "@/components/groceries-button"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
-import { ScrollArea } from "@/components/ui/scroll-area"
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
 import { fetchMealPlanById } from "@/data"
 import {
   Utensils,
@@ -53,6 +53,8 @@ type MealPlanDetailPageProps = {
   }>
 }
 
+export const force = "force-cache"
+
 const MealPlanDetailPage = async ({ params }: MealPlanDetailPageProps) => {
   const { id } = await params
   const mealPlan: MealPlan | null = await fetchMealPlanById(id)
@@ -89,7 +91,7 @@ const MealPlanDetailPage = async ({ params }: MealPlanDetailPageProps) => {
   const avgCaloriesPerDay = Math.round(totalPlanCalories / mealPlan.days.length)
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
+    <div className="min-h-screen bg-gradient-to-br from-muted/10 to-muted/20 dark:from-muted/900/10 dark:to-muted/900/20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Hero Header */}
         <Card className="mb-8 overflow-hidden">
@@ -197,57 +199,58 @@ const MealPlanDetailPage = async ({ params }: MealPlanDetailPageProps) => {
 
         {/* Calendar Timeline */}
         <Card className="mb-8">
-          <CardHeader className="pb-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-2xl font-bold">Calendar Timeline</h2>
-                <p className="text-muted-foreground">Click any day to jump to its meals</p>
-              </div>
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm">
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <Button variant="outline" size="sm">
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <ScrollArea className="w-full">
-              <div className="flex gap-3 pb-4">
-                {mealPlan.days.map((day: DayMeal, index: number) => {
-                  const date = new Date(day.date)
-                  const isToday = new Date().toDateString() === date.toDateString()
-                  const totalCalories = day.meals.reduce((sum, meal) => sum + meal.calories, 0)
+      <CardHeader className="pb-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold">Calendar Timeline</h2>
+            <p className="text-muted-foreground">Click any day to jump to its meals</p>
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm">
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <Button variant="outline" size="sm">
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent className="p-0 overflow-hidden">
+        <ScrollArea className="w-full whitespace-nowrap">
+          <div className="flex gap-3 p-4 pb-6">
+            {mealPlan.days.map((day: DayMeal, index: number) => {
+              const date = new Date(day.date);
+              const isToday = new Date().toDateString() === date.toDateString();
+              const totalCalories = day.meals.reduce((sum, meal) => sum + meal.calories, 0);
 
-                  return (
-                    <a
-                      key={day.id}
-                      href={`#day-${day.id}`}
-                      className={`flex-shrink-0 w-24 p-4 rounded-xl text-center transition-all duration-300 hover:scale-105 ${
-                        isToday
-                          ? "bg-emerald-600 text-white shadow-lg"
-                          : "bg-muted hover:bg-muted/80 border-2 border-transparent hover:border-emerald-200"
-                      }`}
-                    >
-                      <div className="space-y-1">
-                        <p className="text-xs font-medium opacity-75">
-                          {date.toLocaleDateString(undefined, { weekday: "short" })}
-                        </p>
-                        <p className="text-xl font-bold">{date.getDate()}</p>
-                        <p className="text-xs opacity-75">{date.toLocaleDateString(undefined, { month: "short" })}</p>
-                        <Badge variant={isToday ? "secondary" : "outline"} className="text-xs">
-                          {totalCalories} cal
-                        </Badge>
-                      </div>
-                    </a>
-                  )
-                })}
-              </div>
-            </ScrollArea>
-          </CardContent>
-        </Card>
+              return (
+                <a
+                  key={day.id}
+                  href={`#day-${day.id}`}
+                  className={`flex-shrink-0 w-24 p-4 rounded-xl text-center transition-all duration-300 hover:scale-105 ${
+                    isToday
+                      ? "bg-emerald-600 text-white shadow-lg"
+                      : "bg-muted hover:bg-muted/80 border-2 border-transparent hover:border-emerald-200"
+                  }`}
+                >
+                  <div className="space-y-1">
+                    <p className="text-xs font-medium opacity-75">
+                      {date.toLocaleDateString(undefined, { weekday: "short" })}
+                    </p>
+                    <p className="text-xl font-bold">{date.getDate()}</p>
+                    <p className="text-xs opacity-75">{date.toLocaleDateString(undefined, { month: "short" })}</p>
+                    <Badge variant={isToday ? "secondary" : "outline"} className="text-xs">
+                      {totalCalories} cal
+                    </Badge>
+                  </div>
+                </a>
+              );
+            })}
+          </div>
+          <ScrollBar orientation="horizontal" />
+        </ScrollArea>
+      </CardContent>
+    </Card>
 
         {/* Daily Meal Plans */}
         <div className="space-y-8">

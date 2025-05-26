@@ -1,16 +1,16 @@
 'use client'
 import  Link  from "next/link";
-import { useEffect } from "react";
+import { useEffect,  } from "react";
 import { Home, ArrowLeft, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
 
 const NotFound = () => {
-  const location = window.location;
+    const router = useRouter();
 
   useEffect(() => {
     console.error(
-      "404 Error: User attempted to access non-existent route:",
-      location.pathname
+      "404 Error: you attempted to access non-existent route",
     );
   }, [location.pathname]);
 
@@ -59,7 +59,7 @@ const NotFound = () => {
           <Button 
             variant="outline" 
             size="lg" 
-            onClick={() => window.history.back()}
+            onClick={() => router.back()}
             className="hover-scale group"
           >
             <ArrowLeft className="w-4 h-4 mr-2 transition-transform group-hover:-translate-x-1" />
