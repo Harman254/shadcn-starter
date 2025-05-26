@@ -51,7 +51,9 @@ type MealPlanDetailPageProps = {
   params: {
     id: string
   }
+  searchParams: Record<string, string | string[] | undefined>
 }
+
 
 const MealPlanDetailPage = async ({ params }: MealPlanDetailPageProps) => {
   const { id } = params
