@@ -1,307 +1,357 @@
-'use client';
+"use client"
 
-import { useState, useEffect } from 'react';
-import {  generateGroceryListFromMealPlan } from '@/ai/flows/generate-grocery-list';
-import type { GenerateGroceryListOutput } from '@/ai/flows/generate-grocery-list';
-import { Search, ShoppingBag, Check, Filter } from 'lucide-react';
+import { useState, useEffect, useMemo } from "react"
+import { generateGroceryListFromMealPlan } from "@/ai/flows/generate-grocery-list"
+import type { GenerateGroceryListOutput } from "@/ai/flows/generate-grocery-list"
+import { Search, ShoppingBag, Check, Filter, DollarSign, CheckCircle2, Circle, MapPin } from "lucide-react"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
 
 interface GroceryItem {
-  item: string;
-  estimatedPrice: string;
-  suggestedLocation: string;
-  checked: boolean; // Added for check functionality
+  item: string
+  estimatedPrice: string
+  suggestedLocation: string
+  checked: boolean
 }
 
-const GroceryList = ({id}: {id: string | null}) => {
-  const [groceryList, setGroceryList] = useState<GroceryItem[]>([]);
-  const [filteredList, setFilteredList] = useState<GroceryItem[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterStore, setFilterStore] = useState<string | null>(null);
-  const [stores, setStores] = useState<string[]>([]);
+const GroceryList = ({ id }: { id: string | null }) => {
+  const [groceryList, setGroceryList] = useState<GroceryItem[]>([])
+  const [filteredList, setFilteredList] = useState<GroceryItem[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [searchTerm, setSearchTerm] = useState("")
+  const [filterStore, setFilterStore] = useState<string | null>(null)
+  const [stores, setStores] = useState<string[]>([])
   const [userLocation, setUserLocation] = useState<{
-    country: string;
-    city: string;
-    currencyCode: string;
-  } | null>(null);
+    country: string
+    city: string
+    currencyCode: string
+  } | null>(null)
+
+  // Parse price string to number
+  const parsePrice = (priceString: string): number => {
+    const numericValue = priceString.replace(/[^0-9.]/g, "")
+    return Number.parseFloat(numericValue) || 0
+  }
+
+  // Calculate totals
+  const totals = useMemo(() => {
+    const allItems = groceryList.map((item) => parsePrice(item.estimatedPrice))
+    const checkedItems = groceryList.filter((item) => item.checked).map((item) => parsePrice(item.estimatedPrice))
+    const uncheckedItems = groceryList.filter((item) => !item.checked).map((item) => parsePrice(item.estimatedPrice))
+
+    return {
+      total: allItems.reduce((sum, price) => sum + price, 0),
+      completed: checkedItems.reduce((sum, price) => sum + price, 0),
+      remaining: uncheckedItems.reduce((sum, price) => sum + price, 0),
+    }
+  }, [groceryList])
+
+  const formatPrice = (amount: number): string => {
+    const currencySymbol = userLocation?.currencyCode || "$"
+    return `${currencySymbol}${amount.toFixed(2)}`
+  }
 
   useEffect(() => {
     const fetchGroceryList = async () => {
       try {
-      if (!id) {
-          setError('Invalid meal plan ID');
-          setIsLoading(false);
-          return;
+        if (!id) {
+          setError("Invalid meal plan ID")
+          setIsLoading(false)
+          return
         }
-        setIsLoading(true);
-        const result: GenerateGroceryListOutput = await generateGroceryListFromMealPlan(id);
-        
-        // Add checked property to each item
-        const groceryItems = result.groceryList.map(item => ({
+        setIsLoading(true)
+        const result: GenerateGroceryListOutput = await generateGroceryListFromMealPlan(id)
+
+        const groceryItems = result.groceryList.map((item) => ({
           ...item,
-          checked: false
-        }));
-        
-        setGroceryList(groceryItems);
-        setFilteredList(groceryItems);
-        
-        // Extract unique stores for filtering
-        const uniqueStores = Array.from(
-          new Set(groceryItems.map(item => item.suggestedLocation))
-        );
-        setStores(uniqueStores);
-        
-        // Extract location info from the first item's price format (simplified approach)
-        // In a real app, you'd get this from the user context or API
+          checked: false,
+        }))
+
+        setGroceryList(groceryItems)
+        setFilteredList(groceryItems)
+
+        const uniqueStores = Array.from(new Set(groceryItems.map((item) => item.suggestedLocation)))
+        setStores(uniqueStores)
+
         setUserLocation({
-          country: 'User\'s Country', // Placeholder
-          city: 'User\'s City', // Placeholder
-          currencyCode: groceryItems[0]?.estimatedPrice.charAt(0) || '$' // Simple extraction of currency symbol
-        });
-        
-        setIsLoading(false);
+          country: "User's Country",
+          city: "User's City",
+          currencyCode: groceryItems[0]?.estimatedPrice.charAt(0) || "$",
+        })
+
+        setIsLoading(false)
       } catch (err) {
-        setError('Failed to load grocery list');
-        setIsLoading(false);
-        console.error(err);
+        setError("Failed to load grocery list")
+        setIsLoading(false)
+        console.error(err)
       }
-    };
+    }
 
-    fetchGroceryList();
-  }, []);
+    fetchGroceryList()
+  }, [id])
 
-  // Handle item checking
   const toggleItemCheck = (index: number) => {
-    const updatedList = [...filteredList];
-    updatedList[index].checked = !updatedList[index].checked;
-    setFilteredList(updatedList);
-    
-    // Update the main list as well
-    const mainIndex = groceryList.findIndex(item => item.item === updatedList[index].item);
+    const updatedList = [...filteredList]
+    updatedList[index].checked = !updatedList[index].checked
+    setFilteredList(updatedList)
+
+    const mainIndex = groceryList.findIndex((item) => item.item === updatedList[index].item)
     if (mainIndex !== -1) {
-      const updatedGroceryList = [...groceryList];
-      updatedGroceryList[mainIndex].checked = updatedList[index].checked;
-      setGroceryList(updatedGroceryList);
+      const updatedGroceryList = [...groceryList]
+      updatedGroceryList[mainIndex].checked = updatedList[index].checked
+      setGroceryList(updatedGroceryList)
     }
-  };
+  }
 
-  // Handle search and filtering
   useEffect(() => {
-    let result = [...groceryList];
-    
-    // Apply search term filter
-    if (searchTerm) {
-      result = result.filter(item => 
-        item.item.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
-    
-    // Apply store filter
-    if (filterStore) {
-      result = result.filter(item => 
-        item.suggestedLocation === filterStore
-      );
-    }
-    
-    setFilteredList(result);
-  }, [searchTerm, filterStore, groceryList]);
+    let result = [...groceryList]
 
-  // Clear all filters
+    if (searchTerm) {
+      result = result.filter((item) => item.item.toLowerCase().includes(searchTerm.toLowerCase()))
+    }
+
+    if (filterStore) {
+      result = result.filter((item) => item.suggestedLocation === filterStore)
+    }
+
+    setFilteredList(result)
+  }, [searchTerm, filterStore, groceryList])
+
   const clearFilters = () => {
-    setSearchTerm('');
-    setFilterStore(null);
-    setFilteredList(groceryList);
-  };
+    setSearchTerm("")
+    setFilterStore(null)
+    setFilteredList(groceryList)
+  }
 
   if (isLoading) {
     return (
-      <div className="w-full max-w-4xl mx-auto p-4">
-        <div className="animate-pulse space-y-4">
-          <div className="h-12 bg-gray-200 rounded"></div>
+      <div className="w-full max-w-6xl mx-auto p-6">
+        <div className="animate-pulse space-y-6">
           <div className="h-8 bg-gray-200 rounded w-1/3"></div>
-          {[...Array(8)].map((_, i) => (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="h-24 bg-gray-200 rounded"></div>
+            ))}
+          </div>
+          <div className="h-12 bg-gray-200 rounded"></div>
+          {[...Array(6)].map((_, i) => (
             <div key={i} className="h-20 bg-gray-200 rounded"></div>
           ))}
         </div>
       </div>
-    );
+    )
   }
 
   if (error) {
     return (
-      <div className="w-full max-w-4xl mx-auto p-4">
-        <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded">
-          <div className="flex">
-            <div className="flex-shrink-0">
-              <svg className="h-5 w-5 text-red-500" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-              </svg>
-            </div>
-            <div className="ml-3">
-              <p className="text-sm text-red-700">
-                {error}
-              </p>
-            </div>
-          </div>
-        </div>
-        <button 
-          onClick={() => window.location.reload()} 
-          className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition"
-        >
-          Try Again
-        </button>
-      </div>
-    );
-  }
-
-  return (
-    <div className="w-full max-w-4xl bg-gradient-to-br from-muted/20 to-muted/35 mx-auto p-4">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-800 mb-2">Your Grocery List</h1>
-        {userLocation && (
-          <p className="text-gray-600">
-            Prices shown in {userLocation.currencyCode} for {userLocation.city}, {userLocation.country}
-          </p>
-        )}
-      </div>
-
-      {/* Search and Filter Controls */}
-      <div className="mb-6 space-y-4 sm:space-y-0 sm:flex sm:space-x-4">
-        <div className="relative flex-1">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <Search className="h-5 w-5 text-gray-400" />
-          </div>
-          <input
-            type="text"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Search items..."
-            className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-          />
-        </div>
-        
-        <div className="relative sm:w-64">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <Filter className="h-5 w-5 text-gray-400" />
-          </div>
-          <select
-            value={filterStore || ''}
-            onChange={(e) => setFilterStore(e.target.value || null)}
-            className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-          >
-            <option value="">All Stores</option>
-            {stores.map((store, index) => (
-              <option key={index} value={store}>{store}</option>
-            ))}
-          </select>
-        </div>
-        
-        {(searchTerm || filterStore) && (
-          <button
-            onClick={clearFilters}
-            className="w-full sm:w-auto px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-          >
-            Clear Filters
-          </button>
-        )}
-      </div>
-
-      {/* Stats */}
-      <div className="mb-6 grid grid-cols-2 sm:grid-cols-3 gap-4">
-        <div className="bg-blue-50 p-4 rounded-lg">
-          <p className="text-sm text-blue-600 font-medium">Total Items</p>
-          <p className="text-2xl font-bold text-blue-800">{groceryList.length}</p>
-        </div>
-        <div className="bg-green-50 p-4 rounded-lg">
-          <p className="text-sm text-green-600 font-medium">Items Checked</p>
-          <p className="text-2xl font-bold text-green-800">
-            {groceryList.filter(item => item.checked).length}
-          </p>
-        </div>
-        <div className="bg-purple-50 p-4 rounded-lg sm:col-span-1 col-span-2">
-          <p className="text-sm text-purple-600 font-medium">Stores to Visit</p>
-          <p className="text-2xl font-bold text-purple-800">{stores.length}</p>
-        </div>
-      </div>
-
-      {/* Grocery List */}
-      {filteredList.length === 0 ? (
-        <div className="text-center py-12 bg-gray-50 rounded-lg">
-          <ShoppingBag className="mx-auto h-12 w-12 text-gray-400" />
-          <h3 className="mt-2 text-lg font-medium text-gray-900">No items found</h3>
-          <p className="mt-1 text-sm text-gray-500">
-            Try adjusting your search or filter to find what you&apos;re looking for.
-          </p>
-          {(searchTerm || filterStore) && (
-            <button
-              onClick={clearFilters}
-              className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition"
-            >
-              Clear Filters
-            </button>
-          )}
-        </div>
-      ) : (
-        <ul className="divide-y divide-gray-200 bg-white shadow rounded-lg">
-          {filteredList.map((item, index) => (
-            <li 
-              key={index} 
-              className={`p-4 flex items-start justify-between transition-colors ${
-                item.checked ? 'bg-green-50' : ''
-              }`}
-            >
-              <div className="flex items-start space-x-3">
-                <button
-                  onClick={() => toggleItemCheck(index)}
-                  className={`flex-shrink-0 h-6 w-6 rounded-full border ${
-                    item.checked 
-                      ? 'bg-green-500 border-green-500 text-white' 
-                      : 'border-gray-300 text-transparent'
-                  } flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500`}
-                >
-                  {item.checked && <Check className="h-4 w-4" />}
-                </button>
-                <div className={`${item.checked ? 'text-gray-500' : 'text-gray-900'}`}>
-                  <h3 className={`text-lg font-medium ${item.checked ? 'line-through' : ''}`}>
-                    {item.item}
-                  </h3>
-                  <div className="mt-1 flex flex-col sm:flex-row sm:space-x-4">
-                    <p className="text-sm text-gray-500">
-                      <span className="font-medium">Price:</span> {item.estimatedPrice}
-                    </p>
-                    <p className="text-sm text-gray-500">
-                      <span className="font-medium">Store:</span> {item.suggestedLocation}
-                    </p>
-                  </div>
+      <div className="w-full max-w-6xl mx-auto p-6">
+        <Card className="border-red-200 bg-red-50">
+          <CardContent className="p-6">
+            <div className="flex items-center space-x-3">
+              <div className="flex-shrink-0">
+                <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
+                  <span className="text-red-600 text-sm">!</span>
                 </div>
               </div>
-            </li>
-          ))}
-        </ul>
-      )}
+              <div>
+                <h3 className="text-red-800 font-medium">Error Loading Grocery List</h3>
+                <p className="text-red-600 text-sm mt-1">{error}</p>
+              </div>
+            </div>
+            <Button onClick={() => window.location.reload()} className="mt-4" variant="outline">
+              Try Again
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  const completionPercentage =
+    groceryList.length > 0 ? (groceryList.filter((item) => item.checked).length / groceryList.length) * 100 : 0
+
+  return (
+    <div className="w-full max-w-6xl mx-auto p-6 space-y-6">
+      {/* Header */}
+      <div className="text-center space-y-2">
+        <h1 className="text-4xl font-bold text-gray-900">Grocery Shopping List</h1>
+        {userLocation && (
+          <p className="text-gray-600">
+            Prices for {userLocation.city}, {userLocation.country}
+          </p>
+        )}
+      </div>
+
+      {/* Price Summary Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card className="border-blue-200 bg-gradient-to-br from-blue-50 to-blue-100">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium text-blue-700 flex items-center">
+              <DollarSign className="w-4 h-4 mr-2" />
+              Total Cost
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <div className="text-2xl font-bold text-blue-900">{formatPrice(totals.total)}</div>
+            <p className="text-xs text-blue-600 mt-1">{groceryList.length} items</p>
+          </CardContent>
+        </Card>
+
+        <Card className="border-green-200 bg-gradient-to-br from-green-50 to-green-100">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium text-green-700 flex items-center">
+              <CheckCircle2 className="w-4 h-4 mr-2" />
+              Completed
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <div className="text-2xl font-bold text-green-900">{formatPrice(totals.completed)}</div>
+            <p className="text-xs text-green-600 mt-1">
+              {groceryList.filter((item) => item.checked).length} items checked
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card className="border-orange-200 bg-gradient-to-br from-orange-50 to-orange-100">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium text-orange-700 flex items-center">
+              <Circle className="w-4 h-4 mr-2" />
+              Remaining
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <div className="text-2xl font-bold text-orange-900">{formatPrice(totals.remaining)}</div>
+            <p className="text-xs text-orange-600 mt-1">
+              {groceryList.filter((item) => !item.checked).length} items left
+            </p>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Progress Bar */}
-      <div className="mt-8">
-        <div className="flex justify-between text-sm font-medium text-gray-700 mb-1">
-          <span>Shopping Progress</span>
-          <span>
-            {groceryList.filter(item => item.checked).length} of {groceryList.length} items
-          </span>
-        </div>
-        <div className="w-full bg-gray-200 rounded-full h-2.5">
-          <div 
-            className="bg-green-600 h-2.5 rounded-full transition-all duration-500 ease-in-out" 
-            style={{ 
-              width: `${(groceryList.filter(item => item.checked).length / groceryList.length) * 100}%` 
-            }}
-          ></div>
-        </div>
-      </div>
+      <Card>
+        <CardContent className="p-6">
+          <div className="flex justify-between items-center mb-3">
+            <span className="text-sm font-medium text-gray-700">Shopping Progress</span>
+            <span className="text-sm text-gray-500">{Math.round(completionPercentage)}% Complete</span>
+          </div>
+          <div className="w-full bg-gray-200 rounded-full h-3">
+            <div
+              className="bg-gradient-to-r from-green-500 to-green-600 h-3 rounded-full transition-all duration-500 ease-in-out"
+              style={{ width: `${completionPercentage}%` }}
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Search and Filter */}
+      <Card>
+        <CardContent className="p-6">
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <Input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Search grocery items..."
+                className="pl-10"
+              />
+            </div>
+
+            <div className="relative sm:w-64">
+              <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <select
+                value={filterStore || ""}
+                onChange={(e) => setFilterStore(e.target.value || null)}
+                className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="">All Stores</option>
+                {stores.map((store, index) => (
+                  <option key={index} value={store}>
+                    {store}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {(searchTerm || filterStore) && (
+              <Button onClick={clearFilters} variant="outline">
+                Clear Filters
+              </Button>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Grocery Items */}
+      <Card>
+        <CardContent className="p-0">
+          {filteredList.length === 0 ? (
+            <div className="text-center py-12">
+              <ShoppingBag className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No items found</h3>
+              <p className="text-gray-500 mb-4">Try adjusting your search or filter to find what you're looking for.</p>
+              {(searchTerm || filterStore) && (
+                <Button onClick={clearFilters} variant="outline">
+                  Clear Filters
+                </Button>
+              )}
+            </div>
+          ) : (
+            <div className="divide-y divide-gray-200">
+              {filteredList.map((item, index) => (
+                <div
+                  key={index}
+                  className={`p-6 flex items-center justify-between transition-all duration-200 hover:bg-gray-50 ${
+                    item.checked ? "bg-green-50/50" : ""
+                  }`}
+                >
+                  <div className="flex items-center space-x-4 flex-1">
+                    <button
+                      onClick={() => toggleItemCheck(index)}
+                      className={`flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all duration-200 ${
+                        item.checked
+                          ? "bg-green-500 border-green-500 text-white shadow-md"
+                          : "border-gray-300 hover:border-green-400"
+                      }`}
+                    >
+                      {item.checked && <Check className="w-4 h-4" />}
+                    </button>
+
+                    <div className="flex-1 min-w-0">
+                      <h3
+                        className={`text-lg font-medium ${
+                          item.checked ? "line-through text-gray-500" : "text-gray-900"
+                        }`}
+                      >
+                        {item.item}
+                      </h3>
+                      <div className="flex items-center space-x-4 mt-1">
+                        <div className="flex items-center text-sm text-gray-600">
+                          <DollarSign className="w-3 h-3 mr-1" />
+                          <span className="font-medium">{item.estimatedPrice}</span>
+                        </div>
+                        <div className="flex items-center text-sm text-gray-600">
+                          <MapPin className="w-3 h-3 mr-1" />
+                          <Badge variant="secondary" className="text-xs">
+                            {item.suggestedLocation}
+                          </Badge>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
-  );
+  )
 }
 
-
-export default GroceryList;
-
+export default GroceryList

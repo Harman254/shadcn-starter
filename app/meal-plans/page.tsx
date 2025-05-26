@@ -71,7 +71,7 @@ const userId = session?.user?.id
           >
             <CardHeader className="bg-muted/10 border-b border-border pb-4">
               <Link
-                href={`/dashboard/details/${mealPlan.id}`}
+                href={`/meal-plans/${mealPlan.id}`}
                 className="hover:underline"
                 >
                 <div className="flex items-center justify-between mb-1">
