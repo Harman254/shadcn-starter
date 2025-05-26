@@ -153,7 +153,7 @@ const GroceryList = ({ id }: { id: string | null }) => {
             <div className="flex items-center space-x-3">
               <div className="flex-shrink-0">
                 <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
-                  <span className="text-red-600 text-sm">!</span>
+                  <span className="text-red-600 text-sm">an error occured</span>
                 </div>
               </div>
               <div>
@@ -294,7 +294,7 @@ const GroceryList = ({ id }: { id: string | null }) => {
             <div className="text-center py-12">
               <ShoppingBag className="mx-auto h-12 w-12 text-gray-400 mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">No items found</h3>
-              <p className="text-gray-500 mb-4">Try adjusting your search or filter to find what you're looking for.</p>
+              <p className="text-gray-500 mb-4">Try adjusting your search or filter to find what you&#39;re looking for.</p>
               {(searchTerm || filterStore) && (
                 <Button onClick={clearFilters} variant="outline">
                   Clear Filters
