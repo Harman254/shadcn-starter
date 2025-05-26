@@ -13,11 +13,12 @@ const dashboardLinks = [
     icon: HomeIcon,
   },
   {
-    id: 1,
-    name: "Pricing",
-    href: "/dashboard/pricing",
-    icon: UserCog,
+    id: 0,
+    name: "New",
+    href: "/meal-plans/new",
+    icon: HomeIcon,
   },
+  
   {
     id: 2,
     name: "Meals",
@@ -35,6 +36,12 @@ const dashboardLinks = [
     name: "Preferences",
     href: "/dashboard/preferences",
     icon: Sliders,
+  },
+  {
+    id: 1,
+    name: "Pricing",
+    href: "/dashboard/pricing",
+    icon: UserCog,
   },
 ];
 

@@ -1,130 +1,47 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
-import { generateGroceryListFromMealPlan } from "@/ai/flows/generate-grocery-list"
-import type { GenerateGroceryListOutput } from "@/ai/flows/generate-grocery-list"
+import { useState, useEffect } from "react"
 import { Search, ShoppingBag, Check, Filter, DollarSign, CheckCircle2, Circle, MapPin } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-
-interface GroceryItem {
-  item: string
-  estimatedPrice: string
-  suggestedLocation: string
-  checked: boolean
-}
+import { useGroceryListStore } from "@/data/grocery-store"
 
 const GroceryList = ({ id }: { id: string | null }) => {
-  const [groceryList, setGroceryList] = useState<GroceryItem[]>([])
-  const [filteredList, setFilteredList] = useState<GroceryItem[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [searchTerm, setSearchTerm] = useState("")
-  const [filterStore, setFilterStore] = useState<string | null>(null)
-  const [stores, setStores] = useState<string[]>([])
-  const [userLocation, setUserLocation] = useState<{
-    country: string
-    city: string
-    currencyCode: string
-  } | null>(null)
+  // Use the Zustand store
+  const {
+    groceryList,
+    filteredList,
+    isLoading,
+    error,
+    searchTerm,
+    filterStore,
+    stores,
+    userLocation,
+    fetchGroceryList,
+    toggleItemCheck,
+    setSearchTerm,
+    setFilterStore,
+    clearFilters,
+    getTotals,
+    getCompletionPercentage
+  } = useGroceryListStore()
 
-  // Parse price string to number
-  const parsePrice = (priceString: string): number => {
-    const numericValue = priceString.replace(/[^0-9.]/g, "")
-    return Number.parseFloat(numericValue) || 0
-  }
-
-  // Calculate totals
-  const totals = useMemo(() => {
-    const allItems = groceryList.map((item) => parsePrice(item.estimatedPrice))
-    const checkedItems = groceryList.filter((item) => item.checked).map((item) => parsePrice(item.estimatedPrice))
-    const uncheckedItems = groceryList.filter((item) => !item.checked).map((item) => parsePrice(item.estimatedPrice))
-
-    return {
-      total: allItems.reduce((sum, price) => sum + price, 0),
-      completed: checkedItems.reduce((sum, price) => sum + price, 0),
-      remaining: uncheckedItems.reduce((sum, price) => sum + price, 0),
-    }
-  }, [groceryList])
-
+  // Format price with currency symbol
   const formatPrice = (amount: number): string => {
     const currencySymbol = userLocation?.currencyCode || "$"
     return `${currencySymbol}${amount.toFixed(2)}`
   }
 
+  // Fetch grocery list when component mounts or id changes
   useEffect(() => {
-    const fetchGroceryList = async () => {
-      try {
-        if (!id) {
-          setError("Invalid meal plan ID")
-          setIsLoading(false)
-          return
-        }
-        setIsLoading(true)
-        const result: GenerateGroceryListOutput = await generateGroceryListFromMealPlan(id)
+    fetchGroceryList(id)
+  }, [id, fetchGroceryList])
 
-        const groceryItems = result.groceryList.map((item) => ({
-          ...item,
-          checked: false,
-        }))
-
-        setGroceryList(groceryItems)
-        setFilteredList(groceryItems)
-
-        const uniqueStores = Array.from(new Set(groceryItems.map((item) => item.suggestedLocation)))
-        setStores(uniqueStores)
-
-        setUserLocation({
-          country: "User's Country",
-          city: "User's City",
-          currencyCode: groceryItems[0]?.estimatedPrice.charAt(0) || "$",
-        })
-
-        setIsLoading(false)
-      } catch (err) {
-        setError("Failed to load grocery list")
-        setIsLoading(false)
-        console.error(err)
-      }
-    }
-
-    fetchGroceryList()
-  }, [id])
-
-  const toggleItemCheck = (index: number) => {
-    const updatedList = [...filteredList]
-    updatedList[index].checked = !updatedList[index].checked
-    setFilteredList(updatedList)
-
-    const mainIndex = groceryList.findIndex((item) => item.item === updatedList[index].item)
-    if (mainIndex !== -1) {
-      const updatedGroceryList = [...groceryList]
-      updatedGroceryList[mainIndex].checked = updatedList[index].checked
-      setGroceryList(updatedGroceryList)
-    }
-  }
-
-  useEffect(() => {
-    let result = [...groceryList]
-
-    if (searchTerm) {
-      result = result.filter((item) => item.item.toLowerCase().includes(searchTerm.toLowerCase()))
-    }
-
-    if (filterStore) {
-      result = result.filter((item) => item.suggestedLocation === filterStore)
-    }
-
-    setFilteredList(result)
-  }, [searchTerm, filterStore, groceryList])
-
-  const clearFilters = () => {
-    setSearchTerm("")
-    setFilterStore(null)
-    setFilteredList(groceryList)
-  }
+  // Calculate totals and completion percentage
+  const totals = getTotals()
+  const completionPercentage = getCompletionPercentage()
 
   if (isLoading) {
     return (
@@ -148,7 +65,7 @@ const GroceryList = ({ id }: { id: string | null }) => {
   if (error) {
     return (
       <div className="w-full max-w-6xl mx-auto p-6">
-        <Card className="border-red-200 bg-red-50">
+        <Card className="border-red-200 bg-gradient-to-br from-red-50 to-red-100">
           <CardContent className="p-6">
             <div className="flex items-center space-x-3">
               <div className="flex-shrink-0">
@@ -170,11 +87,8 @@ const GroceryList = ({ id }: { id: string | null }) => {
     )
   }
 
-  const completionPercentage =
-    groceryList.length > 0 ? (groceryList.filter((item) => item.checked).length / groceryList.length) * 100 : 0
-
   return (
-    <div className="w-full max-w-6xl mx-auto p-6 space-y-6">
+    <div className="w-full max-w-6xl mx-auto p-6 space-y-6 bg-gradient-to-br from-muted/65 to-muted/95 rounded-md">
       {/* Header */}
       <div className="text-center space-y-2">
         <h1 className="text-4xl font-bold text-gray-900">Grocery Shopping List</h1>
