@@ -1,4 +1,4 @@
-
+'use client'
 import  Link  from "next/link";
 import { useEffect } from "react";
 import { Home, ArrowLeft, Search } from "lucide-react";
