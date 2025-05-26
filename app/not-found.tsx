@@ -1,6 +1,5 @@
 'use client'
 import  Link  from "next/link";
-import { useEffect,  } from "react";
 import { Home, ArrowLeft, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
@@ -8,11 +7,6 @@ import { useRouter } from "next/navigation";
 const NotFound = () => {
     const router = useRouter();
 
-  useEffect(() => {
-    console.error(
-      "404 Error: you attempted to access non-existent route",
-    );
-  }, [location.pathname]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 flex items-center justify-center p-4">
@@ -34,7 +28,7 @@ const NotFound = () => {
               Oops! Page not found
             </h2>
             <p className="text-lg text-muted-foreground max-w-md mx-auto leading-relaxed">
-              The page you're looking for doesn't exist or has been moved to a different location.
+              The page you&#39;re looking for doesn't exist or has been moved to a different location.
             </p>
           </div>
 
@@ -42,7 +36,7 @@ const NotFound = () => {
           <div className="inline-flex items-center px-4 py-2 bg-muted/50 rounded-lg border border-border/50">
             <Search className="w-4 h-4 mr-2 text-muted-foreground" />
             <code className="text-sm text-muted-foreground font-mono">
-              {location.pathname}
+                {typeof window !== 'undefined' ? window.location.pathname : '/'}
             </code>
           </div>
         </div>
