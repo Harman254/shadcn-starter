@@ -53,7 +53,6 @@ type MealPlanDetailPageProps = {
   }>
 }
 
-export const force = "force-cache"
 
 const MealPlanDetailPage = async ({ params }: MealPlanDetailPageProps) => {
   const { id } = await params
