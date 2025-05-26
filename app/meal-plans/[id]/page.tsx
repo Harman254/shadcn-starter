@@ -48,15 +48,13 @@ type MealPlan = {
 }
 
 type MealPlanDetailPageProps = {
-  params: {
+  params: Promise<{
     id: string
-  }
-  searchParams: Record<string, string | string[] | undefined>
+  }>
 }
 
-
 const MealPlanDetailPage = async ({ params }: MealPlanDetailPageProps) => {
-  const { id } = params
+  const { id } = await params
   const mealPlan: MealPlan | null = await fetchMealPlanById(id)
 
   if (!mealPlan) {
