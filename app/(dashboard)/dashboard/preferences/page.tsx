@@ -442,7 +442,7 @@ export default function PreferencesPage() {
                 <CardTitle className="text-xl text-gray-900 dark:text-white">Household Size</CardTitle>
               </div>
               <CardDescription className="text-gray-600 dark:text-gray-300">
-                We'll adjust portion sizes and shopping lists accordingly.
+                We&#39;ll adjust portion sizes and shopping lists accordingly.
               </CardDescription>
             </CardHeader>
             <CardContent>
