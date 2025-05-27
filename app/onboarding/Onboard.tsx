@@ -438,7 +438,7 @@ const OnboardingPage = () => {
                       </div>
                       <div>
                         <p className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                          Perfect! We'll customize everything for {formData.householdSize}{" "}
+                          Perfect! We&#39;ll customize everything for {formData.householdSize}{" "}
                           {formData.householdSize === 1 ? "person" : "people"}
                         </p>
                         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
