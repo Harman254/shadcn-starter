@@ -13,7 +13,7 @@ const dashboardLinks = [
     icon: HomeIcon,
   },
   {
-    id: 0,
+    id: 13,
     name: "New",
     href: "/meal-plans/new",
     icon: HomeIcon,

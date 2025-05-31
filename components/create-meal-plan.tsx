@@ -242,7 +242,7 @@ const CreateMealPlan = ({ preferences }: CreateMealPlanProps) => {
   }
 
   return (
-    <div className="container max-w-5xl mx-auto py-8 px-4 space-y-10">
+    <div suppressHydrationWarning className=" container max-w-5xl mx-auto py-8 px-4 space-y-10">
       {/* Configuration */}
       <Card className="border-neutral-200 dark:border-neutral-800 shadow-md overflow-hidden">
         <CardHeader className="bg-neutral-50 dark:bg-neutral-900 px-6 pt-5 pb-4 border-b border-neutral-200 dark:border-neutral-800">

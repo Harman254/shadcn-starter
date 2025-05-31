@@ -20,7 +20,7 @@ export default async function  RootLayout({ children }: RootLayoutProps) {
     <body suppressHydrationWarning>
       <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
         {/* Single container for the entire application */}
-        <div className="flex min-h-screen flex-col">
+        <div className="flex min-h-screen bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 flex-col">
           <Navbar />
           {children}
           <Footer2 />

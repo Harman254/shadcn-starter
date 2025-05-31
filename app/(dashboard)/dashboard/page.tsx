@@ -6,6 +6,7 @@ import {
   ChefHat,
   ClipboardList,
   Heart,
+  Loader2,
   Settings,
 } from 'lucide-react';
 import MealPlanStatusCard, { MealPlan } from '@/components/meal-plan-status';
@@ -46,7 +47,14 @@ export default function Dashboard() {
 
   if (isPending || isFetching) {
     return (
-      <Skeleton className="h-full w-full" />
+      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="flex flex-col items-center gap-4">
+        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-green-400 to-green-800 flex items-center justify-center text-primary-foreground shadow-lg">
+          <Loader2 className="w-8 h-8 animate-spin" />
+        </div>
+        <p className="text-lg font-medium text-muted-foreground">Loading</p>
+      </div>
+    </div>
     );
   }
 

@@ -7,7 +7,6 @@ import prisma from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import toast from "react-hot-toast";
 
 export async function saveOnboardingData(formData: {
   dietaryPreference: string;
@@ -55,7 +54,9 @@ export async function saveOnboardingData(formData: {
 
 
 
-  revalidatePath('/preferences'); // Revalidate the preferences page to reflect the new data
+  revalidatePath('/preferences'); 
+  revalidatePath('/meal-plans/new'); // Revalidate the preferences page to reflect the new data
+  // Revalidate the preferences page to reflect the new data
   redirect('/meal-plans/new'); // Redirect to the new meal plan page after saving data
   
   

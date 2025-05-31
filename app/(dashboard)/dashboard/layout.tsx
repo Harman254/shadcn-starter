@@ -62,7 +62,7 @@ if (!isOnboarded) {
         {/* Sidebar */}
         <div className="hidden border-r bg-muted/40 md:block">
           <div className="flex flex-col max-h-screen h-full gap-2">
-            <div className="h-14 flex items-center border-b px-4 lg:h-[60px] lg:px-6">
+            <div className="h-14 flex items-center border-b px-4 lg:h-[60px] lg:px-6 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
               <Link href="/" className="flex items-center gap-2">
                 <p className="text-2xl font-bold">
                   Meal<span className="text-green-600">Wise</span>
@@ -70,7 +70,7 @@ if (!isOnboarded) {
               </Link>
             </div>
             <div className="flex-1">
-              <nav className="grid items-start px-2 text-sm font-medium lg:px-4">
+              <nav className="grid items-start px-2 text-sm font-medium lg:px-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
 
                 <DashboardLinks />
               </nav>
@@ -80,7 +80,7 @@ if (!isOnboarded) {
 
         {/* Main Content */}
         <div className="flex flex-col">
-          <header className="flex h-14 items-center gap-4 border-b bg-muted/40 px-4 lg:h-[60px] lg:px-6">
+          <header className="flex h-14 items-center gap-4 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4 lg:h-[60px] lg:px-6">
             {/* Mobile Menu */}
             <Sheet>
               <SheetTrigger asChild>
@@ -111,7 +111,7 @@ if (!isOnboarded) {
           </header>
 
           {/* Full-width Main Section */}
-          <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6 w-full">
+          <main className="flex flex-1 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 flex-col gap-4 p-4 lg:gap-6 lg:p-6 w-full">
             {children}
           </main>
         </div>
