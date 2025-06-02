@@ -30,6 +30,9 @@ importers:
       '@opentelemetry/exporter-jaeger':
         specifier: ^2.0.0
         version: 2.0.0(@opentelemetry/api@1.9.0)
+      '@polar-sh/better-auth':
+        specifier: ^1.0.1
+        version: 1.0.1(@polar-sh/sdk@0.32.13(zod@3.24.2))(better-auth@1.2.7)
       '@polar-sh/nextjs':
         specifier: ^0.4.0
         version: 0.4.0(next@15.3.1(@babel/core@7.26.10)(@opentelemetry/api@1.9.0)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(zod@3.24.2)
@@ -1004,6 +1007,13 @@ packages:
 
   '@polar-sh/adapter-utils@0.2.0':
     resolution: {integrity: sha512-dSP4E8BgHyaGevYAaTRlNW8rJjR91GXP7InV2+WZ2je2+Oq8PJKo7sLWbpkkJp9zmRx1I88f76rk0XmCY8Aivg==}
+
+  '@polar-sh/better-auth@1.0.1':
+    resolution: {integrity: sha512-2wT/zaBqy6LsCkEEBLDzKF4QT8kE5iwFqZAo4RSkB+AtUn4VEZwUwfjQdxUvEfJ535yIIg8eFEWhG8DvdZZVOQ==}
+    engines: {node: '>=16'}
+    peerDependencies:
+      '@polar-sh/sdk': ^0.32.15
+      better-auth: ^1.2.7
 
   '@polar-sh/nextjs@0.4.0':
     resolution: {integrity: sha512-D7UibCAo5mUnaNvD6/81PZtQkw44x3ga0lMtPNxbwO7t7LonwSiyKEBiwtgLyxErSvUTnevvay9Hone9t4KRxg==}
@@ -5123,6 +5133,12 @@ snapshots:
     transitivePeerDependencies:
       - '@modelcontextprotocol/sdk'
       - zod
+
+  '@polar-sh/better-auth@1.0.1(@polar-sh/sdk@0.32.13(zod@3.24.2))(better-auth@1.2.7)':
+    dependencies:
+      '@polar-sh/sdk': 0.32.13(zod@3.24.2)
+      better-auth: 1.2.7
+      zod: 3.24.2
 
   '@polar-sh/nextjs@0.4.0(next@15.3.1(@babel/core@7.26.10)(@opentelemetry/api@1.9.0)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(zod@3.24.2)':
     dependencies:

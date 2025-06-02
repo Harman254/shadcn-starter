@@ -165,6 +165,24 @@ export const getAccount = async (userId: string) => {
   });
 };
 
+ export const addSubscriber = async (id: string) => {
+  const subscriber = await prisma.subscription.create({
+    data: {
+      userId: id,
+      createdAt: new Date(), // Set the current date as creation date
+    },
+  });
+
+  return subscriber;
+
+
+
+
+ }
+
+
+
+
 
 
 
