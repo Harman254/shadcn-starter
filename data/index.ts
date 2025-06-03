@@ -165,20 +165,21 @@ export const getAccount = async (userId: string) => {
   });
 };
 
- export const addSubscriber = async (id: string) => {
+export const addSubscriber = async (customerID: string, userID: string) => {
+  // Create a new subscription record in the database
   const subscriber = await prisma.subscription.create({
     data: {
-      userId: id,
-      createdAt: new Date(), // Set the current date as creation date
-    },
+      CustomerID,// Set the CustomerID from the parameter
+      userID,      // Link to the user via userID
+      // createdAt is handled automatically by @default(now())
+      // id is handled automatically by @default(uuid())
+    }
   });
+  console.log("Subscriber created:", subscriber);
 
   return subscriber;
+};
 
-
-
-
- }
 
 
 

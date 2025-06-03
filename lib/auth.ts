@@ -7,6 +7,7 @@ import type { User } from 'better-auth';
 import { Polar } from "@polar-sh/sdk";
 import { polar, checkout, portal, usage, webhooks } from "@polar-sh/better-auth";
 import { addSubscriber } from '@/data';
+import { PolarWebhookPayload } from '@/types/polar-webhook';
 
 const polarClient = new Polar({
   accessToken: process.env.POLAR_ACCESS_TOKEN,
@@ -141,37 +142,37 @@ export const auth = betterAuth({
           usage(),
           webhooks({
             secret: process.env.POLAR_WEBHOOK_SECRET!,
-            onSubscriptionCreated: async (payload) => {
+            onSubscriptionCreated: async (payload: PolarWebhookPayload) => {
               try {
                 console.log("Subscription created:", payload);
-                const data = payload.data// Ensure we have the correct data structure
+                const customerId = payload.data.id
+                console.log("Customer ID:", customerId);
             
-                const customerId = data.id; 
 
             
                 
                
             
                 // Save subscription in your database
-                await addSubscriber(customerId);
+               const addSub = await addSubscriber(customerId, 'fQQSJH3tfUS3vLxyWaX7bUJW8aF3E6wU');
             
                 console.log("Subscription saved successfully.");
               } catch (error) {
                 console.error("Error handling subscription creation:", error);
               }
             },
-            onCustomerStateChanged: async (payload) => {
-              console.log("Customer state changed:", payload);
+            onCustomerStateChanged: async (payload: PolarWebhookPayload) => {
+              // console.log("Customer state changed:", payload);
               // Handle customer state changes here
               return Promise.resolve();
             },
-            onOrderPaid: async (payload) => {
-              console.log("Order paid:", payload);
+            onOrderPaid: async (payload:PolarWebhookPayload) => {
+              // console.log("Order paid:", payload);
               // Handle order payments here
               return Promise.resolve();
             },
-            onPayload: async (payload) => {
-              console.log("Webhook received:", payload);
+            onPayload: async (payload: PolarWebhookPayload) => {
+              // console.log("Webhook received:", payload);
               // Catch-all handler for all events
               return Promise.resolve();
             }
