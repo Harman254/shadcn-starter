@@ -23,6 +23,7 @@ interface DayMealPlan {
 
 // Define the interface for save meal plan input
 interface SaveMealPlanInput {
+  title: string; // Optional title for the meal plan
   duration: number;
   mealsPerDay: number;
   days: DayMealPlan[];
@@ -59,6 +60,7 @@ export async function POST(request:Request) {
     // Create the main MealPlan record
     const mealPlan = await prisma.mealPlan.create({
       data: {
+        title: input.title,
         userId: userId,
         duration: input.duration,
         mealsPerDay: input.mealsPerDay,

@@ -1,31 +1,36 @@
-import { Badge } from "@/components/ui/badge";
-import { CalendarDayCardProps } from "../components/types";
+import { Card, CardContent } from "@/components/ui/card"
+import type { CalendarDayCardProps } from "./types"
 
-export const CalendarDayCard = ({ day, isToday }: CalendarDayCardProps) => {
-  const date = new Date(day.date);
-  const totalCalories = day.meals.reduce((sum, meal) => sum + meal.calories, 0);
+const CalendarDayCard = ({ day, isToday }: CalendarDayCardProps) => {
+  const date = new Date(day.date)
+  const dayName = date.toLocaleDateString('en-US', { weekday: 'short' })
+  const dayNumber = date.getDate()
+  const monthName = date.toLocaleDateString('en-US', { month: 'short' })
 
   return (
-    <a
-      href={`#day-${day.id}`}
-      className={`flex-shrink-0 w-24 p-4 rounded-xl text-center transition-all duration-300 hover:scale-105 ${
-        isToday
-          ? "bg-emerald-600 text-white shadow-lg"
-          : "bg-muted hover:bg-muted/80 border-2 border-transparent hover:border-emerald-200"
+    <Card 
+      className={`cursor-pointer transition-all hover:shadow-md min-h-[80px] ${
+        isToday ? 'ring-2 ring-primary bg-primary/5' : ''
       }`}
     >
-      <div className="space-y-1">
-        <p className="text-xs font-medium opacity-75">
-          {date.toLocaleDateString(undefined, { weekday: "short" })}
-        </p>
-        <p className="text-xl font-bold">{date.getDate()}</p>
-        <p className="text-xs opacity-75">{date.toLocaleDateString(undefined, { month: "short" })}</p>
-        <Badge variant={isToday ? "secondary" : "outline"} className="text-xs">
-          {totalCalories} cal
-        </Badge>
-      </div>
-    </a>
-  );
-};
+      <CardContent className="p-2 text-center h-full flex flex-col justify-center">
+        <div className="text-[10px] sm:text-xs text-muted-foreground uppercase tracking-wide">
+          {dayName}
+        </div>
+        <div className={`text-sm sm:text-lg font-semibold ${isToday ? 'text-primary' : ''}`}>
+          {dayNumber}
+        </div>
+        <div className="text-[10px] sm:text-xs text-muted-foreground">
+          {monthName}
+        </div>
+        {day.meals && (
+          <div className="mt-1 text-[9px] sm:text-xs text-muted-foreground">
+            {day.meals.length}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  )
+}
 
-export default CalendarDayCard;
+export default CalendarDayCard

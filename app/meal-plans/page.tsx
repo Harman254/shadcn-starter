@@ -18,7 +18,7 @@ import { auth } from '@/lib/auth';
 const MealPlans = async () => {
 
   const session = await auth.api.getSession({
-    headers: await headers() // you need to pass the headers object.
+    headers: await headers() 
 })
 
 const userId = session?.user?.id
@@ -69,6 +69,7 @@ const userId = session?.user?.id
             key={mealPlan.id}
             className="border border-border overflow-hidden cursor-pointer hover:shadow-xl hover:bg-muted/20 transition-all duration-200 p-4 rounded-lg"
           >
+            
             <CardHeader className="bg-muted/10 border-b border-border pb-4">
               <Link
                 href={`/meal-plans/${mealPlan.id}`}
@@ -76,12 +77,16 @@ const userId = session?.user?.id
                 >
                 <div className="flex items-center justify-between mb-1">
                   <CardTitle className="text-xl font-semibold">
-                    {mealPlan.duration}-Day Meal Plan
+                    {mealPlan.title}
                   </CardTitle>
+                  
                   <Badge variant="outline" className="bg-background/80">
                     {mealPlan.mealsPerDay} meals/day
                   </Badge>
                 </div>
+                <h2 className='text-lg font-bold text-foreground tracking-tighter'>
+                    {mealPlan.duration}-Day Meal Plan
+                  </h2>
                 <CardDescription className="flex items-center text-sm text-muted-foreground">
                   <CalendarIcon className="w-3.5 h-3.5 mr-1.5" />
                   Created on{' '}

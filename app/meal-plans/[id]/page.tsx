@@ -22,11 +22,9 @@ const MealPlanDetailPage = async ({ params }: MealPlanDetailPageProps) => {
   const avgCaloriesPerDay = Math.round(totalPlanCalories / mealPlan.days.length);
 
   return (
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {/* Hero Header */}
+      <div className="max-w-7xl bg-background/95  mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <MealPlanHeader mealPlan={mealPlan} avgCaloriesPerDay={avgCaloriesPerDay} />
 
-        {/* Enhanced Statistics Cards */}
         <MealPlanStatCards
           duration={mealPlan.duration}
           mealsPerDay={mealPlan.mealsPerDay}
@@ -34,13 +32,11 @@ const MealPlanDetailPage = async ({ params }: MealPlanDetailPageProps) => {
           totalPlanCalories={totalPlanCalories}
         />
 
-        {/* Calendar Timeline */}
         <MealPlanCalendar days={mealPlan.days} />
 
-        {/* Daily Meal Plans */}
-        <div className="space-y-8">
-          {mealPlan.days.map((day, dayIndex) => (
-            <DayMealCard key={day.id} day={day} dayIndex={dayIndex} />
+        <div className="grid gap-6 mt-8">
+          {mealPlan.days.map((day, index) => (
+            <DayMealCard key={day.id} day={day} dayIndex={index} />
           ))}
         </div>
       </div>

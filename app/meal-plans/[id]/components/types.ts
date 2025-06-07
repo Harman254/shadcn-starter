@@ -21,6 +21,7 @@ export type DayMeal = {
 
 export type MealPlan = {
   id: string;
+  title: string;
   duration: number;
   mealsPerDay: number;
   createdAt: Date;

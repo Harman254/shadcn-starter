@@ -18,6 +18,7 @@ export interface OnboardingData {
   export type MealPlan = {
     id: string;
     userId: string;
+    title: string;
     duration: number;
     mealsPerDay: number;
     createdAt: Date;

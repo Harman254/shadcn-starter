@@ -16,7 +16,7 @@ export const MealPlanHeader = ({ mealPlan, avgCaloriesPerDay }: MealPlanHeaderPr
                   <Utensils className="h-8 w-8" />
                 </div>
                 <div>
-                  <h1 className="text-4xl lg:text-5xl font-bold mb-2">Your Meal Plan</h1>
+                  <h1 className="text-4xl lg:text-5xl font-bold mb-2">{mealPlan.title}</h1>
                   <p className="text-emerald-100 text-lg">Personalized nutrition for your fitness journey</p>
                 </div>
               </div>

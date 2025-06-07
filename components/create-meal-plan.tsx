@@ -8,11 +8,12 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useMealPlanStore } from '@/store';
+import { useMealPlanStore, useMealPlanTitleStore } from '@/store';
 import { UserPreference } from '@/types';
 import { Loader2, RefreshCcw } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Skeleton } from './ui/skeleton';
+import { generateMealPlanTitle } from '@/ai/flows/generateMealPlanTitle';
 
 /* ======================== */
 /*        Interfaces         */
@@ -50,6 +51,9 @@ const CreateMealPlan = ({ preferences }: CreateMealPlanProps) => {
   const [loading, setLoading] = useState(false);
   const [savingMealPlan, setSavingMealPlan] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
+  const { setTitle, resetTitle } = useMealPlanTitleStore.getState();
+
+  const title = useMealPlanTitleStore((state) => state.title);
 
   /* ======================== */
   /*       Functions           */
@@ -60,12 +64,15 @@ const CreateMealPlan = ({ preferences }: CreateMealPlanProps) => {
 
     try {
       setLoading(true);
+      resetTitle(); // Reset title before generating a new meal plan
 
       const input: GenerateMealPlanInput = {
         duration,
         mealsPerDay,
         preferences,
       };
+
+     
 
       const result = await generatePersonalizedMealPlan(input);
 
@@ -75,6 +82,18 @@ const CreateMealPlan = ({ preferences }: CreateMealPlanProps) => {
         return;
       }
 
+      const titleresult = await generateMealPlanTitle(result.mealPlan);
+      setTitle(titleresult.title); // Set the title state
+
+      console.log('Generated title:', titleresult);
+
+
+      if (!titleresult?.title) {
+        toast.error('Failed to generate meal plan title');
+        clearMealPlan();
+        return;
+      }
+      
       const today = new Date().toISOString();
       setMealPlan(result.mealPlan, duration, mealsPerDay, today);
       
@@ -96,6 +115,7 @@ const CreateMealPlan = ({ preferences }: CreateMealPlanProps) => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          title,
           duration,
           mealsPerDay,
           days: mealPlan,
@@ -373,6 +393,10 @@ const CreateMealPlan = ({ preferences }: CreateMealPlanProps) => {
           <CardContent className="p-0">
             <ScrollArea className="h-[600px]">
               <div className="p-6 space-y-8">
+              <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight leading-tight bg-gradient-to-r from-rose-500 via-purple-500 to-indigo-500 bg-clip-text text-transparent animate-fade-in">
+  {title}
+</h1>
+
                 {mealPlan.map((dayPlan) => (
                   <div key={dayPlan.day} className="space-y-4">
                     <h3 className="text-xl font-semibold text-green-600 dark:text-green-400">

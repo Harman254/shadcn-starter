@@ -23,6 +23,7 @@ model OnboardingData {
 
 model MealPlan {
   id          String      @id @default(cuid())
+  title       String
   userId      String      // Clerk user ID
   duration    Int
   mealsPerDay Int

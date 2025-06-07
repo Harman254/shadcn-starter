@@ -7,15 +7,8 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { Menu, UserCog } from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { Menu, } from "lucide-react";
+
 import { getMealsByUserId } from "@/data";
 import { Toaster } from "@/components/ui/sonner";
 import { ReactNode } from "react";
@@ -42,7 +35,7 @@ export default async function MealLayout({
   return (
     <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
       {/* Sidebar */}
-      <div className="hidden border-r bg-muted/40 md:block">
+      <div className="hidden border-r bg-background/95 md:block">
         <div className="flex flex-col max-h-screen h-full gap-2">
           <div className="h-14 flex items-center border-b px-4 lg:h-[60px] lg:px-6">
             <Link href="/" className="flex items-center gap-2">
@@ -61,7 +54,7 @@ export default async function MealLayout({
 
       {/* Main Content - Removed duplicate background gradient */}
       <div className="relative w-full flex min-h-screen flex-col">
-        <header className="flex h-14 items-center gap-4 border-b bg-muted/40 px-4 lg:h-[60px] lg:px-6">
+        <header className="flex h-14 items-center gap-4 bg-background/95 px-4 lg:h-[60px] lg:px-6">
           {/* Mobile Menu */}
           <Sheet>
             <SheetTrigger asChild>
