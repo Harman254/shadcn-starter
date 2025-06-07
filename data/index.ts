@@ -166,18 +166,63 @@ export const getAccount = async (userId: string) => {
 };
 
 export const addSubscriber = async (customerID: string, userID: string) => {
-  // Create a new subscription record in the database
-  const subscriber = await prisma.subscription.create({
-    data: {
-      CustomerID,// Set the CustomerID from the parameter
-      userID,      // Link to the user via userID
-      // createdAt is handled automatically by @default(now())
-      // id is handled automatically by @default(uuid())
-    }
-  });
-  console.log("Subscriber created:", subscriber);
+  // Input validation
+  if (!customerID) {
+    throw new Error('Customer ID is required');
+  }
+  
+  if (!userID) {
+    throw new Error('User ID is required');
+  }
 
-  return subscriber;
+  try {
+    // Use a transaction to ensure data consistency
+    const subscriber = await prisma.$transaction(async (tx) => {
+      // Check if user exists
+      const userExists = await tx.user.findUnique({
+        where: { id: userID }
+      });
+      
+      if (!userExists) {
+        throw new Error(`User with ID ${userID} not found`);
+      }
+      
+      // Check if subscription already exists for this user
+      const existingSubscription = await tx.subscription.findUnique({
+        where: { userID }
+      });
+      
+      if (existingSubscription) {
+        throw new Error(`User with ID ${userID} already has a subscription`);
+      }
+      
+      // Create a new subscription record
+      const newSubscription = await tx.subscription.create({
+        data: {
+          CustomerID: customerID, // Set the CustomerID from the parameter
+          userID,                // Link to the user via userID
+          // createdAt is handled automatically by @default(now())
+          // id is handled automatically by @default(uuid())
+        }
+      });
+      
+      return newSubscription;
+    });
+    
+    console.log("Subscriber created:", subscriber);
+    return subscriber;
+    
+  } catch (error) {
+    // Log the error for debugging
+    console.error("Failed to create subscriber:", error);
+    
+    // Rethrow the error with a more user-friendly message
+    if (error instanceof Error) {
+      throw error; // Rethrow application errors with their original message
+    } else {
+      throw new Error('Failed to create subscription due to an unexpected error');
+    }
+  }
 };
 
 

@@ -110,7 +110,7 @@ const   SuccessPage =() => {
         {/* Next Steps */}
         <Card className="bg-white/90 backdrop-blur-sm border-green-200">
           <CardHeader>
-            <CardTitle className="text-2xl text-center">What's Next?</CardTitle>
+            <CardTitle className="text-2xl text-center">What&apos;s Next?</CardTitle>
             <CardDescription className="text-center text-lg">
               Get started with your pro features right away
             </CardDescription>

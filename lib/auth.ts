@@ -8,6 +8,7 @@ import { Polar } from "@polar-sh/sdk";
 import { polar, checkout, portal, usage, webhooks } from "@polar-sh/better-auth";
 import { addSubscriber } from '@/data';
 import { PolarWebhookPayload } from '@/types/polar-webhook';
+import { headers } from 'next/headers';
 
 const polarClient = new Polar({
   accessToken: process.env.POLAR_ACCESS_TOKEN,
@@ -147,6 +148,15 @@ export const auth = betterAuth({
                 console.log("Subscription created:", payload);
                 const customerId = payload.data.id
                 console.log("Customer ID:", customerId);
+
+                const session = await auth.api.getSession({
+                  headers: await headers()
+                })
+
+                if (!session?.user?.id) {
+                  throw new Error("User not authenticated");
+                }
+                const userId = session.user.id;
             
 
             
@@ -154,7 +164,7 @@ export const auth = betterAuth({
                
             
                 // Save subscription in your database
-               const addSub = await addSubscriber(customerId, 'fQQSJH3tfUS3vLxyWaX7bUJW8aF3E6wU');
+               const addSub = await addSubscriber(customerId, userId);
             
                 console.log("Subscription saved successfully.");
               } catch (error) {

@@ -4,6 +4,11 @@ export interface OnboardingData {
     householdSize: number;
     cuisinePreferences: string[];
   }
+  export type MealPlanStats = {
+    totalPlanCalories: number
+    avgCaloriesPerDay: number
+  }
+  
   
   export type OnboardingStep = 'dietary' | 'goals' | 'household' | 'cuisine';
 

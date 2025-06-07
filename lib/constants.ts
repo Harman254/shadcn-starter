@@ -1,4 +1,6 @@
 // app/constants.ts
+import type { MealPlan } from "@/types/index"
+import type { MealPlanStats } from "@/types/index"
 
 export const CUISINE_OPTIONS = [
     { id: "italian", label: "Italian", icon: "🍝" },
@@ -34,3 +36,10 @@ export const CUISINE_OPTIONS = [
     { value: "try_new_cuisines", label: "Try New Cuisines", description: "Explore diverse flavors and cooking styles", icon: "🌍" },
   ];
   
+
+
+  
+ 
+
+ 
+
