@@ -29,4 +29,3 @@ export const CalendarDayCard = ({ day, isToday }: CalendarDayCardProps) => {
 };
 
 export default CalendarDayCard;
-

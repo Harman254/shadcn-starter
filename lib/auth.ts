@@ -96,12 +96,12 @@ export const auth = betterAuth({
     github: {
       clientId: process.env.GITHUB_CLIENT_ID!,
       clientSecret: process.env.GITHUB_CLIENT_SECRET!,
-      // redirectURI: "https://mealwise-lemon.vercel.app/api/auth/callback/github",
+      redirectURI: "https://www.aimealwise.com/api/auth/callback/github",
     },
     google: {
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-      // redirectURI: "https://mealwise-lemon.vercel.app/api/auth/callback/google",
+      redirectURI: "https://www.aimealwise.com/api/auth/callback/google",
     },
   },
 
@@ -165,6 +165,7 @@ export const auth = betterAuth({
             
                 // Save subscription in your database
                const addSub = await addSubscriber(customerId, userId);
+                
             
                 console.log("Subscription saved successfully.");
               } catch (error) {

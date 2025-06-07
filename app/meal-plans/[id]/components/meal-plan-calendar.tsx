@@ -1,9 +1,9 @@
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
-import { ChevronLeft, ChevronRight } from "lucide-react";
-import { MealPlanCalendarProps } from "../components/types";
-import CalendarDayCard from "./calendar-day-card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
+import { ChevronLeft, ChevronRight } from "lucide-react"
+import type { MealPlanCalendarProps } from "../components/types"
+import CalendarDayCard from "./calendar-day-card"
 
 export const MealPlanCalendar = ({ days }: MealPlanCalendarProps) => {
   return (
@@ -24,20 +24,23 @@ export const MealPlanCalendar = ({ days }: MealPlanCalendarProps) => {
           </div>
         </div>
       </CardHeader>
-      <CardContent className="p-0 overflow-hidden">
-        <ScrollArea className="w-full whitespace-nowrap">
-          <div className="flex gap-3 p-4 pb-6">
+      <CardContent className="p-0">
+        <ScrollArea className="w-full">
+          <div className="flex gap-3 p-4 pb-6 min-w-max">
             {days.map((day) => {
-              const isToday = new Date().toDateString() === new Date(day.date).toDateString();
-              return <CalendarDayCard key={day.id} day={day} isToday={isToday} />;
+              const isToday = new Date().toDateString() === new Date(day.date).toDateString()
+              return (
+                <div key={day.id} className="flex-shrink-0 w-32 sm:w-36 md:w-40">
+                  <CalendarDayCard day={day} isToday={isToday} />
+                </div>
+              )
             })}
           </div>
           <ScrollBar orientation="horizontal" />
         </ScrollArea>
       </CardContent>
     </Card>
-  );
-};
+  )
+}
 
-export default MealPlanCalendar;
-
+export default MealPlanCalendar
