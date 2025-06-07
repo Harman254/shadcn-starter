@@ -160,7 +160,7 @@ const SignIn = () => {
                     <SignInButton 
                         title="Sign in with Google" 
                         provider="google" 
-                        callbackURL="https://mealwise-lemon.vercel.app/api/auth/callback/google" 
+                        callbackURL="https://www.aimealwise.com/api/auth/callback/google" 
                         icon={<LogoIcons.Google />} 
                         loading={googleLoading} 
                         setLoading={setGoogleLoading} 
@@ -168,7 +168,7 @@ const SignIn = () => {
                     <SignInButton 
                         title="Sign in with Github" 
                         provider="github" 
-                        callbackURL="https://mealwise-lemon.vercel.app/api/auth/callback/github" 
+                        callbackURL="https://www.aimealwise.com/api/auth/callback/github" 
                         icon={<LogoIcons.Github />} 
                         loading={githubLoading} 
                         setLoading={setGithubLoading} 
