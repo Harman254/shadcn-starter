@@ -7,6 +7,7 @@ import { authClient } from '@/lib/auth-client';
 import { redirect } from 'next/navigation';
 import { headers } from 'next/headers';
 import Navbar from '@/components/Navbar';
+import { Analytics } from "@vercel/analytics/next"
 
 interface RootLayoutProps {
   children: React.ReactNode;
@@ -26,6 +27,7 @@ export default async function  RootLayout({ children }: RootLayoutProps) {
           <Footer2 />
         </div>
         <Toaster />
+        <Analytics />
       </ThemeProvider>
     </body>
   </html>
