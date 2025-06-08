@@ -69,7 +69,7 @@ const Navbar = () => {
   ];
 
   return (
-    <div className="w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <div suppressHydrationWarning className="w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <nav className="flex items-center justify-between py-4">
           <Link href="/" className="flex items-center gap-2">
@@ -155,7 +155,7 @@ const Navbar = () => {
                       className="max-h-8"
                       alt="MealWise Logo"
                     />
-                    <span className="text-lg font-semibold tracking-tighter">MealWise</span>
+                    <span className="text-lg font-semibold tracking-tighter">Meal <span className="text-green-500">Wise</span></span>
                   </Link>
                 </SheetTitle>
               </SheetHeader>

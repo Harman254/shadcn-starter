@@ -42,16 +42,15 @@ const generateTitlePrompt = ai.definePrompt({
   input: { schema: GenerateTitleInputSchema },
   output: { schema: GenerateTitleOutputSchema },
   prompt: `
-You are a naming assistant for a smart meal planning app. Based on the provided meal plan, generate a short and engaging title that:
+You are a Meal Plan title generation assistant for a smart meal planning app. Based on the provided meal plan, generate a clear and engaging title that:
 
 - Reflects the overall theme, diversity, or nutritional goal of the meal plan.
-- Is no more than 6 words.
 - Avoids generic phrases like "Weekly Plan" or "Meal List".
-- Feels tailored to the user based on the meals and structure.
+- **Crucially, ensure the title is unique and distinct each time a new meal plan is generated, even if the plans are similar. Vary the wording, focus on different aspects of the plan (e.g., ingredients, cuisine types, health benefits, ease of preparation), or use creative phrasing.**
 
 Meal Plan:
-{{#each mealPlan.days}}
-  Day {{@index}}:
+{{#each mealPlan}}
+  Day {{this.day}}:
   {{#each this.meals}}
     - {{this.name}}
   {{/each}}
@@ -99,3 +98,5 @@ export async function generateMealPlanTitle(
 ): Promise<GenerateTitleOutput> {
   return generateTitleFlow({ mealPlan });
 }
+
+

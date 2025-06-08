@@ -57,7 +57,6 @@ export const useMealPlanStore = create<MealPlanStore>()(
 );
 
 
-
 type MealPlanState = {
   title: string;
   setTitle: (title: string) => void;
@@ -72,7 +71,7 @@ export const useMealPlanTitleStore = create<MealPlanState>()(
       resetTitle: () => set({ title: 'Your Meal Plan' }),
     }),
     {
-      name: 'meal-plan-title', // 🔐 localStorage key
+      name: 'meal-plan-title', // \u{1F512} localStorage key
     }
   )
 );

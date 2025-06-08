@@ -51,9 +51,9 @@ const CreateMealPlan = ({ preferences }: CreateMealPlanProps) => {
   const [loading, setLoading] = useState(false);
   const [savingMealPlan, setSavingMealPlan] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
-  const { setTitle, resetTitle } = useMealPlanTitleStore.getState();
+  const { setTitle, resetTitle } = useMealPlanTitleStore()
 
-  const title = useMealPlanTitleStore((state) => state.title);
+  const title = useMealPlanTitleStore(state => state.title);
 
   /* ======================== */
   /*       Functions           */

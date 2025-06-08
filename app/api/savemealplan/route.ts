@@ -55,7 +55,6 @@ export async function POST(request:Request) {
     // Parse the request body
     const input: SaveMealPlanInput = await request.json();
     
-    console.log("API route received meal plan data:", JSON.stringify(input, null, 2));
     
     // Create the main MealPlan record
     const mealPlan = await prisma.mealPlan.create({
@@ -69,7 +68,6 @@ export async function POST(request:Request) {
     });
     
     
-    console.log("Created MealPlan record:", mealPlan);
 
     // For each day in the meal plan, create a DayMeal record
     for (const day of input.days) {
