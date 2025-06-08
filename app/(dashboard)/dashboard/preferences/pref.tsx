@@ -558,7 +558,7 @@ const  Preferences = ({userId}:Props ) => {
                 <h3 className="text-xl font-semibold tracking-tight text-gray-900 dark:text-white">Favorite Cuisines</h3>
               </div>
               <p className="text-base font-medium text-gray-600 dark:text-gray-400">
-                Select the cuisines you enjoy most. We'll prioritize these in your recommendations.
+                Select the cuisines you enjoy most. We&#39;ll prioritize these in your recommendations.
               </p>
             </div>
             
