@@ -9,7 +9,7 @@ export default function ContactPage() {
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold text-green-900 mb-4">Get in Touch</h1>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            Have questions about meal planning, need recipe suggestions, or want to share feedback? We'd love to hear
+            Have questions about meal planning, need recipe suggestions, or want to share feedback? We would love to hear
             from you!
           </p>
         </div>
@@ -21,7 +21,7 @@ export default function ContactPage() {
               <CardHeader>
                 <CardTitle className="text-2xl">Send us a message</CardTitle>
                 <CardDescription>
-                  Fill out the form below and we'll get back to you as soon as possible.
+                  Fill out the form below and we will get back to you as soon as possible.
                 </CardDescription>
               </CardHeader>
               <CardContent>

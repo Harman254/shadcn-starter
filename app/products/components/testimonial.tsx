@@ -53,7 +53,7 @@ export function TestimonialsSection() {
                     <Star key={i} className="w-5 h-5 text-yellow-400 fill-current" />
                   ))}
                 </div>
-                <p className="text-gray-700 mb-6 leading-relaxed">"{testimonial.text}"</p>
+                <p className="text-gray-700 mb-6 leading-relaxed">{testimonial.text}</p>
                 <div className="flex items-center">
                   <Avatar className="w-12 h-12 mr-4">
                     <AvatarImage src={testimonial.avatar || "/placeholder.svg"} alt={testimonial.name} />
