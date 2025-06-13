@@ -26,7 +26,7 @@ type Meal = {
 };
 
 type RecipeModalProps = {
-  meal: Meal;
+  meal: Meal | null;
   onClose: () => void;
 };
 
@@ -37,7 +37,7 @@ const RecipeModal = ({ meal, onClose }: RecipeModalProps) => {
   const [visibleIngredients, setVisibleIngredients] = useState(0);
 
   useEffect(() => {
-    if (activeTab === 'ingredients') {
+    if (activeTab === 'ingredients' && meal) {
       setVisibleIngredients(0);
       const timer = setInterval(() => {
         setVisibleIngredients(prev => {
@@ -50,7 +50,7 @@ const RecipeModal = ({ meal, onClose }: RecipeModalProps) => {
       }, 80);
       return () => clearInterval(timer);
     }
-  }, [activeTab, meal.ingredients.length]);
+  }, [activeTab, meal?.ingredients.length]);
 
   const getTypeColor = (type: string) => {
     const colors = {
@@ -79,12 +79,14 @@ const RecipeModal = ({ meal, onClose }: RecipeModalProps) => {
       />
     ));
 
+  if (!meal) return null;
+
   return (
-    <Dialog open={!!meal} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden p-0 bg-gradient-to-br from-white via-gray-50 to-gray-100 border-0 shadow-2xl">
+    <Dialog open={!!meal} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="max-w-4xl max-h-[90vh] p-0 bg-gradient-to-br from-white via-gray-50 to-gray-100 border-0 shadow-2xl flex flex-col">
         
-        {/* Header */}
-        <div className={`relative h-48 bg-gradient-to-r ${getTypeColor(meal.type)} overflow-hidden`}>
+        {/* Header - Fixed */}
+        <div className={`relative h-48 bg-gradient-to-r ${getTypeColor(meal.type)} overflow-hidden flex-shrink-0`}>
           <div className="absolute inset-0 bg-black/20" />
           <div className="absolute inset-0 bg-[url('data:image/svg+xml,...')] opacity-30" />
           <button onClick={onClose} className="absolute top-4 right-4 z-10 w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/30 flex items-center justify-center group">
@@ -111,8 +113,8 @@ const RecipeModal = ({ meal, onClose }: RecipeModalProps) => {
           </div>
         </div>
 
-        {/* Action Bar */}
-        <div className="px-6 py-4 bg-white/50 backdrop-blur-sm border-b border-gray-200/50 flex items-center justify-between">
+        {/* Action Bar - Fixed */}
+        <div className="px-6 py-4 bg-white/50 backdrop-blur-sm border-b border-gray-200/50 flex items-center justify-between flex-shrink-0">
           <div className="flex items-center gap-3">
             {meal.difficulty && (
               <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${getDifficultyColor(meal.difficulty)}`}>
@@ -138,16 +140,16 @@ const RecipeModal = ({ meal, onClose }: RecipeModalProps) => {
           </div>
         </div>
 
-        {/* Stats Bar */}
+        {/* Stats Bar - Fixed */}
         {(meal.prepTime || meal.cookTime || meal.servings) && (
-          <div className="px-6 py-4 bg-gradient-to-r from-gray-50 to-white flex justify-center gap-8 text-gray-600">
+          <div className="px-6 py-4 bg-gradient-to-r from-gray-50 to-white flex justify-center gap-8 text-gray-600 flex-shrink-0">
             {meal.prepTime && <Stat icon={<Timer />} label={`Prep: ${meal.prepTime}m`} />}
             {meal.cookTime && <Stat icon={<Clock />} label={`Cook: ${meal.cookTime}m`} />}
             {meal.servings && <Stat icon={<Users />} label={`Serves ${meal.servings}`} />}
           </div>
         )}
 
-        {/* Body */}
+        {/* Scrollable Content Area */}
         <div className="flex-1 overflow-y-auto">
           {meal.description && (
             <div className="px-6 py-4 bg-white text-center italic text-gray-700">
@@ -155,15 +157,15 @@ const RecipeModal = ({ meal, onClose }: RecipeModalProps) => {
             </div>
           )}
 
-          {/* Tabs */}
-          <div className="px-6 py-4 bg-gray-50/50">
+          {/* Tabs - Fixed */}
+          <div className="px-6 py-4 bg-gray-50/50 sticky top-0 z-10">
             <div className="flex gap-1 bg-white rounded-lg p-1 shadow-sm">
               <Tab label="Ingredients" icon={<Utensils />} active={activeTab === 'ingredients'} onClick={() => setActiveTab('ingredients')} />
               <Tab label="Nutrition" icon={<Flame />} active={activeTab === 'nutrition'} onClick={() => setActiveTab('nutrition')} />
             </div>
           </div>
 
-          {/* Tab content */}
+          {/* Tab content - Scrollable */}
           <div className="px-6 pb-6">
             {activeTab === 'ingredients' && (
               <div className="space-y-3">
