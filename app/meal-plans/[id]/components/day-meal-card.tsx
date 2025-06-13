@@ -6,7 +6,7 @@ import { DayMealCardProps, Meal } from "../components/types";
 import DayMealHeader from "./day-meal-header";
 import { MealItem } from "./meal-item";
 import { swapAndUpdateMeal } from "@/actions/swap-meal";
-import  RecipeModal from "./recipe-modal";
+import RecipeModal from "./recipe-modal";
 
 
 

@@ -13,7 +13,7 @@ import {
   AlertDialogAction
 } from '@/components/ui/alert-dialog';
 import { deleteMealPlanById } from '@/data';
-import { toast } from 'sonner';
+import { toast } from 'react-hot-toast'
 
 type Props = {
   id: string;

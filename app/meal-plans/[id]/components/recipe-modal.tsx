@@ -52,6 +52,20 @@ const RecipeModal = ({ meal, onClose }: RecipeModalProps) => {
     }
   }, [activeTab, meal?.ingredients.length]);
 
+  // Handle Escape key to close modal
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    if (meal) {
+      document.addEventListener('keydown', handleEscape);
+      return () => document.removeEventListener('keydown', handleEscape);
+    }
+  }, [meal, onClose]);
+
   const getTypeColor = (type: string) => {
     const colors = {
       breakfast: 'from-amber-400 to-orange-500',
@@ -82,117 +96,161 @@ const RecipeModal = ({ meal, onClose }: RecipeModalProps) => {
   if (!meal) return null;
 
   return (
-    <Dialog open={!!meal} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-4xl max-h-[90vh] p-0 bg-gradient-to-br from-white via-gray-50 to-gray-100 border-0 shadow-2xl flex flex-col">
-        
-        {/* Header - Fixed */}
-        <div className={`relative h-48 bg-gradient-to-r ${getTypeColor(meal.type)} overflow-hidden flex-shrink-0`}>
-          <div className="absolute inset-0 bg-black/20" />
-          <div className="absolute inset-0 bg-[url('data:image/svg+xml,...')] opacity-30" />
-          <button onClick={onClose} className="absolute top-4 right-4 z-10 w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/30 flex items-center justify-center group">
-            <X className="w-4 h-4 text-white group-hover:scale-110 transition-transform" />
-          </button>
-          <div className="relative z-10 h-full flex flex-col justify-end p-6 text-white">
-            <div className="flex items-center gap-2 mb-2">
-              <ChefHat className="w-5 h-5 text-white/80" />
-              <span className="text-sm font-medium capitalize tracking-wide">{meal.type}</span>
-            </div>
-            <h1 className="text-3xl font-bold mb-2 drop-shadow-lg">{meal.name}</h1>
-            <div className="flex items-center gap-4 text-white/90">
-              {meal.rating && (
+    <>
+      {/* Modal Backdrop */}
+      <div 
+        className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+        onClick={onClose}
+      >
+        {/* Modal Content */}
+        <div 
+          className="bg-gradient-to-br from-white via-gray-50 to-gray-100 rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden"
+          onClick={(e) => e.stopPropagation()}
+        >
+          
+          {/* Header - Fixed */}
+          <div className={`relative h-48 bg-gradient-to-r ${getTypeColor(meal.type)} overflow-hidden flex-shrink-0`}>
+            <div className="absolute inset-0 bg-black/20" />
+            <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8ZGVmcz4KICAgIDxwYXR0ZXJuIGlkPSJwYXR0ZXJuIiB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHBhdHRlcm5Vbml0cz0idXNlclNwYWNlT25Vc2UiPgogICAgICA8Y2lyY2xlIGN4PSIyMCIgY3k9IjIwIiByPSIxIiBmaWxsPSIjZmZmZmZmIiBmaWxsLW9wYWNpdHk9IjAuMSIvPgogICAgPC9wYXR0ZXJuPgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI3BhdHRlcm4pIi8+Cjwvc3ZnPgo=')] opacity-30" />
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                onClose();
+              }} 
+              className="absolute top-4 right-4 z-50 w-10 h-10 rounded-full bg-white/30 backdrop-blur-sm hover:bg-white/50 flex items-center justify-center group transition-all border border-white/20"
+              type="button"
+            >
+              <X className="w-5 h-5 text-white group-hover:scale-110 transition-transform" />
+            </button>
+            <div className="relative z-10 h-full flex flex-col justify-end p-6 text-white">
+              <div className="flex items-center gap-2 mb-2">
+                <ChefHat className="w-5 h-5 text-white/80" />
+                <span className="text-sm font-medium capitalize tracking-wide">{meal.type}</span>
+              </div>
+              <h1 className="text-3xl font-bold mb-2 drop-shadow-lg">{meal.name}</h1>
+              <div className="flex items-center gap-4 text-white/90">
+                {meal.rating && (
+                  <div className="flex items-center gap-1">
+                    {renderStars(meal.rating)}
+                    <span className="ml-1 text-sm font-medium">{meal.rating}</span>
+                  </div>
+                )}
                 <div className="flex items-center gap-1">
-                  {renderStars(meal.rating)}
-                  <span className="ml-1 text-sm font-medium">{meal.rating}</span>
+                  <Flame className="w-4 h-4" />
+                  <span className="text-sm font-medium">{meal.calories} cal</span>
                 </div>
-              )}
-              <div className="flex items-center gap-1">
-                <Flame className="w-4 h-4" />
-                <span className="text-sm font-medium">{meal.calories} cal</span>
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Action Bar - Fixed */}
-        <div className="px-6 py-4 bg-white/50 backdrop-blur-sm border-b border-gray-200/50 flex items-center justify-between flex-shrink-0">
-          <div className="flex items-center gap-3">
-            {meal.difficulty && (
-              <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${getDifficultyColor(meal.difficulty)}`}>
-                {meal.difficulty}
-              </span>
-            )}
-            {meal.tags?.slice(0, 3).map((tag, i) => (
-              <span key={i} className="px-2 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-medium">
-                {tag}
-              </span>
-            ))}
+          {/* Action Bar - Fixed */}
+          <div className="px-6 py-4 bg-white/50 backdrop-blur-sm border-b border-gray-200/50 flex items-center justify-between flex-shrink-0">
+            <div className="flex items-center gap-3">
+              {meal.difficulty && (
+                <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${getDifficultyColor(meal.difficulty)}`}>
+                  {meal.difficulty}
+                </span>
+              )}
+              {meal.tags?.slice(0, 3).map((tag, i) => (
+                <span key={i} className="px-2 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-medium">
+                  {tag}
+                </span>
+              ))}
+            </div>
+            <div className="flex items-center gap-2">
+              <button 
+                onClick={() => setIsLiked(!isLiked)} 
+                className={`p-2 rounded-full transition-all hover:scale-110 ${isLiked ? 'bg-red-50 text-red-500' : 'bg-gray-50 text-gray-400 hover:text-red-400'}`}
+              >
+                <Heart className={`w-4 h-4 ${isLiked ? 'fill-current' : ''}`} />
+              </button>
+              <button 
+                onClick={() => setIsBookmarked(!isBookmarked)} 
+                className={`p-2 rounded-full transition-all hover:scale-110 ${isBookmarked ? 'bg-blue-50 text-blue-500' : 'bg-gray-50 text-gray-400 hover:text-blue-400'}`}
+              >
+                <Bookmark className={`w-4 h-4 ${isBookmarked ? 'fill-current' : ''}`} />
+              </button>
+              <button className="p-2 rounded-full bg-gray-50 text-gray-400 hover:text-gray-600 transition-all hover:scale-110">
+                <Share2 className="w-4 h-4" />
+              </button>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <button onClick={() => setIsLiked(!isLiked)} className={`p-2 rounded-full transition-all hover:scale-110 ${isLiked ? 'bg-red-50 text-red-500' : 'bg-gray-50 text-gray-400 hover:text-red-400'}`}>
-              <Heart className={`w-4 h-4 ${isLiked ? 'fill-current' : ''}`} />
-            </button>
-            <button onClick={() => setIsBookmarked(!isBookmarked)} className={`p-2 rounded-full transition-all hover:scale-110 ${isBookmarked ? 'bg-blue-50 text-blue-500' : 'bg-gray-50 text-gray-400 hover:text-blue-400'}`}>
-              <Bookmark className={`w-4 h-4 ${isBookmarked ? 'fill-current' : ''}`} />
-            </button>
-            <button className="p-2 rounded-full bg-gray-50 text-gray-400 hover:text-gray-600 transition-all hover:scale-110">
-              <Share2 className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
 
-        {/* Stats Bar - Fixed */}
-        {(meal.prepTime || meal.cookTime || meal.servings) && (
-          <div className="px-6 py-4 bg-gradient-to-r from-gray-50 to-white flex justify-center gap-8 text-gray-600 flex-shrink-0">
-            {meal.prepTime && <Stat icon={<Timer />} label={`Prep: ${meal.prepTime}m`} />}
-            {meal.cookTime && <Stat icon={<Clock />} label={`Cook: ${meal.cookTime}m`} />}
-            {meal.servings && <Stat icon={<Users />} label={`Serves ${meal.servings}`} />}
-          </div>
-        )}
-
-        {/* Scrollable Content Area */}
-        <div className="flex-1 overflow-y-auto">
-          {meal.description && (
-            <div className="px-6 py-4 bg-white text-center italic text-gray-700">
-              &#34{meal.description}&#34
+          {/* Stats Bar - Fixed */}
+          {(meal.prepTime || meal.cookTime || meal.servings) && (
+            <div className="px-6 py-4 bg-gradient-to-r from-gray-50 to-white flex justify-center gap-8 text-gray-600 flex-shrink-0">
+              {meal.prepTime && <Stat icon={<Timer className="w-4 h-4" />} label={`Prep: ${meal.prepTime}m`} />}
+              {meal.cookTime && <Stat icon={<Clock className="w-4 h-4" />} label={`Cook: ${meal.cookTime}m`} />}
+              {meal.servings && <Stat icon={<Users className="w-4 h-4" />} label={`Serves ${meal.servings}`} />}
             </div>
           )}
 
-          {/* Tabs - Fixed */}
-          <div className="px-6 py-4 bg-gray-50/50 sticky top-0 z-10">
-            <div className="flex gap-1 bg-white rounded-lg p-1 shadow-sm">
-              <Tab label="Ingredients" icon={<Utensils />} active={activeTab === 'ingredients'} onClick={() => setActiveTab('ingredients')} />
-              <Tab label="Nutrition" icon={<Flame />} active={activeTab === 'nutrition'} onClick={() => setActiveTab('nutrition')} />
+          {/* Scrollable Content Area */}
+          <div className="flex-1 overflow-y-auto">
+            {meal.description && (
+              <div className="px-6 py-4 bg-white text-center italic text-gray-700">
+                "{meal.description}"
+              </div>
+            )}
+
+            {/* Tabs - Sticky */}
+            <div className="px-6 py-4 bg-gray-50/80 backdrop-blur-sm sticky top-0 z-10">
+              <div className="flex gap-1 bg-white rounded-lg p-1 shadow-sm">
+                <Tab 
+                  label="Ingredients" 
+                  icon={<Utensils className="w-4 h-4" />} 
+                  active={activeTab === 'ingredients'} 
+                  onClick={() => setActiveTab('ingredients')} 
+                />
+                <Tab 
+                  label="Nutrition" 
+                  icon={<Flame className="w-4 h-4" />} 
+                  active={activeTab === 'nutrition'} 
+                  onClick={() => setActiveTab('nutrition')} 
+                />
+              </div>
+            </div>
+
+            {/* Tab content - Scrollable */}
+            <div className="px-6 pb-6">
+              {activeTab === 'ingredients' && (
+                <div className="space-y-3">
+                  {meal.ingredients.map((ingredient, i) => (
+                    <div
+                      key={i}
+                      className={`flex items-center gap-3 p-3 bg-white rounded-lg border shadow-sm transition-all duration-300 hover:shadow-md ${
+                        i < visibleIngredients ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'
+                      }`}
+                      style={{ transitionDelay: `${i * 80}ms` }}
+                    >
+                      <div className="w-2 h-2 rounded-full bg-gradient-to-r from-emerald-400 to-teal-500 flex-shrink-0" />
+                      <span className="text-gray-700 font-medium">{ingredient}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {activeTab === 'nutrition' && (
+                <div className="bg-white rounded-lg p-6 border shadow-sm grid grid-cols-2 gap-6 text-center">
+                  <NutritionItem 
+                    icon={<Flame className="w-6 h-6 text-white" />} 
+                    value={meal.calories} 
+                    label="Calories" 
+                    color="from-orange-400 to-red-500" 
+                  />
+                  <NutritionItem 
+                    icon={<ChefHat className="w-6 h-6 text-white" />} 
+                    value={meal.ingredients.length} 
+                    label="Ingredients" 
+                    color="from-emerald-400 to-teal-500" 
+                  />
+                </div>
+              )}
             </div>
           </div>
-
-          {/* Tab content - Scrollable */}
-          <div className="px-6 pb-6">
-            {activeTab === 'ingredients' && (
-              <div className="space-y-3">
-                {meal.ingredients.map((ingredient, i) => (
-                  <div
-                    key={i}
-                    className={`flex items-center gap-3 p-3 bg-white rounded-lg border shadow-sm transition-all hover:shadow-md ${
-                      i < visibleIngredients ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'
-                    }`}
-                    style={{ transitionDelay: `${i * 80}ms` }}
-                  >
-                    <div className="w-2 h-2 rounded-full bg-gradient-to-r from-emerald-400 to-teal-500" />
-                    <span className="text-gray-700 font-medium">{ingredient}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-            {activeTab === 'nutrition' && (
-              <div className="bg-white rounded-lg p-6 border shadow-sm grid grid-cols-2 gap-6 text-center">
-                <NutritionItem icon={<Flame />} value={meal.calories} label="Calories" color="from-orange-400 to-red-500" />
-                <NutritionItem icon={<ChefHat />} value={meal.ingredients.length} label="Ingredients" color="from-emerald-400 to-teal-500" />
-              </div>
-            )}
-          </div>
         </div>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </>
   );
 };
 
