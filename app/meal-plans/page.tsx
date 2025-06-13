@@ -1,3 +1,4 @@
+// app/meal-plans/page.tsx
 import { fetchMealPlansByUserId } from "@/data"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -9,9 +10,7 @@ import { headers } from "next/headers"
 import { auth } from "@/lib/auth"
 
 const MealPlans = async () => {
-  const session = await auth.api.getSession({
-    headers: await headers()
-  })
+  const session = await auth.api.getSession({ headers: await headers() })
   const userId = session?.user?.id
 
   if (!userId) {
@@ -60,6 +59,7 @@ const MealPlans = async () => {
 
   const totalMeals = mealPlans.reduce((acc, plan) => acc + plan.duration * plan.mealsPerDay, 0)
   const totalDays = mealPlans.reduce((acc, plan) => acc + plan.duration, 0)
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50 dark:from-slate-950 dark:via-slate-900/50 dark:to-slate-800/30">
       {/* Hero Header */}
@@ -96,39 +96,9 @@ const MealPlans = async () => {
 
           {/* Stats Dashboard */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16">
-            <div className="group backdrop-blur-xl bg-white/80 dark:bg-slate-900/80 border border-white/40 dark:border-slate-700/40 rounded-2xl p-8 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105">
-              <div className="flex items-center gap-4">
-                <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
-                  <UtensilsIcon className="w-7 h-7 text-white" />
-                </div>
-                <div>
-                  <p className="text-3xl font-bold text-slate-900 dark:text-slate-100">{mealPlans.length}</p>
-                  <p className="text-slate-600 dark:text-slate-400 font-medium">Active Plans</p>
-                </div>
-              </div>
-            </div>
-            <div className="group backdrop-blur-xl bg-white/80 dark:bg-slate-900/80 border border-white/40 dark:border-slate-700/40 rounded-2xl p-8 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105">
-              <div className="flex items-center gap-4">
-                <div className="w-14 h-14 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
-                  <Clock className="w-7 h-7 text-white" />
-                </div>
-                <div>
-                  <p className="text-3xl font-bold text-slate-900 dark:text-slate-100">{totalDays}</p>
-                  <p className="text-slate-600 dark:text-slate-400 font-medium">Total Days</p>
-                </div>
-              </div>
-            </div>
-            <div className="group backdrop-blur-xl bg-white/80 dark:bg-slate-900/80 border border-white/40 dark:border-slate-700/40 rounded-2xl p-8 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105">
-              <div className="flex items-center gap-4">
-                <div className="w-14 h-14 bg-gradient-to-br from-violet-500 to-violet-600 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
-                  <TrendingUp className="w-7 h-7 text-white" />
-                </div>
-                <div>
-                  <p className="text-3xl font-bold text-slate-900 dark:text-slate-100">{totalMeals}</p>
-                  <p className="text-slate-600 dark:text-slate-400 font-medium">Total Meals</p>
-                </div>
-              </div>
-            </div>
+            <StatCard value={mealPlans.length} label="Active Plans" icon={UtensilsIcon} color="blue" />
+            <StatCard value={totalDays} label="Total Days" icon={Clock} color="emerald" />
+            <StatCard value={totalMeals} label="Total Meals" icon={TrendingUp} color="violet" />
           </div>
         </div>
       </div>
@@ -145,14 +115,14 @@ const MealPlans = async () => {
                 animation: "fadeInUp 0.6s ease-out forwards",
               }}
             >
-              {/* Gradient Header with Dynamic Colors */}
+              {/* Header */}
               <div
                 className={`h-32 bg-gradient-to-br ${
                   index % 3 === 0
                     ? "from-blue-500 via-indigo-500 to-purple-600"
                     : index % 3 === 1
-                      ? "from-emerald-500 via-teal-500 to-cyan-600"
-                      : "from-orange-500 via-pink-500 to-rose-600"
+                    ? "from-emerald-500 via-teal-500 to-cyan-600"
+                    : "from-orange-500 via-pink-500 to-rose-600"
                 } relative overflow-hidden`}
               >
                 <div className="absolute inset-0 bg-black/10 dark:bg-black/20"></div>
@@ -162,11 +132,9 @@ const MealPlans = async () => {
                     {mealPlan.mealsPerDay} meals/day
                   </Badge>
                 </div>
-                <div className="absolute bottom-4 left-6">
-                  <div className="flex items-center gap-2 text-white/90">
-                    <Clock className="w-4 h-4" />
-                    <span className="text-sm font-medium">{mealPlan.duration} days</span>
-                  </div>
+                <div className="absolute bottom-4 left-6 text-white/90 flex items-center gap-2">
+                  <Clock className="w-4 h-4" />
+                  <span className="text-sm font-medium">{mealPlan.duration} days</span>
                 </div>
               </div>
 
@@ -217,37 +185,38 @@ const MealPlans = async () => {
                   <DeleteButton id={mealPlan.id} />
                 </div>
               </CardContent>
-
-              {/* Enhanced Hover Glow Effect */}
-              <div className="absolute inset-0 bg-gradient-to-r from-blue-600/5 via-indigo-600/5 to-purple-600/5 dark:from-blue-400/10 dark:via-indigo-400/10 dark:to-purple-400/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none rounded-3xl"></div>
-
-              {/* Subtle Border Glow */}
-              <div
-                className="absolute inset-0 rounded-3xl bg-gradient-to-r from-blue-500/20 via-indigo-500/20 to-purple-500/20 dark:from-blue-400/30 dark:via-indigo-400/30 dark:to-purple-400/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
-                style={{
-                  background: "linear-gradient(135deg, transparent 0%, rgba(59, 130, 246, 0.1) 50%, transparent 100%)",
-                  filter: "blur(1px)",
-                }}
-              ></div>
             </Card>
           ))}
         </div>
       </div>
-
-      <style jsx>{`
-        @keyframes fadeInUp {
-          from {
-            opacity: 0;
-            transform: translateY(30px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-      `}</style>
     </div>
   )
 }
 
 export default MealPlans
+
+const StatCard = ({
+  value,
+  label,
+  icon: Icon,
+  color,
+}: {
+  value: number
+  label: string
+  icon: React.ComponentType<{ className?: string }>
+  color: string
+}) => (
+  <div className="group backdrop-blur-xl bg-white/80 dark:bg-slate-900/80 border border-white/40 dark:border-slate-700/40 rounded-2xl p-8 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105">
+    <div className="flex items-center gap-4">
+      <div
+        className={`w-14 h-14 bg-gradient-to-br from-${color}-500 to-${color}-600 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300`}
+      >
+        <Icon className="w-7 h-7 text-white" />
+      </div>
+      <div>
+        <p className="text-3xl font-bold text-slate-900 dark:text-slate-100">{value}</p>
+        <p className="text-slate-600 dark:text-slate-400 font-medium">{label}</p>
+      </div>
+    </div>
+  </div>
+)
