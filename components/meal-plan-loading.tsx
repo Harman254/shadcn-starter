@@ -3,7 +3,7 @@
 import { Card, CardContent } from "@/components/ui/card"
 import { ChefHat, Utensils, Clock, Rocket } from "lucide-react"
 
-export default function MealLoading() {
+export default function Component() {
   return (
     <div className="container max-w-5xl mx-auto py-8 px-4 min-h-screen">
       {/* Cool Loading Animation */}
@@ -91,11 +91,11 @@ export default function MealLoading() {
                   <div className="absolute -top-2 left-1/2 transform -translate-x-1/2">
                     <div className="w-1 h-4 bg-white/60 rounded-full animate-pulse"></div>
                   </div>
-                  <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 -translate-x-2">
-                    <div className="w-1 h-3 bg-white/40 rounded-full animate-pulse delay-200"></div>
+                  <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
+                    <div className="w-1 h-3 bg-white/40 rounded-full animate-pulse delay-200 -translate-x-2"></div>
                   </div>
-                  <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 translate-x-2">
-                    <div className="w-1 h-3 bg-white/40 rounded-full animate-pulse delay-400"></div>
+                  <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
+                    <div className="w-1 h-3 bg-white/40 rounded-full animate-pulse delay-400 translate-x-2"></div>
                   </div>
                 </div>
               </div>
