@@ -1,4 +1,3 @@
-"use client"
 import { fetchMealPlansByUserId } from "@/data"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
