@@ -347,121 +347,211 @@ const CreateMealPlan = ({ preferences }: CreateMealPlanProps) => {
 
       {/* Display Meal Plan */}
       {mealPlan.length > 0 && (
-        <Card className="shadow-md border-neutral-200 dark:border-neutral-800 overflow-hidden">
-          <CardHeader className="bg-neutral-50 dark:bg-neutral-900 px-6 pt-5 pb-4 border-b border-neutral-200 dark:border-neutral-800">
-            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
-              <div>
-                <CardTitle className="text-xl font-bold tracking-tight">Your Meal Plan</CardTitle>
-                <CardDescription className="mt-1 text-neutral-500 dark:text-neutral-400">
-                  {duration} days • {mealsPerDay} meals per day
-                </CardDescription>
-              </div>
-              {/* Actions */}
-              <div className="flex gap-3 mt-2 sm:mt-0">
-                <Button
-                  onClick={handleSaveMealPlan}
-                  disabled={savingMealPlan}
-                  variant="outline"
-                  className="h-9 px-4 text-sm font-medium border-neutral-300 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
-                >
-                  {savingMealPlan ? (
-                    <>
-                      <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                      Saving...
-                    </>
-                  ) : (
-                    <>
-                      <svg
-                        className="mr-1.5 h-3.5 w-3.5"
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="24"
-                        height="24"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
-                        <polyline points="17 21 17 13 7 13 7 21" />
-                        <polyline points="7 3 7 8 15 8" />
-                      </svg>
-                      Save Plan
-                    </>
-                  )}
-                </Button>
-                <Button
-                  onClick={handleRejectPlan}
-                  disabled={regenerating}
-                  variant="destructive"
-                  className="h-9 px-4 text-sm font-medium bg-red-100 hover:bg-red-200 text-red-700 border-0 transition-colors"
-                >
-                  {regenerating ? (
-                    <>
-                      <RefreshCcw className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                      Regenerating...
-                    </>
-                  ) : (
-                    <>
-                      <RefreshCcw className="mr-1.5 h-3.5 w-3.5" />
-                      Regenerate
-                    </>
-                  )}
-                </Button>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="p-0">
-            <ScrollArea className="h-[600px]">
-              <div className="p-6 space-y-8">
-                <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight leading-tight bg-gradient-to-r from-rose-500 via-purple-500 to-indigo-500 bg-clip-text text-transparent animate-fade-in">
-                  {title}
-                </h1>
-
-                {mealPlan.map((dayPlan) => (
-                  <div key={dayPlan.day} className="space-y-4">
-                    <h3 className="text-xl font-semibold text-green-600 dark:text-green-400">Day {dayPlan.day}</h3>
-                    <div className="space-y-4">
-                      {dayPlan.meals.map((meal, idx) => (
-                        <div
-                          key={idx}
-                          className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-900/50 p-5 space-y-4 shadow-sm hover:shadow-md transition-shadow"
+        <div className="space-y-6">
+          {/* Header Section with Actions */}
+          <div className="bg-gradient-to-r from-white via-slate-50 to-white dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 rounded-2xl border border-slate-200/60 dark:border-slate-700/60 shadow-xl shadow-slate-200/40 dark:shadow-slate-900/40 backdrop-blur-sm">
+            <div className="p-8">
+              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+                {/* Title Section */}
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/25">
+                      <CheckCircle2 className="h-5 w-5 text-white" />
+                    </div>
+                    <div>
+                      <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
+                        Your Personalized Meal Plan
+                      </h2>
+                      <div className="flex items-center gap-4 mt-1">
+                        <Badge
+                          variant="outline"
+                          className="bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-950 dark:border-emerald-800 dark:text-emerald-300"
                         >
-                          <h4 className="text-base font-semibold tracking-tight">{meal.name}</h4>
-                          <div className="space-y-2">
-                            <Badge
-                              variant="secondary"
-                              className="mb-1.5 bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 font-medium text-sm px-2.5 py-0.5"
-                            >
-                              Ingredients
-                            </Badge>
-                            <ul className="list-disc pl-5 text-md text-neutral-600 dark:text-neutral-400 space-y-1">
-                              {meal.ingredients.map((ing, i) => (
-                                <li key={i}>{ing}</li>
-                              ))}
-                            </ul>
-                          </div>
-                          <div className="space-y-2">
-                            <Badge
-                              variant="secondary"
-                              className="mb-1.5 bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 font-medium text-sm px-2.5 py-0.5"
-                            >
-                              Cooking Procedure
-                            </Badge>
-                            <p className="text-md text-neutral-600 dark:text-neutral-400 leading-relaxed">
-                              {meal.instructions}
-                            </p>
-                          </div>
-                        </div>
-                      ))}
+                          <Clock className="h-3 w-3 mr-1" />
+                          {duration} days
+                        </Badge>
+                        <Badge
+                          variant="outline"
+                          className="bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-950 dark:border-blue-800 dark:text-blue-300"
+                        >
+                          <Utensils className="h-3 w-3 mr-1" />
+                          {mealsPerDay} meals/day
+                        </Badge>
+                        <Badge
+                          variant="outline"
+                          className="bg-purple-50 border-purple-200 text-purple-700 dark:bg-purple-950 dark:border-purple-800 dark:text-purple-300"
+                        >
+                          {totalMeals} total meals
+                        </Badge>
+                      </div>
                     </div>
                   </div>
-                ))}
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <Button
+                    onClick={handleSaveMealPlan}
+                    disabled={savingMealPlan}
+                    className="h-11 px-6 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40 transition-all duration-200 font-medium"
+                  >
+                    {savingMealPlan ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Saving Plan...
+                      </>
+                    ) : (
+                      <>
+                        <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                        Save Plan
+                      </>
+                    )}
+                  </Button>
+                  <Button
+                    onClick={handleRejectPlan}
+                    disabled={regenerating}
+                    variant="outline"
+                    className="h-11 px-6 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all duration-200 font-medium"
+                  >
+                    {regenerating ? (
+                      <>
+                        <RefreshCcw className="mr-2 h-4 w-4 animate-spin" />
+                        Regenerating...
+                      </>
+                    ) : (
+                      <>
+                        <RefreshCcw className="mr-2 h-4 w-4" />
+                        Try Different Plan
+                      </>
+                    )}
+                  </Button>
+                </div>
               </div>
-            </ScrollArea>
-          </CardContent>
-        </Card>
+            </div>
+          </div>
+
+          {/* Meal Plan Content */}
+          <Card className="border-0 shadow-xl shadow-slate-200/50 dark:shadow-slate-900/50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm overflow-hidden">
+            <CardContent className="p-0">
+              <div className="bg-gradient-to-r from-slate-50 via-white to-slate-50 dark:from-slate-800 dark:via-slate-900 dark:to-slate-800 p-8 border-b border-slate-200/50 dark:border-slate-700/50">
+                <h1 className="text-3xl md:text-4xl font-bold tracking-tight leading-tight bg-gradient-to-r from-rose-500 via-purple-600 to-indigo-600 bg-clip-text text-transparent text-center">
+                  {title}
+                </h1>
+              </div>
+
+              <ScrollArea className="h-[700px]">
+                <div className="p-8 space-y-12">
+                  {mealPlan.map((dayPlan, dayIndex) => (
+                    <div key={dayPlan.day} className="space-y-6">
+                      {/* Day Header */}
+                      <div className="flex items-center gap-4">
+                        <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/25">
+                          <span className="text-white font-bold text-lg">{dayPlan.day}</span>
+                        </div>
+                        <div>
+                          <h3 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Day {dayPlan.day}</h3>
+                          <p className="text-slate-600 dark:text-slate-400">{dayPlan.meals.length} meals planned</p>
+                        </div>
+                      </div>
+
+                      {/* Meals Grid */}
+                      <div className="grid gap-6">
+                        {dayPlan.meals.map((meal, mealIndex) => (
+                          <div
+                            key={mealIndex}
+                            className="group relative bg-gradient-to-br from-white via-slate-50/50 to-white dark:from-slate-800 dark:via-slate-900/50 dark:to-slate-800 rounded-2xl border border-slate-200/60 dark:border-slate-700/60 shadow-lg shadow-slate-200/40 dark:shadow-slate-900/40 hover:shadow-xl hover:shadow-slate-200/60 dark:hover:shadow-slate-900/60 transition-all duration-300 overflow-hidden"
+                          >
+                            {/* Meal Header */}
+                            <div className="p-6 pb-4">
+                              <div className="flex items-start justify-between gap-4">
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-3 mb-2">
+                                    <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-orange-400 to-red-500 flex items-center justify-center shadow-md">
+                                      <Utensils className="h-4 w-4 text-white" />
+                                    </div>
+                                    <Badge
+                                      variant="secondary"
+                                      className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium"
+                                    >
+                                      Meal {mealIndex + 1}
+                                    </Badge>
+                                  </div>
+                                  <h4 className="text-xl font-bold text-slate-900 dark:text-slate-100 leading-tight">
+                                    {meal.name}
+                                  </h4>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Meal Content */}
+                            <div className="px-6 pb-6 space-y-6">
+                              {/* Ingredients Section */}
+                              <div className="space-y-3">
+                                <div className="flex items-center gap-2">
+                                  <div className="h-6 w-6 rounded-md bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center">
+                                    <div className="h-2 w-2 rounded-full bg-emerald-600 dark:bg-emerald-400"></div>
+                                  </div>
+                                  <h5 className="font-semibold text-slate-900 dark:text-slate-100">Ingredients</h5>
+                                  <Badge variant="outline" className="ml-auto text-xs">
+                                    {meal.ingredients.length} items
+                                  </Badge>
+                                </div>
+                                <div className="bg-slate-50/80 dark:bg-slate-800/50 rounded-xl p-4 border border-slate-200/50 dark:border-slate-700/50">
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                    {meal.ingredients.map((ingredient, i) => (
+                                      <div
+                                        key={i}
+                                        className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300"
+                                      >
+                                        <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 flex-shrink-0"></div>
+                                        <span>{ingredient}</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Instructions Section */}
+                              <div className="space-y-3">
+                                <div className="flex items-center gap-2">
+                                  <div className="h-6 w-6 rounded-md bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center">
+                                    <div className="h-2 w-2 rounded-full bg-blue-600 dark:bg-blue-400"></div>
+                                  </div>
+                                  <h5 className="font-semibold text-slate-900 dark:text-slate-100">
+                                    Cooking Instructions
+                                  </h5>
+                                </div>
+                                <div className="bg-slate-50/80 dark:bg-slate-800/50 rounded-xl p-4 border border-slate-200/50 dark:border-slate-700/50">
+                                  <p className="text-slate-700 dark:text-slate-300 leading-relaxed">
+                                    {meal.instructions}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Hover Effect Border */}
+                            <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-emerald-500/0 via-emerald-500/5 to-teal-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Day Separator */}
+                      {dayIndex < mealPlan.length - 1 && (
+                        <div className="flex items-center gap-4 py-4">
+                          <div className="flex-1 h-px bg-gradient-to-r from-transparent via-slate-200 dark:via-slate-700 to-transparent"></div>
+                          <div className="h-2 w-2 rounded-full bg-slate-300 dark:bg-slate-600"></div>
+                          <div className="flex-1 h-px bg-gradient-to-r from-transparent via-slate-200 dark:via-slate-700 to-transparent"></div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+            </CardContent>
+          </Card>
+        </div>
       )}
     </div>
   )
