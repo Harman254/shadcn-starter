@@ -14,6 +14,7 @@ import { Loader2, RefreshCcw } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Skeleton } from './ui/skeleton';
 import { generateMealPlanTitle } from '@/ai/flows/generateMealPlanTitle';
+import { useRouter } from 'next/navigation';
 
 /* ======================== */
 /*        Interfaces         */
@@ -52,6 +53,7 @@ const CreateMealPlan = ({ preferences }: CreateMealPlanProps) => {
   const [savingMealPlan, setSavingMealPlan] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
   const { setTitle, resetTitle } = useMealPlanTitleStore()
+  const router = useRouter();
 
   const title = useMealPlanTitleStore(state => state.title);
 
@@ -128,6 +130,10 @@ const CreateMealPlan = ({ preferences }: CreateMealPlanProps) => {
       if (!response.ok || !data.success) {
         throw new Error(data.error || 'Failed to save meal plan');
       }
+      clearMealPlan();
+      resetTitle();
+      router.push('/meal-plans'); 
+
 
       toast.success('Meal plan saved successfully!');
     } catch (error) {
