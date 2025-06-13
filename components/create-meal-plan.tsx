@@ -15,6 +15,7 @@ import toast from 'react-hot-toast';
 import { Skeleton } from './ui/skeleton';
 import { generateMealPlanTitle } from '@/ai/flows/generateMealPlanTitle';
 import { useRouter } from 'next/navigation';
+import MealLoading from './meal-plan-loading';
 
 /* ======================== */
 /*        Interfaces         */
@@ -186,84 +187,7 @@ const CreateMealPlan = ({ preferences }: CreateMealPlanProps) => {
 
   if (loading || regenerating) {
     return (
-      <div className="container max-w-5xl mx-auto py-8 px-4 min-h-screen">
-        {/* Skeleton for the Configuration UI */}
-        <Card className="border-neutral-200 dark:border-neutral-800 shadow-md overflow-hidden">
-          <CardHeader className="bg-neutral-50 dark:bg-neutral-900 px-3 py-3 border-b border-neutral-200 dark:border-neutral-800">
-            <CardTitle className="text-2xl font-bold tracking-tight">
-              <Skeleton className="w-48 h-7" />
-            </CardTitle>
-            <CardDescription className="text-neutral-500 dark:text-neutral-400 mt-1.5">
-              <Skeleton className="w-64 h-4" />
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="p-6 space-y-8">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-              {/* Skeleton for Select Inputs */}
-              <div className="space-y-3">
-                <Skeleton className="h-4 w-24" />
-                <Skeleton className="h-10 w-full" />
-              </div>
-              <div className="space-y-3">
-                <Skeleton className="h-4 w-32" />
-                <Skeleton className="h-10 w-full" />
-              </div>
-            </div>
-
-            {/* Skeleton for Generate Button */}
-            <div className="pt-2">
-              <Skeleton className="h-12 w-48" />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Skeleton for Meal Plan */}
-        <Card className="shadow-md border-neutral-200 dark:border-neutral-800 overflow-hidden">
-          <CardHeader className="bg-neutral-50 dark:bg-neutral-900 px-6 pt-5 pb-4 border-b border-neutral-200 dark:border-neutral-800">
-            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
-              <div>
-                <CardTitle className="text-xl font-bold tracking-tight">
-                  <Skeleton className="w-36 h-6" />
-                </CardTitle>
-                <CardDescription className="mt-1">
-                  <Skeleton className="w-24 h-4" />
-                </CardDescription>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="p-0">
-            <div className="p-6 space-y-6">
-              {[1, 2].map(day => (
-                <div key={day} className="space-y-4">
-                  <Skeleton className="h-6 w-24" />
-                  <div className="space-y-4">
-                    {[1, 2].map(meal => (
-                      <div key={meal} className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-900/50 p-4">
-                        <div className="space-y-4">
-                          <Skeleton className="h-5 w-32" />
-                          <div className="space-y-2">
-                            <Skeleton className="h-4 w-24" />
-                            <div className="space-y-1.5 pl-3">
-                              <Skeleton className="h-3.5 w-full" />
-                              <Skeleton className="h-3.5 w-5/6" />
-                              <Skeleton className="h-3.5 w-4/6" />
-                            </div>
-                          </div>
-                          <div className="space-y-2">
-                            <Skeleton className="h-4 w-40" />
-                            <Skeleton className="h-3.5 w-full" />
-                            <Skeleton className="h-3.5 w-full" />
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      <MealLoading />
     );
   }
 
