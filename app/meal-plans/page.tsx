@@ -10,14 +10,13 @@ import { auth } from "@/lib/auth"
 
 const MealPlans = async () => {
   const session = await auth.api.getSession({
-    headers: await headers(),
+    headers: await headers()
   })
-
   const userId = session?.user?.id
 
   if (!userId) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50 dark:from-slate-950 dark:via-slate-900/50 dark:to-slate-800/30 flex items-center justify-center p-6">
+      <div className="min-h-screen flex items-center justify-center p-6 bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50 dark:from-slate-950 dark:via-slate-900/50 dark:to-slate-800/30">
         <div className="backdrop-blur-xl bg-white/90 dark:bg-slate-900/90 border border-white/60 dark:border-slate-700/60 shadow-2xl rounded-3xl p-12 max-w-md text-center">
           <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-8 shadow-lg">
             <UtensilsIcon className="w-10 h-10 text-white" />
@@ -38,7 +37,7 @@ const MealPlans = async () => {
 
   if (mealPlans.length === 0) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50 dark:from-slate-950 dark:via-slate-900/50 dark:to-slate-800/30 flex items-center justify-center p-6">
+      <div className="min-h-screen flex items-center justify-center p-6 bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50 dark:from-slate-950 dark:via-slate-900/50 dark:to-slate-800/30">
         <div className="backdrop-blur-xl bg-white/90 dark:bg-slate-900/90 border border-white/60 dark:border-slate-700/60 shadow-2xl rounded-3xl p-12 max-w-lg text-center">
           <div className="w-24 h-24 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-3xl flex items-center justify-center mx-auto mb-8 shadow-lg">
             <UtensilsIcon className="w-12 h-12 text-white" />
@@ -61,7 +60,6 @@ const MealPlans = async () => {
 
   const totalMeals = mealPlans.reduce((acc, plan) => acc + plan.duration * plan.mealsPerDay, 0)
   const totalDays = mealPlans.reduce((acc, plan) => acc + plan.duration, 0)
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50 dark:from-slate-950 dark:via-slate-900/50 dark:to-slate-800/30">
       {/* Hero Header */}
