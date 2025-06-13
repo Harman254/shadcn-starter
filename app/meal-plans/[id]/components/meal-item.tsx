@@ -3,7 +3,7 @@ import MealActions from "./meal-actions";
 import MealHeader from "./meal-header";
 import MealIngredients from "./meal-ingredients";
 
-export const MealItem = ({ meal }: MealItemProps) => {
+export const MealItem = ({ meal, onViewRecipe, onSwapMeal }: MealItemProps) => {
   const mealTypeColors = {
     breakfast: "bg-yellow-50 border-l-yellow-400 dark:bg-yellow-950/20",
     lunch: "bg-emerald-50 border-l-emerald-400 dark:bg-emerald-950/20",
@@ -22,11 +22,12 @@ export const MealItem = ({ meal }: MealItemProps) => {
           <MealHeader meal={meal} />
           <MealIngredients ingredients={meal.ingredients} />
         </div>
-        <MealActions />
+        <MealActions 
+          onViewRecipe={() => onViewRecipe(meal)} 
+          onSwapMeal={() => onSwapMeal(meal)} 
+        />
       </div>
     </div>
   );
 };
-
-export default MealItem;
 

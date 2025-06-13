@@ -91,6 +91,8 @@ export type DayMealHeaderProps = {
 
 export type MealItemProps = {
   meal: Meal;
+  onViewRecipe: (meal: Meal) => void;
+  onSwapMeal: (meal: Meal) => void;
 };
 
 export type MealHeaderProps = {
