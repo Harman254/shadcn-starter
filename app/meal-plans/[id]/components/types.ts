@@ -105,7 +105,7 @@ export type MealIngredientsProps = {
 
 export type MealActionsProps = {
   onViewRecipe?: () => void;
-  onSwapMeal?: () => void;
+  onSwapMeal: () => void 
 };
 
 // UI component props

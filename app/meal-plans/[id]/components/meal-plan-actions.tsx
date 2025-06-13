@@ -13,7 +13,7 @@ export const MealPlanActions = ({ mealPlanId }: MealPlanActionsProps) => {
       </Button>
       <Button variant="secondary" size="sm">
         <Heart className="h-4 w-4 mr-2" />
-        Save
+        Like
       </Button>
     </div>
   );
