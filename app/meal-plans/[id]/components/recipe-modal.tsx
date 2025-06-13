@@ -151,7 +151,7 @@ const RecipeModal = ({ meal, onClose }: RecipeModalProps) => {
         <div className="flex-1 overflow-y-auto">
           {meal.description && (
             <div className="px-6 py-4 bg-white text-center italic text-gray-700">
-              "{meal.description}"
+              &#34{meal.description}&#34
             </div>
           )}
 
