@@ -389,7 +389,7 @@ const Preferences = ({userId}:Props ) => {
         <div className="mb-8 sm:mb-12">
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-slate-900 dark:text-white mb-3 sm:mb-4 leading-tight">Your Taste Preferences</h2>
           <p className="text-lg sm:text-xl font-medium text-slate-600 dark:text-slate-400 leading-relaxed max-w-3xl">
-            Customize your meal recommendations to match your lifestyle and preferences. We'll use these to create personalized meal plans just for you.
+            Customize your meal recommendations to match your lifestyle and preferences. We will use these to create personalized meal plans just for you.
           </p>
         </div>
 
