@@ -51,7 +51,7 @@ const  Dashboard = () =>{
         <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-green-400 to-green-800 flex items-center justify-center text-primary-foreground shadow-lg">
           <Loader2 className="w-8 h-8 animate-spin" />
         </div>
-        <p className="text-lg font-medium text-muted-foreground">Loading</p>
+        <p className="text-lg font-medium text-muted-foreground">Loading...</p>
       </div>
     </div>
     );
