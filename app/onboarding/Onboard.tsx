@@ -247,19 +247,16 @@ const OnboardingPage = () => {
   ]
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 flex flex-col">
+    <div className="min-h-screen bg-background/95 flex flex-col">
       {/* Header */}
-      <div className="w-full bg-white/80 dark:bg-slate-900/80 backdrop-blur-md sticky top-0 z-10 border-b border-slate-200/60 dark:border-slate-800/60">
+      <div className="w-full bg-background/95 backdrop-blur-md sticky top-0 z-10  ">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3 sm:gap-4">
               <div className="flex items-center justify-center h-10 w-10 sm:h-12 sm:w-12 rounded-xl sm:rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-xl shadow-emerald-500/25">
                 <Rocket className="w-5 h-5 sm:w-6 sm:h-6" />
               </div>
-              <div>
-                <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight">MealWise</h1>
-                <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400">Personalized meal planning</p>
-              </div>
+              
             </div>
             <div className="text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full">
               Step {step} of 4
@@ -269,9 +266,9 @@ const OnboardingPage = () => {
       </div>
 
       {/* Progress Bar */}
-      <div className="w-full bg-white/60 dark:bg-slate-900/60 backdrop-blur-sm border-b border-slate-200/40 dark:border-slate-800/40">
+      <div className="w-full bg-background/95 backdrop-blur-sm  ">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
-          <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2 sm:h-3 mb-4 sm:mb-6 overflow-hidden">
+          <div className="w-full bg-background/95 rounded-full h-2 sm:h-3 mb-4 sm:mb-6 overflow-hidden">
             <div
               className="bg-gradient-to-r from-emerald-500 to-teal-600 h-2 sm:h-3 rounded-full transition-all duration-700 ease-out shadow-lg"
               style={{ width: `${progressPercentage}%` }}
@@ -314,7 +311,7 @@ const OnboardingPage = () => {
       {/* Main Content */}
       <div className="flex-1 flex items-center justify-center p-4 sm:p-6 md:p-8">
         <div className="w-full max-w-5xl">
-          <Card className="border-0 shadow-2xl shadow-slate-200/50 dark:shadow-slate-900/50 bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm overflow-hidden">
+          <Card className="border-0 shadow-2xl shadow-slate-200/50 dark:shadow-slate-900/50 bg-background/95 backdrop-blur-sm overflow-hidden">
             <CardHeader className="text-center pb-6 sm:pb-8 md:pb-10 pt-8 sm:pt-12 md:pt-16">
               <div className="flex justify-center mb-6 sm:mb-8">
                 <div className="w-16 h-16 sm:w-18 sm:h-18 md:w-20 md:h-20 rounded-2xl sm:rounded-3xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white shadow-2xl shadow-emerald-500/25">
@@ -343,7 +340,7 @@ const OnboardingPage = () => {
                         className={cn(
                           "relative rounded-2xl sm:rounded-3xl border-2 p-4 sm:p-6 md:p-8 transition-all duration-300 cursor-pointer group hover:shadow-xl",
                           formData.dietaryPreference === option.value
-                            ? "border-emerald-400 bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/50 dark:to-teal-950/50 shadow-xl scale-[1.02]"
+                            ? "border-emerald-400 bg-gradient-to-r bg-background/95 shadow-xl scale-[1.02]"
                             : `${option.color} border-transparent hover:scale-[1.01] hover:shadow-lg`,
                         )}
                       >
@@ -599,32 +596,31 @@ const OnboardingPage = () => {
                       
                       return (
                         <button
-                          key={cuisine.id}
-                          onClick={() => toggleCuisine(cuisine.id)}
-                          className={cn(
-                            "relative flex flex-col items-center justify-center p-4 sm:p-6 md:p-8 rounded-2xl sm:rounded-3xl cursor-pointer transition-all duration-300 text-center group hover:shadow-2xl",
-                            isSelected
-                              ? "bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-2xl scale-105 border-2 border-emerald-400"
-                              : `${cuisine.color} hover:scale-105 hover:shadow-xl border-2 border-transparent hover:border-emerald-300 dark:hover:border-emerald-600`,
-                          )}
-                        >
-                          <div className="text-3xl sm:text-4xl md:text-5xl mb-2 sm:mb-4">{cuisine.icon}</div>
-                          <span
-                            className={cn(
-                              "text-sm sm:text-base font-bold transition-colors tracking-tight",
-                              isSelected
-                                ? "text-white"
-                                : "text-slate-700 dark:text-slate-200 group-hover:text-slate-900 dark:group-hover:text-white",
-                            )}
-                          >
-                            {cuisine.label}
-                          </span>
-                          {isSelected && (
-                            <div className="absolute top-2 right-2 w-6 h-6 bg-white rounded-full flex items-center justify-center shadow-lg">
-                              <CheckCircle className="w-4 h-4 text-emerald-600" />
-                            </div>
-                          )}
-                        </button>
+  key={cuisine.id}
+  onClick={() => toggleCuisine(cuisine.id)}
+  className={cn(
+    "flex items-center justify-between p-4 rounded-lg border transition-all duration-200",
+    "hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1",
+    isSelected
+      ? "bg-blue-50 border-blue-200 text-blue-700"
+      : "bg-white border-gray-200 text-gray-700 hover:border-gray-300"
+  )}
+>
+  <span className="font-medium">{cuisine.label}</span>
+  
+  <div
+    className={cn(
+      "w-5 h-5 rounded-full border-2 flex items-center justify-center",
+      isSelected
+        ? "border-blue-500 bg-blue-500"
+        : "border-gray-300"
+    )}
+  >
+    {isSelected && (
+      <CheckCircle className="w-3 h-3 text-white" />
+    )}
+  </div>
+</button>
                       )
                     })}
                   </div>

@@ -15,7 +15,7 @@ const CheckoutPage = () => {
       
       <div className="grid md:grid-cols-2 gap-8">
         {/* Free Plan */}
-        <div className="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200">
+        <div className="bg-background/95 rounded-xl shadow-md overflow-hidden border border-gray-200">
           <div className="p-8">
             <div className="uppercase tracking-wide text-sm text-gray-500 font-semibold">Basic Plan</div>
             <h2 className="mt-2 text-2xl font-bold">Free</h2>
@@ -60,7 +60,7 @@ const CheckoutPage = () => {
         </div>
         
         {/* Pro Plan with Checkout Button */}
-        <div className="bg-white rounded-xl shadow-lg overflow-hidden border-2 border-indigo-500 relative">
+        <div className="bg-background/95 rounded-xl shadow-lg overflow-hidden border-2 border-indigo-500 relative">
           <div className="absolute top-0 right-0 bg-indigo-500 text-white px-3 py-1 text-sm font-semibold">
             RECOMMENDED
           </div>
@@ -86,7 +86,7 @@ const CheckoutPage = () => {
                   <svg className="h-5 w-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
                   </svg>
-                  <span className="ml-2">Priority customer support</span>
+                  <span className="ml-2">Location Based grocery list</span>
                 </li>
                 <li className="flex items-center">
                   <svg className="h-5 w-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -98,7 +98,19 @@ const CheckoutPage = () => {
                   <svg className="h-5 w-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
                   </svg>
-                  <span className="ml-2">Custom integrations</span>
+                  <span className="ml-2">Unlimited ai meal plans</span>
+                </li>
+                <li className="flex items-center">
+                  <svg className="h-5 w-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                  </svg>
+                  <span className="ml-2">Unlimited Meal swaps</span>
+                </li>
+                <li className="flex items-center">
+                  <svg className="h-5 w-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                  </svg>
+                  <span className="ml-2">Team Dedicated for support</span>
                 </li>
               </ul>
               

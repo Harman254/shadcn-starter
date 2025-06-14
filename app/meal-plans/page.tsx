@@ -61,11 +61,10 @@ const MealPlans = async () => {
   const totalDays = mealPlans.reduce((acc, plan) => acc + plan.duration, 0)
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50 dark:from-slate-950 dark:via-slate-900/50 dark:to-slate-800/30">
+    <div className="min-h-screen bg-background/95">
       {/* Hero Header */}
-      <div className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-blue-600/5 to-indigo-600/5 dark:from-blue-400/10 dark:to-indigo-400/10"></div>
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(59,130,246,0.1),transparent_50%)] dark:bg-[radial-gradient(circle_at_30%_20%,rgba(59,130,246,0.2),transparent_50%)]"></div>
+      <div className="relative overflow-hidden ">
+        <div className="absolute inset-0 bg-background/95"></div>
         <div className="relative container max-w-7xl mx-auto px-6 py-20">
           <div className="flex flex-col lg:flex-row items-start justify-between gap-8 mb-16">
             <div className="flex-1">

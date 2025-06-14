@@ -35,10 +35,12 @@ export type GenerateMealPlanInput = z.infer<typeof GenerateMealPlanInputSchema>;
 
 // Output schema
 const MealSchema = z.object({
+  id: z.string().optional().describe('Unique identifier for the meal.'),
   name: z.string().describe('Name of the meal.'),
   ingredients: z.array(z.string()).describe('Ingredients of the meal.'),
   instructions: z.string().describe('Cooking instructions for the meal.'),
   imageUrl: z.string().describe('A URL to an image of the meal.'),
+  isLiked: z.boolean().optional().describe('Whether the meal is liked by the user.'),
 });
 
 const DayMealPlanSchema = z.object({

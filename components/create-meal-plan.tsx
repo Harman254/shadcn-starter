@@ -201,8 +201,8 @@ const CreateMealPlan = ({ preferences }: CreateMealPlanProps) => {
           <p className="text-slate-600 dark:text-slate-400 text-lg">Personalized nutrition planning made simple</p>
         </div>
 
-        <Card className="border-0 shadow-xl shadow-slate-200/50 dark:shadow-slate-900/50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm">
-          <CardHeader className="bg-gradient-to-r from-slate-50 to-white dark:from-slate-800 dark:to-slate-900 border-b border-slate-200/50 dark:border-slate-700/50">
+        <Card className="border-0 shadow-xl shadow-slate-200/50 dark:shadow-slate-900/50 bg-background/95 backdrop-blur-sm">
+          <CardHeader className="bg-background/95 border-b border-slate-200/50 dark:border-slate-700/50">
             <CardTitle className="text-xl font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-2">
               <Utensils className="h-5 w-5 text-emerald-600" />
               Configuration

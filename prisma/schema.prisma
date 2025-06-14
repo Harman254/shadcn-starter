@@ -44,6 +44,7 @@ model Meal {
   id         String   @id @default(cuid())
   name       String
   type       String
+  isLiked   Boolean   @default(false)
   imageUrl String?
   description String
   ingredients String[]

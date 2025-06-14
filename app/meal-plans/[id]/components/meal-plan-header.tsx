@@ -25,12 +25,7 @@ export const MealPlanHeader = ({ mealPlan, avgCaloriesPerDay }: MealPlanHeaderPr
             <MealPlanActions mealPlanId={mealPlan.id} />
           </div>
 
-          <MealPlanStats
-            duration={mealPlan.duration}
-            mealsPerDay={mealPlan.mealsPerDay}
-            avgCaloriesPerDay={avgCaloriesPerDay}
-            totalDays={mealPlan.days.length}
-          />
+         
         </CardContent>
       </div>
     </Card>

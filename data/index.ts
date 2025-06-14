@@ -338,8 +338,45 @@ export const addSubscriber = async (customerID: string, userID: string) => {
 //   }
 // }
 
-// // Helper function to estimate calories based on ingredients
-// function calculateCalories(ingredients: string[]): number {
-//   // Simple estimation: 100 calories per ingredient
-//   return ingredients.length * 100;
-// }
+// Helper function to estimate calories based on ingredients
+function calculateCalories(ingredients: string[]): number {
+  // Simple estimation: 100 calories per ingredient
+  return ingredients.length * 100;
+}
+
+// Meal like/unlike functions
+export async function setMealLiked(mealId: string, isLiked: boolean) {
+  try {
+    const updatedMeal = await prisma.meal.update({
+      where: { id: mealId },
+      data: { isLiked },
+      include: {
+        dayMeal: {
+          include: {
+            mealPlan: true,
+          },
+        },
+      },
+    });
+    
+    console.log(`Meal ${mealId} like status updated to: ${isLiked}`);
+    return updatedMeal;
+  } catch (error) {
+    console.error('Error updating meal like status:', error);
+    throw new Error('Failed to update meal like status');
+  }
+}
+
+export async function getMealLikeStatus(mealId: string) {
+  try {
+    const meal = await prisma.meal.findUnique({
+      where: { id: mealId },
+      select: { isLiked: true },
+    });
+    
+    return meal?.isLiked ?? false;
+  } catch (error) {
+    console.error('Error getting meal like status:', error);
+    return false;
+  }
+}

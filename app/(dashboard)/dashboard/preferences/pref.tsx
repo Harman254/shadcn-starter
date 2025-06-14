@@ -349,7 +349,7 @@ const Preferences = ({userId}:Props ) => {
   // Loading state
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+      <div className="min-h-screen bg-background/95 flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-green-400 to-green-800 flex items-center justify-center text-white shadow-lg">
             <Loader2 className="w-8 h-8 animate-spin" />
@@ -361,18 +361,14 @@ const Preferences = ({userId}:Props ) => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
+    <div className="min-h-screen bg-background/95 ">
       {/* Action Bar */}
-      <div className="sticky top-0 z-10 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200/60 dark:border-slate-800/60 shadow-lg">
+      <div className="sticky top-0 z-10 bg-background/95 shadow-lg">
         <div className="max-w-7xl mx-auto px-8 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <div className="flex items-center justify-center h-12 w-12 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-xl shadow-emerald-500/25">
                 <Rocket className="w-6 h-6" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">MealWise</h1>
-                <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Taste preferences</p>
               </div>
             </div>
             
@@ -418,7 +414,7 @@ const Preferences = ({userId}:Props ) => {
 
         <div className="grid gap-6 sm:gap-8 md:gap-10 lg:grid-cols-2">
           {/* Dietary Preferences */}
-          <div className="bg-white/90 dark:bg-slate-900/90 shadow-2xl rounded-2xl sm:rounded-3xl border border-slate-200/60 dark:border-slate-700/60 backdrop-blur-sm">
+          <div className="bg-background/95 shadow-2xl rounded-2xl sm:rounded-3xl border  backdrop-blur-sm">
             <div className="p-6 sm:p-8 pb-4 sm:pb-6">
               <div className="flex items-center gap-3 sm:gap-4 mb-3 sm:mb-4">
                 <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white shadow-xl shadow-emerald-500/25">
@@ -559,7 +555,7 @@ const Preferences = ({userId}:Props ) => {
           </div>
 
           {/* Cuisine Preferences */}
-          <div className="bg-white/90 dark:bg-slate-900/90 shadow-2xl rounded-2xl sm:rounded-3xl border border-slate-200/60 dark:border-slate-700/60 backdrop-blur-sm">
+          <div className="bg-background/95 shadow-2xl rounded-2xl sm:rounded-3xl border border-slate-200/60  backdrop-blur-sm">
             <div className="p-6 sm:p-8 pb-4 sm:pb-6">
               <div className="flex items-center gap-3 sm:gap-4 mb-3 sm:mb-4">
                 <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white shadow-xl shadow-emerald-500/25">
@@ -595,7 +591,7 @@ const Preferences = ({userId}:Props ) => {
                       placeholder="Enter custom cuisine..."
                       value={customCuisine}
                       onChange={(e) => setCustomCuisine(e.target.value)}
-                      onKeyPress={(e) => e.key === 'Enter' && addCustomCuisine()}
+                      // onKeyPress={(e) => e.key === 'Enter' && addCustomCuisine()}
                       className="flex-1 px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-xl sm:rounded-2xl bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-500 dark:placeholder-slate-400 focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-base sm:text-lg font-medium"
                       autoFocus
                     />
@@ -668,26 +664,62 @@ const Preferences = ({userId}:Props ) => {
                       key={cuisine.id}
                       onClick={() => toggleCuisine(cuisine.id)}
                       className={cn(
-                        "flex items-center gap-4 p-4 rounded-2xl border-2 transition-all duration-200 text-left hover:shadow-xl",
+                        "group relative flex items-center gap-4 p-5 rounded-2xl border-2 transition-all duration-300 text-left overflow-hidden",
+                        "hover:shadow-2xl hover:scale-[1.02] active:scale-[0.98]",
+                        "focus:outline-none focus:ring-4 focus:ring-emerald-500/20 focus:ring-offset-2",
                         isSelected
-                          ? "border-emerald-500 bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30 shadow-xl scale-[1.02]"
-                          : "border-slate-200 dark:border-slate-700 hover:border-emerald-300 dark:hover:border-emerald-600 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700"
+                          ? "border-emerald-500 bg-gradient-to-br from-emerald-50 via-teal-50 to-emerald-100 dark:from-emerald-950/40 dark:via-teal-950/40 dark:to-emerald-900/40 shadow-xl shadow-emerald-500/25"
+                          : "border-slate-200 dark:border-slate-700 hover:border-emerald-300 dark:hover:border-emerald-600 bg-white dark:bg-slate-800 hover:bg-gradient-to-br hover:from-slate-50 hover:to-emerald-50/30 dark:hover:from-slate-700 dark:hover:to-emerald-950/20"
                       )}
                     >
-                      <div className="text-2xl">{cuisine.icon}</div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-base font-bold text-slate-900 dark:text-white truncate tracking-tight">{cuisine.label}</p>
-                      </div>
+                      {/* Background gradient overlay */}
                       <div
                         className={cn(
-                          "w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all",
+                          "absolute inset-0 bg-gradient-to-r opacity-0 transition-opacity duration-300",
                           isSelected
-                            ? "border-emerald-500 bg-emerald-500 shadow-lg"
-                            : "border-slate-300 dark:border-slate-600"
+                            ? "from-emerald-500/5 to-teal-500/5 opacity-100"
+                            : "from-emerald-500/0 to-teal-500/0 group-hover:opacity-100"
                         )}
-                      >
-                        {isSelected && <Check className="w-3 h-3 text-white" />}
+                      />
+                      
+                      {/* Content */}
+                      <div className="relative z-10 flex items-center gap-4 w-full">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-base font-bold text-slate-900 dark:text-white truncate tracking-tight">
+                            {cuisine.label}
+                          </p>
+                        </div>
+                        
+                        {/* Enhanced checkbox */}
+                        <div
+                          className={cn(
+                            "relative w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all duration-300 flex-shrink-0",
+                            "shadow-sm",
+                            isSelected
+                              ? "border-emerald-500 bg-emerald-500 shadow-lg shadow-emerald-500/50 scale-110"
+                              : "border-slate-300 dark:border-slate-600 group-hover:border-emerald-400 dark:group-hover:border-emerald-500 group-hover:scale-105"
+                          )}
+                        >
+                          {isSelected && (
+                            <Check className="w-3.5 h-3.5 text-white animate-in zoom-in-75 duration-200" />
+                          )}
+                          
+                          {/* Ripple effect for selected state */}
+                          {isSelected && (
+                            <div className="absolute inset-0 rounded-full bg-emerald-400 animate-ping opacity-20" />
+                          )}
+                        </div>
                       </div>
+                      
+                      {/* Subtle border glow */}
+                      <div
+                        className={cn(
+                          "absolute inset-0 rounded-2xl transition-opacity duration-300 pointer-events-none",
+                          isSelected
+                            ? "bg-gradient-to-r from-emerald-500/20 to-teal-500/20 opacity-100"
+                            : "bg-gradient-to-r from-emerald-500/0 to-teal-500/0 opacity-0 group-hover:opacity-50"
+                        )}
+                      />
                     </button>
                   )
                 })}

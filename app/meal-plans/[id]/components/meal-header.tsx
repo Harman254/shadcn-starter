@@ -3,6 +3,7 @@ import { Flame, Star } from "lucide-react";
 import { MealHeaderProps } from "../components/types";
 import MealTypeBadge from "./meal-type-badge";
 import CalorieBadge from "./calorie-badge";
+import MealLikeButton from "@/components/meal-like";
 
 export const MealHeader = ({ meal }: MealHeaderProps) => {
   return (
@@ -15,6 +16,7 @@ export const MealHeader = ({ meal }: MealHeaderProps) => {
           <Star className="h-4 w-4 mr-1 fill-yellow-400 text-yellow-400" />
           4.8
         </div>
+        <MealLikeButton mealId={meal.id} />
       </div>
 
       {/* Meal Title and Description */}
