@@ -11,6 +11,16 @@ interface RootLayoutProps {
   children: React.ReactNode;
 }
 
+export const metadata = {
+  title: 'MealWise',
+  description: 'Plan your meals, create grocery lists, and manage your diet with ease using AI.',
+  icons: {
+    icon: '/favicon.ico',
+    apple: '/apple-touch-icon.png',
+  },
+}
+
+
 export default async function  RootLayout({ children }: RootLayoutProps) {
 
 

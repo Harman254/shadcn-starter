@@ -44,7 +44,7 @@ export default function Footer() {
                   href="/meal-plans"
                   className="text-sm text-muted-foreground hover:text-green-500 dark:hover:text-green-400 transition-colors block"
                 >
-                  Meal Planning
+                  Meal Plans
                 </Link>
               </li>
               <li>
@@ -60,7 +60,7 @@ export default function Footer() {
                   href="/about"
                   className="text-sm text-muted-foreground hover:text-green-500 dark:hover:text-green-400 transition-colors block"
                 >
-                  About Us
+                  How it works
                 </Link>
               </li>
               <li>
@@ -84,13 +84,13 @@ export default function Footer() {
                   href="mailto:hello@mealwise.com"
                   className="text-sm text-muted-foreground hover:text-green-500 dark:hover:text-green-400 transition-colors"
                 >
-                  hello@mealwise.com
+                  aimealwise@gmail.com
                 </Link>
               </div>
               <div className="flex items-start space-x-3">
                 <MapPin className="h-4 w-4 text-green-500 dark:text-green-400 mt-0.5 flex-shrink-0" />
                 <address className="text-sm text-muted-foreground not-italic">
-                  San Francisco, CA
+                  Nairobi
                 </address>
               </div>
             </div>

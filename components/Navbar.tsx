@@ -64,7 +64,7 @@ const Navbar = () => {
     {
       title: "Support",
       description: "Get help when needed",
-      href: "/support",
+      href: "/contact",
     },
   ];
 
@@ -184,13 +184,13 @@ const Navbar = () => {
                 </Accordion>
 
                 <div className="flex flex-col gap-6">
-                  <Link href="/templates" className="font-medium">
-                    Templates
+                  <Link href="/products" className="font-medium">
+                    Products
                   </Link>
                   <Link href="/blog" className="font-medium">
                     Blog
                   </Link>
-                  <Link href="/pricing" className="font-medium">
+                  <Link href="/dashboard/pricing" className="font-medium">
                     Pricing
                   </Link>
                 </div>
