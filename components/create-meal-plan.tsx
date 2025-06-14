@@ -522,7 +522,7 @@ const CreateMealPlan = ({ preferences }: CreateMealPlanProps) => {
                               )}
                               {!meal.imageUrl && (
                                 <div className="text-sm text-slate-500 dark:text-slate-400">
-                                  Debug: No imageUrl for meal "{meal.name}"
+                                  Debug: No imageUrl for meal &quot;{meal.name}&quot;
                                 </div>
                               )}
 
