@@ -167,9 +167,19 @@ const Preferences = ({userId}:Props ) => {
     }
 
     // Ensure all required fields exist with proper defaults
+    const fetchedDietaryPreference = data.dietaryPreference
+    const matchedDietaryPreference = DIETARY_OPTIONS.find(
+      (option) => option.label === fetchedDietaryPreference || option.value === fetchedDietaryPreference
+    )?.value || ""
+
+    const fetchedGoal = data.goal
+    const matchedGoal = GOAL_OPTIONS.find(
+      (option) => option.label === fetchedGoal || option.value === fetchedGoal
+    )?.value || ""
+
     return {
-      dietaryPreference: data.dietaryPreference || "",
-      goal: data.goal || "",
+      dietaryPreference: matchedDietaryPreference,
+      goal: matchedGoal,
       householdSize: typeof data.householdSize === 'number' ? data.householdSize : 1,
       cuisinePreferences: Array.isArray(data.cuisinePreferences) ? data.cuisinePreferences : [],
     }
@@ -186,8 +196,12 @@ const Preferences = ({userId}:Props ) => {
 
     setIsLoading(true)
     try {
+      console.log("Loading preferences for user:", userId)
       const userPrefsData = await fetchOnboardingData(userId)
+      console.log("Raw preferences data:", userPrefsData)
+      
       const userPrefs = convertToUserPreferences(userPrefsData)
+      console.log("Converted preferences:", userPrefs)
       
       setPreferences(userPrefs)
       setOriginalPreferences(userPrefs)
@@ -225,6 +239,15 @@ const Preferences = ({userId}:Props ) => {
 
     setHasChanges(changed)
   }, [preferences, originalPreferences])
+
+  // Debug effect to log preference changes
+  useEffect(() => {
+    console.log("Preferences state updated:", preferences)
+    console.log("Dietary preference:", preferences.dietaryPreference)
+    console.log("Goal:", preferences.goal)
+    console.log("Household size:", preferences.householdSize)
+    console.log("Cuisine preferences:", preferences.cuisinePreferences)
+  }, [preferences])
 
   /**
    * Save preferences to the database
@@ -370,7 +393,7 @@ const Preferences = ({userId}:Props ) => {
               <button
                 onClick={handleSave}
                 disabled={!hasChanges || isSaving}
-                className="flex items-center gap-2 px-6 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 rounded-lg transition-all disabled:bg-slate-400 disabled:cursor-not-allowed shadow-md hover:shadow-lg"
+                className="flex items-center gap-2 px-5 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 rounded-lg transition-all disabled:bg-slate-400 disabled:cursor-not-allowed shadow-md hover:shadow-lg"
               >
                 {isSaving ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
