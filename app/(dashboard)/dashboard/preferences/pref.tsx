@@ -130,9 +130,7 @@ interface Props {
   userId: string
 }
 
-
-
-const  Preferences = ({userId}:Props ) => {
+const Preferences = ({userId}:Props ) => {
   const [preferences, setPreferences] = useState<UserPreferences>(DEFAULT_PREFERENCES)
   const [originalPreferences, setOriginalPreferences] = useState<UserPreferences>(DEFAULT_PREFERENCES)
   const [isLoading, setIsLoading] = useState(true)
@@ -149,9 +147,6 @@ const  Preferences = ({userId}:Props ) => {
   const filteredCuisines = CUISINE_OPTIONS.filter(cuisine =>
     cuisine.label.toLowerCase().includes(cuisineSearch.toLowerCase())
   )
-
-
-
 
   /**
    * Convert API response to UserPreferences format
@@ -263,17 +258,6 @@ const  Preferences = ({userId}:Props ) => {
   /**
    * Refresh preferences from the database
    */
-  const handleRefresh = async () => {
-    setIsRefreshing(true)
-    try {
-      await loadPreferences()
-    } catch (error) {
-      console.error("Refresh error:", error)
-      toast.error("Failed to refresh preferences. Please try again.")
-    } finally {
-      setIsRefreshing(false)
-    }
-  }
 
   /**
    * Add a custom cuisine to preferences
@@ -354,28 +338,29 @@ const  Preferences = ({userId}:Props ) => {
   }
 
   return (
-    <div className="min-h-screen bg-background/95">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
       {/* Action Bar */}
-      <div className="sticky top-0 z-10 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border-b border-gray-200 dark:border-gray-700">
-        <div className="max-w-6xl mx-auto px-6 py-4">
+      <div className="sticky top-0 z-10 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200/60 dark:border-slate-800/60 shadow-lg">
+        <div className="max-w-7xl mx-auto px-8 py-6">
           <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="flex items-center justify-center h-12 w-12 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-xl shadow-emerald-500/25">
+                <Rocket className="w-6 h-6" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">MealWise</h1>
+                <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Taste preferences</p>
+              </div>
+            </div>
             
-            
-            <div className="flex items-center gap-3">
-              <button
-                onClick={handleRefresh}
-                disabled={isRefreshing || isSaving}
-                className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors disabled:opacity-50"
-              >
-                <RefreshCw className='animate-spin' />
-                Refresh
-              </button>
+            <div className="flex items-center justify-center gap-3">
+             
               
               {hasChanges && (
                 <button
                   onClick={handleReset}
                   disabled={isSaving}
-                  className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                  className="flex items-center gap-2 px-5 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed border border-slate-200 dark:border-slate-700"
                 >
                   <X className="w-4 h-4" />
                   Reset
@@ -385,14 +370,14 @@ const  Preferences = ({userId}:Props ) => {
               <button
                 onClick={handleSave}
                 disabled={!hasChanges || isSaving}
-                className="flex items-center gap-2 px-3 py-2 text-md font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg transition-all disabled:bg-gray-400 disabled:cursor-not-allowed shadow-sm"
+                className="flex items-center gap-2 px-6 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 rounded-lg transition-all disabled:bg-slate-400 disabled:cursor-not-allowed shadow-md hover:shadow-lg"
               >
                 {isSaving ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
                 ) : (
                   <Save className="w-4 h-4" />
                 )}
-                {isSaving ? "Saving..." : "Save Changes"}
+                {isSaving ? "Saving..." : "Save changes"}
               </button>
             </div>
           </div>
@@ -400,56 +385,58 @@ const  Preferences = ({userId}:Props ) => {
       </div>
 
       {/* Main Content */}
-      <div className="max-w-6xl mx-auto p-6">
-        <div className="mb-8">
-          <h2 className="text-4xl font-bold tracking-tight text-gray-900 dark:text-white mb-3">Your Taste Preferences</h2>
-          <p className="text-lg font-medium text-gray-600 dark:text-gray-400 leading-relaxed">
-            Customize your meal recommendations to match your lifestyle and preferences.
+      <div className="max-w-7xl mx-auto p-4 sm:p-6 md:p-8">
+        <div className="mb-8 sm:mb-12">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-slate-900 dark:text-white mb-3 sm:mb-4 leading-tight">Your Taste Preferences</h2>
+          <p className="text-lg sm:text-xl font-medium text-slate-600 dark:text-slate-400 leading-relaxed max-w-3xl">
+            Customize your meal recommendations to match your lifestyle and preferences. We'll use these to create personalized meal plans just for you.
           </p>
         </div>
 
-        <div className="grid gap-8 lg:grid-cols-2">
+        <div className="grid gap-6 sm:gap-8 md:gap-10 lg:grid-cols-2">
           {/* Dietary Preferences */}
-          <div className="bg-background/95 shadow-lg rounded-xl border border-gray-200 dark:border-gray-700">
-            <div className="p-6 pb-4">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="w-10 h-10 rounded-xl bg-green-500 flex items-center justify-center text-white">
-                  <UtensilsCrossed className="w-5 h-5" />
+          <div className="bg-white/90 dark:bg-slate-900/90 shadow-2xl rounded-2xl sm:rounded-3xl border border-slate-200/60 dark:border-slate-700/60 backdrop-blur-sm">
+            <div className="p-6 sm:p-8 pb-4 sm:pb-6">
+              <div className="flex items-center gap-3 sm:gap-4 mb-3 sm:mb-4">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white shadow-xl shadow-emerald-500/25">
+                  <UtensilsCrossed className="w-5 h-5 sm:w-6 sm:h-6" />
                 </div>
-                <h3 className="text-xl font-semibold tracking-tight text-gray-900 dark:text-white">Dietary Preference</h3>
+                <div>
+                  <h3 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Dietary Preference</h3>
+                  <p className="text-sm sm:text-base font-medium text-slate-600 dark:text-slate-400">
+                    Choose your dietary lifestyle to get personalized meal suggestions.
+                  </p>
+                </div>
               </div>
-              <p className="text-base font-medium text-gray-600 dark:text-gray-400">
-                Choose your dietary lifestyle to get personalized meal suggestions.
-              </p>
             </div>
-            <div className="px-6 pb-6">
-              <div className="space-y-3">
+            <div className="px-6 sm:px-8 pb-6 sm:pb-8">
+              <div className="space-y-3 sm:space-y-4">
                 {DIETARY_OPTIONS.map((option) => (
                   <div
                     key={option.value}
                     onClick={() => setPreferences(prev => ({ ...prev, dietaryPreference: option.value }))}
                     className={cn(
-                      "relative rounded-xl border-2 p-4 transition-all duration-300 cursor-pointer group",
+                      "relative rounded-xl sm:rounded-2xl border-2 p-4 sm:p-6 transition-all duration-300 cursor-pointer group hover:shadow-xl",
                       preferences.dietaryPreference === option.value
-                        ? "border-green-500 bg-green-50 dark:bg-green-900/20 shadow-md"
-                        : `${option.color} border-transparent hover:shadow-sm`,
+                        ? "border-emerald-500 bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30 shadow-xl scale-[1.02]"
+                        : `${option.color} border-transparent hover:shadow-lg`,
                     )}
                   >
-                    <div className="flex items-center gap-4">
-                      <div className="text-2xl">{option.icon}</div>
-                      <div className="flex-1">
-                        <p className="text-base font-semibold tracking-tight text-gray-900 dark:text-white">{option.label}</p>
-                        <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mt-0.5">{option.description}</p>
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-5">
+                      <div className="text-2xl sm:text-3xl">{option.icon}</div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-base sm:text-lg font-bold tracking-tight text-slate-900 dark:text-white mb-1">{option.label}</p>
+                        <p className="text-sm sm:text-base font-medium text-slate-600 dark:text-slate-400 leading-relaxed">{option.description}</p>
                       </div>
                       <div
                         className={cn(
-                          "w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all",
+                          "w-5 h-5 sm:w-6 sm:h-6 rounded-full border-2 flex items-center justify-center transition-all flex-shrink-0",
                           preferences.dietaryPreference === option.value
-                            ? "border-green-500 bg-green-500"
-                            : "border-gray-300 dark:border-gray-600 group-hover:border-green-400",
+                            ? "border-emerald-500 bg-emerald-500 shadow-lg"
+                            : "border-slate-300 dark:border-slate-600 group-hover:border-emerald-400",
                         )}
                       >
-                        {preferences.dietaryPreference === option.value && <Check className="w-3 h-3 text-white" />}
+                        {preferences.dietaryPreference === option.value && <Check className="w-3 h-3 sm:w-4 sm:h-4 text-white" />}
                       </div>
                     </div>
                   </div>
@@ -549,66 +536,70 @@ const  Preferences = ({userId}:Props ) => {
           </div>
 
           {/* Cuisine Preferences */}
-          <div className="bg-background/95 shadow-lg rounded-xl border border-gray-200 dark:border-gray-700">
-            <div className="p-6 pb-4">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="w-10 h-10 rounded-xl bg-green-500 flex items-center justify-center text-white">
-                  <Cookie className="w-5 h-5" />
+          <div className="bg-white/90 dark:bg-slate-900/90 shadow-2xl rounded-2xl sm:rounded-3xl border border-slate-200/60 dark:border-slate-700/60 backdrop-blur-sm">
+            <div className="p-6 sm:p-8 pb-4 sm:pb-6">
+              <div className="flex items-center gap-3 sm:gap-4 mb-3 sm:mb-4">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white shadow-xl shadow-emerald-500/25">
+                  <Cookie className="w-5 h-5 sm:w-6 sm:h-6" />
                 </div>
-                <h3 className="text-xl font-semibold tracking-tight text-gray-900 dark:text-white">Favorite Cuisines</h3>
+                <div>
+                  <h3 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Favorite Cuisines</h3>
+                  <p className="text-sm sm:text-base font-medium text-slate-600 dark:text-slate-400">
+                    Select the cuisines you enjoy most. We&#39;ll prioritize these in your recommendations.
+                  </p>
+                </div>
               </div>
-              <p className="text-base font-medium text-gray-600 dark:text-gray-400">
-                Select the cuisines you enjoy most. We&#39;ll prioritize these in your recommendations.
-              </p>
             </div>
             
-            <div className="px-6 pb-6">
+            <div className="px-6 sm:px-8 pb-6 sm:pb-8">
               {/* Search and Add Custom */}
-              <div className="mb-4 space-y-3">
+              <div className="mb-6 space-y-4">
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
                   <input
                     type="text"
                     placeholder="Search cuisines..."
                     value={cuisineSearch}
                     onChange={(e) => setCuisineSearch(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    className="w-full pl-12 pr-4 py-3 sm:py-4 border border-slate-300 dark:border-slate-600 rounded-xl sm:rounded-2xl bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-500 dark:placeholder-slate-400 focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-base sm:text-lg font-medium shadow-lg"
                   />
                 </div>
                 
                 {showCustomInput ? (
-                  <div className="flex gap-2">
+                  <div className="flex flex-col sm:flex-row gap-3">
                     <input
                       type="text"
                       placeholder="Enter custom cuisine..."
                       value={customCuisine}
                       onChange={(e) => setCustomCuisine(e.target.value)}
                       onKeyPress={(e) => e.key === 'Enter' && addCustomCuisine()}
-                      className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                      className="flex-1 px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-xl sm:rounded-2xl bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-500 dark:placeholder-slate-400 focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-base sm:text-lg font-medium"
                       autoFocus
                     />
-                    <button
-                      onClick={addCustomCuisine}
-                      className="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-                    >
-                      <Check className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => {
-                        setShowCustomInput(false)
-                        setCustomCuisine("")
-                      }}
-                      className="px-3 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
+                    <div className="flex gap-2 sm:gap-3">
+                      <button
+                        onClick={addCustomCuisine}
+                        className="flex-1 sm:flex-none px-4 sm:px-6 py-3 bg-emerald-600 text-white rounded-xl sm:rounded-2xl hover:bg-emerald-700 transition-colors font-semibold shadow-lg"
+                      >
+                        <Check className="w-5 h-5" />
+                      </button>
+                      <button
+                        onClick={() => {
+                          setShowCustomInput(false)
+                          setCustomCuisine("")
+                        }}
+                        className="flex-1 sm:flex-none px-4 sm:px-6 py-3 bg-slate-600 text-white rounded-xl sm:rounded-2xl hover:bg-slate-700 transition-colors font-semibold shadow-lg"
+                      >
+                        <X className="w-5 h-5" />
+                      </button>
+                    </div>
                   </div>
                 ) : (
                   <button
                     onClick={() => setShowCustomInput(true)}
-                    className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 transition-colors"
+                    className="flex items-center gap-3 px-4 py-3 text-base sm:text-lg font-semibold text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors"
                   >
-                    <Plus className="w-4 h-4" />
+                    <Plus className="w-5 h-5" />
                     Add custom cuisine
                   </button>
                 )}
@@ -616,9 +607,9 @@ const  Preferences = ({userId}:Props ) => {
 
               {/* Selected Cuisines */}
               {preferences.cuisinePreferences.length > 0 && (
-                <div className="mb-4">
-                  <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-2">Selected ({preferences.cuisinePreferences.length})</h4>
-                  <div className="flex flex-wrap gap-2">
+                <div className="mb-6">
+                  <h4 className="text-lg font-bold text-slate-900 dark:text-white mb-4 tracking-tight">Selected ({preferences.cuisinePreferences.length})</h4>
+                  <div className="flex flex-wrap gap-3">
                     {preferences.cuisinePreferences.map((cuisineId) => {
                       // Find cuisine using 'id' property
                       const cuisine = CUISINE_OPTIONS.find(c => c.id === cuisineId)
@@ -627,14 +618,14 @@ const  Preferences = ({userId}:Props ) => {
                       return (
                         <span
                           key={cuisineId}
-                          className="inline-flex items-center gap-1 px-3 py-1 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400 text-sm font-medium rounded-full"
+                          className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-400 text-base font-semibold rounded-2xl shadow-lg"
                         >
                           {displayName}
                           <button
                             onClick={() => removeCuisine(cuisineId)}
-                            className="ml-1 hover:text-green-600 dark:hover:text-green-300"
+                            className="ml-1 hover:text-emerald-600 dark:hover:text-emerald-300 transition-colors"
                           >
-                            <X className="w-3 h-3" />
+                            <X className="w-4 h-4" />
                           </button>
                         </span>
                       )
@@ -644,7 +635,7 @@ const  Preferences = ({userId}:Props ) => {
               )}
 
               {/* Available Cuisines */}
-              <div className="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto">
+              <div className="grid grid-cols-2 gap-4 max-h-80 overflow-y-auto">
                 {filteredCuisines.map((cuisine) => {
                   // Use 'id' property for selection check
                   const isSelected = preferences.cuisinePreferences.includes(cuisine.id)
@@ -654,25 +645,25 @@ const  Preferences = ({userId}:Props ) => {
                       key={cuisine.id}
                       onClick={() => toggleCuisine(cuisine.id)}
                       className={cn(
-                        "flex items-center gap-3 p-3 rounded-lg border-2 transition-all duration-200 text-left",
+                        "flex items-center gap-4 p-4 rounded-2xl border-2 transition-all duration-200 text-left hover:shadow-xl",
                         isSelected
-                          ? "border-green-500 bg-green-50 dark:bg-green-900/20"
-                          : "border-gray-200 dark:border-gray-700 hover:border-green-300 dark:hover:border-green-600 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700"
+                          ? "border-emerald-500 bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30 shadow-xl scale-[1.02]"
+                          : "border-slate-200 dark:border-slate-700 hover:border-emerald-300 dark:hover:border-emerald-600 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700"
                       )}
                     >
-                      <div className="text-lg">{cuisine.icon}</div>
+                      <div className="text-2xl">{cuisine.icon}</div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{cuisine.label}</p>
+                        <p className="text-base font-bold text-slate-900 dark:text-white truncate tracking-tight">{cuisine.label}</p>
                       </div>
                       <div
                         className={cn(
-                          "w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all",
+                          "w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all",
                           isSelected
-                            ? "border-green-500 bg-green-500"
-                            : "border-gray-300 dark:border-gray-600"
+                            ? "border-emerald-500 bg-emerald-500 shadow-lg"
+                            : "border-slate-300 dark:border-slate-600"
                         )}
                       >
-                        {isSelected && <Check className="w-2.5 h-2.5 text-white" />}
+                        {isSelected && <Check className="w-3 h-3 text-white" />}
                       </div>
                     </button>
                   )
@@ -685,6 +676,5 @@ const  Preferences = ({userId}:Props ) => {
     </div>
   )
 }
-
 
 export default Preferences

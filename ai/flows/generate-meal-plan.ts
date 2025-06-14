@@ -14,7 +14,7 @@ import { ai } from '../instance';
 import { z } from 'genkit';
 
 /* ========================== */
-/*         SCHEMAS             */
+/*         SCHEMAS            */
 /* ========================== */
 
 // Input schema
@@ -23,13 +23,13 @@ const GenerateMealPlanInputSchema = z.object({
   mealsPerDay: z.number().describe('Number of meals per day.'),
   preferences: z.array(
     z.object({
-      dietaryPreference: z.string().describe('User\'s dietary preference.'),
-      goal: z.string().describe('User\'s fitness or dietary goal.'),
-      householdSize: z.number().describe('User\'s household size.'),
+      dietaryPreference: z.string().describe("User's dietary preference."),
+      goal: z.string().describe("User's fitness or dietary goal."),
+      householdSize: z.number().describe("User's household size."),
       cuisinePreferences: z.array(z.string()).describe('Preferred cuisines.'),
     })
   ).describe('User preferences including dietary goals and cuisine choices.'),
-  randomSeed: z.number().optional().describe('A random seed to introduce variation on regeneration.'), // ✅ Added
+  randomSeed: z.number().optional().describe('A random seed to introduce variation on regeneration.'),
 });
 export type GenerateMealPlanInput = z.infer<typeof GenerateMealPlanInputSchema>;
 
@@ -38,6 +38,7 @@ const MealSchema = z.object({
   name: z.string().describe('Name of the meal.'),
   ingredients: z.array(z.string()).describe('Ingredients of the meal.'),
   instructions: z.string().describe('Cooking instructions for the meal.'),
+  imageUrl: z.string().describe('A URL to an image of the meal.'),
 });
 
 const DayMealPlanSchema = z.object({
@@ -51,7 +52,7 @@ const GenerateMealPlanOutputSchema = z.object({
 export type GenerateMealPlanOutput = z.infer<typeof GenerateMealPlanOutputSchema>;
 
 /* ========================== */
-/*       MAIN FUNCTION         */
+/*       MAIN FUNCTION        */
 /* ========================== */
 
 export async function generatePersonalizedMealPlan(
@@ -61,7 +62,7 @@ export async function generatePersonalizedMealPlan(
 }
 
 /* ========================== */
-/*           AI PROMPT         */
+/*           AI PROMPT        */
 /* ========================== */
 
 const prompt = ai.definePrompt({
@@ -86,13 +87,13 @@ Ensure each meal includes:
 - A name
 - A list of ingredients
 - Clear cooking instructions
+- A valid image URL (realistic, symbolic, or AI-generated)
 
-Return the meal plan as a valid JSON object.
-  `,
+Return the meal plan as a valid JSON object.`,
 });
 
 /* ========================== */
-/*        FLOW DEFINITION      */
+/*        FLOW DEFINITION     */
 /* ========================== */
 
 const generateMealPlanFlow = ai.defineFlow<

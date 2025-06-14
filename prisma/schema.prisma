@@ -44,6 +44,7 @@ model Meal {
   id         String   @id @default(cuid())
   name       String
   type       String
+  imageUrl String?
   description String
   ingredients String[]
   calories   Int
@@ -96,6 +97,7 @@ model Account {
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
   isOnboardingComplete Boolean @default(false)
+  isPro Boolean @default(false)
 
 
   accessTokenExpiresAt  DateTime?

@@ -25,6 +25,7 @@ interface Meal {
   name: string
   ingredients: string[]
   instructions: string
+  imageUrl?: string
 }
 
 export interface DayMealPlan {
@@ -77,6 +78,9 @@ const CreateMealPlan = ({ preferences }: CreateMealPlanProps) => {
         return
       }
 
+      // Debug: Log the meal plan to see if imageUrl is included
+      console.log("Generated meal plan:", JSON.stringify(result.mealPlan, null, 2))
+
       const titleresult = await generateMealPlanTitle(result.mealPlan)
       setTitle(titleresult.title) // Set the title state
 
@@ -87,6 +91,8 @@ const CreateMealPlan = ({ preferences }: CreateMealPlanProps) => {
         clearMealPlan()
         return
       }
+
+      
 
       const today = new Date().toISOString()
       setMealPlan(result.mealPlan, duration, mealsPerDay, today)
@@ -487,6 +493,39 @@ const CreateMealPlan = ({ preferences }: CreateMealPlanProps) => {
 
                             {/* Meal Content */}
                             <div className="px-6 pb-6 space-y-6">
+                              {/* Meal Image */}
+                              {meal.imageUrl && (
+                                <div className="space-y-3">
+                                  <div className="flex items-center gap-2">
+                                    <div className="h-6 w-6 rounded-md bg-purple-100 dark:bg-purple-900/50 flex items-center justify-center">
+                                      <div className="h-2 w-2 rounded-full bg-purple-600 dark:bg-purple-400"></div>
+                                    </div>
+                                    <h5 className="font-semibold text-slate-900 dark:text-slate-100">Meal Preview</h5>
+                                  </div>
+                                  <div className="relative overflow-hidden rounded-xl border border-slate-200/50 dark:border-slate-700/50">
+                                    <img
+                                      src={meal.imageUrl}
+                                      alt={`${meal.name} - Meal preview`}
+                                      className="w-full h-48 object-cover hover:scale-105 transition-transform duration-300"
+                                      onError={(e) => {
+                                        // Fallback for broken images
+                                        console.log("Image failed to load:", meal.imageUrl)
+                                        e.currentTarget.style.display = 'none';
+                                      }}
+                                      onLoad={() => {
+                                        console.log("Image loaded successfully:", meal.imageUrl)
+                                      }}
+                                    />
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent pointer-events-none"></div>
+                                  </div>
+                                </div>
+                              )}
+                              {!meal.imageUrl && (
+                                <div className="text-sm text-slate-500 dark:text-slate-400">
+                                  Debug: No imageUrl for meal "{meal.name}"
+                                </div>
+                              )}
+
                               {/* Ingredients Section */}
                               <div className="space-y-3">
                                 <div className="flex items-center gap-2">

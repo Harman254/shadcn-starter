@@ -1,4 +1,3 @@
-
 //import  Create a singleton instance of PrismaClient
 // Define the interface for meal data
 import  prisma  from "@/lib/prisma";
@@ -13,6 +12,7 @@ interface Meal {
   name: string;
   ingredients: string[];
   instructions: string;
+  imageUrl?: string;
 }
 
 // Define the interface for day meal plan data
@@ -101,6 +101,7 @@ export async function POST(request:Request) {
             description: meal.instructions,
             calories: calculateCalories(meal.ingredients),
             ingredients: meal.ingredients, // ✅ save ingredients here
+            imageUrl: meal.imageUrl || null, // ✅ save imageUrl here (handle optional)
             dayMealId: dayMeal.id,
           },
         });

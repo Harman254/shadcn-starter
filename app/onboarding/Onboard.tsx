@@ -13,7 +13,10 @@ import {
   Cookie,
   Loader2,
   CheckCircle,
-  Rocket
+  Rocket,
+  Search,
+  X,
+  Plus,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -25,6 +28,8 @@ import { cn } from "@/lib/utils"
 
 import { saveOnboardingData } from "@/actions/saveData"
 import type { OnboardingData } from "@/types"
+import { CUISINE_OPTIONS } from "@/lib/constants"
+import toast from "react-hot-toast"
 
 const dietaryOptions = [
   {
@@ -102,31 +107,13 @@ const goalOptions = [
   },
 ]
 
-const cuisineOptions = [
-  { value: "Italian", icon: "🍝", color: "bg-red-50 border-red-200 dark:bg-red-950/30 dark:border-red-800" },
-  { value: "Japanese", icon: "🍣", color: "bg-pink-50 border-pink-200 dark:bg-pink-950/30 dark:border-pink-800" },
-  {
-    value: "Mexican",
-    icon: "🌮",
-    color: "bg-orange-50 border-orange-200 dark:bg-orange-950/30 dark:border-orange-800",
-  },
-  { value: "Indian", icon: "🍛", color: "bg-yellow-50 border-yellow-200 dark:bg-yellow-950/30 dark:border-yellow-800" },
-  { value: "Chinese", icon: "🥡", color: "bg-red-50 border-red-200 dark:bg-red-950/30 dark:border-red-800" },
-  { value: "Thai", icon: "🍲", color: "bg-green-50 border-green-200 dark:bg-green-950/30 dark:border-green-800" },
-  { value: "Mediterranean", icon: "🫒", color: "bg-blue-50 border-blue-200 dark:bg-blue-950/30 dark:border-blue-800" },
-  {
-    value: "American",
-    icon: "🍔",
-    color: "bg-yellow-50 border-yellow-200 dark:bg-yellow-950/30 dark:border-yellow-800",
-  },
-  { value: "French", icon: "🥐", color: "bg-purple-50 border-purple-200 dark:bg-purple-950/30 dark:border-purple-800" },
-  { value: "Korean", icon: "🍜", color: "bg-pink-50 border-pink-200 dark:bg-pink-950/30 dark:border-pink-800" },
-]
-
 const OnboardingPage = () => {
   const router = useRouter()
   const [step, setStep] = useState(1)
   const [isSaving, setIsSaving] = useState(false)
+  const [cuisineSearch, setCuisineSearch] = useState("")
+  const [customCuisine, setCustomCuisine] = useState("")
+  const [showCustomInput, setShowCustomInput] = useState(false)
 
   const [formData, setFormData] = useState<OnboardingData>({
     dietaryPreference: "",
@@ -134,6 +121,73 @@ const OnboardingPage = () => {
     householdSize: 1,
     cuisinePreferences: [],
   })
+
+  // Filter cuisines based on search
+  const filteredCuisines = CUISINE_OPTIONS.filter(cuisine =>
+    cuisine.label.toLowerCase().includes(cuisineSearch.toLowerCase())
+  )
+
+  /**
+   * Add a custom cuisine to preferences
+   */
+  const addCustomCuisine = () => {
+    const trimmedCuisine = customCuisine.trim().toLowerCase()
+    
+    if (!trimmedCuisine) {
+      toast.error("Please enter a cuisine name")
+      return
+    }
+
+    if (formData.cuisinePreferences.includes(trimmedCuisine)) {
+      toast.error("This cuisine is already in your preferences")
+      return
+    }
+
+    setFormData(prev => ({
+      ...prev,
+      cuisinePreferences: [...prev.cuisinePreferences, trimmedCuisine]
+    }))
+    
+    setCustomCuisine("")
+    setShowCustomInput(false)
+    toast.success(`Added "${trimmedCuisine}" to your cuisine preferences`)
+  }
+
+  /**
+   * Remove a cuisine from preferences
+   */
+  const removeCuisine = (cuisineId: string) => {
+    setFormData(prev => ({
+      ...prev,
+      cuisinePreferences: prev.cuisinePreferences.filter(id => id !== cuisineId)
+    }))
+    
+    // Find the cuisine label for the toast message
+    const cuisine = CUISINE_OPTIONS.find(c => c.id === cuisineId)
+    const cuisineName = cuisine ? cuisine.label : cuisineId
+    toast.success(`Removed "${cuisineName}" from your preferences`)
+  }
+
+  /**
+   * Toggle cuisine selection
+   */
+  const toggleCuisine = (cuisineId: string) => {
+    const isSelected = formData.cuisinePreferences.includes(cuisineId)
+    
+    if (isSelected) {
+      removeCuisine(cuisineId)
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        cuisinePreferences: [...prev.cuisinePreferences, cuisineId]
+      }))
+      
+      // Find the cuisine label for the toast message
+      const cuisine = CUISINE_OPTIONS.find(c => c.id === cuisineId)
+      const cuisineName = cuisine ? cuisine.label : cuisineId
+      toast.success(`Added "${cuisineName}" to your preferences`)
+    }
+  }
 
   const handleNext = async () => {
     if (step < 4) {
@@ -193,31 +247,33 @@ const OnboardingPage = () => {
   ]
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-muted/65 via-muted/40 to-muted/15  flex flex-col">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 flex flex-col">
       {/* Header */}
-      <div className="w-full bg-gradient-to-br from-muted/65 via-muted/40 to-muted/15 sticky top-0 z-10">
-        <div className="max-w-4xl mx-auto px-6 py-4">
+      <div className="w-full bg-white/80 dark:bg-slate-900/80 backdrop-blur-md sticky top-0 z-10 border-b border-slate-200/60 dark:border-slate-800/60">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="flex items-center justify-center h-10 w-10 rounded-xl bg-gradient-to-br from-green-400 to-green-700 text-white shadow-lg">
-                <Rocket className="w-5 h-5" />
+            <div className="flex items-center gap-3 sm:gap-4">
+              <div className="flex items-center justify-center h-10 w-10 sm:h-12 sm:w-12 rounded-xl sm:rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-xl shadow-emerald-500/25">
+                <Rocket className="w-5 h-5 sm:w-6 sm:h-6" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-gray-900 dark:text-white">MealWise</h1>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Setup your profile</p>
+                <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight">MealWise</h1>
+                <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400">Personalized meal planning</p>
               </div>
             </div>
-            <div className="text-sm font-medium text-gray-600 dark:text-gray-400">Step {step} of 4</div>
+            <div className="text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full">
+              Step {step} of 4
+            </div>
           </div>
         </div>
       </div>
 
       {/* Progress Bar */}
-      <div className="w-full bg-gradient-to-br from-muted/65 via-muted/40 to-muted/15">
-        <div className="max-w-4xl mx-auto px-6 py-4">
-          <div className="w-full bg-gradient-to-br from-muted/65 via-muted/40 to-muted/15 dark:bg-slate-700 rounded-full h-2 mb-4">
+      <div className="w-full bg-white/60 dark:bg-slate-900/60 backdrop-blur-sm border-b border-slate-200/40 dark:border-slate-800/40">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
+          <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2 sm:h-3 mb-4 sm:mb-6 overflow-hidden">
             <div
-              className="bg-gradient-to-r from-green-400 to-green-500 h-2 rounded-full transition-all duration-700 ease-out"
+              className="bg-gradient-to-r from-emerald-500 to-teal-600 h-2 sm:h-3 rounded-full transition-all duration-700 ease-out shadow-lg"
               style={{ width: `${progressPercentage}%` }}
             />
           </div>
@@ -232,22 +288,22 @@ const OnboardingPage = () => {
                   key={uniqueKey}
                   className={cn(
                     "flex flex-col items-center transition-all duration-300",
-                    step >= stepNumber ? "text-orange-600 dark:text-orange-400" : "text-gray-400 dark:text-gray-600",
+                    step >= stepNumber ? "text-emerald-600 dark:text-emerald-400" : "text-slate-400 dark:text-slate-600",
                   )}
                 >
                   <div
                     className={cn(
-                      "w-10 h-10 rounded-full flex items-center justify-center text-sm mb-2 transition-all duration-300",
+                      "w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-xl sm:rounded-2xl flex items-center justify-center text-sm mb-2 sm:mb-3 transition-all duration-300 shadow-lg",
                       step > stepNumber
-                        ? "bg-gradient-to-br from-orange-400 to-pink-500 text-white shadow-lg scale-110"
+                        ? "bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-emerald-500/25 scale-110"
                         : step === stepNumber
-                          ? "bg-white dark:bg-slate-800 border-2 border-orange-400 text-orange-600 dark:text-orange-400 shadow-md"
-                          : "bg-gray-100 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 text-gray-400 dark:text-gray-600",
+                          ? "bg-white dark:bg-slate-800 border-2 border-emerald-500 text-emerald-600 dark:text-emerald-400 shadow-lg"
+                          : "bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-400 dark:text-slate-600",
                     )}
                   >
-                    {step > stepNumber ? <CheckCircle className="w-5 h-5" /> : <StepIcon className="w-5 h-5" />}
+                    {step > stepNumber ? <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6" /> : <StepIcon className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6" />}
                   </div>
-                  <span className="text-xs font-medium hidden sm:block">{stepIcon.label}</span>
+                  <span className="text-xs font-semibold tracking-wide hidden sm:block">{stepIcon.label}</span>
                 </div>
               )
             })}
@@ -256,58 +312,58 @@ const OnboardingPage = () => {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex items-center justify-center p-6">
-        <div className="w-full max-w-4xl">
-          <Card className="border-0 shadow-2xl bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm">
-            <CardHeader className="text-center pb-8 pt-12">
-              <div className="flex justify-center mb-6">
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-orange-400 to-pink-500 flex items-center justify-center text-white shadow-lg">
-                  {React.createElement(stepIcons[step - 1].icon, { className: "w-8 h-8" })}
+      <div className="flex-1 flex items-center justify-center p-4 sm:p-6 md:p-8">
+        <div className="w-full max-w-5xl">
+          <Card className="border-0 shadow-2xl shadow-slate-200/50 dark:shadow-slate-900/50 bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm overflow-hidden">
+            <CardHeader className="text-center pb-6 sm:pb-8 md:pb-10 pt-8 sm:pt-12 md:pt-16">
+              <div className="flex justify-center mb-6 sm:mb-8">
+                <div className="w-16 h-16 sm:w-18 sm:h-18 md:w-20 md:h-20 rounded-2xl sm:rounded-3xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white shadow-2xl shadow-emerald-500/25">
+                  {React.createElement(stepIcons[step - 1].icon, { className: "w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10" })}
                 </div>
               </div>
-              <CardTitle className="text-3xl font-bold text-gray-900 dark:text-white mb-3">
+              <CardTitle className="text-2xl sm:text-3xl md:text-4xl font-bold text-slate-900 dark:text-white mb-3 sm:mb-4 tracking-tight leading-tight">
                 {stepTitles[step - 1]}
               </CardTitle>
-              <CardDescription className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto leading-relaxed">
+              <CardDescription className="text-base sm:text-lg md:text-xl text-slate-600 dark:text-slate-300 max-w-3xl mx-auto leading-relaxed font-medium">
                 {stepDescriptions[step - 1]}
               </CardDescription>
             </CardHeader>
 
-            <CardContent className="px-12 pb-12">
+            <CardContent className="px-4 sm:px-8 md:px-16 pb-8 sm:pb-12 md:pb-16">
               {step === 1 && (
-                <div className="space-y-4 max-w-3xl mx-auto">
+                <div className="space-y-4 sm:space-y-6 max-w-4xl mx-auto">
                   <RadioGroup
                     value={formData.dietaryPreference}
                     onValueChange={(value) => setFormData({ ...formData, dietaryPreference: value })}
-                    className="grid gap-4"
+                    className="grid gap-4 sm:gap-6"
                   >
                     {dietaryOptions.map((option) => (
                       <div
                         key={option.value}
                         className={cn(
-                          "relative rounded-2xl border-2 p-6 transition-all duration-300 cursor-pointer group",
+                          "relative rounded-2xl sm:rounded-3xl border-2 p-4 sm:p-6 md:p-8 transition-all duration-300 cursor-pointer group hover:shadow-xl",
                           formData.dietaryPreference === option.value
-                            ? "border-orange-400 bg-gradient-to-r from-orange-50 to-pink-50 dark:from-orange-950/50 dark:to-pink-950/50 shadow-lg scale-[1.02]"
-                            : `${option.color} border-transparent hover:scale-[1.01] hover:shadow-md`,
+                            ? "border-emerald-400 bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/50 dark:to-teal-950/50 shadow-xl scale-[1.02]"
+                            : `${option.color} border-transparent hover:scale-[1.01] hover:shadow-lg`,
                         )}
                       >
                         <RadioGroupItem value={option.value} id={option.value} className="sr-only" />
-                        <Label htmlFor={option.value} className="flex items-center gap-6 cursor-pointer w-full">
-                          <div className="text-4xl">{option.icon}</div>
-                          <div className="flex-1">
-                            <p className="font-semibold text-lg text-gray-900 dark:text-white mb-1">{option.value}</p>
-                            <p className="text-gray-600 dark:text-gray-300 leading-relaxed">{option.description}</p>
+                        <Label htmlFor={option.value} className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 md:gap-8 cursor-pointer w-full">
+                          <div className="text-4xl sm:text-5xl">{option.icon}</div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-bold text-lg sm:text-xl text-slate-900 dark:text-white mb-1 sm:mb-2 tracking-tight">{option.value}</p>
+                            <p className="text-sm sm:text-base text-slate-600 dark:text-slate-300 leading-relaxed">{option.description}</p>
                           </div>
                           <div
                             className={cn(
-                              "w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all",
+                              "w-6 h-6 sm:w-7 sm:h-7 rounded-full border-2 flex items-center justify-center transition-all flex-shrink-0",
                               formData.dietaryPreference === option.value
-                                ? "border-orange-400 bg-orange-400"
-                                : "border-gray-300 dark:border-gray-600 group-hover:border-orange-300",
+                                ? "border-emerald-400 bg-emerald-400 shadow-lg"
+                                : "border-slate-300 dark:border-slate-600 group-hover:border-emerald-300",
                             )}
                           >
                             {formData.dietaryPreference === option.value && (
-                              <CheckCircle className="w-4 h-4 text-white" />
+                              <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
                             )}
                           </div>
                         </Label>
@@ -318,38 +374,38 @@ const OnboardingPage = () => {
               )}
 
               {step === 2 && (
-                <div className="space-y-4 max-w-3xl mx-auto">
+                <div className="space-y-4 sm:space-y-6 max-w-4xl mx-auto">
                   <RadioGroup
                     value={formData.goal}
                     onValueChange={(value) => setFormData({ ...formData, goal: value })}
-                    className="grid gap-4"
+                    className="grid gap-4 sm:gap-6"
                   >
                     {goalOptions.map((option) => (
                       <div
                         key={option.value}
                         className={cn(
-                          "relative rounded-2xl border-2 p-6 transition-all duration-300 cursor-pointer group",
+                          "relative rounded-2xl sm:rounded-3xl border-2 p-4 sm:p-6 md:p-8 transition-all duration-300 cursor-pointer group hover:shadow-xl",
                           formData.goal === option.value
-                            ? "border-orange-400 bg-gradient-to-r from-orange-50 to-pink-50 dark:from-orange-950/50 dark:to-pink-950/50 shadow-lg scale-[1.02]"
-                            : `${option.color} border-transparent hover:scale-[1.01] hover:shadow-md`,
+                            ? "border-emerald-400 bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/50 dark:to-teal-950/50 shadow-xl scale-[1.02]"
+                            : `${option.color} border-transparent hover:scale-[1.01] hover:shadow-lg`,
                         )}
                       >
                         <RadioGroupItem value={option.value} id={option.value} className="sr-only" />
-                        <Label htmlFor={option.value} className="flex items-center gap-6 cursor-pointer w-full">
-                          <div className="text-4xl">{option.icon}</div>
-                          <div className="flex-1">
-                            <p className="font-semibold text-lg text-gray-900 dark:text-white mb-1">{option.value}</p>
-                            <p className="text-gray-600 dark:text-gray-300 leading-relaxed">{option.description}</p>
+                        <Label htmlFor={option.value} className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 md:gap-8 cursor-pointer w-full">
+                          <div className="text-4xl sm:text-5xl">{option.icon}</div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-bold text-lg sm:text-xl text-slate-900 dark:text-white mb-1 sm:mb-2 tracking-tight">{option.value}</p>
+                            <p className="text-sm sm:text-base text-slate-600 dark:text-slate-300 leading-relaxed">{option.description}</p>
                           </div>
                           <div
                             className={cn(
-                              "w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all",
+                              "w-6 h-6 sm:w-7 sm:h-7 rounded-full border-2 flex items-center justify-center transition-all flex-shrink-0",
                               formData.goal === option.value
-                                ? "border-orange-400 bg-orange-400"
-                                : "border-gray-300 dark:border-gray-600 group-hover:border-orange-300",
+                                ? "border-emerald-400 bg-emerald-400 shadow-lg"
+                                : "border-slate-300 dark:border-slate-600 group-hover:border-emerald-300",
                             )}
                           >
-                            {formData.goal === option.value && <CheckCircle className="w-4 h-4 text-white" />}
+                            {formData.goal === option.value && <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 text-white" />}
                           </div>
                         </Label>
                       </div>
@@ -359,14 +415,14 @@ const OnboardingPage = () => {
               )}
 
               {step === 3 && (
-                <div className="space-y-8 max-w-2xl mx-auto">
-                  <div className="flex flex-col items-center justify-center p-12 bg-gradient-to-br from-orange-50 to-pink-50 dark:from-slate-800/50 dark:to-slate-700/50 rounded-3xl border border-orange-100 dark:border-slate-700">
-                    <div className="flex items-center gap-4 mb-8">
-                      <Users className="w-8 h-8 text-orange-600 dark:text-orange-400" />
-                      <span className="text-2xl font-bold text-gray-900 dark:text-white">Household Size</span>
+                <div className="space-y-6 sm:space-y-10 max-w-3xl mx-auto">
+                  <div className="flex flex-col items-center justify-center p-6 sm:p-12 md:p-16 bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-slate-800/50 dark:to-slate-700/50 rounded-2xl sm:rounded-3xl border border-emerald-100 dark:border-slate-700 shadow-xl">
+                    <div className="flex items-center gap-4 sm:gap-6 mb-8 sm:mb-12">
+                      <Users className="w-8 h-8 sm:w-10 sm:h-10 text-emerald-600 dark:text-emerald-400" />
+                      <span className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white tracking-tight">Household Size</span>
                     </div>
 
-                    <div className="flex items-center gap-8 mb-8">
+                    <div className="flex items-center gap-6 sm:gap-8 md:gap-12 mb-8 sm:mb-12">
                       <Button
                         variant="outline"
                         size="icon"
@@ -377,17 +433,17 @@ const OnboardingPage = () => {
                           })
                         }
                         disabled={formData.householdSize <= 1}
-                        className="h-14 w-14 rounded-full border-2 border-orange-200 dark:border-orange-800 hover:border-orange-400 hover:bg-orange-50 dark:hover:bg-orange-950/50 transition-all"
+                        className="h-12 w-12 sm:h-14 sm:w-14 md:h-16 md:w-16 rounded-xl sm:rounded-2xl border-2 border-emerald-200 dark:border-emerald-800 hover:border-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/50 transition-all shadow-lg"
                       >
-                        <ChevronLeft className="h-6 w-6" />
+                        <ChevronLeft className="h-6 w-6 sm:h-7 sm:w-7 md:h-8 md:w-8" />
                         <span className="sr-only">Decrease</span>
                       </Button>
 
                       <div className="flex flex-col items-center">
-                        <span className="text-7xl font-bold text-gray-900 dark:text-white tabular-nums">
+                        <span className="text-6xl sm:text-7xl md:text-8xl font-bold text-slate-900 dark:text-white tabular-nums tracking-tight">
                           {formData.householdSize}
                         </span>
-                        <span className="text-lg font-medium text-gray-600 dark:text-gray-300 mt-2">
+                        <span className="text-lg sm:text-xl font-semibold text-slate-600 dark:text-slate-300 mt-2 sm:mt-4">
                           {formData.householdSize === 1 ? "Person" : "People"}
                         </span>
                       </div>
@@ -402,9 +458,9 @@ const OnboardingPage = () => {
                           })
                         }
                         disabled={formData.householdSize >= 10}
-                        className="h-14 w-14 rounded-full border-2 border-orange-200 dark:border-orange-800 hover:border-orange-400 hover:bg-orange-50 dark:hover:bg-orange-950/50 transition-all"
+                        className="h-12 w-12 sm:h-14 sm:w-14 md:h-16 md:w-16 rounded-xl sm:rounded-2xl border-2 border-emerald-200 dark:border-emerald-800 hover:border-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/50 transition-all shadow-lg"
                       >
-                        <ChevronRight className="h-6 w-6" />
+                        <ChevronRight className="h-6 w-6 sm:h-7 sm:w-7 md:h-8 md:w-8" />
                         <span className="sr-only">Increase</span>
                       </Button>
                     </div>
@@ -420,28 +476,28 @@ const OnboardingPage = () => {
                           householdSize: Number.parseInt(e.target.value) || 1,
                         })
                       }
-                      className="w-full max-w-sm h-3 bg-orange-200 dark:bg-orange-900 rounded-lg appearance-none cursor-pointer slider"
+                      className="w-full max-w-md h-3 sm:h-4 bg-emerald-200 dark:bg-emerald-900 rounded-lg appearance-none cursor-pointer slider"
                       style={{
-                        background: `linear-gradient(to right, #fb923c 0%, #fb923c ${((formData.householdSize - 1) / 9) * 100}%, ${
-                          document.documentElement.classList.contains("dark") ? "#7c2d12" : "#fed7aa"
+                        background: `linear-gradient(to right, #10b981 0%, #10b981 ${((formData.householdSize - 1) / 9) * 100}%, ${
+                          document.documentElement.classList.contains("dark") ? "#064e3b" : "#d1fae5"
                         } ${((formData.householdSize - 1) / 9) * 100}%, ${
-                          document.documentElement.classList.contains("dark") ? "#7c2d12" : "#fed7aa"
+                          document.documentElement.classList.contains("dark") ? "#064e3b" : "#d1fae5"
                         } 100%)`,
                       }}
                     />
                   </div>
 
-                  <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-orange-100 dark:border-slate-700 shadow-sm">
-                    <div className="flex items-start gap-4">
-                      <div className="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/50 flex items-center justify-center flex-shrink-0">
-                        <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
+                  <div className="bg-white dark:bg-slate-800 p-6 sm:p-8 rounded-2xl sm:rounded-3xl border border-emerald-100 dark:border-slate-700 shadow-xl">
+                    <div className="flex flex-col sm:flex-row items-start gap-4 sm:gap-6">
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center flex-shrink-0">
+                        <CheckCircle className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-600 dark:text-emerald-400" />
                       </div>
                       <div>
-                        <p className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                        <p className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white mb-2 sm:mb-3 tracking-tight">
                           Perfect! We&#39;ll customize everything for {formData.householdSize}{" "}
                           {formData.householdSize === 1 ? "person" : "people"}
                         </p>
-                        <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
+                        <p className="text-sm sm:text-base text-slate-600 dark:text-slate-300 leading-relaxed">
                           Recipe portions, shopping lists, and meal planning will all be tailored to your household
                           size.
                         </p>
@@ -452,102 +508,154 @@ const OnboardingPage = () => {
               )}
 
               {step === 4 && (
-                <div className="space-y-8 max-w-4xl mx-auto">
-                  <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                    {cuisineOptions.map((cuisine) => {
-                      const isSelected = formData.cuisinePreferences.includes(cuisine.value)
-                      return (
-                        <div
-                          key={cuisine.value}
-                          onClick={() => {
-                            setFormData({
-                              ...formData,
-                              cuisinePreferences: isSelected
-                                ? formData.cuisinePreferences.filter((c) => c !== cuisine.value)
-                                : [...formData.cuisinePreferences, cuisine.value],
-                            })
-                          }}
-                          className={cn(
-                            "relative flex flex-col items-center justify-center p-6 rounded-2xl cursor-pointer transition-all duration-300 text-center group",
-                            isSelected
-                              ? "bg-gradient-to-br from-orange-400 to-pink-500 text-white shadow-xl scale-105 border-2 border-orange-400"
-                              : `${cuisine.color} hover:scale-105 hover:shadow-lg border-2 border-transparent hover:border-orange-300 dark:hover:border-orange-600`,
-                          )}
-                        >
-                          <div className="text-4xl mb-3">{cuisine.icon}</div>
-                          <span
-                            className={cn(
-                              "text-sm font-semibold transition-colors",
-                              isSelected
-                                ? "text-white"
-                                : "text-gray-700 dark:text-gray-200 group-hover:text-gray-900 dark:group-hover:text-white",
-                            )}
+                <div className="space-y-6 sm:space-y-10 max-w-6xl mx-auto">
+                  {/* Search and Add Custom */}
+                  <div className="space-y-4">
+                    <div className="relative">
+                      <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
+                      <input
+                        type="text"
+                        placeholder="Search cuisines..."
+                        value={cuisineSearch}
+                        onChange={(e) => setCuisineSearch(e.target.value)}
+                        className="w-full pl-12 pr-4 py-3 sm:py-4 border border-slate-300 dark:border-slate-600 rounded-xl sm:rounded-2xl bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-500 dark:placeholder-slate-400 focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-base sm:text-lg font-medium shadow-lg"
+                      />
+                    </div>
+                    
+                    {showCustomInput ? (
+                      <div className="flex flex-col sm:flex-row gap-3">
+                        <input
+                          type="text"
+                          placeholder="Enter custom cuisine..."
+                          value={customCuisine}
+                          onChange={(e) => setCustomCuisine(e.target.value)}
+                          onKeyPress={(e) => e.key === 'Enter' && addCustomCuisine()}
+                          className="flex-1 px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-xl sm:rounded-2xl bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-500 dark:placeholder-slate-400 focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-base sm:text-lg font-medium"
+                          autoFocus
+                        />
+                        <div className="flex gap-2 sm:gap-3">
+                          <button
+                            onClick={addCustomCuisine}
+                            className="flex-1 sm:flex-none px-4 sm:px-6 py-3 bg-emerald-600 text-white rounded-xl sm:rounded-2xl hover:bg-emerald-700 transition-colors font-semibold shadow-lg"
                           >
-                            {cuisine.value}
-                          </span>
-
-                          {isSelected && (
-                            <div className="absolute -top-2 -right-2 w-6 h-6 bg-white rounded-full flex items-center justify-center shadow-lg">
-                              <CheckCircle className="w-4 h-4 text-orange-500" />
-                            </div>
-                          )}
+                            <CheckCircle className="w-5 h-5" />
+                          </button>
+                          <button
+                            onClick={() => {
+                              setShowCustomInput(false)
+                              setCustomCuisine("")
+                            }}
+                            className="flex-1 sm:flex-none px-4 sm:px-6 py-3 bg-slate-600 text-white rounded-xl sm:rounded-2xl hover:bg-slate-700 transition-colors font-semibold shadow-lg"
+                          >
+                            <X className="w-5 h-5" />
+                          </button>
                         </div>
-                      )
-                    })}
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => setShowCustomInput(true)}
+                        className="flex items-center gap-3 px-4 py-3 text-base sm:text-lg font-semibold text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors"
+                      >
+                        <Plus className="w-5 h-5" />
+                        Add custom cuisine
+                      </button>
+                    )}
                   </div>
 
-                  <div className="flex items-center justify-between p-6 bg-gradient-to-r from-orange-50 to-pink-50 dark:from-slate-800/50 dark:to-slate-700/50 rounded-2xl border border-orange-100 dark:border-slate-700">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-orange-400 rounded-full flex items-center justify-center text-white font-bold text-sm">
-                        {formData.cuisinePreferences.length}
+                  {/* Selected Cuisines */}
+                  {formData.cuisinePreferences.length > 0 && (
+                    <div className="mb-6">
+                      <h4 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white mb-3 sm:mb-4 tracking-tight">Selected ({formData.cuisinePreferences.length})</h4>
+                      <div className="flex flex-wrap gap-2 sm:gap-3">
+                        {formData.cuisinePreferences.map((cuisineId) => {
+                          // Find cuisine using 'id' property
+                          const cuisine = CUISINE_OPTIONS.find(c => c.id === cuisineId)
+                          const displayName = cuisine ? cuisine.label : cuisineId
+                          
+                          return (
+                            <span
+                              key={cuisineId}
+                              className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-400 text-sm sm:text-base font-semibold rounded-xl sm:rounded-2xl shadow-lg"
+                            >
+                              {displayName}
+                              <button
+                                onClick={() => removeCuisine(cuisineId)}
+                                className="ml-1 hover:text-emerald-600 dark:hover:text-emerald-300 transition-colors"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            </span>
+                          )
+                        })}
                       </div>
-                      <span className="text-lg font-semibold text-gray-900 dark:text-white">
-                        {formData.cuisinePreferences.length === 0
-                          ? "No cuisines selected"
-                          : formData.cuisinePreferences.length === 1
-                            ? "1 cuisine selected"
-                            : `${formData.cuisinePreferences.length} cuisines selected`}
-                      </span>
                     </div>
-                    {formData.cuisinePreferences.length > 0 && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setFormData({ ...formData, cuisinePreferences: [] })}
-                        className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-slate-800/50"
-                      >
-                        Clear all
-                      </Button>
-                    )}
+                  )}
+
+                  {/* Available Cuisines */}
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4 md:gap-6 max-h-80 sm:max-h-96 overflow-y-auto p-2">
+                    {filteredCuisines.map((cuisine) => {
+                      // Use 'id' property for selection check
+                      const isSelected = formData.cuisinePreferences.includes(cuisine.id)
+                      
+                      return (
+                        <button
+                          key={cuisine.id}
+                          onClick={() => toggleCuisine(cuisine.id)}
+                          className={cn(
+                            "relative flex flex-col items-center justify-center p-4 sm:p-6 md:p-8 rounded-2xl sm:rounded-3xl cursor-pointer transition-all duration-300 text-center group hover:shadow-2xl",
+                            isSelected
+                              ? "bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-2xl scale-105 border-2 border-emerald-400"
+                              : `${cuisine.color} hover:scale-105 hover:shadow-xl border-2 border-transparent hover:border-emerald-300 dark:hover:border-emerald-600`,
+                          )}
+                        >
+                          <div className="text-3xl sm:text-4xl md:text-5xl mb-2 sm:mb-4">{cuisine.icon}</div>
+                          <span
+                            className={cn(
+                              "text-sm sm:text-base font-bold transition-colors tracking-tight",
+                              isSelected
+                                ? "text-white"
+                                : "text-slate-700 dark:text-slate-200 group-hover:text-slate-900 dark:group-hover:text-white",
+                            )}
+                          >
+                            {cuisine.label}
+                          </span>
+                          {isSelected && (
+                            <div className="absolute top-2 right-2 w-6 h-6 bg-white rounded-full flex items-center justify-center shadow-lg">
+                              <CheckCircle className="w-4 h-4 text-emerald-600" />
+                            </div>
+                          )}
+                        </button>
+                      )
+                    })}
                   </div>
                 </div>
               )}
 
-              <div className="flex justify-between mt-12 pt-8 border-t border-gray-100 dark:border-slate-700">
+              <div className="flex justify-between mt-16 pt-10 border-t border-slate-200 dark:border-slate-700">
                 <Button
                   variant="outline"
                   onClick={handleBack}
                   disabled={step === 1}
-                  className="min-w-32 h-12 font-semibold border-2 border-gray-200 dark:border-slate-600 hover:border-gray-300 dark:hover:border-slate-500 disabled:opacity-50"
+                  className="min-w-40 h-14 font-bold border-2 border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 disabled:opacity-50 text-lg rounded-2xl shadow-lg"
                 >
-                  <ChevronLeft className="w-4 h-4 mr-2" />
+                  <ChevronLeft className="w-5 h-5 mr-3" />
                   Back
                 </Button>
 
                 <Button
                   onClick={handleNext}
                   disabled={!isStepValid() || isSaving}
-                  className="min-w-32 h-12 font-semibold bg-gradient-to-r from-orange-400 to-pink-500 hover:from-orange-500 hover:to-pink-600 text-white shadow-lg hover:shadow-xl transition-all disabled:opacity-50"
+                  className="min-w-40 h-14 font-bold bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white shadow-xl hover:shadow-2xl transition-all disabled:opacity-50 text-lg rounded-2xl"
                 >
                   {isSaving ? (
                     <>
-                      <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                      <Loader2 className="w-5 h-5 animate-spin mr-3" />
                       Saving...
                     </>
                   ) : (
                     <>
                       {step === 4 ? "Complete Setup" : "Continue"}
-                      {step !== 4 && <ChevronRight className="w-4 h-4 ml-2" />}
+                      {step !== 4 && <ChevronRight className="w-5 h-5 ml-3" />}
                     </>
                   )}
                 </Button>

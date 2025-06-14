@@ -5,6 +5,7 @@ interface Meal {
   name: string;
   ingredients: string[];
   instructions: string;
+  imageUrl?: string;
 }
 
 interface DayMealPlan {
