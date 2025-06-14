@@ -49,7 +49,7 @@ export default function Hero() {
               Your AI chef creates perfect meal plans in
               <span className="text-green-400 font-bold"> 30 seconds</span>
               <br />
-              No more "what's for dinner?" panic attacks 🤯
+              No more panning attacks when you need something to eat🤯
             </p>
 
             {/* Power stats */}
