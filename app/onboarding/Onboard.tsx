@@ -30,6 +30,7 @@ import { saveOnboardingData } from "@/actions/saveData"
 import type { OnboardingData } from "@/types"
 import { CUISINE_OPTIONS } from "@/lib/constants"
 import toast from "react-hot-toast"
+import { motion, AnimatePresence } from "framer-motion"
 
 const dietaryOptions = [
   {
@@ -589,41 +590,85 @@ const OnboardingPage = () => {
                   )}
 
                   {/* Available Cuisines */}
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4 md:gap-6 max-h-80 sm:max-h-96 overflow-y-auto p-2">
+                  <motion.div 
+                    className="flex flex-wrap gap-3 overflow-visible"
+                    layout
+                    transition={{
+                      type: "spring",
+                      stiffness: 500,
+                      damping: 30,
+                      mass: 0.5,
+                    }}
+                  >
                     {filteredCuisines.map((cuisine) => {
-                      // Use 'id' property for selection check
                       const isSelected = formData.cuisinePreferences.includes(cuisine.id)
-                      
                       return (
-                        <button
-  key={cuisine.id}
-  onClick={() => toggleCuisine(cuisine.id)}
-  className={cn(
-    "flex items-center justify-between p-4 rounded-lg border transition-all duration-200",
-    "hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1",
-    isSelected
-      ? "bg-blue-50 border-blue-200 text-blue-700"
-      : "bg-white border-gray-200 text-gray-700 hover:border-gray-300"
-  )}
->
-  <span className="font-medium">{cuisine.label}</span>
-  
-  <div
-    className={cn(
-      "w-5 h-5 rounded-full border-2 flex items-center justify-center",
-      isSelected
-        ? "border-blue-500 bg-blue-500"
-        : "border-gray-300"
-    )}
-  >
-    {isSelected && (
-      <CheckCircle className="w-3 h-3 text-white" />
-    )}
-  </div>
-</button>
+                        <motion.button
+                          key={cuisine.id}
+                          onClick={() => toggleCuisine(cuisine.id)}
+                          layout
+                          initial={false}
+                          animate={{
+                            backgroundColor: isSelected ? "#10b981" : "rgba(255, 255, 255, 0.9)",
+                          }}
+                          whileHover={{
+                            backgroundColor: isSelected ? "#059669" : "rgba(255, 255, 255, 1)",
+                          }}
+                          whileTap={{
+                            backgroundColor: isSelected ? "#047857" : "rgba(240, 240, 240, 1)",
+                          }}
+                          transition={{
+                            type: "spring",
+                            stiffness: 500,
+                            damping: 30,
+                            mass: 0.5,
+                            backgroundColor: { duration: 0.1 },
+                          }}
+                          className={`
+                            inline-flex items-center px-4 py-2 rounded-full text-base font-medium
+                            whitespace-nowrap overflow-hidden ring-2 ring-inset shadow-md
+                            ${isSelected 
+                              ? "text-white ring-emerald-500 shadow-emerald-500/25" 
+                              : "text-slate-700 ring-slate-300 hover:ring-emerald-300 shadow-slate-200/50"}
+                          `}
+                        >
+                          <motion.div 
+                            className="relative flex items-center"
+                            animate={{ 
+                              width: isSelected ? "auto" : "100%",
+                              paddingRight: isSelected ? "1.5rem" : "0",
+                            }}
+                            transition={{
+                              ease: [0.175, 0.885, 0.32, 1.275],
+                              duration: 0.3,
+                            }}
+                          >
+                            <span className="font-semibold">{cuisine.label}</span>
+                            <AnimatePresence>
+                              {isSelected && (
+                                <motion.span
+                                  initial={{ scale: 0, opacity: 0 }}
+                                  animate={{ scale: 1, opacity: 1 }}
+                                  exit={{ scale: 0, opacity: 0 }}
+                                  transition={{ 
+                                    type: "spring", 
+                                    stiffness: 500, 
+                                    damping: 30, 
+                                    mass: 0.5 
+                                  }}
+                                  className="absolute right-0"
+                                >
+                                  <div className="w-4 h-4 rounded-full bg-white flex items-center justify-center shadow-sm">
+                                    <CheckCircle className="w-3 h-3 text-emerald-600" strokeWidth={2} />
+                                  </div>
+                                </motion.span>
+                              )}
+                            </AnimatePresence>
+                          </motion.div>
+                        </motion.button>
                       )
                     })}
-                  </div>
+                  </motion.div>
                 </div>
               )}
 

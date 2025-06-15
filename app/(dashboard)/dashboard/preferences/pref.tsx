@@ -16,6 +16,7 @@ import {
   Search,
   X,
   Plus,
+  CheckCircle,
 } from "lucide-react"
 import { CUISINE_OPTIONS } from "@/lib/constants"
 import { saveOnboardingData } from "@/actions/saveData"
@@ -23,6 +24,7 @@ import { fetchOnboardingData } from "@/data"
 import { useSession } from "@/lib/auth-client"
 import toast from "react-hot-toast"
 import { useRouter } from "next/navigation"
+import { motion, AnimatePresence } from "framer-motion"
 
 // Constants
 const DIETARY_OPTIONS = [
@@ -654,76 +656,85 @@ const Preferences = ({userId}:Props ) => {
               )}
 
               {/* Available Cuisines */}
-              <div className="grid grid-cols-2 gap-4 max-h-80 overflow-y-auto">
+              <motion.div 
+                className="flex flex-wrap gap-3 overflow-visible"
+                layout
+                transition={{
+                  type: "spring",
+                  stiffness: 500,
+                  damping: 30,
+                  mass: 0.5,
+                }}
+              >
                 {filteredCuisines.map((cuisine) => {
-                  // Use 'id' property for selection check
                   const isSelected = preferences.cuisinePreferences.includes(cuisine.id)
-                  
                   return (
-                    <button
+                    <motion.button
                       key={cuisine.id}
                       onClick={() => toggleCuisine(cuisine.id)}
-                      className={cn(
-                        "group relative flex items-center gap-4 p-5 rounded-2xl border-2 transition-all duration-300 text-left overflow-hidden",
-                        "hover:shadow-2xl hover:scale-[1.02] active:scale-[0.98]",
-                        "focus:outline-none focus:ring-4 focus:ring-emerald-500/20 focus:ring-offset-2",
-                        isSelected
-                          ? "border-emerald-500 bg-gradient-to-br from-emerald-50 via-teal-50 to-emerald-100 dark:from-emerald-950/40 dark:via-teal-950/40 dark:to-emerald-900/40 shadow-xl shadow-emerald-500/25"
-                          : "border-slate-200 dark:border-slate-700 hover:border-emerald-300 dark:hover:border-emerald-600 bg-white dark:bg-slate-800 hover:bg-gradient-to-br hover:from-slate-50 hover:to-emerald-50/30 dark:hover:from-slate-700 dark:hover:to-emerald-950/20"
-                      )}
+                      layout
+                      initial={false}
+                      animate={{
+                        backgroundColor: isSelected ? "#10b981" : "rgba(255, 255, 255, 0.9)",
+                      }}
+                      whileHover={{
+                        backgroundColor: isSelected ? "#059669" : "rgba(255, 255, 255, 1)",
+                      }}
+                      whileTap={{
+                        backgroundColor: isSelected ? "#047857" : "rgba(240, 240, 240, 1)",
+                      }}
+                      transition={{
+                        type: "spring",
+                        stiffness: 500,
+                        damping: 30,
+                        mass: 0.5,
+                        backgroundColor: { duration: 0.1 },
+                      }}
+                      className={`
+                        inline-flex items-center px-4 py-2 rounded-full text-base font-medium
+                        whitespace-nowrap overflow-hidden ring-2 ring-inset shadow-md
+                        ${isSelected 
+                          ? "text-white ring-emerald-500 shadow-emerald-500/25" 
+                          : "text-slate-700 ring-slate-300 hover:ring-emerald-300 shadow-slate-200/50"}
+                      `}
                     >
-                      {/* Background gradient overlay */}
-                      <div
-                        className={cn(
-                          "absolute inset-0 bg-gradient-to-r opacity-0 transition-opacity duration-300",
-                          isSelected
-                            ? "from-emerald-500/5 to-teal-500/5 opacity-100"
-                            : "from-emerald-500/0 to-teal-500/0 group-hover:opacity-100"
-                        )}
-                      />
-                      
-                      {/* Content */}
-                      <div className="relative z-10 flex items-center gap-4 w-full">
-                        <div className="flex-1 min-w-0">
-                          <p className="text-base font-bold text-slate-900 dark:text-white truncate tracking-tight">
-                            {cuisine.label}
-                          </p>
-                        </div>
-                        
-                        {/* Enhanced checkbox */}
-                        <div
-                          className={cn(
-                            "relative w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all duration-300 flex-shrink-0",
-                            "shadow-sm",
-                            isSelected
-                              ? "border-emerald-500 bg-emerald-500 shadow-lg shadow-emerald-500/50 scale-110"
-                              : "border-slate-300 dark:border-slate-600 group-hover:border-emerald-400 dark:group-hover:border-emerald-500 group-hover:scale-105"
-                          )}
-                        >
+                      <motion.div 
+                        className="relative flex items-center"
+                        animate={{ 
+                          width: isSelected ? "auto" : "100%",
+                          paddingRight: isSelected ? "1.5rem" : "0",
+                        }}
+                        transition={{
+                          ease: [0.175, 0.885, 0.32, 1.275],
+                          duration: 0.3,
+                        }}
+                      >
+                        <span className="font-semibold">{cuisine.label}</span>
+                        <AnimatePresence>
                           {isSelected && (
-                            <Check className="w-3.5 h-3.5 text-white animate-in zoom-in-75 duration-200" />
+                            <motion.span
+                              initial={{ scale: 0, opacity: 0 }}
+                              animate={{ scale: 1, opacity: 1 }}
+                              exit={{ scale: 0, opacity: 0 }}
+                              transition={{ 
+                                type: "spring", 
+                                stiffness: 500, 
+                                damping: 30, 
+                                mass: 0.5 
+                              }}
+                              className="absolute right-0"
+                            >
+                              <div className="w-4 h-4 rounded-full bg-white flex items-center justify-center shadow-sm">
+                                <CheckCircle className="w-3 h-3 text-emerald-600" strokeWidth={2} />
+                              </div>
+                            </motion.span>
                           )}
-                          
-                          {/* Ripple effect for selected state */}
-                          {isSelected && (
-                            <div className="absolute inset-0 rounded-full bg-emerald-400 animate-ping opacity-20" />
-                          )}
-                        </div>
-                      </div>
-                      
-                      {/* Subtle border glow */}
-                      <div
-                        className={cn(
-                          "absolute inset-0 rounded-2xl transition-opacity duration-300 pointer-events-none",
-                          isSelected
-                            ? "bg-gradient-to-r from-emerald-500/20 to-teal-500/20 opacity-100"
-                            : "bg-gradient-to-r from-emerald-500/0 to-teal-500/0 opacity-0 group-hover:opacity-50"
-                        )}
-                      />
-                    </button>
+                        </AnimatePresence>
+                      </motion.div>
+                    </motion.button>
                   )
                 })}
-              </div>
+              </motion.div>
             </div>
           </div>
         </div>
