@@ -58,7 +58,7 @@ const MealPlanStatusCard = ({ hasMealPlan, mealPlan }: Props) => {
               Your Current Meal Plan
             </h2>
             <p className="text-slate-600 dark:text-slate-400 text-lg">
-              You're all set for healthy eating!
+              You are all set for healthy eating!
             </p>
           </motion.div>
 
