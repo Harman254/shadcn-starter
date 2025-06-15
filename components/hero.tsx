@@ -2,6 +2,9 @@ import { ArrowRight, ArrowUpRight } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
+import Link from "next/link";
 
 interface Hero1Props {
   badge?: string;
@@ -23,7 +26,7 @@ interface Hero1Props {
   };
 }
 
-const Hero1 = ({
+const Hero1 = async ({
   badge = "🥗 Checkout grocery lists",
   heading = "Personalized AI Meal Plans for Your Lifestyle",
   description = "Get custom weekly meal plans, grocery lists, and recipes—all tailored to your diet, fitness goals, and household size. Save time, eat better, and stay on track effortlessly.",
@@ -42,6 +45,11 @@ const Hero1 = ({
     alt: "Preview of Mealwise app generating a personalized meal plan",
   },
 }: Hero1Props) => {
+
+
+  const session = await auth.api.getSession({
+    headers: await headers() // you need to pass the headers object.
+});
   return (
     <section className="py-32">
       <div className="container">
@@ -62,15 +70,17 @@ const Hero1 = ({
             <div className="flex w-full flex-col justify-center gap-2 sm:flex-row lg:justify-start">
               {buttons?.primary && (
                 <Button asChild className="w-full sm:w-auto">
-                  <a href={buttons.primary.url}>{buttons.primary.text}</a>
+                  <Link href={buttons.primary.url}>
+                    {session ?  'Create a Meal Plan' : buttons.primary.text }
+                  </Link>
                 </Button>
               )}
               {buttons?.secondary && (
                 <Button asChild variant="outline" className="w-full sm:w-auto">
-                  <a href={buttons.secondary.url}>
+                  <Link href={buttons.secondary.url}>
                     {buttons.secondary.text}
                     <ArrowRight className="size-4" />
-                  </a>
+                  </Link>
                 </Button>
               )}
             </div>

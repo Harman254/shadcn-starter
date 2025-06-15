@@ -51,6 +51,9 @@ export const fetchMealPlansByUserId = async (userId: string) => {
         },
       },
     },
+    orderBy: {
+      createdAt: 'desc',
+    },
   });
 
   return mealPlans;
@@ -345,8 +348,34 @@ function calculateCalories(ingredients: string[]): number {
 }
 
 // Meal like/unlike functions
-export async function setMealLiked(mealId: string, isLiked: boolean) {
+export async function setMealLiked(mealId: string, isLiked: boolean, userId: string) {
   try {
+    if (isLiked) {
+      // Add to favorites table
+      await prisma.favoriteRecipe.upsert({
+        where: {
+          userId_mealId: {
+            userId,
+            mealId,
+          },
+        },
+        update: {},
+        create: {
+          userId,
+          mealId,
+        },
+      });
+    } else {
+      // Remove from favorites table
+      await prisma.favoriteRecipe.deleteMany({
+        where: {
+          userId,
+          mealId,
+        },
+      });
+    }
+
+    // Also update the meal's isLiked status for backward compatibility
     const updatedMeal = await prisma.meal.update({
       where: { id: mealId },
       data: { isLiked },
@@ -359,7 +388,7 @@ export async function setMealLiked(mealId: string, isLiked: boolean) {
       },
     });
     
-    console.log(`Meal ${mealId} like status updated to: ${isLiked}`);
+    console.log(`Meal ${mealId} like status updated to: ${isLiked} for user ${userId}`);
     return updatedMeal;
   } catch (error) {
     console.error('Error updating meal like status:', error);
@@ -367,16 +396,111 @@ export async function setMealLiked(mealId: string, isLiked: boolean) {
   }
 }
 
-export async function getMealLikeStatus(mealId: string) {
+export async function getMealLikeStatus(mealId: string, userId: string) {
   try {
-    const meal = await prisma.meal.findUnique({
-      where: { id: mealId },
-      select: { isLiked: true },
+    // Check if meal is in user's favorites
+    const favorite = await prisma.favoriteRecipe.findUnique({
+      where: {
+        userId_mealId: {
+          userId,
+          mealId,
+        },
+      },
     });
     
-    return meal?.isLiked ?? false;
+    return !!favorite;
   } catch (error) {
     console.error('Error getting meal like status:', error);
+    return false;
+  }
+}
+
+// New functions for favorite recipes
+export async function addToFavorites(mealId: string, userId: string) {
+  try {
+    const favorite = await prisma.favoriteRecipe.create({
+      data: {
+        userId,
+        mealId,
+      },
+      include: {
+        meal: true,
+      },
+    });
+    
+    console.log(`Meal ${mealId} added to favorites for user ${userId}`);
+    return favorite;
+  } catch (error: any) {
+    if (error.code === 'P2002') {
+      // Duplicate entry - meal is already favorited
+      console.log(`Meal ${mealId} is already in favorites for user ${userId}`);
+      return null;
+    }
+    console.error('Error adding meal to favorites:', error);
+    throw new Error('Failed to add meal to favorites');
+  }
+}
+
+export async function removeFromFavorites(mealId: string, userId: string) {
+  try {
+    const deleted = await prisma.favoriteRecipe.deleteMany({
+      where: {
+        userId,
+        mealId,
+      },
+    });
+    
+    console.log(`Meal ${mealId} removed from favorites for user ${userId}`);
+    return deleted.count > 0;
+  } catch (error) {
+    console.error('Error removing meal from favorites:', error);
+    return false;
+  }
+}
+
+export async function getUserFavorites(userId: string) {
+  try {
+    const favorites = await prisma.favoriteRecipe.findMany({
+      where: {
+        userId,
+      },
+      include: {
+        meal: {
+          include: {
+            dayMeal: {
+              include: {
+                mealPlan: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+    
+    return favorites.map((favorite: any) => favorite.meal);
+  } catch (error) {
+    console.error('Error getting user favorites:', error);
+    return [];
+  }
+}
+
+export async function isMealFavorited(mealId: string, userId: string) {
+  try {
+    const favorite = await prisma.favoriteRecipe.findUnique({
+      where: {
+        userId_mealId: {
+          userId,
+          mealId,
+        },
+      },
+    });
+    
+    return !!favorite;
+  } catch (error) {
+    console.error('Error checking if meal is favorited:', error);
     return false;
   }
 }

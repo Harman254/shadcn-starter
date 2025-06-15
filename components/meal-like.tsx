@@ -14,30 +14,48 @@ interface MealLikeButtonProps {
 
 const MealLikeButton = ({ initialIsLiked = false, onLikeToggle, mealId }: MealLikeButtonProps) => {
   const [isLiked, setIsLiked] = useState(initialIsLiked)
-    const [isLoading, setIsLoading] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+  const [isInitialized, setIsInitialized] = useState(false)
 
   // Fetch initial like status from API
   useEffect(() => {
     const fetchLikeStatus = async () => {
+      if (!mealId) return;
+      
       try {
+        setIsLoading(true)
         const response = await fetch(`/api/meals/${mealId}/like`)
         if (response.ok) {
           const data = await response.json()
           setIsLiked(data.isLiked)
+        } else if (response.status === 401) {
+          // User not authenticated, keep initial state
+          console.log('User not authenticated for like status')
+        } else {
+          console.error('Failed to fetch like status:', response.status)
         }
       } catch (error) {
         console.error('Error fetching like status:', error)
+        // Keep initial state on error
+      } finally {
+        setIsLoading(false)
+        setIsInitialized(true)
       }
     }
 
-    if (mealId) {
-      fetchLikeStatus()
-    }
+    fetchLikeStatus()
   }, [mealId])
 
   const handleLikeToggle = async () => {
-
+    if (!mealId || isLoading) return;
+    
     const newLikedState = !isLiked
+    
+    // Optimistic update - update UI immediately
+    setIsLiked(newLikedState)
+    if (onLikeToggle) {
+      onLikeToggle(newLikedState)
+    }
 
     try {
       const response = await fetch(`/api/meals/${mealId}/like`, {
@@ -49,20 +67,46 @@ const MealLikeButton = ({ initialIsLiked = false, onLikeToggle, mealId }: MealLi
       })
 
       if (response.ok) {
-        setIsLiked(newLikedState)
-        if (onLikeToggle) {
-          onLikeToggle(newLikedState)
-        }
         toast.success(newLikedState ? 'Meal liked!' : 'Meal unliked!')
       } else {
-        const errorData = await response.json()
-        toast.error(errorData.error || 'Failed to update like status')
+        // Revert optimistic update on error
+        setIsLiked(!newLikedState)
+        if (onLikeToggle) {
+          onLikeToggle(!newLikedState)
+        }
+        
+        if (response.status === 401) {
+          toast.error('Please sign in to like meals')
+        } else {
+          const errorData = await response.json()
+          toast.error(errorData.error || 'Failed to update like status')
+        }
       }
     } catch (error) {
+      // Revert optimistic update on network error
+      setIsLiked(!newLikedState)
+      if (onLikeToggle) {
+        onLikeToggle(!newLikedState)
+      }
+      
       console.error('Error updating like status:', error)
       toast.error('Failed to update like status')
-    } finally {
     }
+  }
+
+  // Don't render until we've fetched the initial state
+  if (!isInitialized) {
+    return (
+      <Button
+        variant="secondary"
+        size="sm"
+        disabled
+        className="rounded-full p-2 opacity-50"
+      >
+        <Heart className="h-5 w-5 animate-pulse" />
+        Like
+      </Button>
+    )
   }
 
   return (
@@ -84,7 +128,8 @@ const MealLikeButton = ({ initialIsLiked = false, onLikeToggle, mealId }: MealLi
         className={cn(
           "h-5 w-5 fill-current transition-all duration-200",
           isLiked ? "fill-red-500" : "fill-none",
-          isLoading && "animate-spin")}
+          isLoading && "animate-spin"
+        )}
       />
 
       {isLiked ? "Liked" : "Like"}  

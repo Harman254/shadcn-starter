@@ -51,6 +51,17 @@ model Meal {
   calories   Int
   dayMeal    DayMeal @relation(fields: [dayMealId], references: [id])
   dayMealId  String
+  favorites  FavoriteRecipe[] // Relation to favorite recipes
+}
+
+model FavoriteRecipe {
+  id        String   @id @default(cuid())
+  userId    String   // Clerk user ID
+  mealId    String   // Reference to the meal
+  meal      Meal     @relation(fields: [mealId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, mealId]) // Prevent duplicate favorites
 }
 
 model User {
