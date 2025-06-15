@@ -2,7 +2,7 @@
 import { fetchMealPlansByUserId } from "@/data"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { CalendarIcon, UtensilsIcon, Plus, TrendingUp, Clock, Rocket } from "lucide-react"
+import { CalendarIcon, UtensilsIcon, Plus, TrendingUp, Clock, Rocket, Target, BarChart3, Zap, Star, Crown } from "lucide-react"
 import DeleteButton from "@/components/delete-button"
 import Link from "next/link"
 import type { MealPlan } from "@/types"
@@ -61,22 +61,28 @@ const MealPlans = async () => {
   const totalDays = mealPlans.reduce((acc, plan) => acc + plan.duration, 0)
 
   return (
-    <div className="min-h-screen bg-background/95">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50 dark:from-slate-950 dark:via-slate-900/50 dark:to-slate-800/30">
       {/* Hero Header */}
-      <div className="relative overflow-hidden ">
-        <div className="absolute inset-0 bg-background/95"></div>
+      <div className="relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-purple-500/5 to-indigo-500/5"></div>
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_80%,rgba(120,119,198,0.1),transparent_50%),radial-gradient(circle_at_80%_20%,rgba(255,119,198,0.1),transparent_50%)]"></div>
         <div className="relative container max-w-7xl mx-auto px-6 py-20">
           <div className="flex flex-col lg:flex-row items-start justify-between gap-8 mb-16">
             <div className="flex-1">
               <div className="flex items-center gap-3 mb-6">
                 <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg">
-                  <Rocket className="w-6 h-6 text-white" />
+                  <Crown className="w-6 h-6 text-white" />
                 </div>
-                <Badge className="bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-700">
+                <Badge className="bg-gradient-to-r from-blue-100 to-indigo-100 dark:from-blue-900/50 dark:to-indigo-900/50 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-700 shadow-sm">
                   Premium Experience
                 </Badge>
+                <div className="flex items-center gap-1">
+                  {[...Array(5)].map((_, i) => (
+                    <Star key={i} className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                  ))}
+                </div>
               </div>
-              <h1 className="text-5xl lg:text-6xl font-bold bg-gradient-to-r from-slate-900 via-slate-800 to-slate-600 dark:from-slate-100 dark:via-slate-200 dark:to-slate-400 bg-clip-text text-transparent mb-6">
+              <h1 className="text-6xl lg:text-7xl font-bold bg-gradient-to-r from-slate-900 via-blue-900 to-indigo-900 dark:from-slate-100 dark:via-blue-100 dark:to-indigo-100 bg-clip-text text-transparent mb-6 leading-tight">
                 Your Meal Plans
               </h1>
               <p className="text-xl text-slate-600 dark:text-slate-400 max-w-2xl leading-relaxed">
@@ -86,16 +92,19 @@ const MealPlans = async () => {
             </div>
             <Link
               href="/meal-plans/new"
-              className="group flex items-center gap-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-8 py-4 rounded-2xl font-semibold hover:shadow-xl hover:scale-105 transition-all duration-300 shadow-lg"
+              className="group relative flex items-center gap-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-8 py-4 rounded-2xl font-semibold hover:shadow-2xl hover:scale-105 transition-all duration-300 shadow-xl"
             >
-              <Plus className="w-5 h-5 group-hover:rotate-90 transition-transform duration-300" />
-              Create New Plan
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl blur-xl opacity-50 group-hover:opacity-75 transition-opacity duration-300"></div>
+              <div className="relative flex items-center gap-3">
+                <Plus className="w-5 h-5 group-hover:rotate-90 transition-transform duration-300" />
+                Create New Plan
+              </div>
             </Link>
           </div>
 
           {/* Stats Dashboard */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16">
-            <StatCard value={mealPlans.length} label="Active Plans" icon={UtensilsIcon} color="blue" />
+            <StatCard value={mealPlans.length} label="Active Plans" icon={Rocket} color="blue" />
             <StatCard value={totalDays} label="Total Days" icon={Clock} color="emerald" />
             <StatCard value={totalMeals} label="Total Meals" icon={TrendingUp} color="violet" />
           </div>
@@ -116,24 +125,35 @@ const MealPlans = async () => {
             >
               {/* Header */}
               <div
-                className={`h-32 bg-gradient-to-br ${
+                className={`h-40 bg-gradient-to-br relative overflow-hidden ${
                   index % 3 === 0
                     ? "from-blue-500 via-indigo-500 to-purple-600"
                     : index % 3 === 1
                     ? "from-emerald-500 via-teal-500 to-cyan-600"
                     : "from-orange-500 via-pink-500 to-rose-600"
-                } relative overflow-hidden`}
+                }`}
               >
                 <div className="absolute inset-0 bg-black/10 dark:bg-black/20"></div>
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_30%,rgba(255,255,255,0.2),transparent_70%)]"></div>
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_70%,rgba(255,255,255,0.1),transparent_50%)]"></div>
+                
+                {/* Floating elements */}
                 <div className="absolute top-4 right-4">
-                  <Badge className="bg-white/20 dark:bg-white/10 border-white/30 dark:border-white/20 text-white backdrop-blur-sm">
+                  <Badge className="bg-white/20 dark:bg-white/10 border-white/30 dark:border-white/20 text-white backdrop-blur-sm shadow-lg">
+                    <Rocket className="w-3 h-3 mr-1" />
                     {mealPlan.mealsPerDay} meals/day
                   </Badge>
                 </div>
+                
                 <div className="absolute bottom-4 left-6 text-white/90 flex items-center gap-2">
                   <Clock className="w-4 h-4" />
                   <span className="text-sm font-medium">{mealPlan.duration} days</span>
+                </div>
+                
+                <div className="absolute top-4 left-4">
+                  <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
+                    <Target className="w-4 h-4 text-white" />
+                  </div>
                 </div>
               </div>
 
@@ -145,7 +165,8 @@ const MealPlans = async () => {
                   <CardTitle className="text-2xl font-bold mb-2 leading-tight text-slate-900 dark:text-slate-100">
                     {mealPlan.title}
                   </CardTitle>
-                  <div className="text-lg font-semibold text-indigo-600 dark:text-indigo-400 mb-3">
+                  <div className="text-lg font-semibold text-indigo-600 dark:text-indigo-400 mb-3 flex items-center gap-2">
+                    <BarChart3 className="w-4 h-4" />
                     {mealPlan.duration}-Day Meal Plan
                   </div>
                   <CardDescription className="flex items-center text-slate-600 dark:text-slate-400">
@@ -161,15 +182,15 @@ const MealPlans = async () => {
               </CardHeader>
 
               <CardContent className="pt-0">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="w-12 h-12 bg-gradient-to-br from-emerald-100 to-emerald-200 dark:from-emerald-900/50 dark:to-emerald-800/50 rounded-xl flex items-center justify-center">
-                    <UtensilsIcon className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
+                <div className="flex items-center gap-4 mb-6">
+                  <div className="w-14 h-14 bg-gradient-to-br from-emerald-100 to-emerald-200 dark:from-emerald-900/50 dark:to-emerald-800/50 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                    <UtensilsIcon className="w-7 h-7 text-emerald-600 dark:text-emerald-400" />
                   </div>
                   <div>
-                    <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">
+                    <div className="text-3xl font-bold text-slate-900 dark:text-slate-100">
                       {mealPlan.duration * mealPlan.mealsPerDay}
                     </div>
-                    <div className="text-sm text-slate-600 dark:text-slate-400">total meals planned</div>
+                    <div className="text-sm text-slate-600 dark:text-slate-400 font-medium">total meals planned</div>
                   </div>
                 </div>
 
@@ -188,6 +209,19 @@ const MealPlans = async () => {
           ))}
         </div>
       </div>
+
+      <style jsx>{`
+        @keyframes fadeInUp {
+          from {
+            opacity: 0;
+            transform: translateY(30px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+      `}</style>
     </div>
   )
 }
@@ -205,15 +239,16 @@ const StatCard = ({
   icon: React.ComponentType<{ className?: string }>
   color: string
 }) => (
-  <div className="group backdrop-blur-xl bg-white/80 dark:bg-slate-900/80 border border-white/40 dark:border-slate-700/40 rounded-2xl p-8 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105">
-    <div className="flex items-center gap-4">
+  <div className="group relative backdrop-blur-xl bg-white/80 dark:bg-slate-900/80 border border-white/40 dark:border-slate-700/40 rounded-2xl p-8 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 overflow-hidden">
+    <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-purple-500/5 to-indigo-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+    <div className="relative flex items-center gap-4">
       <div
-        className={`w-14 h-14 bg-gradient-to-br from-${color}-500 to-${color}-600 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300`}
+        className={`w-16 h-16 bg-gradient-to-br from-${color}-500 to-${color}-600 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300`}
       >
-        <Icon className="w-7 h-7 text-white" />
+        <Icon className="w-8 h-8 text-white" />
       </div>
       <div>
-        <p className="text-3xl font-bold text-slate-900 dark:text-slate-100">{value}</p>
+        <p className="text-4xl font-bold text-slate-900 dark:text-slate-100">{value}</p>
         <p className="text-slate-600 dark:text-slate-400 font-medium">{label}</p>
       </div>
     </div>
