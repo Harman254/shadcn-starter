@@ -4,8 +4,10 @@ import type React from "react"
 import { useState, useEffect, useRef } from "react"
 import { createPortal } from "react-dom"
 import { Clock, Users, Flame, ChefHat, Star, Heart, Share2, Bookmark, Timer, Utensils, X } from "lucide-react"
+import toast from "react-hot-toast"
 
 type Meal = {
+  id: string
   name: string
   type: string
   description?: string
@@ -22,11 +24,14 @@ type Meal = {
 type RecipeModalProps = {
   meal: Meal | null
   onClose: () => void
+  userId: string
 }
 
-const RecipeModal = ({ meal, onClose }: RecipeModalProps) => {
+const RecipeModal = ({ meal, onClose, userId }: RecipeModalProps) => {
   const [isBookmarked, setIsBookmarked] = useState(false)
   const [isLiked, setIsLiked] = useState(false)
+  const [isLikeLoading, setIsLikeLoading] = useState(false)
+  const [isLikeInitialized, setIsLikeInitialized] = useState(false)
   const [activeTab, setActiveTab] = useState<"ingredients" | "nutrition">("ingredients")
   const [visibleIngredients, setVisibleIngredients] = useState(0)
   const [isVisible, setIsVisible] = useState(false)
@@ -52,6 +57,38 @@ const RecipeModal = ({ meal, onClose }: RecipeModalProps) => {
     setMounted(true)
     return () => setMounted(false)
   }, [])
+
+  // Fetch initial like status when meal changes
+  useEffect(() => {
+    const fetchLikeStatus = async () => {
+      if (!meal?.id || !userId) {
+        setIsLikeInitialized(true)
+        return
+      }
+      
+      try {
+        setIsLikeLoading(true)
+        const response = await fetch(`/api/meals/${meal.id}/like`)
+        if (response.ok) {
+          const data = await response.json()
+          setIsLiked(data.isLiked)
+        } else if (response.status === 401) {
+          // User not authenticated, keep initial state
+          console.log('User not authenticated for like status')
+        } else {
+          console.error('Failed to fetch like status:', response.status)
+        }
+      } catch (error) {
+        console.error('Error fetching like status:', error)
+        // Keep initial state on error
+      } finally {
+        setIsLikeLoading(false)
+        setIsLikeInitialized(true)
+      }
+    }
+
+    fetchLikeStatus()
+  }, [meal?.id, userId])
 
   // Handle modal visibility and animations
   useEffect(() => {
@@ -149,6 +186,45 @@ const RecipeModal = ({ meal, onClose }: RecipeModalProps) => {
     setTimeout(() => {
       onClose()
     }, isReducedMotion ? 0 : 200) // No delay for reduced motion
+  }
+
+  const handleLikeToggle = async () => {
+    if (!meal?.id || isLikeLoading || !userId) return
+    
+    const newLikedState = !isLiked
+    
+    // Optimistic update - update UI immediately
+    setIsLiked(newLikedState)
+
+    try {
+      const response = await fetch(`/api/meals/${meal.id}/like`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ isLiked: newLikedState }),
+      })
+
+      if (response.ok) {
+        toast.success(newLikedState ? 'Recipe liked!' : 'Recipe unliked!')
+      } else {
+        // Revert optimistic update on error
+        setIsLiked(!newLikedState)
+        
+        if (response.status === 401) {
+          toast.error('Please sign in to like recipes')
+        } else {
+          const errorData = await response.json()
+          toast.error(errorData.error || 'Failed to update like status')
+        }
+      }
+    } catch (error) {
+      // Revert optimistic update on network error
+      setIsLiked(!newLikedState)
+      
+      console.error('Error updating like status:', error)
+      toast.error('Failed to update like status')
+    }
   }
 
   const handleTabKey = (e: KeyboardEvent) => {
@@ -290,16 +366,17 @@ const RecipeModal = ({ meal, onClose }: RecipeModalProps) => {
           </div>
           <div className="flex items-center gap-1 sm:gap-2">
             <button
-              onClick={() => setIsLiked(!isLiked)}
+              onClick={handleLikeToggle}
+              disabled={isLikeLoading || !isLikeInitialized}
               className={`p-1.5 sm:p-2 rounded-full transition-all hover:scale-110 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
                 isLiked
                   ? "bg-red-50 dark:bg-red-950 text-red-500 focus:ring-red-500"
                   : "bg-gray-50 dark:bg-gray-800 text-gray-400 hover:text-red-400 focus:ring-gray-500"
-              }`}
+              } ${(isLikeLoading || !isLikeInitialized) ? "opacity-50 cursor-not-allowed" : ""}`}
               aria-label={isLiked ? "Unlike recipe" : "Like recipe"}
               aria-pressed={isLiked}
             >
-              <Heart className={`w-3 h-3 sm:w-4 sm:h-4 ${isLiked ? "fill-current" : ""}`} />
+              <Heart className={`w-3 h-3 sm:w-4 sm:h-4 ${isLiked ? "fill-current" : ""} ${isLikeLoading ? "animate-pulse" : ""}`} />
             </button>
             <button
               onClick={() => setIsBookmarked(!isBookmarked)}

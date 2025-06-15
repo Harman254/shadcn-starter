@@ -604,8 +604,8 @@ const OnboardingPage = () => {
                       const isSelected = formData.cuisinePreferences.includes(cuisine.id)
                       return (
                         <motion.button
-                          key={cuisine.id}
-                          onClick={() => toggleCuisine(cuisine.id)}
+  key={cuisine.id}
+  onClick={() => toggleCuisine(cuisine.id)}
                           layout
                           initial={false}
                           animate={{
@@ -645,7 +645,7 @@ const OnboardingPage = () => {
                           >
                             <span className="font-semibold">{cuisine.label}</span>
                             <AnimatePresence>
-                              {isSelected && (
+    {isSelected && (
                                 <motion.span
                                   initial={{ scale: 0, opacity: 0 }}
                                   animate={{ scale: 1, opacity: 1 }}

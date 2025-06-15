@@ -8,8 +8,30 @@ export type Meal = {
   name: string;
   description: string;
   ingredients: string[];
+  instructions: string;
   calories: number;
   dayMealId: string;
+  isLiked: boolean;
+  imageUrl: string | null;
+  prepTime?: number;
+  cookTime?: number;
+  servings?: number;
+  difficulty?: string;
+  rating?: number;
+  tags?: string[];
+  dayMeal?: {
+    id: string;
+    date: Date;
+    mealPlanId: string;
+    mealPlan?: {
+      id: string;
+      title: string;
+      userId: string;
+      duration: number;
+      mealsPerDay: number;
+      createdAt: Date;
+    };
+  };
 };
 
 export type DayMeal = {
@@ -82,6 +104,7 @@ export type CalendarDayCardProps = {
 export type DayMealCardProps = {
   day: DayMeal;
   dayIndex: number;
+  userId: string;
 };
 
 export type DayMealHeaderProps = {
@@ -117,5 +140,11 @@ export type CalorieBadgeProps = {
 
 export type MealTypeBadgeProps = {
   type: MealType;
+};
+
+export type RecipeModalProps = {
+  meal: Meal | null;
+  onClose: () => void;
+  userId: string;
 };
 

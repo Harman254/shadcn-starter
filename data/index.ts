@@ -228,118 +228,148 @@ export const addSubscriber = async (customerID: string, userID: string) => {
   }
 };
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-// interface Meal {
-//   name: string;
-//   ingredients: string[];
-//   instructions: string;
-// }
-
-// // Define the interface for day meal plan data
-// interface DayMealPlan {
-//   day: number;
-//   meals: Meal[];
-// }
-
-// // Define the interface for save meal plan input
-// export interface SaveMealPlanInput {
-//   duration: number;
-//   mealsPerDay: number;
-//   days: DayMealPlan[];
-//   createdAt: string;
-// }
-
-// export async function SaveMealPlan(input: SaveMealPlanInput) {
-//   console.log("SaveMealPlan function called with input:", JSON.stringify(input, null, 2));
+export const updateSubscriber = async (customerID: string, userID: string) => {
+  // Input validation
+  if (!customerID) {
+    throw new Error('Customer ID is required');
+  }
   
-//   try {
-//     // Create the main MealPlan record with only the fields shown in the database screenshot
-//     const mealPlan = await prisma.mealPlan.create({
-//       data: {
-//         duration: input.duration,
-//         mealsPerDay: input.mealsPerDay,
-//         createdAt: new Date(input.createdAt)
-//       },
-//     });
+  if (!userID) {
+    throw new Error('User ID is required');
+  }
+
+  try {
+    // Use a transaction to ensure data consistency
+    const subscriber = await prisma.$transaction(async (tx) => {
+      // Check if user exists
+      const userExists = await tx.user.findUnique({
+        where: { id: userID }
+      });
+      
+      if (!userExists) {
+        throw new Error(`User with ID ${userID} not found`);
+      }
+      
+      // Update existing subscription or create new one
+      const updatedSubscription = await tx.subscription.upsert({
+        where: { userID },
+        update: {
+          CustomerID: customerID,
+        },
+        create: {
+          CustomerID: customerID,
+          userID,
+        }
+      });
+      
+      return updatedSubscription;
+    });
     
-//     console.log("Created MealPlan record:", mealPlan);
-
-//     // For each day in the meal plan, create a DayMeal record
-//     for (const day of input.days) {
-//       // Create a date for this day (using the day number to offset from today)
-//       const dayDate = new Date();
-//       dayDate.setDate(dayDate.getDate() + (day.day - 1)); // Offset by day number (1-based)
-      
-//       console.log(`Processing day ${day.day}, creating DayMeal with date:`, dayDate);
-      
-//       // Create the DayMeal record
-//       const dayMeal = await prisma.dayMeal.create({
-//         data: {
-//           date: dayDate,
-//           mealPlanId: mealPlan.id // Direct field assignment
-//         },
-//       });
-      
-//       console.log("Created DayMeal record:", dayMeal);
-
-//       // For each meal in this day, create a Meal record
-//       for (const meal of day.meals) {
-//         // Determine meal type based on index or other logic
-//         const mealIndex = day.meals.indexOf(meal);
-//         let mealType = "snack";
-        
-//         if (mealIndex === 0) mealType = "breakfast";
-//         else if (mealIndex === 1) mealType = "lunch";
-//         else if (mealIndex === 2) mealType = "dinner";
-        
-//         console.log(`Creating Meal record for ${meal.name} of type ${mealType}`);
-        
-//         // Create the Meal record
-//         const createdMeal = await prisma.meal.create({
-//           data: {
-//             name: meal.name,
-//             type: mealType,
-//             description: meal.instructions, // Map instructions to description
-//             calories: calculateCalories(meal.ingredients), // Helper function to estimate calories
-//             dayMealId: dayMeal.id // Direct field assignment
-//           },
-//         });
-        
-//         console.log("Created Meal record:", createdMeal);
-//       }
-//     }
-
-//     // Return the created meal plan with all related data
-//     const savedMealPlan = await prisma.mealPlan.findUnique({
-//       where: { id: mealPlan.id },
-//       include: {
-//         days: {
-//           include: {
-//             meals: true
-//           }
-//         }
-//       }
-//     });
+    console.log("Subscriber updated:", subscriber);
+    return subscriber;
     
-//     console.log("Returning saved meal plan:", savedMealPlan);
-//     return savedMealPlan;
-//   } catch (error) {
-//     console.error('Error in SaveMealPlan:', error);
-//     throw error;
-//   }
-// }
+  } catch (error) {
+    console.error("Failed to update subscriber:", error);
+    
+    if (error instanceof Error) {
+      throw error;
+    } else {
+      throw new Error('Failed to update subscription due to an unexpected error');
+    }
+  }
+};
+
+export const removeSubscriber = async (userID: string) => {
+  // Input validation
+  if (!userID) {
+    throw new Error('User ID is required');
+  }
+
+  try {
+    // Use a transaction to ensure data consistency
+    const result = await prisma.$transaction(async (tx) => {
+      // Check if subscription exists
+      const existingSubscription = await tx.subscription.findUnique({
+        where: { userID }
+      });
+      
+      if (!existingSubscription) {
+        throw new Error(`No subscription found for user with ID ${userID}`);
+      }
+      
+      // Delete the subscription record
+      const deletedSubscription = await tx.subscription.delete({
+        where: { userID }
+      });
+      
+      return deletedSubscription;
+    });
+    
+    console.log("Subscriber removed:", result);
+    return result;
+    
+  } catch (error) {
+    console.error("Failed to remove subscriber:", error);
+    
+    if (error instanceof Error) {
+      throw error;
+    } else {
+      throw new Error('Failed to remove subscription due to an unexpected error');
+    }
+  }
+};
+
+export const getSubscriberByUserId = async (userID: string) => {
+  if (!userID) {
+    throw new Error('User ID is required');
+  }
+
+  try {
+    const subscription = await prisma.subscription.findUnique({
+      where: { userID },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          }
+        }
+      }
+    });
+    
+    return subscription;
+  } catch (error) {
+    console.error("Failed to get subscriber:", error);
+    throw new Error('Failed to retrieve subscription information');
+  }
+};
+
+export const getSubscriberByCustomerId = async (customerID: string) => {
+  if (!customerID) {
+    throw new Error('Customer ID is required');
+  }
+
+  try {
+    const subscription = await prisma.subscription.findUnique({
+      where: { CustomerID: customerID },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          }
+        }
+      }
+    });
+    
+    return subscription;
+  } catch (error) {
+    console.error("Failed to get subscriber by customer ID:", error);
+    throw new Error('Failed to retrieve subscription information');
+  }
+};
 
 // Helper function to estimate calories based on ingredients
 function calculateCalories(ingredients: string[]): number {

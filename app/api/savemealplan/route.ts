@@ -5,15 +5,9 @@ import { NextResponse } from "next/server";
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { auth } from '@/lib/auth'
+import { Meal as MealType } from '@/app/meal-plans/[id]/components/types';
 
-
-
-interface Meal {
-  name: string;
-  ingredients: string[];
-  instructions: string;
-  imageUrl?: string;
-}
+interface Meal extends MealType {}
 
 // Define the interface for day meal plan data
 interface DayMealPlan {
@@ -98,11 +92,12 @@ export async function POST(request:Request) {
           data: {
             name: meal.name,
             type: mealType,
-            description: meal.instructions,
+            description: meal.description,
             calories: calculateCalories(meal.ingredients),
-            ingredients: meal.ingredients, // ✅ save ingredients here
-            imageUrl: meal.imageUrl || null, // ✅ save imageUrl here (handle optional)
+            ingredients: meal.ingredients,
+            imageUrl: meal.imageUrl || null,
             dayMealId: dayMeal.id,
+            instructions: meal.instructions,
           },
         });
       }

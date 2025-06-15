@@ -35,10 +35,11 @@ export type GenerateMealPlanInput = z.infer<typeof GenerateMealPlanInputSchema>;
 
 // Output schema
 const MealSchema = z.object({
-  id: z.string().optional().describe('Unique identifier for the meal.'),
+  id: z.string().describe('Unique identifier for the meal.'),
   name: z.string().describe('Name of the meal.'),
+  description: z.string().describe('A brief, engaging description of the meal.'),
   ingredients: z.array(z.string()).describe('Ingredients of the meal.'),
-  instructions: z.string().describe('Cooking instructions for the meal.'),
+  instructions: z.string().describe('Detailed cooking instructions for the meal.'),
   imageUrl: z.string().describe('A URL to an image of the meal.'),
   isLiked: z.boolean().optional().describe('Whether the meal is liked by the user.'),
 });
@@ -87,8 +88,9 @@ Random Seed: {{randomSeed}}.
 
 Ensure each meal includes:
 - A name
+- A brief, engaging description (1-2 sentences)
 - A list of ingredients
-- Clear cooking instructions
+- Clear, detailed cooking instructions
 - A valid image URL (realistic, symbolic, or AI-generated)
 
 Return the meal plan as a valid JSON object.`,

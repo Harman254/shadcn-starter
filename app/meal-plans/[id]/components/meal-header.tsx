@@ -14,15 +14,15 @@ export const MealHeader = ({ meal }: MealHeaderProps) => {
         <CalorieBadge calories={meal.calories} variant="outline" />
         <div className="flex items-center text-sm text-muted-foreground">
           <Star className="h-4 w-4 mr-1 fill-yellow-400 text-yellow-400" />
-          4.8
+          <span className="font-semibold">4.8</span>
         </div>
         <MealLikeButton mealId={meal.id} />
       </div>
 
       {/* Meal Title and Description */}
       <div className="mt-4">
-        <h3 className="text-lg font-bold mb-2">{meal.name}</h3>
-        <p className="text-muted-foreground leading-relaxed">{meal.description}</p>
+        <h3 className="text-2xl sm:text-3xl tracking-tight font-extrabold mb-2 bg-gradient-to-r from-emerald-500 to-teal-600 bg-clip-text text-transparent leading-tight">{meal.name}</h3>
+        <p className="text-base text-gray-700 dark:text-gray-300 leading-relaxed max-w-prose">{meal.description}</p>
       </div>
     </div>
   );

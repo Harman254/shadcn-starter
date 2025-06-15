@@ -4,23 +4,25 @@ import { z } from 'genkit';
 /* ========== SCHEMAS ========== */
 
 const SwapMealInputSchema = z.object({
-  type: z.enum(['breakfast', 'lunch', 'dinner', 'snack']), // Replace with your MealType enum if available
+  type: z.enum(['breakfast', 'lunch', 'dinner', 'snack']),
   dietaryPreference: z.string(),
   goal: z.string(),
   cuisinePreferences: z.array(z.string()),
   currentMealName: z.string(),
   currentMealIngredients: z.array(z.string()),
   calories: z.number().optional(),
+  dayMealId: z.string(), // Add this to ensure we can preserve the relationship
 });
 
 const SwapMealOutputSchema = z.object({
   id: z.string(),
   type: z.enum(['breakfast', 'lunch', 'dinner', 'snack']),
-  name: z.string(),
-  description: z.string(),
-  ingredients: z.array(z.string()),
+  name: z.string().describe('Name of the meal'), // Name of the meal
+  description: z.string().describe('A brief, engaging description of the meal.'), 
+  ingredients: z.array(z.string()).describe('Ingredients of the meal.'), // List of ingredients
+  instructions: z.string().describe('Detailed cooking instructions for the meal.'), // Detailed instructions
   calories: z.number(),
-  dayMealId: z.string().optional(), // Optional here, can be added later
+  dayMealId: z.string(), 
 });
 
 export type SwapMealInput = z.infer<typeof SwapMealInputSchema>;
@@ -33,7 +35,7 @@ const swapMealPrompt = ai.definePrompt({
   input: { schema: SwapMealInputSchema },
   output: { schema: SwapMealOutputSchema },
   prompt: `
-YouAre a helpful meal-planning assistant.
+You are a helpful meal-planning assistant.
 
 A user wants to swap out the following {{type}} meal:
 - Name: {{currentMealName}}
@@ -47,12 +49,14 @@ User Preferences:
 
 Return a *different* meal with:
 - A new name
-- A short description
-- A list of ingredients
-- Similar calorie range
+- A brief, engaging description (1-2 sentences)
+- A list of ingredients (as an array of strings)
+- Clear, detailed cooking instructions
+- Similar calorie range (±50 calories from {{calories}})
 - Same type: {{type}}
+- Preserve the dayMealId: {{dayMealId}}
 
-Respond with a valid JSON object that matches the expected format.
+Important: Return a valid JSON object that matches the expected format exactly. The meal should be different from the current one but appropriate for the same meal type and user preferences.
 `,
 });
 

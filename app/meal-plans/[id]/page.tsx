@@ -5,10 +5,18 @@ import MealPlanHeader from "./components/meal-plan-header";
 import MealPlanStatCards from "./components/meal-plan-stat-cards";
 import MealPlanCalendar from "./components/meal-plan-calendar";
 import DayMealCard from "./components/day-meal-card";
+import { auth } from '@/lib/auth';
+import { headers } from 'next/headers';
 
 const MealPlanDetailPage = async ({ params }: MealPlanDetailPageProps) => {
   const { id } = await params;
   const mealPlan: MealPlan | null = await fetchMealPlanById(id);
+
+  const session = await auth.api.getSession({
+    headers: await headers()
+  });
+
+  const userId = session?.user?.id;
 
   if (!mealPlan) {
     return <MealPlanNotFound />;
@@ -36,7 +44,7 @@ const MealPlanDetailPage = async ({ params }: MealPlanDetailPageProps) => {
 
         <div className="grid gap-6 mt-8">
           {mealPlan.days.map((day, index) => (
-            <DayMealCard key={day.id} day={day} dayIndex={index} />
+            <DayMealCard key={day.id} day={day} dayIndex={index} userId={userId || ""} />
           ))}
         </div>
       </div>

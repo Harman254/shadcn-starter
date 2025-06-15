@@ -48,6 +48,7 @@ model Meal {
   imageUrl String?
   description String
   ingredients String[]
+  instructions String @default("")
   calories   Int
   dayMeal    DayMeal @relation(fields: [dayMealId], references: [id])
   dayMealId  String
