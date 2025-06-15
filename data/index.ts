@@ -534,3 +534,144 @@ export async function isMealFavorited(mealId: string, userId: string) {
     return false;
   }
 }
+
+export async function getSubscriptionByUserId(userId: string) {
+  try {
+    const subscription = await prisma.subscription.findUnique({
+      where: {
+        userID: userId,
+      },
+    });
+    return subscription;
+  } catch (error) {
+    console.error("Error getting subscription:", error);
+    throw error;
+  }
+}
+
+export async function createOrUpdateSubscription(userId: string, data: {
+  plan: string;
+  status?: string;
+  customerId: string;
+  features?: string[];
+}) {
+  try {
+    const subscription = await prisma.subscription.upsert({
+      where: {
+        userID: userId,
+      },
+      update: {
+        plan: data.plan,
+        status: data.status || "active",
+        CustomerID: data.customerId,
+        features: data.features || [],
+        currentPeriodEnd: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 year from now
+        updatedAt: new Date(),
+      },
+      create: {
+        userID: userId,
+        CustomerID: data.customerId,
+        plan: data.plan,
+        status: data.status || "active",
+        features: data.features || [],
+        currentPeriodEnd: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 year from now
+      },
+    });
+    return subscription;
+  } catch (error) {
+    console.error("Error creating/updating subscription:", error);
+    throw error;
+  }
+}
+
+export async function updateSubscriptionPlan(userId: string, plan: string) {
+  try {
+    const subscription = await prisma.subscription.update({
+      where: {
+        userID: userId,
+      },
+      data: {
+        plan,
+        updatedAt: new Date(),
+      },
+    });
+    return subscription;
+  } catch (error) {
+    console.error("Error updating subscription plan:", error);
+    throw error;
+  }
+}
+
+export async function updateSubscriptionFeatures(userId: string, features: string[]) {
+  try {
+    const subscription = await prisma.subscription.update({
+      where: {
+        userID: userId,
+      },
+      data: {
+        features,
+        updatedAt: new Date(),
+      },
+    });
+    return subscription;
+  } catch (error) {
+    console.error("Error updating subscription features:", error);
+    throw error;
+  }
+}
+
+export async function upgradeUserToPro(userId: string) {
+  try {
+    const subscription = await prisma.subscription.upsert({
+      where: {
+        userID: userId,
+      },
+      update: {
+        plan: "pro",
+        status: "active",
+        features: ["unlimited-meal-plans", "unlimited-favorites", "nutrition-analytics"],
+        updatedAt: new Date(),
+      },
+      create: {
+        userID: userId,
+        CustomerID: `pro_${userId}`,
+        plan: "pro",
+        status: "active",
+        features: ["unlimited-meal-plans", "unlimited-favorites", "nutrition-analytics"],
+        currentPeriodEnd: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 year from now
+      },
+    });
+    return subscription;
+  } catch (error) {
+    console.error("Error upgrading user to pro:", error);
+    throw error;
+  }
+}
+
+export async function downgradeUserToFree(userId: string) {
+  try {
+    const subscription = await prisma.subscription.upsert({
+      where: {
+        userID: userId,
+      },
+      update: {
+        plan: "free",
+        status: "active",
+        features: [],
+        updatedAt: new Date(),
+      },
+      create: {
+        userID: userId,
+        CustomerID: `free_${userId}`,
+        plan: "free",
+        status: "active",
+        features: [],
+        currentPeriodEnd: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 year from now
+      },
+    });
+    return subscription;
+  } catch (error) {
+    console.error("Error downgrading user to free:", error);
+    throw error;
+  }
+}

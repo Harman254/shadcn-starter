@@ -134,9 +134,14 @@ model Verification {
 
 
 model subscription {
-  id        String   @id @default(uuid())
-  userID   String   @unique
-  CustomerID    String   @unique
-  createdAt DateTime @default(now())
-  user      User     @relation(fields: [userID], references: [id], onDelete: Cascade)
+  id                String   @id @default(uuid())
+  userID            String   @unique
+  CustomerID        String   @unique
+  plan              String   @default("free") // "free", "pro", "enterprise"
+  status            String   @default("active") // "active", "canceled", "past_due", "incomplete", "trialing"
+  currentPeriodEnd  DateTime @default(dbgenerated("NOW() + INTERVAL '1 year'"))
+  features          String[] @default([]) // Array of feature IDs
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  user              User     @relation(fields: [userID], references: [id], onDelete: Cascade)
 }

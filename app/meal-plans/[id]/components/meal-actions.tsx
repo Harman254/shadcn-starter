@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import { useTransition, useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -34,14 +35,12 @@ export const MealActions = ({ onViewRecipe, onSwapMeal }: MealActionsProps) => {
     const maxSwaps = isUnlimitedSwaps ? Infinity : 3;
     
     if (swapCount >= maxSwaps && !isUnlimitedSwaps) {
-
       toast.error("You've reached your swap limit! Upgrade to Pro for unlimited swaps.", {
         duration: 4000,
-        icon: <Crown className="w-5 h-5 text-yellow-500" />
+        icon: "👑"
       });
       unlockFeature(PRO_FEATURES["unlimited-meal-plans"]);
       router.push("/dashboard/pricing");
-
       return;
     }
 
@@ -56,7 +55,7 @@ export const MealActions = ({ onViewRecipe, onSwapMeal }: MealActionsProps) => {
 
   const isUnlimitedSwaps = hasFeature("unlimited-meal-plans");
   const maxSwaps = isUnlimitedSwaps ? Infinity : 3;
-  const swapsRemaining = maxSwaps - swapCount;
+  const swapsRemaining = Math.max(0, maxSwaps - swapCount);
   const canSwap = isUnlimitedSwaps || swapsRemaining > 0;
 
   return (

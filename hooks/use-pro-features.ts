@@ -148,14 +148,32 @@ export const useProFeatures = (): UseProFeaturesReturn => {
       
       if (response.ok) {
         const data = await response.json()
-        setSubscription(data.subscription)
+        if (data.subscription) {
+          setSubscription({
+            id: data.subscription.id,
+            status: data.subscription.status,
+            plan: data.subscription.plan,
+            currentPeriodEnd: new Date(data.subscription.currentPeriodEnd),
+            features: data.subscription.features || []
+          })
+        } else {
+          // Fallback to free plan if no subscription data
+          setSubscription({
+            id: "free",
+            status: "active",
+            plan: "free",
+            currentPeriodEnd: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+            features: []
+          })
+        }
       } else {
-        // Default to free plan if no subscription found
+        console.error("Failed to fetch subscription:", response.status, response.statusText)
+        // Default to free plan if API fails
         setSubscription({
           id: "free",
           status: "active",
           plan: "free",
-          currentPeriodEnd: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 year from now
+          currentPeriodEnd: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
           features: []
         })
       }
