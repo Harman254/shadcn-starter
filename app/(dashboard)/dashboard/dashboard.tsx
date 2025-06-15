@@ -93,11 +93,14 @@ const  Dashboard = () =>{
             description="Access your saved recipes"
           />
           </Link>
+          <Link href="/dashboard/analytics" >
+
           <QuickNavCard
             icon={<ClipboardList className="w-8 h-8" />}
-            title="Grocery List"
-            description="View your shopping needs"
+            title="Analytics"
+            description="Track your meal planning progress"
           />
+          </Link>
           <Link href="/dashboard/preferences" >
             <QuickNavCard
               icon={<Settings className="w-8 h-8" />}
