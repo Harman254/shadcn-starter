@@ -1,3 +1,4 @@
+'use client';
 import { ArrowRight, ArrowUpRight } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -5,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import Link from "next/link";
+import { useSession } from "@/lib/auth-client";
 
 interface Hero1Props {
   badge?: string;
@@ -26,7 +28,7 @@ interface Hero1Props {
   };
 }
 
-const Hero1 = async ({
+const Hero1 =  ({
   badge = "🥗 Checkout grocery lists",
   heading = "Personalized AI Meal Plans for Your Lifestyle",
   description = "Get custom weekly meal plans, grocery lists, and recipes—all tailored to your diet, fitness goals, and household size. Save time, eat better, and stay on track effortlessly.",
@@ -47,9 +49,7 @@ const Hero1 = async ({
 }: Hero1Props) => {
 
 
-  const session = await auth.api.getSession({
-    headers: await headers() // you need to pass the headers object.
-});
+  const session = useSession();
   return (
     <section className="py-32">
       <div className="container">
