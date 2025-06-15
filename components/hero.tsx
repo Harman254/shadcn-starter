@@ -3,8 +3,6 @@ import { ArrowRight, ArrowUpRight } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { auth } from "@/lib/auth";
-import { headers } from "next/headers";
 import Link from "next/link";
 import { useSession } from "@/lib/auth-client";
 

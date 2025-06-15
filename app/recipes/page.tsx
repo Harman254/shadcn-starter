@@ -7,10 +7,10 @@ import { headers } from "next/headers"
 import { getUserFavorites } from "@/data"
 import { redirect } from "next/navigation"
 import { FavoriteRecipesClient } from "./components/favorite-recipes-client"
-import { unstable_cache as useCache } from 'next/cache'
+import { unstable_cache } from 'next/cache'
 
 // Cache the favorites data with a tag for efficient revalidation
-const getCachedFavorites = useCache(
+const getCachedFavorites = unstable_cache(
   async (userId: string) => {
     return await getUserFavorites(userId);
   },
