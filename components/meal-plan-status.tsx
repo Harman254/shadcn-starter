@@ -133,6 +133,7 @@ const MealPlanStatusCard = ({ hasMealPlan, mealPlan }: Props) => {
             <motion.button 
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
+              onClick={() => router.push(`/grocery-list/${mealPlan.id}`)} 
               className="px-8 py-4 border-2 border-emerald-500 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/50 rounded-2xl font-bold transition-all duration-300 shadow-lg hover:shadow-xl"
             >
               Grocery List
