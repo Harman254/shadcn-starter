@@ -5,7 +5,7 @@ import { MealIngredientsProps } from "../components/types";
 export const MealIngredients = ({ ingredients }: MealIngredientsProps) => {
   return (
     <div>
-      <h4 className="text-xl font-bold mb-4 flex items-center text-gray-800 dark:text-gray-100 bg-gradient-to-r from-emerald-500 to-teal-600 bg-clip-text text-transparent">
+      <h4 className="text-xl font-bold mb-4 flex items-center bg-gradient-to-r from-emerald-500 to-teal-600 bg-clip-text text-transparent">
         <Users className="h-5 w-5 mr-3 text-emerald-500 dark:text-teal-400" />
         Ingredients ({ingredients.length})
       </h4>
