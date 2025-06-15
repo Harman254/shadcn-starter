@@ -5,6 +5,7 @@ import { useState, useEffect, useCallback } from "react"
 import { useSession } from "@/lib/auth-client"
 import toast from "react-hot-toast"
 import { Crown, Lock, Rocket, Zap } from "lucide-react"
+import { useRouter } from "next/navigation"
 
 export interface Subscription {
   id: string
@@ -133,6 +134,7 @@ export const useProFeatures = (): UseProFeaturesReturn => {
   const { data: session } = useSession()
   const [subscription, setSubscription] = useState<Subscription | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const router = useRouter()
 
   // Check subscription status
   const checkSubscription = useCallback(async () => {
@@ -224,17 +226,16 @@ export const useProFeatures = (): UseProFeaturesReturn => {
     return !hasFeature(featureId)
   }, [hasFeature])
 
-  // Unlock feature (show upgrade prompt)
+  // Unlock feature (show upgrade prompt and redirect to pricing)
   const unlockFeature = useCallback((feature: ProFeature) => {
     if (canAccess(feature)) {
-      toast.success(`${feature.name} is already available!`)
       return
     }
 
     showUpgradeModal(feature)
   }, [canAccess])
 
-  // Show upgrade modal
+  // Show upgrade modal and redirect to pricing
   const showUpgradeModal = useCallback((feature?: ProFeature) => {
     if (!session?.user) {
       toast.error("Please sign in to access premium features")
@@ -250,10 +251,9 @@ export const useProFeatures = (): UseProFeaturesReturn => {
       icon: "👑"
     })
 
-    // You can integrate with your upgrade modal here
-    // For now, we'll just show a toast
-    console.log("Show upgrade modal for:", feature?.name || "general upgrade")
-  }, [session?.user])
+    // Redirect to pricing page
+    router.push("/dashboard/pricing")
+  }, [session?.user, router])
 
   // Get feature icon
   const getFeatureIcon = useCallback((feature: ProFeature): React.ReactNode => {
