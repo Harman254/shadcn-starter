@@ -10,24 +10,65 @@ import { useProFeatures, PRO_FEATURES } from "@/hooks/use-pro-features";
 import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
 
+// Helper function to get the start of the current week (Monday)
+const getWeekStart = () => {
+  const now = new Date();
+  const dayOfWeek = now.getDay();
+  const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Sunday = 0, Monday = 1
+  const monday = new Date(now);
+  monday.setDate(now.getDate() - daysToMonday);
+  monday.setHours(0, 0, 0, 0);
+  return monday;
+};
+
+// Helper function to get the week key (YYYY-MM-DD format for Monday)
+const getWeekKey = () => {
+  const weekStart = getWeekStart();
+  return weekStart.toISOString().split('T')[0];
+};
+
 export const MealActions = ({ onViewRecipe, onSwapMeal }: MealActionsProps) => {
   const [isPending, startTransition] = useTransition();
   const [swapCount, setSwapCount] = useState(0);
   const { hasFeature, unlockFeature, getFeatureBadge } = useProFeatures();
   const router = useRouter();
 
-  // Load swap count from localStorage
+  // Load swap count from localStorage with weekly reset
   useEffect(() => {
-    const savedSwapCount = localStorage.getItem("meal-swap-count");
-    if (savedSwapCount) {
-      setSwapCount(parseInt(savedSwapCount, 10));
+    const currentWeekKey = getWeekKey();
+    const savedData = localStorage.getItem("meal-swap-data");
+    
+    if (savedData) {
+      const data = JSON.parse(savedData);
+      
+      // Check if we're in a new week
+      if (data.weekKey === currentWeekKey) {
+        setSwapCount(data.swapCount);
+      } else {
+        // New week, reset swap count
+        setSwapCount(0);
+        localStorage.setItem("meal-swap-data", JSON.stringify({
+          weekKey: currentWeekKey,
+          swapCount: 0
+        }));
+      }
+    } else {
+      // First time user, initialize
+      localStorage.setItem("meal-swap-data", JSON.stringify({
+        weekKey: currentWeekKey,
+        swapCount: 0
+      }));
     }
   }, []);
 
-  // Save swap count to localStorage
+  // Save swap count to localStorage with week tracking
   const updateSwapCount = (newCount: number) => {
     setSwapCount(newCount);
-    localStorage.setItem("meal-swap-count", newCount.toString());
+    const currentWeekKey = getWeekKey();
+    localStorage.setItem("meal-swap-data", JSON.stringify({
+      weekKey: currentWeekKey,
+      swapCount: newCount
+    }));
   };
 
   const handleSwap = () => {
@@ -35,12 +76,11 @@ export const MealActions = ({ onViewRecipe, onSwapMeal }: MealActionsProps) => {
     const maxSwaps = isUnlimitedSwaps ? Infinity : 3;
     
     if (swapCount >= maxSwaps && !isUnlimitedSwaps) {
-      toast.error("You've reached your swap limit! Upgrade to Pro for unlimited swaps.", {
+      toast.error("You've reached your weekly swap limit! Upgrade to Pro for unlimited swaps.", {
         duration: 4000,
         icon: "👑"
       });
       unlockFeature(PRO_FEATURES["unlimited-meal-plans"]);
-      router.push("/dashboard/pricing");
       return;
     }
 
@@ -57,6 +97,18 @@ export const MealActions = ({ onViewRecipe, onSwapMeal }: MealActionsProps) => {
   const maxSwaps = isUnlimitedSwaps ? Infinity : 3;
   const swapsRemaining = Math.max(0, maxSwaps - swapCount);
   const canSwap = isUnlimitedSwaps || swapsRemaining > 0;
+
+  // Get next reset date (next Monday)
+  const getNextResetDate = () => {
+    const now = new Date();
+    const dayOfWeek = now.getDay();
+    const daysToMonday = dayOfWeek === 0 ? 1 : 8 - dayOfWeek; // Next Monday
+    const nextMonday = new Date(now);
+    nextMonday.setDate(now.getDate() + daysToMonday);
+    return nextMonday;
+  };
+
+  const nextResetDate = getNextResetDate();
 
   return (
     <div className="flex flex-col gap-3 lg:min-w-[160px]">
@@ -86,13 +138,22 @@ export const MealActions = ({ onViewRecipe, onSwapMeal }: MealActionsProps) => {
 
         {/* Swap Limit Indicator */}
         {!isUnlimitedSwaps && (
-          <div className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-400">
-            <span>Swaps remaining:</span>
-            <div className="flex items-center gap-1">
-              <span className={`font-semibold ${swapsRemaining <= 1 ? 'text-red-500' : 'text-slate-700 dark:text-slate-300'}`}>
-                {swapsRemaining}
-              </span>
-              <span>/ {maxSwaps}</span>
+          <div className="space-y-1">
+            <div className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-400">
+              <span>Swaps remaining:</span>
+              <div className="flex items-center gap-1">
+                <span className={`font-semibold ${swapsRemaining <= 1 ? 'text-red-500' : 'text-slate-700 dark:text-slate-300'}`}>
+                  {swapsRemaining}
+                </span>
+                <span>/ {maxSwaps}</span>
+              </div>
+            </div>
+            <div className="text-xs text-slate-500 dark:text-slate-500">
+              Resets {nextResetDate.toLocaleDateString('en-US', { 
+                weekday: 'long', 
+                month: 'short', 
+                day: 'numeric' 
+              })}
             </div>
           </div>
         )}
@@ -110,7 +171,7 @@ export const MealActions = ({ onViewRecipe, onSwapMeal }: MealActionsProps) => {
             <div className="flex items-center gap-2 text-xs">
               <Lock className="w-3 h-3 text-amber-600 dark:text-amber-400" />
               <span className="text-amber-700 dark:text-amber-300 font-medium">
-                {swapsRemaining === 0 ? "No swaps left!" : "Last swap!"}
+                {swapsRemaining === 0 ? "No swaps left this week!" : "Last swap this week!"}
               </span>
             </div>
             <Button
