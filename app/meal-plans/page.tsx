@@ -121,6 +121,8 @@ const MealPlans = async () => {
               style={{
                 animationDelay: `${index * 100}ms`,
                 animation: "fadeInUp 0.6s ease-out forwards",
+                opacity: 0,
+                transform: "translateY(30px)",
               }}
             >
               {/* Header */}
@@ -209,19 +211,6 @@ const MealPlans = async () => {
           ))}
         </div>
       </div>
-
-      <style jsx>{`
-        @keyframes fadeInUp {
-          from {
-            opacity: 0;
-            transform: translateY(30px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-      `}</style>
     </div>
   )
 }
