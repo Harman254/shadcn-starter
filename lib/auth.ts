@@ -12,7 +12,7 @@ import { headers } from 'next/headers';
 
 const polarClient = new Polar({
   accessToken: process.env.POLAR_ACCESS_TOKEN,
-  server: 'sandbox'
+  server: 'production'
 });
 
 export const auth = betterAuth({
