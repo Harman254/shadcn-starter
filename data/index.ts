@@ -918,3 +918,136 @@ export async function validateAndIncrementMealPlanGeneration(userId: string) {
     throw error;
   }
 }
+
+// Meal Swap Count Functions
+export async function getMealSwapCount(userId: string) {
+  try {
+    const now = new Date();
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - now.getDay()); // Start of week (Sunday)
+    startOfWeek.setHours(0, 0, 0, 0);
+
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 7);
+
+    let swapRecord = await prisma.mealSwapCount.findFirst({
+      where: {
+        userId: userId,
+        weekStart: {
+          gte: startOfWeek,
+          lt: endOfWeek
+        }
+      }
+    });
+
+    if (!swapRecord) {
+      swapRecord = await prisma.mealSwapCount.create({
+        data: {
+          userId: userId,
+          weekStart: startOfWeek,
+          swapCount: 0
+        }
+      });
+    }
+
+    return {
+      swapCount: swapRecord.swapCount,
+      maxSwaps: 3, // Free users get 3 swaps per week
+      weekStart: swapRecord.weekStart,
+      weekEnd: endOfWeek
+    };
+  } catch (error) {
+    console.error("Error getting meal swap count:", error);
+    throw error;
+  }
+}
+
+export async function validateAndIncrementMealSwap(userId: string) {
+  try {
+    const now = new Date();
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - now.getDay()); // Start of week (Sunday)
+    startOfWeek.setHours(0, 0, 0, 0);
+
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 7);
+
+    const result = await prisma.$transaction(async (tx) => {
+      let swapRecord = await tx.mealSwapCount.findFirst({
+        where: {
+          userId: userId,
+          weekStart: {
+            gte: startOfWeek,
+            lt: endOfWeek
+          }
+        }
+      });
+
+      if (!swapRecord) {
+        swapRecord = await tx.mealSwapCount.create({
+          data: {
+            userId: userId,
+            weekStart: startOfWeek,
+            swapCount: 1
+          }
+        });
+      } else {
+        if (swapRecord.swapCount >= 3) {
+          throw new Error("Swap limit reached");
+        }
+        
+        swapRecord = await tx.mealSwapCount.update({
+          where: { id: swapRecord.id },
+          data: {
+            swapCount: {
+              increment: 1
+            }
+          }
+        });
+      }
+
+      return {
+        success: true,
+        swapCount: swapRecord.swapCount,
+        maxSwaps: 3,
+        canSwap: true
+      };
+    });
+
+    return result;
+  } catch (error) {
+    if (error instanceof Error && error.message === "Swap limit reached") {
+      const now = new Date();
+      const startOfWeek = new Date(now);
+      startOfWeek.setDate(now.getDate() - now.getDay()); 
+      startOfWeek.setHours(0, 0, 0, 0);
+
+      const endOfWeek = new Date(startOfWeek);
+      endOfWeek.setDate(startOfWeek.getDate() + 7);
+
+      const swapRecord = await prisma.mealSwapCount.findFirst({
+        where: {
+          userId: userId,
+          weekStart: {
+            gte: startOfWeek,
+            lt: endOfWeek
+          }
+        }
+      });
+
+      const currentCount = swapRecord?.swapCount || 0;
+      const maxSwaps = 3;
+
+      return {
+        success: false,
+        canSwap: false,
+        error: "Swap limit reached",
+        swapCount: currentCount,
+        maxSwaps: maxSwaps,
+      };
+    }
+    
+    console.error("Error validating and incrementing meal swap:", error);
+    throw error;
+  }
+}

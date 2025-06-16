@@ -9,6 +9,7 @@ import { Loader2, Crown, Lock, Zap } from "lucide-react";
 import { useProFeatures, PRO_FEATURES } from "@/hooks/use-pro-features";
 import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
+import { useSession } from "@/lib/auth-client";
 
 // Helper function to get the start of the current week (Monday)
 const getWeekStart = () => {
@@ -30,52 +31,46 @@ const getWeekKey = () => {
 export const MealActions = ({ onViewRecipe, onSwapMeal }: MealActionsProps) => {
   const [isPending, startTransition] = useTransition();
   const [swapCount, setSwapCount] = useState(0);
+  const [maxSwaps, setMaxSwaps] = useState(3); // Default for free users
   const { hasFeature, unlockFeature, getFeatureBadge } = useProFeatures();
   const router = useRouter();
+  const { data: session } = useSession();
 
-  // Load swap count from localStorage with weekly reset
+  // Fetch initial swap count from the server
   useEffect(() => {
-    const currentWeekKey = getWeekKey();
-    const savedData = localStorage.getItem("meal-swap-data");
-    
-    if (savedData) {
-      const data = JSON.parse(savedData);
-      
-      // Check if we're in a new week
-      if (data.weekKey === currentWeekKey) {
-        setSwapCount(data.swapCount);
-      } else {
-        // New week, reset swap count
-        setSwapCount(0);
-        localStorage.setItem("meal-swap-data", JSON.stringify({
-          weekKey: currentWeekKey,
-          swapCount: 0
-        }));
+    const fetchSwapCount = async () => {
+      if (!session?.user?.id) return;
+
+      try {
+        const response = await fetch("/api/meal-swaps");
+        const data = await response.json();
+
+        if (response.ok) {
+          setSwapCount(data.swapCount);
+          setMaxSwaps(data.maxSwaps);
+        } else {
+          console.error("Failed to fetch swap count:", data.error);
+          toast.error("Failed to load swap count. Please try again.");
+        }
+      } catch (error) {
+        console.error("Error fetching swap count:", error);
+        toast.error("Error loading swap count. Check your connection.");
       }
-    } else {
-      // First time user, initialize
-      localStorage.setItem("meal-swap-data", JSON.stringify({
-        weekKey: currentWeekKey,
-        swapCount: 0
-      }));
-    }
-  }, []);
+    };
+    fetchSwapCount();
+  }, [session?.user?.id]);
 
-  // Save swap count to localStorage with week tracking
-  const updateSwapCount = (newCount: number) => {
-    setSwapCount(newCount);
-    const currentWeekKey = getWeekKey();
-    localStorage.setItem("meal-swap-data", JSON.stringify({
-      weekKey: currentWeekKey,
-      swapCount: newCount
-    }));
-  };
-
-  const handleSwap = () => {
+  const handleSwap = async () => {
     const isUnlimitedSwaps = hasFeature("unlimited-meal-plans");
-    const maxSwaps = isUnlimitedSwaps ? Infinity : 3;
     
-    if (swapCount >= maxSwaps && !isUnlimitedSwaps) {
+    if (isUnlimitedSwaps) {
+      startTransition(() => {
+        onSwapMeal();
+      });
+      return;
+    }
+
+    if (swapCount >= maxSwaps) {
       toast.error("You've reached your weekly swap limit! Upgrade to Pro for unlimited swaps.", {
         duration: 4000,
         icon: "👑"
@@ -84,28 +79,53 @@ export const MealActions = ({ onViewRecipe, onSwapMeal }: MealActionsProps) => {
       return;
     }
 
-    startTransition(() => {
-      onSwapMeal();
-      // Increment swap count only for free users
-      if (!isUnlimitedSwaps) {
-        updateSwapCount(swapCount + 1);
+    startTransition(async () => {
+      try {
+        const response = await fetch("/api/meal-swaps", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ action: "validate-and-increment" }),
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          onSwapMeal();
+          setSwapCount(data.swapCount);
+        } else {
+          console.error("Failed to swap meal:", data.error);
+          if (data.error === "Swap limit reached") {
+            toast.error("You've reached your weekly swap limit! Upgrade to Pro for unlimited swaps.", {
+              duration: 4000,
+              icon: "👑"
+            });
+            unlockFeature(PRO_FEATURES["unlimited-meal-plans"]);
+          } else {
+            toast.error("Failed to swap meal. Please try again.");
+          }
+        }
+      } catch (error) {
+        console.error("Error during meal swap:", error);
+        toast.error("Error swapping meal. Check your connection.");
       }
     });
   };
 
   const isUnlimitedSwaps = hasFeature("unlimited-meal-plans");
-  const maxSwaps = isUnlimitedSwaps ? Infinity : 3;
-  const swapsRemaining = Math.max(0, maxSwaps - swapCount);
+  const currentMaxSwaps = isUnlimitedSwaps ? Infinity : maxSwaps;
+  const swapsRemaining = Math.max(0, currentMaxSwaps - swapCount);
   const canSwap = isUnlimitedSwaps || swapsRemaining > 0;
 
-  // Get next reset date (next Monday)
+  // Get next reset date (next Monday) - adjusted to match backend's Sunday start of week
   const getNextResetDate = () => {
     const now = new Date();
-    const dayOfWeek = now.getDay();
-    const daysToMonday = dayOfWeek === 0 ? 1 : 8 - dayOfWeek; // Next Monday
-    const nextMonday = new Date(now);
-    nextMonday.setDate(now.getDate() + daysToMonday);
-    return nextMonday;
+    const dayOfWeek = now.getDay(); // 0 for Sunday, 1 for Monday...
+    const daysToNextSunday = dayOfWeek === 0 ? 7 : 7 - dayOfWeek; 
+    const nextSunday = new Date(now);
+    nextSunday.setDate(now.getDate() + daysToNextSunday);
+    return nextSunday;
   };
 
   const nextResetDate = getNextResetDate();
@@ -137,7 +157,7 @@ export const MealActions = ({ onViewRecipe, onSwapMeal }: MealActionsProps) => {
         </Button>
 
         {/* Swap Limit Indicator */}
-        {!isUnlimitedSwaps && (
+        {!isUnlimitedSwaps && (swapCount < maxSwaps || swapsRemaining > 0) && (
           <div className="space-y-1">
             <div className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-400">
               <span>Swaps remaining:</span>
@@ -166,12 +186,12 @@ export const MealActions = ({ onViewRecipe, onSwapMeal }: MealActionsProps) => {
         )}
 
         {/* Upgrade Prompt for Free Users */}
-        {!isUnlimitedSwaps && swapsRemaining <= 1 && (
+        {!isUnlimitedSwaps && swapsRemaining === 0 && (
           <div className="p-2 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
             <div className="flex items-center gap-2 text-xs">
               <Lock className="w-3 h-3 text-amber-600 dark:text-amber-400" />
               <span className="text-amber-700 dark:text-amber-300 font-medium">
-                {swapsRemaining === 0 ? "No swaps left this week!" : "Last swap this week!"}
+                No swaps left this week!
               </span>
             </div>
             <Button
