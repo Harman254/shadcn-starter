@@ -90,18 +90,29 @@ const CreateMealPlan = ({ preferences }: CreateMealPlanProps) => {
       setLoading(true)
       resetTitle() // Reset title before generating a new meal plan
 
-      // Check generation limits for free users
+      // ATOMIC VALIDATION AND INCREMENT for free users - MAXIMUM SECURITY
       if (!isUnlimitedGenerations) {
-        const response = await fetch("/api/meal-plan-generations")
-        if (response.ok) {
-          const data = await response.json()
-          const { generationCount, maxGenerations } = data
+        const validationResponse = await fetch("/api/meal-plan-generations", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "validate-and-increment" })
+        })
+        
+        if (validationResponse.status === 429) {
+          // Limit reached
+          const errorData = await validationResponse.json()
           
-          if (generationCount >= maxGenerations) {
-            
-            unlockFeature(PRO_FEATURES["unlimited-meal-plans"])
-            return
-          }
+          unlockFeature(PRO_FEATURES["unlimited-meal-plans"])
+          setLoading(false)
+          return
+        } else if (!validationResponse.ok) {
+          toast.error("Failed to validate generation limits. Please try again.")
+          setLoading(false)
+          return
+        } else {
+          // Successfully validated and incremented
+          const validationData = await validationResponse.json()
+          setGenerationCount(validationData.generationCount)
         }
       }
 
@@ -116,6 +127,7 @@ const CreateMealPlan = ({ preferences }: CreateMealPlanProps) => {
       if (!result?.mealPlan) {
         toast.error("Meal plan service returned invalid data")
         clearMealPlan()
+        setLoading(false)
         return
       }
 
@@ -130,25 +142,12 @@ const CreateMealPlan = ({ preferences }: CreateMealPlanProps) => {
       if (!titleresult?.title) {
         toast.error("Failed to generate meal plan title")
         clearMealPlan()
+        setLoading(false)
         return
       }
 
       const today = new Date().toISOString()
       setMealPlan(result.mealPlan, duration, mealsPerDay, today)
-
-      // Increment generation count for free users
-      if (!isUnlimitedGenerations) {
-        const incrementResponse = await fetch("/api/meal-plan-generations", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "increment" })
-        })
-        
-        if (incrementResponse.ok) {
-          const incrementData = await incrementResponse.json()
-          setGenerationCount(incrementData.generationCount)
-        }
-      }
 
       setGenerated(true)
       setTimeout(() => setGenerated(false), 3000)
@@ -204,21 +203,32 @@ const CreateMealPlan = ({ preferences }: CreateMealPlanProps) => {
     try {
       setRegenerating(true)
 
-      // Check generation limits for free users
+      // ATOMIC VALIDATION AND INCREMENT for free users - MAXIMUM SECURITY
       if (!isUnlimitedGenerations) {
-        const response = await fetch("/api/meal-plan-generations")
-        if (response.ok) {
-          const data = await response.json()
-          const { generationCount, maxGenerations } = data
-          
-          if (generationCount >= maxGenerations) {
-            toast.error("You've reached your weekly meal plan generation limit! Upgrade to Pro for unlimited generations.", {
-              duration: 4000,
-              icon: "👑"
-            })
-            unlockFeature(PRO_FEATURES["unlimited-meal-plans"])
-            return
-          }
+        const validationResponse = await fetch("/api/meal-plan-generations", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "validate-and-increment" })
+        })
+        
+        if (validationResponse.status === 429) {
+          // Limit reached
+          const errorData = await validationResponse.json()
+          toast.error("You've reached your weekly meal plan generation limit! Upgrade to Pro for unlimited generations.", {
+            duration: 4000,
+            icon: "👑"
+          })
+          unlockFeature(PRO_FEATURES["unlimited-meal-plans"])
+          setRegenerating(false)
+          return
+        } else if (!validationResponse.ok) {
+          toast.error("Failed to validate generation limits. Please try again.")
+          setRegenerating(false)
+          return
+        } else {
+          // Successfully validated and incremented
+          const validationData = await validationResponse.json()
+          setGenerationCount(validationData.generationCount)
         }
       }
 
@@ -234,25 +244,12 @@ const CreateMealPlan = ({ preferences }: CreateMealPlanProps) => {
 
       if (!result?.mealPlan) {
         toast.error("Meal plan service returned invalid data")
+        setRegenerating(false)
         return
       }
 
       const today = new Date().toISOString()
       setMealPlan(result.mealPlan, duration, mealsPerDay, today)
-
-      // Increment generation count for free users
-      if (!isUnlimitedGenerations) {
-        const incrementResponse = await fetch("/api/meal-plan-generations", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "increment" })
-        })
-        
-        if (incrementResponse.ok) {
-          const incrementData = await incrementResponse.json()
-          setGenerationCount(incrementData.generationCount)
-        }
-      }
 
       toast.success("Meal plan regenerated successfully!")
     } catch (error) {

@@ -27,8 +27,8 @@ const dashboardLinks = [
   },
   {
     id: 3,
-    name: "Products",
-    href: "/dashboard/products",
+    name: "Analytics",
+    href: "/dashboard/analytics",
     icon: Package,
   },
   {
