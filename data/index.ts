@@ -650,28 +650,113 @@ export async function upgradeUserToPro(userId: string) {
 
 export async function downgradeUserToFree(userId: string) {
   try {
-    const subscription = await prisma.subscription.upsert({
-      where: {
-        userID: userId,
-      },
-      update: {
-        plan: "free",
-        status: "active",
-        features: [],
-        updatedAt: new Date(),
-      },
-      create: {
-        userID: userId,
-        CustomerID: `free_${userId}`,
-        plan: "free",
-        status: "active",
-        features: [],
-        currentPeriodEnd: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 year from now
-      },
+    const result = await prisma.$transaction(async (tx) => {
+      // Update subscription to free plan
+      const updatedSubscription = await tx.subscription.upsert({
+        where: { userID: userId },
+        update: {
+          plan: "free",
+          status: "active",
+          features: [],
+          updatedAt: new Date()
+        },
+        create: {
+          userID: userId,
+          CustomerID: `free_${userId}`,
+          plan: "free",
+          status: "active",
+          features: []
+        }
+      });
+
+      // Update account to remove pro status
+      await tx.account.updateMany({
+        where: { userId },
+        data: { isPro: false }
+      });
+
+      return updatedSubscription;
     });
-    return subscription;
+
+    return result;
   } catch (error) {
     console.error("Error downgrading user to free:", error);
+    throw error;
+  }
+}
+
+// Temporary in-memory storage for meal plan generations
+// This will be replaced with proper database storage after Prisma client regeneration
+const generationCounts = new Map<string, { count: number; weekStart: Date }>();
+
+// Meal Plan Generation Functions
+export async function getMealPlanGenerationCount(userId: string) {
+  try {
+    const now = new Date();
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - now.getDay()); // Start of week (Sunday)
+    startOfWeek.setHours(0, 0, 0, 0);
+
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 7);
+
+    // Check if we have a record for this user and week
+    const userKey = `${userId}_${startOfWeek.toISOString().split('T')[0]}`;
+    const userRecord = generationCounts.get(userKey);
+
+    if (!userRecord || userRecord.weekStart.getTime() !== startOfWeek.getTime()) {
+      // No record or different week, create new record
+      generationCounts.set(userKey, { count: 0, weekStart: startOfWeek });
+      return {
+        generationCount: 0,
+        maxGenerations: 2, // Free users get 2 generations per week
+        weekStart: startOfWeek,
+        weekEnd: endOfWeek
+      };
+    }
+
+    return {
+      generationCount: userRecord.count,
+      maxGenerations: 2, // Free users get 2 generations per week
+      weekStart: startOfWeek,
+      weekEnd: endOfWeek
+    };
+  } catch (error) {
+    console.error("Error getting meal plan generation count:", error);
+    throw error;
+  }
+}
+
+export async function incrementMealPlanGeneration(userId: string) {
+  try {
+    const now = new Date();
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - now.getDay()); // Start of week (Sunday)
+    startOfWeek.setHours(0, 0, 0, 0);
+
+    const userKey = `${userId}_${startOfWeek.toISOString().split('T')[0]}`;
+    const userRecord = generationCounts.get(userKey);
+
+    if (!userRecord || userRecord.weekStart.getTime() !== startOfWeek.getTime()) {
+      // No record or different week, create new record
+      generationCounts.set(userKey, { count: 1, weekStart: startOfWeek });
+      return {
+        success: true,
+        generationCount: 1,
+        maxGenerations: 2
+      };
+    } else {
+      // Increment existing record
+      userRecord.count += 1;
+      generationCounts.set(userKey, userRecord);
+      return {
+        success: true,
+        generationCount: userRecord.count,
+        maxGenerations: 2
+      };
+    }
+  } catch (error) {
+    console.error("Error incrementing meal plan generation:", error);
     throw error;
   }
 }

@@ -76,24 +76,29 @@ const prompt = ai.definePrompt({
   output: {
     schema: GenerateMealPlanOutputSchema,
   },
-  prompt: `Each time generate a new different meal plan.
-Generate a personalized meal plan for {{duration}} days with {{mealsPerDay}} meals per day, considering the following preferences:
+  prompt: `
+You are an expert meal planner and nutritionist.
 
-Dietary Preferences: {{#each preferences}}{{this.dietaryPreference}}{{#unless @last}}, {{/unless}}{{/each}}
-Goals: {{#each preferences}}{{this.goal}}{{#unless @last}}, {{/unless}}{{/each}}
-Household Sizes: {{#each preferences}}{{this.householdSize}}{{#unless @last}}, {{/unless}}{{/each}}
-Cuisine Preferences: {{#each preferences}}{{#each this.cuisinePreferences}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}{{#unless @last}}, {{/unless}}{{/each}}
+Generate a **personalized meal plan** for {{duration}} days with {{mealsPerDay}} meals per day. The meal plan should reflect the following user preferences:
 
-Random Seed: {{randomSeed}}.
+- **Dietary Preferences**: {{#each preferences}}{{this.dietaryPreference}}{{#unless @last}}, {{/unless}}{{/each}}
+- **Health or Fitness Goals**: {{#each preferences}}{{this.goal}}{{#unless @last}}, {{/unless}}{{/each}}
+- **Household Size**: {{#each preferences}}{{this.householdSize}}{{#unless @last}}, {{/unless}}{{/each}}
+- **Cuisine Preferences**: {{#each preferences}}{{#each this.cuisinePreferences}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}{{#unless @last}}, {{/unless}}{{/each}}
 
-Ensure each meal includes:
-- A name
-- A brief, engaging description (1-2 sentences)
-- A list of ingredients
-- Clear, detailed cooking instructions
-- A valid image URL (realistic, symbolic, or AI-generated)
+Use the optional **randomSeed** ({{randomSeed}}) to introduce variety on regeneration.
 
-Return the meal plan as a valid JSON object.`,
+For each meal, include:
+- A **unique and descriptive title**
+- A short, engaging **description** (1–2 sentences)
+- A **realistic and complete list of ingredients**
+- **Clear, beginner-friendly cooking instructions**
+- A **valid and relevant image URL** (can be symbolic, AI-generated, or realistic)
+
+Return a well-structured meal plan for each day as valid JSON conforming to the output schema. Do **not** include any explanation or formatting outside of the JSON response.
+
+Ensure meals are diverse, not repeated, and aligned with the dietary and culinary preferences provided.
+  `,
 });
 
 /* ========================== */

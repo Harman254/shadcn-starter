@@ -35,20 +35,30 @@ import { motion, AnimatePresence } from "framer-motion"
 const dietaryOptions = [
   {
     value: "Vegetarian",
+    label: "Vegetarian",
     description: "Plant-based diet excluding meat and fish",
     icon: "🥗",
     color:
       "bg-green-50 border-green-200 hover:bg-green-100 dark:bg-green-950/30 dark:border-green-800 dark:hover:bg-green-900/40",
   },
   {
-    value: "Vegan",
-    description: "Plant-based diet excluding all animal products",
-    icon: "🌱",
-    color:
-      "bg-emerald-50 border-emerald-200 hover:bg-emerald-100 dark:bg-emerald-950/30 dark:border-emerald-800 dark:hover:bg-emerald-900/40",
+    value: "Keto",
+    label: "Keto",
+    description: "Low-carb, high-fat ketogenic diet",
+    icon: "🥓",
+    color: "bg-zinc-50 border-zinc-200 hover:bg-zinc-100 dark:bg-zinc-950/30 dark:border-zinc-800 dark:hover:bg-zinc-900/40",
   },
   {
+    value: "Halal",
+    label: "Halal",
+    description: "Permissible foods under Islamic law",
+    icon: "🕌",
+    color: "bg-emerald-50 border-emerald-200 hover:bg-emerald-100 dark:bg-emerald-950/30 dark:border-emerald-800 dark:hover:bg-emerald-900/40",
+  },
+  
+  {
     value: "Pescatarian",
+    label: "Pescatarian",
     description: "Plant-based diet including fish and seafood",
     icon: "🐟",
     color:
@@ -56,6 +66,7 @@ const dietaryOptions = [
   },
   {
     value: "Gluten-Free",
+    label: "Gluten-Free",
     description: "Diet excluding gluten-containing grains",
     icon: "🌾",
     color:
@@ -63,6 +74,7 @@ const dietaryOptions = [
   },
   {
     value: "None (All foods)",
+    label: "None",
     description: "No dietary restrictions",
     icon: "🍽️",
     color:

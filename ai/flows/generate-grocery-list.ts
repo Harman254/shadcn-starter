@@ -58,31 +58,38 @@ const prompt = ai.definePrompt({
   input: { schema: GenerateGroceryListInputSchema },
   output: { schema: GenerateGroceryListOutputSchema },
   prompt: `
-You are a grocery list generator. Your task is to create a consolidated grocery list based on the provided meal ingredients.
+You are a grocery assistant. Your task is to generate a clean, consolidated grocery list based only on the meals below.
 
-User Location Information:
+## USER LOCATION
 - Country: {{userLocation.country}}
 - City: {{userLocation.city}}
 - Currency: {{userLocation.currencyCode}} ({{userLocation.currencySymbol}})
 {{#if userLocation.localStores}}
-- Local Grocery Stores: {{#each userLocation.localStores}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}
+- Local Stores: {{#each userLocation.localStores}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}
+{{else}}
+- Local Stores: Use generic names like "Supermarket", "Butcher", or "Grocery Store".
 {{/if}}
 
-Instructions:
-1. Use ONLY the ingredients already provided in the meals list. DO NOT add, modify, or suggest new ingredients.
-2. For each unique ingredient from the provided meals, list:
-   - The item name exactly as provided (e.g., "Chicken Breasts", "Onion", "Olive Oil").
-   - An estimated price range in the user's local currency (e.g., '{{userLocation.currencySymbol}}5.00 - {{userLocation.currencySymbol}}7.00').
-   - A suggested store where it's typically purchased, using local store chains from the user's location when available.
-3. Consolidate quantities implicitly – just list each unique ingredient once.
-4. Format the output as a valid JSON object containing a single key "groceryList" which holds an array of objects. Each object must have the keys: "item", "estimatedPrice", and "suggestedLocation".
+## RULES
+1. Use **only** the ingredients listed below — do not invent, modify, or omit anything.
+2. For each unique ingredient (case-insensitive):
+   - "item": Name of the ingredient (as provided).
+   - "estimatedPrice": Local price range using the currency (e.g., '{{userLocation.currencySymbol}}5.00 - {{userLocation.currencySymbol}}7.00').
+   - "suggestedLocation": A store from the list above or a generic one.
+3. Group identical or similar items as one (e.g., "Tomatoes" and "tomatoes" = same).
+4. The response must be a JSON object with **only** one key: 'groceryList', which is an array of objects like:
+   {
+     "item": "Onion",
+     "estimatedPrice": "KSh20 - KSh40",
+     "suggestedLocation": "Naivas"
+   }
 
-Meals and Ingredients:
+## MEALS
 {{#each meals}}
 - {{this.name}}: {{#each this.ingredients}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}
 {{/each}}
 
-Respond ONLY with the valid JSON object adhering to the specified output schema.
+Return only the valid JSON. Do not include any explanation or commentary.
 `,
 });
 

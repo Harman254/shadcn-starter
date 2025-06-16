@@ -29,7 +29,7 @@ import { motion, AnimatePresence } from "framer-motion"
 // Constants
 const DIETARY_OPTIONS = [
   {
-    value: "vegetarian",
+    value: "Vegetarian",
     label: "Vegetarian",
     description: "Plant-based diet excluding meat and fish",
     icon: "🥗",
@@ -37,15 +37,22 @@ const DIETARY_OPTIONS = [
       "bg-green-50 border-green-200 hover:bg-green-100 dark:bg-green-950/30 dark:border-green-800 dark:hover:bg-green-900/40",
   },
   {
-    value: "vegan",
-    label: "Vegan",
-    description: "Plant-based diet excluding all animal products",
-    icon: "🌱",
-    color:
-      "bg-emerald-50 border-emerald-200 hover:bg-emerald-100 dark:bg-emerald-950/30 dark:border-emerald-800 dark:hover:bg-emerald-900/40",
+    value: "Keto",
+    label: "Keto",
+    description: "Low-carb, high-fat ketogenic diet",
+    icon: "🥓",
+    color: "bg-zinc-50 border-zinc-200 hover:bg-zinc-100 dark:bg-zinc-950/30 dark:border-zinc-800 dark:hover:bg-zinc-900/40",
   },
   {
-    value: "pescatarian",
+    value: "Halal",
+    label: "Halal",
+    description: "Permissible foods under Islamic law",
+    icon: "🕌",
+    color: "bg-emerald-50 border-emerald-200 hover:bg-emerald-100 dark:bg-emerald-950/30 dark:border-emerald-800 dark:hover:bg-emerald-900/40",
+  },
+  
+  {
+    value: "Pescatarian",
     label: "Pescatarian",
     description: "Plant-based diet including fish and seafood",
     icon: "🐟",
@@ -53,7 +60,7 @@ const DIETARY_OPTIONS = [
       "bg-blue-50 border-blue-200 hover:bg-blue-100 dark:bg-blue-950/30 dark:border-blue-800 dark:hover:bg-blue-900/40",
   },
   {
-    value: "gluten_free",
+    value: "Gluten-Free",
     label: "Gluten-Free",
     description: "Diet excluding gluten-containing grains",
     icon: "🌾",
@@ -61,8 +68,8 @@ const DIETARY_OPTIONS = [
       "bg-amber-50 border-amber-200 hover:bg-amber-100 dark:bg-amber-950/30 dark:border-amber-800 dark:hover:bg-amber-900/40",
   },
   {
-    value: "omnivore",
-    label: "No Restrictions",
+    value: "None (All foods)",
+    label: "None",
     description: "No dietary restrictions",
     icon: "🍽️",
     color:
@@ -243,13 +250,13 @@ const Preferences = ({userId}:Props ) => {
   }, [preferences, originalPreferences])
 
   // Debug effect to log preference changes
-  useEffect(() => {
-    console.log("Preferences state updated:", preferences)
-    console.log("Dietary preference:", preferences.dietaryPreference)
-    console.log("Goal:", preferences.goal)
-    console.log("Household size:", preferences.householdSize)
-    console.log("Cuisine preferences:", preferences.cuisinePreferences)
-  }, [preferences])
+  // useEffect(() => {
+  //   console.log("Preferences state updated:", preferences)
+  //   console.log("Dietary preference:", preferences.dietaryPreference)
+  //   console.log("Goal:", preferences.goal)
+  //   console.log("Household size:", preferences.householdSize)
+  //   console.log("Cuisine preferences:", preferences.cuisinePreferences)
+  // }, [preferences])
 
   /**
    * Save preferences to the database
@@ -348,19 +355,7 @@ const Preferences = ({userId}:Props ) => {
 
   const cn = (...classes: string[]) => classes.filter(Boolean).join(' ')
 
-  // Loading state
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-background/95 flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-green-400 to-green-800 flex items-center justify-center text-white shadow-lg">
-            <Loader2 className="w-8 h-8 animate-spin" />
-          </div>
-          <p className="text-lg font-medium text-gray-600 dark:text-gray-300">Loading your preferences...</p>
-        </div>
-      </div>
-    )
-  }
+  
 
   return (
     <div className="min-h-screen bg-background/95 ">

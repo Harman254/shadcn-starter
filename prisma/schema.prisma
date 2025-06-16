@@ -145,3 +145,14 @@ model subscription {
   updatedAt         DateTime @updatedAt
   user              User     @relation(fields: [userID], references: [id], onDelete: Cascade)
 }
+
+model mealPlanGeneration {
+  id              String   @id @default(cuid())
+  userId          String   // User ID
+  weekStart       DateTime // Start of the week (Sunday)
+  generationCount Int      @default(0) // Number of generations this week
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([userId, weekStart]) // One record per user per week
+}

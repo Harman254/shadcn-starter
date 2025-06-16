@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { type GenerateMealPlanInput, generatePersonalizedMealPlan } from "@/ai/flows/generate-meal-plan"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
@@ -11,11 +11,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Separator } from "@/components/ui/separator"
 import { useMealPlanStore, useMealPlanTitleStore } from "@/store"
 import type { UserPreference } from "@/types"
-import { Loader2, RefreshCcw, CheckCircle2, Clock, Utensils, Rocket, ArrowRight } from "lucide-react"
+import { Loader2, RefreshCcw, CheckCircle2, Clock, Utensils, Rocket, ArrowRight, Crown, Lock } from "lucide-react"
 import toast from "react-hot-toast"
 import { generateMealPlanTitle } from "@/ai/flows/generateMealPlanTitle"
 import { useRouter } from "next/navigation"
-import MealLoading from "./meal-plan-loading"
+import { useProFeatures, PRO_FEATURES } from "@/hooks/use-pro-features"
+import MealLoading from "./meal-plan-loading-new"
 
 /* ======================== */
 /*        Interfaces         */
@@ -48,10 +49,34 @@ const CreateMealPlan = ({ preferences }: CreateMealPlanProps) => {
   const [savingMealPlan, setSavingMealPlan] = useState(false)
   const [regenerating, setRegenerating] = useState(false)
   const [generated, setGenerated] = useState(false)
+  const [generationCount, setGenerationCount] = useState(0)
+  const [maxGenerations, setMaxGenerations] = useState(2)
   const { setTitle, resetTitle } = useMealPlanTitleStore()
   const router = useRouter()
+  const { hasFeature, unlockFeature, getFeatureBadge } = useProFeatures()
 
   const title = useMealPlanTitleStore((state) => state.title)
+  const isUnlimitedGenerations = hasFeature("unlimited-meal-plans")
+
+  // Fetch generation count on mount
+  useEffect(() => {
+    const fetchGenerationCount = async () => {
+      if (!isUnlimitedGenerations) {
+        try {
+          const response = await fetch("/api/meal-plan-generations")
+          if (response.ok) {
+            const data = await response.json()
+            setGenerationCount(data.generationCount)
+            setMaxGenerations(data.maxGenerations)
+          }
+        } catch (error) {
+          console.error("Error fetching generation count:", error)
+        }
+      }
+    }
+
+    fetchGenerationCount()
+  }, [isUnlimitedGenerations])
 
   /* ======================== */
   /*       Functions           */
@@ -59,10 +84,26 @@ const CreateMealPlan = ({ preferences }: CreateMealPlanProps) => {
 
   const generateMealPlan = async () => {
     const { duration, mealsPerDay } = useMealPlanStore.getState()
+    const isUnlimitedGenerations = hasFeature("unlimited-meal-plans")
 
     try {
       setLoading(true)
       resetTitle() // Reset title before generating a new meal plan
+
+      // Check generation limits for free users
+      if (!isUnlimitedGenerations) {
+        const response = await fetch("/api/meal-plan-generations")
+        if (response.ok) {
+          const data = await response.json()
+          const { generationCount, maxGenerations } = data
+          
+          if (generationCount >= maxGenerations) {
+            
+            unlockFeature(PRO_FEATURES["unlimited-meal-plans"])
+            return
+          }
+        }
+      }
 
       const input: GenerateMealPlanInput = {
         duration,
@@ -92,10 +133,22 @@ const CreateMealPlan = ({ preferences }: CreateMealPlanProps) => {
         return
       }
 
-      
-
       const today = new Date().toISOString()
       setMealPlan(result.mealPlan, duration, mealsPerDay, today)
+
+      // Increment generation count for free users
+      if (!isUnlimitedGenerations) {
+        const incrementResponse = await fetch("/api/meal-plan-generations", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "increment" })
+        })
+        
+        if (incrementResponse.ok) {
+          const incrementData = await incrementResponse.json()
+          setGenerationCount(incrementData.generationCount)
+        }
+      }
 
       setGenerated(true)
       setTimeout(() => setGenerated(false), 3000)
@@ -146,8 +199,28 @@ const CreateMealPlan = ({ preferences }: CreateMealPlanProps) => {
   const handleRejectPlan = async () => {
     if (regenerating) return
 
+    const isUnlimitedGenerations = hasFeature("unlimited-meal-plans")
+
     try {
       setRegenerating(true)
+
+      // Check generation limits for free users
+      if (!isUnlimitedGenerations) {
+        const response = await fetch("/api/meal-plan-generations")
+        if (response.ok) {
+          const data = await response.json()
+          const { generationCount, maxGenerations } = data
+          
+          if (generationCount >= maxGenerations) {
+            toast.error("You've reached your weekly meal plan generation limit! Upgrade to Pro for unlimited generations.", {
+              duration: 4000,
+              icon: "👑"
+            })
+            unlockFeature(PRO_FEATURES["unlimited-meal-plans"])
+            return
+          }
+        }
+      }
 
       const { duration, mealsPerDay } = useMealPlanStore.getState()
 
@@ -166,6 +239,20 @@ const CreateMealPlan = ({ preferences }: CreateMealPlanProps) => {
 
       const today = new Date().toISOString()
       setMealPlan(result.mealPlan, duration, mealsPerDay, today)
+
+      // Increment generation count for free users
+      if (!isUnlimitedGenerations) {
+        const incrementResponse = await fetch("/api/meal-plan-generations", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "increment" })
+        })
+        
+        if (incrementResponse.ok) {
+          const incrementData = await incrementResponse.json()
+          setGenerationCount(incrementData.generationCount)
+        }
+      }
 
       toast.success("Meal plan regenerated successfully!")
     } catch (error) {
@@ -200,6 +287,39 @@ const CreateMealPlan = ({ preferences }: CreateMealPlanProps) => {
           <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100 mb-2">Create Your Perfect Meal Plan</h1>
           <p className="text-slate-600 dark:text-slate-400 text-lg">Personalized nutrition planning made simple</p>
         </div>
+
+        {/* Generation Limit Indicator */}
+        {!isUnlimitedGenerations && (
+          <Card className="border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 mb-6">
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Lock className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                  <span className="text-sm font-medium text-amber-800 dark:text-amber-200">
+                    Free Plan: {generationCount}/{maxGenerations} generations used this week
+                  </span>
+                </div>
+                <div className="text-xs text-amber-600 dark:text-amber-400">
+                  {maxGenerations - generationCount} remaining • Resets every Monday
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Pro Badge for Unlimited Users */}
+        {isUnlimitedGenerations && (
+          <Card className="border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/20 mb-6">
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-center gap-2">
+                <Crown className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                <span className="text-sm font-medium text-emerald-800 dark:text-emerald-200">
+                  Pro Plan: Unlimited meal plan generations
+                </span>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         <Card className="border-0 shadow-xl shadow-slate-200/50 dark:shadow-slate-900/50 bg-background/95 backdrop-blur-sm">
           <CardHeader className="bg-background/95 border-b border-slate-200/50 dark:border-slate-700/50">
