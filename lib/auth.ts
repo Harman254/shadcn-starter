@@ -132,7 +132,7 @@ export const auth = betterAuth({
           checkout({
               products: [
                   {
-                      productId: "9f883e4d-1955-468c-a20c-9bca0c931986",
+                      productId: "d6f79514-fa26-4b48-a8f4-da20e3d087c5",
                       slug: "Mealwise-Pro" // Custom slug for easy reference in Checkout URL, e.g. /checkout/Mealwise-Pro
                   }
               ],
