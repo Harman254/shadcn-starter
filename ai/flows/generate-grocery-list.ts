@@ -74,7 +74,7 @@ You are a grocery assistant. Your task is to generate a clean, consolidated groc
 1. Use **only** the ingredients listed below — do not invent, modify, or omit anything.
 2. For each unique ingredient (case-insensitive):
    - "item": Name of the ingredient (as provided).
-   - "estimatedPrice": Local price range using the currency (e.g., '{{userLocation.currencySymbol}}5.00 - {{userLocation.currencySymbol}}7.00').
+   - "estimatedPrice": Local price range with appropriate currency symbol (e.g., '{{userLocation.currencySymbol}}50 - {{userLocation.currencySymbol}}100'). Ensure the prices are realistic for a single item in the given country and city.
    - "suggestedLocation": A store from the list above or a generic one.
 3. Group identical or similar items as one (e.g., "Tomatoes" and "tomatoes" = same).
 4. The response must be a JSON object with **only** one key: 'groceryList', which is an array of objects like:

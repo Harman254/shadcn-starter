@@ -16,6 +16,7 @@ interface UserLocation {
   country: string
   city: string
   currencyCode: string
+  currencySymbol: string
 }
 
 interface GroceryListState {
@@ -104,6 +105,7 @@ export const useGroceryListStore = create<GroceryListState>()(
               country: result.locationData.country,
               city: result.locationData.city,
               currencyCode: result.locationData.currencyCode,
+              currencySymbol: result.locationData.currencySymbol,
             },
             isLoading: false,
             error: null

@@ -36,7 +36,7 @@ const GroceryList = ({ id }: GroceryListProps) => {
 
   // Format price with currency symbol
   const formatPrice = (amount: number): string => {
-    const currencySymbol = userLocation?.currencyCode || "$"
+    const currencySymbol = userLocation?.currencySymbol || "$"
     return `${currencySymbol}${amount.toFixed(2)}`
   }
 
