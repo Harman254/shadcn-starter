@@ -55,9 +55,17 @@ interface GroceryListState {
 
 // Helper function to parse price string to number
 const parsePrice = (priceString: string): number => {
-  const numericValue = priceString.replace(/[^0-9.]/g, "")
-  return Number.parseFloat(numericValue) || 0
-}
+  // Extract all numbers from the string
+  const numbers = priceString.match(/\d+(\.\d+)?/g);
+
+  if (!numbers || numbers.length === 0) {
+    return 0;
+  }
+
+  // If it's a range, take the first number (lower bound)
+  // If it's a single number, take that number
+  return Number.parseFloat(numbers[0]) || 0;
+};
 
 export const useGroceryListStore = create<GroceryListState>()(
   persist(
@@ -95,7 +103,8 @@ export const useGroceryListStore = create<GroceryListState>()(
             checked: false,
           }))
           
-          const uniqueStores = Array.from(new Set(groceryItems.map((item) => item.suggestedLocation)))
+          // Populate stores from AI's enhanced location info, not just item suggestions
+          const uniqueStores = Array.from(new Set(result.locationData.localStores as string[]))
           
           set({
             groceryList: groceryItems,
