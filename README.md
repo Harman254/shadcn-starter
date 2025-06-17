@@ -1,22 +1,53 @@
-# next-template
+Mealwise
+Mealwise is an AI-powered meal planning app built with the modern web stack — focused on helping users save time, eat healthier, and shop smarter. From personalized meal plans to AI-generated grocery lists, Mealwise is the smart kitchen companion for individuals, families, and fitness-focused users.
 
-A Next.js 13 template for building apps with Radix UI and Tailwind CSS.
+🚀 The Journey So Far
+Mealwise started with a simple idea: make meal planning effortless. Since then, it's evolved into a powerful platform offering:
 
-## Usage
+🍽️ Personalized meal plans tailored to user preferences, goals, and household size.
 
-```bash
-npx create-next-app -e https://github.com/shadcn/next-template
-```
+🛒 Smart grocery lists with location-aware pricing.
 
-## Features
+🌍 Local checkout and delivery integrations via partnered stores.
 
-- Next.js 13 App Directory
-- Radix UI Primitives
-- Tailwind CSS
-- Icons from [Lucide](https://lucide.dev)
-- Dark mode with `next-themes`
-- Tailwind CSS class sorting, merging and linting.
+🖼️ AI-generated meal images for a richer experience.
 
-## License
+❤️ Liked meals and recipe favorites for easy rediscovery.
 
-Licensed under the [MIT license](https://github.com/shadcn/ui/blob/main/LICENSE.md).
+🧠 Weekly emails and pro-only features to drive retention and value.
+
+We're just getting started — and the roadmap ahead includes even deeper personalization, recipe customization, and intelligent inventory-aware suggestions.
+
+🛠 Tech Stack
+Mealwise is built using:
+
+Next.js 13+ with the App Router
+
+Tailwind CSS + Radix UI
+
+Neon for scalable, serverless PostgreSQL
+
+[BetterAuth (Clerk.js fork)] for authentication
+
+Polar.sh for managing subscriptions and monetization
+
+Genkit for AI task orchestration
+
+Resend for transactional email
+
+Hosted on Vercel
+
+✨ Features
+📆 Dynamic Meal Planner with AI
+
+🛍️ Grocery List Generator based on real-time user location
+
+📸 AI-generated images for meals
+
+🔐 Authentication & Magic Link Login (BetterAuth)
+
+🧾 Subscription tiers via Polar
+
+🧠 Caching and reusability of previous plans
+
+🎨 Dark Mode and responsive UI built on ShadCN template
