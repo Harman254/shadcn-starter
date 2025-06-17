@@ -1,40 +1,110 @@
-'use client';
-
 import React, { Suspense } from 'react';
+import { Metadata } from 'next'
 import GroceryList from '@/components/groceries'; // adjust path as needed
 import { usePathname, useSearchParams } from 'next/navigation';
 
-export default function GroceryListPage() {
-    const pathname = usePathname();
-    const searchParams = useSearchParams();
-    console.log('Current pathname:', pathname);
-    const id = pathname.split('/').pop(); // Extract the last segment as id
-    const lat = searchParams.get('lat');
-    const lon = searchParams.get('lon');
-    
-    console.log('Extracted id:', id);
-    console.log('Extracted latitude:', lat);
-    console.log('Extracted longitude:', lon);
+// Generate metadata for the grocery list page
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  const { id } = await params;
 
-    if (!id) {
-        return <div className="text-red-500">Error: No ID provided in the URL.</div>;
-    }
+  return {
+    title: `Grocery List | MealWise - Smart Shopping for Your Meal Plan`,
+    description: `Your personalized grocery list for meal planning. Get organized shopping lists with ingredients, quantities, and smart categorization. Save time and money with MealWise's intelligent grocery planning.`,
+    keywords: [
+      'grocery list',
+      'shopping list',
+      'meal planning grocery',
+      'ingredient list',
+      'smart shopping',
+      'grocery planning',
+      'meal prep shopping',
+      'nutrition shopping',
+      'healthy grocery list',
+      'organized shopping',
+      'grocery management',
+      'shopping organization'
+    ],
+    authors: [{ name: 'MealWise Team' }],
+    creator: 'MealWise',
+    publisher: 'MealWise',
+    formatDetection: {
+      email: false,
+      address: false,
+      telephone: false,
+    },
+    metadataBase: new URL('https://www.aimealwise.com'),
+    alternates: {
+      canonical: `/grocery-list/${id}`,
+    },
+    openGraph: {
+      title: `Grocery List | MealWise - Smart Shopping for Your Meal Plan`,
+      description: `Your personalized grocery list for meal planning. Get organized shopping lists with ingredients, quantities, and smart categorization. Save time and money with MealWise's intelligent grocery planning.`,
+      url: `https://www.aimealwise.com/grocery-list/${id}`,
+      siteName: 'MealWise',
+      images: [
+        {
+          url: '/og-grocery-list.png',
+          width: 1200,
+          height: 630,
+          alt: 'MealWise Grocery List - Smart Shopping Organization',
+        },
+      ],
+      locale: 'en_US',
+      type: 'website',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: `Grocery List | MealWise - Smart Shopping for Your Meal Plan`,
+      description: `Your personalized grocery list for meal planning. Get organized shopping lists with ingredients, quantities, and smart categorization. Save time and money with MealWise's intelligent grocery planning.`,
+      images: ['/og-grocery-list.png'],
+      creator: '@mealwise',
+      site: '@mealwise',
+    },
+    robots: {
+      index: false,
+      follow: false,
+      googleBot: {
+        index: false,
+        follow: false,
+      },
+    },
+    verification: {
+      google: 'your-google-verification-code',
+      yandex: 'your-yandex-verification-code',
+      yahoo: 'your-yahoo-verification-code',
+    },
+  };
+}
+
+// Client component wrapper for the grocery list
+function GroceryListClient({ id }: { id: string }) {
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  console.log('Current pathname:', pathname);
+  const lat = searchParams.get('lat');
+  const lon = searchParams.get('lon');
   
+  console.log('Extracted id:', id);
+  console.log('Extracted latitude:', lat);
+  console.log('Extracted longitude:', lon);
+
+  if (!id) {
+      return <div className="text-red-500">Error: No ID provided in the URL.</div>;
+  }
 
   return (
-   
-
     <Suspense fallback={<LoadingSkeleton />}>
         <GroceryList id={id}  />
     </Suspense>
-)
-  
+  )
 }
 
-
-
-
-
+export default async function GroceryListPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  return (
+    <GroceryListClient id={id} />
+  )
+}
 
 function LoadingSkeleton() {
 return (

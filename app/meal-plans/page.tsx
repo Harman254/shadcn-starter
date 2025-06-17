@@ -1,4 +1,5 @@
 // app/meal-plans/page.tsx
+import { Metadata } from 'next'
 import { fetchMealPlansByUserId } from "@/data"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -8,6 +9,77 @@ import Link from "next/link"
 import type { MealPlan } from "@/types"
 import { headers } from "next/headers"
 import { auth } from "@/lib/auth"
+
+export const metadata: Metadata = {
+  title: 'My Meal Plans | MealWise - Personalized AI Meal Planning',
+  description: 'Discover, organize, and enjoy your personalized nutrition journey with beautifully crafted meal plans designed just for you. Create, manage, and track your meal planning progress.',
+  keywords: [
+    'meal plans',
+    'personalized meal planning',
+    'nutrition journey',
+    'meal planning dashboard',
+    'AI meal plans',
+    'healthy eating plans',
+    'diet planning',
+    'meal prep',
+    'food planning',
+    'nutrition tracking',
+    'meal management',
+    'culinary journey'
+  ],
+  authors: [{ name: 'MealWise Team' }],
+  creator: 'MealWise',
+  publisher: 'MealWise',
+  formatDetection: {
+    email: false,
+    address: false,
+    telephone: false,
+  },
+  metadataBase: new URL('https://www.aimealwise.com'),
+  alternates: {
+    canonical: '/meal-plans',
+  },
+  openGraph: {
+    title: 'My Meal Plans | MealWise - Personalized AI Meal Planning',
+    description: 'Discover, organize, and enjoy your personalized nutrition journey with beautifully crafted meal plans designed just for you. Create, manage, and track your meal planning progress.',
+    url: 'https://www.aimealwise.com/meal-plans',
+    siteName: 'MealWise',
+    images: [
+      {
+        url: '/og-meal-plans.png',
+        width: 1200,
+        height: 630,
+        alt: 'MealWise Meal Plans - Personalized Nutrition Journey',
+      },
+    ],
+    locale: 'en_US',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'My Meal Plans | MealWise - Personalized AI Meal Planning',
+    description: 'Discover, organize, and enjoy your personalized nutrition journey with beautifully crafted meal plans designed just for you. Create, manage, and track your meal planning progress.',
+    images: ['/og-meal-plans.png'],
+    creator: '@mealwise',
+    site: '@mealwise',
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
+  verification: {
+    google: 'your-google-verification-code',
+    yandex: 'your-yandex-verification-code',
+    yahoo: 'your-yahoo-verification-code',
+  },
+}
 
 const MealPlans = async () => {
   const session = await auth.api.getSession({ headers: await headers() })
