@@ -19,7 +19,7 @@ type Meal = {
   difficulty?: string
   rating?: number
   tags?: string[]
-  imageUrl?: string
+  imageUrl?: string | null
 }
 
 type RecipeModalProps = {
