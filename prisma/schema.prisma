@@ -77,6 +77,12 @@ model User {
   twoFactorEnabled Boolean   @default(false)
   Session          Session[]
   Account          Account[]
+  
+  // New fields for user location
+  country          String? // Stored user's country
+  city             String? // Stored user's city
+  currencyCode     String? // Stored user's currency code
+  currencySymbol   String? // Stored user's currency symbol
 
   @@unique([email])
   @@map("user")

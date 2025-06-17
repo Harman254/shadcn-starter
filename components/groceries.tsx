@@ -9,7 +9,13 @@ import { Badge } from "@/components/ui/badge"
 import { useGroceryListStore } from "@/data/grocery-store"
 import { motion, AnimatePresence } from "framer-motion"
 
-const GroceryList = ({ id }: { id: string | null }) => {
+interface GroceryListProps {
+  id: string | null;
+  lat: string | null;
+  lon: string | null;
+}
+
+const GroceryList = ({ id, lat, lon }: GroceryListProps) => {
   // Use the Zustand store
   const {
     groceryList,
@@ -37,8 +43,8 @@ const GroceryList = ({ id }: { id: string | null }) => {
 
   // Fetch grocery list when component mounts or id changes
   useEffect(() => {
-    fetchGroceryList(id)
-  }, [id, fetchGroceryList])
+    fetchGroceryList(id, lat, lon)
+  }, [id, lat, lon, fetchGroceryList])
 
   // Calculate totals and completion percentage
   const totals = getTotals()

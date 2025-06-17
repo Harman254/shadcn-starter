@@ -10,8 +10,8 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const data = await generateGroceryListFromMealPlan(id);
-    return NextResponse.json(data);
+    const result = await generateGroceryListFromMealPlan(id);
+    return NextResponse.json(result);
   } catch (e) {
     return NextResponse.json({ error: 'Failed to fetch grocery list' }, { status: 500 });
   }

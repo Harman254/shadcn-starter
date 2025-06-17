@@ -142,7 +142,19 @@ export function FavoriteRecipesClient({ initialFavorites }: FavoriteRecipesClien
             <Card key={recipe.id} className="overflow-hidden hover:shadow-lg transition-shadow">
               <CardHeader className="p-0">
                 <div className="relative">
-                  <div className="w-full h-48 bg-gradient-to-br from-orange-100 to-red-100 flex items-center justify-center">
+                  {recipe.imageUrl ? (
+                    <img
+                      src={recipe.imageUrl}
+                      alt={recipe.name}
+                      className="w-full h-48 object-cover"
+                      onError={(e) => {
+                        // Fallback to placeholder if image fails to load
+                        e.currentTarget.style.display = 'none';
+                        e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                      }}
+                    />
+                  ) : null}
+                  <div className={`w-full h-48 bg-gradient-to-br from-orange-100 to-red-100 flex items-center justify-center ${recipe.imageUrl ? 'hidden' : ''}`}>
                     <ChefHat className="h-12 w-12 text-muted-foreground" />
                   </div>
                   <Button 

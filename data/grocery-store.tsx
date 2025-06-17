@@ -87,9 +87,9 @@ export const useGroceryListStore = create<GroceryListState>()(
           
           set({ isLoading: true, currentId: id })
           
-          const result: GenerateGroceryListOutput = await generateGroceryListFromMealPlan(id)
+          const result = await generateGroceryListFromMealPlan(id)
           
-          const groceryItems = result.groceryList.map((item) => ({
+          const groceryItems = result.groceryList.groceryList.map((item) => ({
             ...item,
             checked: false,
           }))
@@ -101,9 +101,9 @@ export const useGroceryListStore = create<GroceryListState>()(
             filteredList: groceryItems,
             stores: uniqueStores,
             userLocation: {
-              country: "User's Country",
-              city: "User's City",
-              currencyCode: groceryItems[0]?.estimatedPrice.charAt(0) || "$",
+              country: result.locationData.country,
+              city: result.locationData.city,
+              currencyCode: result.locationData.currencyCode,
             },
             isLoading: false,
             error: null

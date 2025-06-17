@@ -3,6 +3,7 @@
 /**
  * @fileOverview
  * Generates a personalized meal plan based on user preferences, duration, and meals per day.
+ * Includes AI-generated images for each meal using Gemini 2.0 Flash.
  * 
  * Exports:
  * - generatePersonalizedMealPlan: Main function to generate meal plans.
@@ -40,7 +41,7 @@ const MealSchema = z.object({
   description: z.string().describe('A brief, engaging description of the meal.'),
   ingredients: z.array(z.string()).describe('Ingredients of the meal.'),
   instructions: z.string().describe('Detailed cooking instructions for the meal.'),
-  imageUrl: z.string().describe('A URL to an image of the meal.'),
+  imageUrl: z.string().describe('A URL or base64 encoded image of the meal.'),
   isLiked: z.boolean().optional().describe('Whether the meal is liked by the user.'),
 });
 
@@ -65,16 +66,28 @@ export async function generatePersonalizedMealPlan(
 }
 
 /* ========================== */
-/*           AI PROMPT        */
+/*           AI PROMPTS       */
 /* ========================== */
 
-const prompt = ai.definePrompt({
-  name: 'generateMealPlanPrompt',
+// Prompt for generating meal plan structure
+const mealPlanPrompt = ai.definePrompt({
+  name: 'generateMealPlanStructurePrompt',
   input: {
     schema: GenerateMealPlanInputSchema,
   },
   output: {
-    schema: GenerateMealPlanOutputSchema,
+    schema: z.object({
+      mealPlan: z.array(z.object({
+        day: z.number(),
+        meals: z.array(z.object({
+          id: z.string(),
+          name: z.string(),
+          description: z.string(),
+          ingredients: z.array(z.string()),
+          instructions: z.string(),
+        }))
+      }))
+    }),
   },
   prompt: `
 You are an expert meal planner and nutritionist.
@@ -93,11 +106,46 @@ For each meal, include:
 - A short, engaging **description** (1–2 sentences)
 - A **realistic and complete list of ingredients**
 - **Clear, beginner-friendly cooking instructions**
-- A **valid and relevant image URL** (can be symbolic, AI-generated, or realistic)
 
 Return a well-structured meal plan for each day as valid JSON conforming to the output schema. Do **not** include any explanation or formatting outside of the JSON response.
 
 Ensure meals are diverse, not repeated, and aligned with the dietary and culinary preferences provided.
+  `,
+});
+
+// Prompt for generating meal images
+const imagePrompt = ai.definePrompt({
+  name: 'generateMealImagePrompt',
+  input: {
+    schema: z.object({
+      mealName: z.string(),
+      description: z.string(),
+      ingredients: z.array(z.string()),
+      cuisineStyle: z.string().optional(),
+    }),
+  },
+  output: {
+    schema: z.object({
+      imageUrl: z.string().describe('A realistic image URL or base64 encoded image data'),
+    }),
+  },
+  prompt: `
+Generate a beautiful, appetizing image of the following meal:
+
+**Meal Name**: {{mealName}}
+**Description**: {{description}}
+**Ingredients**: {{#each ingredients}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}
+**Cuisine Style**: {{cuisineStyle}}
+
+Create a high-quality, professional food photography style image that showcases the meal in an appealing way. The image should be:
+- Well-lit and appetizing
+- Show the complete dish as it would be served
+- Use natural, warm lighting
+- Include appropriate garnishes and presentation
+- Be suitable for a recipe website or cookbook
+
+If you can generate an image, provide it as a base64 encoded string that can be directly used in HTML img tags.
+If you cannot generate an image, provide a realistic placeholder URL that represents the meal (e.g., "https://images.unsplash.com/photo-...")
   `,
 });
 
@@ -115,7 +163,91 @@ const generateMealPlanFlow = ai.defineFlow<
     outputSchema: GenerateMealPlanOutputSchema,
   },
   async (input) => {
-    const { output } = await prompt(input);
-    return output!;
+    // Step 1: Generate meal plan structure
+    const { output: mealPlanStructure } = await mealPlanPrompt(input);
+    
+    if (!mealPlanStructure?.mealPlan) {
+      throw new Error('Failed to generate meal plan structure');
+    }
+
+    // Step 2: Generate images for each meal (with fallbacks)
+    const mealPlanWithImages = await Promise.all(
+      mealPlanStructure.mealPlan.map(async (dayPlan) => {
+        const mealsWithImages = await Promise.all(
+          dayPlan.meals.map(async (meal) => {
+            try {
+              // Try to generate image for this meal
+              const { output: imageResult } = await imagePrompt({
+                mealName: meal.name,
+                description: meal.description,
+                ingredients: meal.ingredients,
+                cuisineStyle: input.preferences[0]?.cuisinePreferences?.[0] || 'International',
+              });
+
+              // Check if we got a valid image result
+              if (imageResult?.imageUrl) {
+                // If it's a base64 image, use it directly
+                if (imageResult.imageUrl.startsWith('data:image/')) {
+                  return {
+                    ...meal,
+                    imageUrl: imageResult.imageUrl,
+                  };
+                }
+                // If it's a URL, validate it
+                if (imageResult.imageUrl.startsWith('http')) {
+                  return {
+                    ...meal,
+                    imageUrl: imageResult.imageUrl,
+                  };
+                }
+              }
+
+              // Fallback to a placeholder image
+              return {
+                ...meal,
+                imageUrl: generatePlaceholderImage(meal.name, meal.description),
+              };
+            } catch (error) {
+              console.error(`Failed to generate image for meal: ${meal.name}`, error);
+              // Return meal with fallback image
+              return {
+                ...meal,
+                imageUrl: generatePlaceholderImage(meal.name, meal.description),
+              };
+            }
+          })
+        );
+
+        return {
+          day: dayPlan.day,
+          meals: mealsWithImages,
+        };
+      })
+    );
+
+    return {
+      mealPlan: mealPlanWithImages,
+    };
   }
 );
+
+/* ========================== */
+/*      HELPER FUNCTIONS      */
+/* ========================== */
+
+// Generate a placeholder SVG image based on meal details
+function generatePlaceholderImage(mealName: string, description: string): string {
+  // Create a simple SVG placeholder with meal information
+  const svg = `
+    <svg width="400" height="300" viewBox="0 0 400 300" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect width="400" height="300" fill="#F3F4F6"/>
+      <rect x="50" y="50" width="300" height="200" fill="#E5E7EB" rx="8"/>
+      <text x="200" y="120" font-family="Arial, sans-serif" font-size="16" fill="#6B7280" text-anchor="middle">🍽️</text>
+      <text x="200" y="150" font-family="Arial, sans-serif" font-size="14" fill="#374151" text-anchor="middle" font-weight="bold">${mealName}</text>
+      <text x="200" y="170" font-family="Arial, sans-serif" font-size="12" fill="#6B7280" text-anchor="middle">${description.substring(0, 40)}${description.length > 40 ? '...' : ''}</text>
+      <text x="200" y="220" font-family="Arial, sans-serif" font-size="10" fill="#9CA3AF" text-anchor="middle">AI Generated Meal</text>
+    </svg>
+  `;
+  
+  return `data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}`;
+}

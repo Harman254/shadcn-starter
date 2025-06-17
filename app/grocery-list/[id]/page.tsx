@@ -2,13 +2,20 @@
 
 import React, { Suspense } from 'react';
 import GroceryList from '@/components/groceries'; // adjust path as needed
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 
 export default function GroceryListPage() {
     const pathname = usePathname();
+    const searchParams = useSearchParams();
     console.log('Current pathname:', pathname);
     const id = pathname.split('/').pop(); // Extract the last segment as id
+    const lat = searchParams.get('lat');
+    const lon = searchParams.get('lon');
+    
     console.log('Extracted id:', id);
+    console.log('Extracted latitude:', lat);
+    console.log('Extracted longitude:', lon);
+
     if (!id) {
         return <div className="text-red-500">Error: No ID provided in the URL.</div>;
     }
@@ -25,7 +32,7 @@ export default function GroceryListPage() {
 <main>
   <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
     <Suspense fallback={<LoadingSkeleton />}>
-        <GroceryList id={id} />
+        <GroceryList id={id}  />
     </Suspense>
   </div>
 </main>

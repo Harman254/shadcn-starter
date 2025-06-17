@@ -134,6 +134,17 @@ const CreateMealPlan = ({ preferences }: CreateMealPlanProps) => {
       // Debug: Log the meal plan to see if imageUrl is included
       console.log("Generated meal plan:", JSON.stringify(result.mealPlan, null, 2))
 
+      // Debug: Check image URLs
+      result.mealPlan.forEach((dayPlan, dayIndex) => {
+        dayPlan.meals.forEach((meal, mealIndex) => {
+          console.log(`Day ${dayIndex + 1}, Meal ${mealIndex + 1}:`, {
+            name: meal.name,
+            imageUrl: meal.imageUrl ? `${meal.imageUrl.substring(0, 50)}...` : 'No image',
+            imageType: meal.imageUrl?.startsWith('data:') ? 'base64' : meal.imageUrl?.startsWith('http') ? 'url' : 'unknown'
+          });
+        });
+      });
+
       const titleresult = await generateMealPlanTitle(result.mealPlan)
       setTitle(titleresult.title) // Set the title state
 
@@ -626,13 +637,26 @@ const CreateMealPlan = ({ preferences }: CreateMealPlanProps) => {
                                       className="w-full h-48 object-cover hover:scale-105 transition-transform duration-300"
                                       onError={(e) => {
                                         // Fallback for broken images
-                                        console.log("Image failed to load:", meal.imageUrl)
+                                        console.log("Image failed to load for meal:", meal.name, "URL:", meal.imageUrl?.substring(0, 100))
                                         e.currentTarget.style.display = 'none';
+                                        // Show fallback content
+                                        const fallback = e.currentTarget.parentElement?.querySelector('.image-fallback');
+                                        if (fallback) {
+                                          (fallback as HTMLElement).style.display = 'flex';
+                                        }
                                       }}
                                       onLoad={() => {
-                                        console.log("Image loaded successfully:", meal.imageUrl)
+                                        console.log("Image loaded successfully for meal:", meal.name)
                                       }}
                                     />
+                                    {/* Fallback content */}
+                                    <div className="image-fallback absolute inset-0 bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-900 flex items-center justify-center">
+                                      <div className="text-center">
+                                        <div className="text-4xl mb-2">🍽️</div>
+                                        <div className="text-sm text-slate-600 dark:text-slate-400 font-medium">{meal.name}</div>
+                                        <div className="text-xs text-slate-500 dark:text-slate-500">AI Generated Meal</div>
+                                      </div>
+                                    </div>
                                     <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent pointer-events-none"></div>
                                   </div>
                                 </div>

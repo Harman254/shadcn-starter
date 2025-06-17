@@ -4,10 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { CarIcon } from 'lucide-react';
-
-
-
-
+import toast from 'react-hot-toast';
 
 export default function GroceryListButton({ mealplanId }: { mealplanId: string }) {
   const router = useRouter();
@@ -16,16 +13,27 @@ export default function GroceryListButton({ mealplanId }: { mealplanId: string }
   const handleGenerateGroceryList = async () => {
     if (!mealplanId) return;
 
-    try {
-      setIsLoading(true);
-      
-      // Navigate to the grocery list page with the mealplanId
-      router.push(`/grocery-list/${mealplanId}`);
+    setIsLoading(true);
 
-      
-    } catch (error) {
-      console.error('Error navigating to grocery list:', error);
-    } finally {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          console.log('User location:', { latitude, longitude });
+          router.push(`/grocery-list/${mealplanId}?lat=${latitude}&lon=${longitude}`);
+          setIsLoading(false);
+        },
+        (error) => {
+          console.error('Error getting location:', error);
+          toast.error('Failed to get your location. Please ensure location services are enabled.');
+          router.push(`/grocery-list/${mealplanId}`);
+          setIsLoading(false);
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      );
+    } else {
+      toast.error('Geolocation is not supported by your browser.');
+      router.push(`/grocery-list/${mealplanId}`);
       setIsLoading(false);
     }
   };

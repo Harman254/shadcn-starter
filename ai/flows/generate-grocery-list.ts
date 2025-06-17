@@ -6,7 +6,7 @@ import { fetchMealPlanById} from '@/data';
 import type { FullMealPlanWithDays } from '@/types';
 import { headers } from 'next/headers';
 import { auth } from '@/lib/auth';
-import { getLocationDataFromIp, getUserIpAddress } from '@/lib/location';
+import { getLocationDataWithCaching } from '@/lib/location';
 
 /* ========================== */
 /*       OUTPUT SCHEMA        */
@@ -160,7 +160,7 @@ export async function generateGroceryList(
 // Modified function to accept mealplanId as a parameter
 export async function generateGroceryListFromMealPlan(
   mealplanId: string
-): Promise<GenerateGroceryListOutput> {
+): Promise<{ groceryList: GenerateGroceryListOutput; locationData: any }> {
   try {
     // Get user session
     const session = await auth.api.getSession({
@@ -179,12 +179,8 @@ export async function generateGroceryListFromMealPlan(
     // Get location data
 
     console.log(session.session.id)
-    const userIpAddress = await getUserIpAddress(session.session.id);
-    if (!userIpAddress) {
-      throw new Error("User IP address not found");
-    }
-    
-    const locationData = await getLocationDataFromIp(userIpAddress);
+    const locationData = await getLocationDataWithCaching(userId, session.session.id);
+    console.log(locationData)
     
     // Extract only meal names and ingredients from the existing meal plan
     const simplifiedMeals = [];
@@ -197,40 +193,22 @@ export async function generateGroceryListFromMealPlan(
       }
     }
     
-    // Ensure currency data is present
-    let currencyCode = locationData.currencyCode;
-    let currencySymbol = locationData.currencySymbol;
-    
-    // If currency data is missing, use fallbacks based on country
-    if (!currencyCode || !currencySymbol) {
-      const countryCurrency = locationData.country ? countryCurrencyMap[locationData.country] : null;
-      
-      if (countryCurrency) {
-        currencyCode = currencyCode || countryCurrency.code;
-        currencySymbol = currencySymbol || countryCurrency.symbol;
-      } else {
-        // Use default fallback if country not found in map
-        currencyCode = currencyCode || defaultCurrency.code;
-        currencySymbol = currencySymbol || defaultCurrency.symbol;
-      }
-      
-      console.log(`Using fallback currency for ${locationData.country}: ${currencyCode} (${currencySymbol})`);
-    }
-    
     // Prepare the input with the existing meal data and location data
     const input: GenerateGroceryListInput = {
       meals: simplifiedMeals,
       userLocation: {
         country: locationData.country || 'Unknown',
         city: locationData.city || 'Unknown',
-        currencyCode: currencyCode,
-        currencySymbol: currencySymbol,
-        localStores: locationData.popularGroceryStores || [],
+        currencyCode: locationData.currencyCode,
+        currencySymbol: locationData.currencySymbol,
+        localStores: locationData.localStores || [],
       },
     };
 
     // Generate grocery list from existing meal plan data
-    return generateGroceryListFlow(input);
+    const groceryList = await generateGroceryListFlow(input);
+    
+    return { groceryList, locationData };
   } catch (error) {
     console.error("Error in generateGroceryListFromMealPlan:", error);
     throw error;
@@ -238,7 +216,7 @@ export async function generateGroceryListFromMealPlan(
 }
 
 // Keep the original function for backward compatibility but update it to use the new function
-export async function generateGroceryListFromLatest(): Promise<GenerateGroceryListOutput> {
+export async function generateGroceryListFromLatest(): Promise<{ groceryList: GenerateGroceryListOutput; locationData: any }> {
   try {
     // Get user session
     const session = await auth.api.getSession({
