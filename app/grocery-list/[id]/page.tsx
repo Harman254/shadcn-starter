@@ -1,3 +1,4 @@
+'use client'
 import React, { Suspense } from 'react';
 import { Metadata } from 'next'
 import GroceryList from '@/components/groceries'; // adjust path as needed
