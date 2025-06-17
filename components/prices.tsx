@@ -1,6 +1,5 @@
 'use client';
 import React from 'react';
-import { useSession } from '@/lib/auth-client';
 import { authClient } from '@/lib/auth-client';
 
 // Example page that demonstrates how to use the checkout functionality
@@ -71,7 +70,7 @@ const CheckoutPage = () => {
             
             <div className="mt-4">
               <div className="flex items-baseline">
-                <span className="text-3xl font-bold">$10</span>
+                <span className="text-3xl font-bold">$5</span>
                 <span className="text-slate-500 ml-1">/month</span>
               </div>
               
