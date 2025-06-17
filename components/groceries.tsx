@@ -11,11 +11,9 @@ import { motion, AnimatePresence } from "framer-motion"
 
 interface GroceryListProps {
   id: string | null;
-  lat: string | null;
-  lon: string | null;
 }
 
-const GroceryList = ({ id, lat, lon }: GroceryListProps) => {
+const GroceryList = ({ id }: GroceryListProps) => {
   // Use the Zustand store
   const {
     groceryList,
@@ -43,8 +41,8 @@ const GroceryList = ({ id, lat, lon }: GroceryListProps) => {
 
   // Fetch grocery list when component mounts or id changes
   useEffect(() => {
-    fetchGroceryList(id, lat, lon)
-  }, [id, lat, lon, fetchGroceryList])
+    fetchGroceryList(id)
+  }, [id, fetchGroceryList])
 
   // Calculate totals and completion percentage
   const totals = getTotals()
