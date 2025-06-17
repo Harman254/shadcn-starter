@@ -44,6 +44,14 @@ const Navbar = () => {
   // Ensure isSignedIn is strictly checking for a valid session with user data
   const isSignedIn = !!(session && session.data && session.data.user);
   const user = session?.data?.user;
+  
+  // State to control sheet open/closed
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
+
+  // Function to close the sheet
+  const closeSheet = () => {
+    setIsSheetOpen(false);
+  };
 
   const features: Feature[] = [
     {
@@ -144,12 +152,14 @@ const Navbar = () => {
           </div>
 
           {/* Mobile Menu */}
-          <Sheet>
-            <MobileMenuTrigger />
+          <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+            <SheetTrigger asChild>
+              <MobileMenuTrigger />
+            </SheetTrigger>
             <SheetContent side="top" className="max-h-screen overflow-auto">
               <SheetHeader>
                 <SheetTitle>
-                  <Link href="/" className="flex items-center gap-2">
+                  <Link href="/" className="flex items-center gap-2" onClick={closeSheet}>
                     {/* <img
                       src="https://shadcnblocks.com/images/block/logos/shadcnblockscom-icon.svg"
                       className="max-h-8"
@@ -173,6 +183,7 @@ const Navbar = () => {
                             href={feature.href}
                             key={index}
                             className="rounded-md p-3 transition-colors hover:bg-muted/70"
+                            onClick={closeSheet}
                           >
                             <p className="mb-1 font-semibold text-foreground">{feature.title}</p>
                             <p className="text-sm text-muted-foreground">{feature.description}</p>
@@ -184,13 +195,13 @@ const Navbar = () => {
                 </Accordion>
 
                 <div className="flex flex-col gap-6">
-                  <Link href="/products" className="font-medium">
+                  <Link href="/products" className="font-medium" onClick={closeSheet}>
                     Products
                   </Link>
-                  <Link href="/blog" className="font-medium">
+                  <Link href="/blog" className="font-medium" onClick={closeSheet}>
                     Blog
                   </Link>
-                  <Link href="/dashboard/pricing" className="font-medium">
+                  <Link href="/dashboard/pricing" className="font-medium" onClick={closeSheet}>
                     Pricing
                   </Link>
                 </div>
@@ -200,17 +211,17 @@ const Navbar = () => {
                     <>
                       <span className="text-sm">Hi, {user?.name}</span>
                       <Button asChild variant="outline">
-                        <Link href="/dashboard">Go to Dashboard</Link>
+                        <Link href="/dashboard" onClick={closeSheet}>Go to Dashboard</Link>
                       </Button>
                       <SignOut />
                     </>
                   ) : (
                     <>
                       <Button asChild variant="outline">
-                        <Link href="/sign-in">Sign in</Link>
+                        <Link href="/sign-in" onClick={closeSheet}>Sign in</Link>
                       </Button>
                       <Button asChild>
-                        <Link href="/sign-up">Start for free</Link>
+                        <Link href="/sign-up" onClick={closeSheet}>Start for free</Link>
                       </Button>
                     </>
                   )}
