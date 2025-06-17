@@ -33,6 +33,7 @@ const GroceryList = ({ id }: GroceryListProps) => {
     getCompletionPercentage
   } = useGroceryListStore()
 
+
   // Format price with currency symbol
   const formatPrice = (amount: number): string => {
     const currencySymbol = userLocation?.currencyCode || "$"

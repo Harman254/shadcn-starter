@@ -126,26 +126,10 @@ const generateGroceryListFlow = ai.defineFlow<
 /*     CURRENCY MAPPINGS      */
 /* ========================== */
 
-// Fallback currency data by country
-const countryCurrencyMap: Record<string, { code: string, symbol: string }> = {
-  'Kenya': { code: 'KES', symbol: 'KSh' },
-  'United States': { code: 'USD', symbol: '$' },
-  'United Kingdom': { code: 'GBP', symbol: '£' },
-  'European Union': { code: 'EUR', symbol: '€' },
-  'Canada': { code: 'CAD', symbol: 'C$' },
-  'Australia': { code: 'AUD', symbol: 'A$' },
-  'Japan': { code: 'JPY', symbol: '¥' },
-  'India': { code: 'INR', symbol: '₹' },
-  'China': { code: 'CNY', symbol: '¥' },
-  'Brazil': { code: 'BRL', symbol: 'R$' },
-  'South Africa': { code: 'ZAR', symbol: 'R' },
-  'Nigeria': { code: 'NGN', symbol: '₦' },
-  'Mexico': { code: 'MXN', symbol: '$' },
-  // Add more countries as needed
-};
 
-// Default fallback if country is not in the map
-const defaultCurrency = { code: 'USD', symbol: '$' };
+
+
+
 
 /* ========================== */
 /*     EXPORTED FUNCTIONS     */
@@ -176,8 +160,7 @@ export async function generateGroceryListFromMealPlan(
       throw new Error("No meal plan found");
     }
 
-    // Get location data
-
+    // Get location data with caching
     console.log(session.session.id)
     const locationData = await getLocationDataWithCaching(userId, session.session.id);
     console.log(locationData)
@@ -193,7 +176,7 @@ export async function generateGroceryListFromMealPlan(
       }
     }
     
-    // Prepare the input with the existing meal data and location data
+    // Prepare the input with the existing meal data and enhanced location data
     const input: GenerateGroceryListInput = {
       meals: simplifiedMeals,
       userLocation: {
@@ -201,7 +184,7 @@ export async function generateGroceryListFromMealPlan(
         city: locationData.city || 'Unknown',
         currencyCode: locationData.currencyCode,
         currencySymbol: locationData.currencySymbol,
-        localStores: locationData.localStores || [],
+        localStores: [], // AI will infer or use generic if not provided
       },
     };
 
