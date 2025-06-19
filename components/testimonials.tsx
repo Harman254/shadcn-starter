@@ -108,7 +108,7 @@ const TestimonialCarousel = () => {
             
             {/* Quote */}
             <p className="text-xl md:text-2xl text-gray-700 dark:text-gray-300 mb-8 italic leading-relaxed">
-              "{testimonials[current].text}"
+              {testimonials[current].text}
             </p>
             
             {/* Author */}
