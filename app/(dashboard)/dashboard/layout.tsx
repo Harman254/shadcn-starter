@@ -63,16 +63,17 @@ if (!isOnboarded) {
         <div className="hidden border-r bg-background/95 md:block">
           <div className="flex flex-col max-h-screen h-full gap-2">
             <div className="h-14 flex items-center border-b px-4 lg:h-[60px] lg:px-6 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-              <Link href="/" className="flex items-center gap-2">
-                <p className="text-2xl font-bold">
-                  Meal<span className="text-green-600">Wise</span>
+              <Link href="/" className="flex items-center gap-2 transition-colors hover:opacity-80">
+                <p className="text-2xl font-bold tracking-tight antialiased">
+                  Meal<span className="text-green-600 font-extrabold">Wise</span>
                 </p>
               </Link>
             </div>
             <div className="flex-1">
               <nav className="grid items-start px-2 text-sm font-medium lg:px-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-
-                <DashboardLinks />
+                <div className="subpixel-antialiased">
+                  <DashboardLinks />
+                </div>
               </nav>
             </div>
           </div>
@@ -88,21 +89,20 @@ if (!isOnboarded) {
                   <Menu className="size-5" />
                 </Button>
               </SheetTrigger>
-              <SheetContent side="left">
-              <SheetTitle>
+              <SheetContent side="left" className="antialiased">
+                <SheetTitle>
                   <div className="flex items-center gap-2 mb-4">
-                    <Link href="/" className="flex items-center gap-2">
-                      <p className="text-2xl font-bold">
-                        Meal<span className="text-green-600">Wise</span>
+                    <Link href="/" className="flex items-center gap-2 transition-colors hover:opacity-80">
+                      <p className="text-2xl font-bold tracking-tight">
+                        Meal<span className="text-green-600 font-extrabold">Wise</span>
                       </p>
                     </Link>
                   </div>
                 </SheetTitle>
                 <nav className="grid gap-2">
-                  <DashboardLinks />
-
-                    
-
+                  <div className="subpixel-antialiased">
+                    <DashboardLinks />
+                  </div>
                 </nav>
               </SheetContent>
             </Sheet>
