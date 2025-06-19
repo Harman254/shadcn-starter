@@ -69,7 +69,7 @@ const Hero1 =  ({
               {buttons?.primary && (
                 <Button asChild className="w-full sm:w-auto">
                   <Link href={buttons.primary.url}>
-                    {session ?  'Create a Meal Plan' : buttons.primary.text }
+                    {session?.data?.user ? 'Create a Meal Plan' : buttons.primary.text }
                   </Link>
                 </Button>
               )}
