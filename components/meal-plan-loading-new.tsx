@@ -1,119 +1,228 @@
 "use client"
 
 import { Card, CardContent } from "@/components/ui/card"
-import { ChefHat, Star, Loader2, Utensils, Clock, Zap } from "lucide-react"
+import { ChefHat, BabyIcon } from "lucide-react"
+import { motion } from "framer-motion"
 
 export default function MealLoading() {
+  const containerVariants = {
+    hidden: { opacity: 0, scale: 0.8 },
+    visible: {
+      opacity: 1,
+      scale: 1,
+      transition: {
+        duration: 0.5,
+        ease: "easeOut",
+        staggerChildren: 0.1,
+      },
+    },
+  }
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: { duration: 0.5, ease: "easeOut" },
+    },
+  }
+
+  const stepVariants = {
+    hidden: { opacity: 0, x: -20 },
+    visible: (index: number) => ({
+      opacity: 1,
+      x: 0,
+      transition: {
+        delay: index * 0.2,
+        duration: 0.4,
+        ease: "easeOut",
+      },
+    }),
+  }
+
+  const sparkleVariants = {
+    animate: {
+      y: [-8, -16, -8],
+      rotate: [0, 180, 360],
+      scale: [1, 1.2, 1],
+      transition: {
+        duration: 2,
+        repeat: Number.POSITIVE_INFINITY,
+        ease: "easeInOut",
+      },
+    },
+  }
+
+  const chefHatVariants = {
+    animate: {
+      rotate: [-2, 2, -2],
+      transition: {
+        duration: 3,
+        repeat: Number.POSITIVE_INFINITY,
+        ease: "easeInOut",
+      },
+    },
+  }
+
+  const pulseVariants = {
+    animate: {
+      scale: [1, 1.1, 1],
+      opacity: [0.7, 1, 0.7],
+      transition: {
+        duration: 1.5,
+        repeat: Number.POSITIVE_INFINITY,
+        ease: "easeInOut",
+      },
+    },
+  }
+
+  const dotVariants = {
+    animate: (index: number) => ({
+      y: [-4, -12, -4],
+      transition: {
+        duration: 0.6,
+        repeat: Number.POSITIVE_INFINITY,
+        delay: index * 0.1,
+        ease: "easeInOut",
+      },
+    }),
+  }
+
+  const progressSteps = [
+    { text: "Analyzing preferences", status: "completed" },
+    { text: "Selecting ingredients", status: "active" },
+    { text: "Finalizing plan", status: "pending" },
+  ]
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-white to-emerald-50 dark:from-slate-950 dark:via-slate-900 dark:to-emerald-950/20">
-      <div className="container max-w-2xl mx-auto py-8 px-4">
-        <Card className="border-0 shadow-2xl shadow-slate-200/50 dark:shadow-slate-900/50 bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm overflow-hidden">
-          <CardContent className="p-12 text-center">
-            {/* Main Loading Icon with Spinning Rings */}
-            <div className="relative mb-10">
-              {/* Outer spinning ring */}
-              <div className="absolute inset-0 w-28 h-28 border-4 border-emerald-300/50 rounded-full animate-spin"></div>
-              
-              {/* Middle spinning ring */}
-              <div className="absolute inset-2 w-24 h-24 border-3 border-teal-400/60 rounded-full animate-spin" style={{ animationDirection: 'reverse', animationDuration: '3s' }}></div>
-              
-              {/* Inner spinning ring */}
-              <div className="absolute inset-4 w-20 h-20 border-2 border-emerald-500/70 rounded-full animate-spin" style={{ animationDuration: '2s' }}></div>
-              
-              {/* Center icon */}
-              <div className="inline-flex items-center justify-center w-28 h-28 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-3xl shadow-xl relative z-10">
-                <ChefHat className="w-14 h-14 text-white animate-pulse" />
-              </div>
-              
-              {/* Spinning sparkles */}
-              <div className="absolute -top-3 -right-3 animate-spin" style={{ animationDuration: '4s' }}>
-                <Star className="w-7 h-7 text-emerald-400" />
-              </div>
-              <div className="absolute -bottom-2 -left-2 animate-spin" style={{ animationDirection: 'reverse', animationDuration: '3s' }}>
-                <Star className="w-5 h-5 text-teal-400" />
-              </div>
-              
-              {/* Additional spinning elements */}
-              <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-2 animate-spin" style={{ animationDuration: '5s' }}>
-                <Star className="w-4 h-4 text-emerald-300" />
-              </div>
-              <div className="absolute bottom-0 right-1/2 transform translate-x-1/2 translate-y-2 animate-spin" style={{ animationDirection: 'reverse', animationDuration: '4s' }}>
-                <Zap className="w-4 h-4 text-teal-300" />
-              </div>
-            </div>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 to-amber-50 dark:from-slate-950 dark:to-slate-900">
+      <div className="container max-w-md mx-auto px-4">
+        <motion.div variants={containerVariants} initial="hidden" animate="visible">
+          <Card className="border-0 shadow-lg bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm overflow-hidden">
+            <CardContent className="p-8 text-center">
+              {/* Animated main icon */}
+              <motion.div className="relative mb-8" variants={itemVariants}>
+                <motion.div
+                  className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-orange-400 to-amber-500 rounded-2xl shadow-lg"
+                  variants={chefHatVariants}
+                  animate="animate"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <ChefHat className="w-10 h-10 text-white" />
+                </motion.div>
 
-            {/* Loading Text */}
-            <div className="space-y-4 mb-10">
-              <h2 className="text-4xl font-bold text-slate-900 dark:text-slate-100">
-                Creating Your Meal Plan
-              </h2>
-              <p className="text-xl text-slate-600 dark:text-slate-400 max-w-lg mx-auto leading-relaxed">
-                Our AI chef is carefully crafting personalized recipes just for you...
-              </p>
-            </div>
+                {/* Animated sparkle */}
+                <motion.div className="absolute -top-2 -right-2" variants={sparkleVariants} animate="animate">
+                  <BabyIcon className="w-5 h-5 text-amber-400" />
+                </motion.div>
 
-            {/* Progress Steps with Enhanced Animations */}
-            <div className="space-y-5 max-w-md mx-auto mb-10">
-              <div className="flex items-center gap-5 p-5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 shadow-sm">
-                <div className="relative w-10 h-10 bg-emerald-500 rounded-full flex items-center justify-center shadow-md">
-                  <div className="w-3 h-3 bg-white rounded-full animate-pulse"></div>
-                  {/* Spinning ring around completed step */}
-                  <div className="absolute inset-0 border-2 border-emerald-400 rounded-full animate-spin" style={{ animationDuration: '2s' }}></div>
+                {/* Subtle glow effect */}
+                <motion.div
+                  className="absolute inset-0 w-20 h-20 bg-gradient-to-br from-orange-400/20 to-amber-500/20 rounded-2xl blur-xl"
+                  animate={{
+                    scale: [1, 1.2, 1],
+                    opacity: [0.3, 0.6, 0.3],
+                  }}
+                  transition={{
+                    duration: 2,
+                    repeat: Number.POSITIVE_INFINITY,
+                    ease: "easeInOut",
+                  }}
+                />
+              </motion.div>
+
+              {/* Animated typography */}
+              <motion.div className="space-y-3 mb-8" variants={itemVariants}>
+                <motion.h2
+                  className="text-2xl font-semibold text-slate-900 dark:text-slate-100"
+                  animate={{
+                    opacity: [0.8, 1, 0.8],
+                  }}
+                  transition={{
+                    duration: 2,
+                    repeat: Number.POSITIVE_INFINITY,
+                    ease: "easeInOut",
+                  }}
+                >
+                  Crafting Your Meal Plan
+                </motion.h2>
+                <motion.p className="text-slate-600 dark:text-slate-400" variants={itemVariants}>
+                  Personalizing recipes just for you
+                </motion.p>
+              </motion.div>
+
+              {/* Animated progress steps */}
+              <motion.div className="space-y-3 mb-8" variants={itemVariants}>
+                {progressSteps.map((step, index) => (
+                  <motion.div
+                    key={index}
+                    className="flex items-center gap-3 text-sm"
+                    custom={index}
+                    variants={stepVariants}
+                    initial="hidden"
+                    animate="visible"
+                  >
+                    <motion.div
+                      className={`w-2 h-2 rounded-full ${
+                        step.status === "completed"
+                          ? "bg-orange-500"
+                          : step.status === "active"
+                            ? "bg-orange-300"
+                            : "bg-slate-300"
+                      }`}
+                      variants={step.status === "active" ? pulseVariants : {}}
+                      animate={step.status === "active" ? "animate" : ""}
+                    />
+                    <motion.span
+                      className={`${
+                        step.status === "completed"
+                          ? "text-slate-700 dark:text-slate-300"
+                          : step.status === "active"
+                            ? "text-slate-600 dark:text-slate-400"
+                            : "text-slate-500 dark:text-slate-500"
+                      }`}
+                      animate={
+                        step.status === "active"
+                          ? {
+                              opacity: [0.7, 1, 0.7],
+                            }
+                          : {}
+                      }
+                      transition={
+                        step.status === "active"
+                          ? {
+                              duration: 1.5,
+                              repeat: Number.POSITIVE_INFINITY,
+                              ease: "easeInOut",
+                            }
+                          : {}
+                      }
+                    >
+                      {step.text}
+                    </motion.span>
+                  </motion.div>
+                ))}
+              </motion.div>
+
+              {/* Smooth loading dots */}
+              <motion.div className="flex justify-center" variants={itemVariants}>
+                <div className="flex space-x-1">
+                  {[0, 1, 2].map((index) => (
+                    <motion.div
+                      key={index}
+                      className="w-2 h-2 bg-orange-500 rounded-full"
+                      custom={index}
+                      variants={dotVariants}
+                      animate="animate"
+                    />
+                  ))}
                 </div>
-                <span className="text-base font-medium text-slate-700 dark:text-slate-300">
-                  Analyzing your preferences
-                </span>
-              </div>
-
-              <div className="flex items-center gap-5 p-5 rounded-2xl bg-slate-50 dark:bg-slate-800/30 border border-slate-200 dark:border-slate-700 shadow-sm">
-                <div className="relative w-10 h-10 bg-slate-400 rounded-full flex items-center justify-center shadow-md">
-                  <Utensils className="w-5 h-5 text-white animate-spin" style={{ animationDuration: '1.5s' }} />
-                  {/* Spinning outer ring */}
-                  <div className="absolute -inset-1 border-2 border-slate-300 rounded-full animate-spin" style={{ animationDuration: '3s' }}></div>
-                </div>
-                <span className="text-base font-medium text-slate-600 dark:text-slate-400">
-                  Selecting fresh ingredients
-                </span>
-              </div>
-
-              <div className="flex items-center gap-5 p-5 rounded-2xl bg-slate-50 dark:bg-slate-800/30 border border-slate-200 dark:border-slate-700 opacity-60 shadow-sm">
-                <div className="relative w-10 h-10 bg-slate-300 rounded-full flex items-center justify-center shadow-md">
-                  <Clock className="w-5 h-5 text-white animate-spin" style={{ animationDuration: '2s' }} />
-                  {/* Pulsing ring for pending step */}
-                  <div className="absolute inset-0 border-2 border-slate-400 rounded-full animate-ping"></div>
-                </div>
-                <span className="text-base font-medium text-slate-500 dark:text-slate-500">
-                  Finalizing your meal plan
-                </span>
-              </div>
-            </div>
-
-            {/* Enhanced Loading Animation with Spinning Elements */}
-            <div className="flex justify-center items-center space-x-6">
-              {/* Spinning circles */}
-              <div className="relative">
-                <div className="w-4 h-4 bg-emerald-500 rounded-full animate-bounce shadow-md"></div>
-                <div className="absolute inset-0 w-4 h-4 border-2 border-emerald-400 rounded-full animate-spin" style={{ animationDuration: '2s' }}></div>
-              </div>
-              
-              <div className="relative">
-                <div className="w-4 h-4 bg-emerald-500 rounded-full animate-bounce delay-100 shadow-md"></div>
-                <div className="absolute inset-0 w-4 h-4 border-2 border-emerald-400 rounded-full animate-spin" style={{ animationDirection: 'reverse', animationDuration: '1.5s' }}></div>
-              </div>
-              
-              <div className="relative">
-                <div className="w-4 h-4 bg-emerald-500 rounded-full animate-bounce delay-200 shadow-md"></div>
-                <div className="absolute inset-0 w-4 h-4 border-2 border-emerald-400 rounded-full animate-spin" style={{ animationDuration: '2.5s' }}></div>
-              </div>
-              
-              {/* Spinning star in the middle */}
-              <div className="relative mx-4">
-                <Star className="w-5 h-5 text-emerald-500 animate-spin" style={{ animationDuration: '3s' }} />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+              </motion.div>
+            </CardContent>
+          </Card>
+        </motion.div>
       </div>
     </div>
   )
-} 
+}
