@@ -33,7 +33,7 @@ export const auth = betterAuth({
     requireEmailVerification: true,
     sendResetPassword: async ({ user, url }: { user: User; url: string }) => {
       await resend.emails.send({
-        from: "MealWise <onboarding@resend.dev>",
+        from: "noreply@aimealwise.com",
         to: user.email,
         subject: "Reset your MealWise password",
         html: `
@@ -67,7 +67,7 @@ export const auth = betterAuth({
     autoSignInAfterVerification: true,
     sendVerificationEmail: async ({ user, url }: { user: User; url: string }) => {
       await resend.emails.send({
-        from: "MealWise <onboarding@resend.dev>",
+        from: "noreply@aimealwise.com",
         to: user.email,
         subject: "Verify your MealWise account",
         html: `
@@ -178,7 +178,7 @@ export const auth = betterAuth({
                 // Send welcome email to the user
                 try {
                   await resend.emails.send({
-                    from: "MealWise <noreply@aimealwise.com>",
+                    from: "noreply@aimealwise.com",
                     to: session.user.email,
                     subject: "Welcome to MealWise Pro! 🎉",
                     html: `
@@ -252,7 +252,7 @@ export const auth = betterAuth({
                   // Send subscription reactivated email
                   try {
                     await resend.emails.send({
-                      from: "MealWise <noreply@aimealwise.com>",
+                      from: "noreply@aimealwise.com",
                       to: existingSubscription.user.email,
                       subject: "Your MealWise Pro subscription is active! 🎉",
                       html: `
@@ -291,7 +291,7 @@ export const auth = betterAuth({
                   // Send subscription cancelled email
                   try {
                     await resend.emails.send({
-                      from: "MealWise <noreply@aimealwise.com>",
+                      from: "noreply@aimealwise.com",
                       to: existingSubscription.user.email,
                       subject: "Your MealWise Pro subscription has ended",
                       html: `
@@ -355,7 +355,7 @@ export const auth = betterAuth({
                 // Send payment confirmation email
                 try {
                   await resend.emails.send({
-                    from: "MealWise <noreply@aimealwise.com>",
+                    from: "noreply@aimealwise.com",
                     to: existingSubscription.user.email,
                     subject: "Payment Confirmed - MealWise Pro",
                     html: `
