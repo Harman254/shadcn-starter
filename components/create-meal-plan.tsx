@@ -90,30 +90,17 @@ const CreateMealPlan = ({ preferences }: CreateMealPlanProps) => {
       setLoading(true)
       resetTitle() // Reset title before generating a new meal plan
 
-      // ATOMIC VALIDATION AND INCREMENT for free users - MAXIMUM SECURITY
-      if (!isUnlimitedGenerations) {
-        const validationResponse = await fetch("/api/meal-plan-generations", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "validate-and-increment" })
-        })
-        
-        if (validationResponse.status === 429) {
-          // Limit reached
-          const errorData = await validationResponse.json()
-          
-          unlockFeature(PRO_FEATURES["unlimited-meal-plans"])
-          setLoading(false)
-          return
-        } else if (!validationResponse.ok) {
-          toast.error("Failed to validate generation limits. Please try again.")
-          setLoading(false)
-          return
-        } else {
-          // Successfully validated and incremented
-          const validationData = await validationResponse.json()
-          setGenerationCount(validationData.generationCount)
-        }
+      // 1. Validate only (no increment)
+      const validateResponse = await fetch("/api/meal-plan-generations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "validate-only" })
+      })
+      if (validateResponse.status === 429) {
+        // Limit reached
+        unlockFeature(PRO_FEATURES["unlimited-meal-plans"])
+        setLoading(false)
+        return
       }
 
       const input: GenerateMealPlanInput = {
@@ -122,6 +109,7 @@ const CreateMealPlan = ({ preferences }: CreateMealPlanProps) => {
         preferences,
       }
 
+      // 2. Generate meal plan
       const result = await generatePersonalizedMealPlan(input)
 
       if (!result?.mealPlan) {
@@ -130,6 +118,20 @@ const CreateMealPlan = ({ preferences }: CreateMealPlanProps) => {
         setLoading(false)
         return
       }
+
+      // 3. Increment only after success
+      const incrementResponse = await fetch("/api/meal-plan-generations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "increment" })
+      })
+      if (!incrementResponse.ok) {
+        toast.error("Failed to increment generation count. Please try again.")
+        setLoading(false)
+        return
+      }
+      const incrementData = await incrementResponse.json()
+      setGenerationCount(incrementData.generationCount)
 
       // Debug: Log the meal plan to see if imageUrl is included
       console.log("Generated meal plan:", JSON.stringify(result.mealPlan, null, 2))
