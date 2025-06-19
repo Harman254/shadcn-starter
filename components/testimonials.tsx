@@ -1,4 +1,3 @@
-
 'use client';
 import React, { useState, useEffect } from "react";
 import { Star, Quote, ChevronLeft, ChevronRight } from "lucide-react";
@@ -63,7 +62,7 @@ const TestimonialCarousel = () => {
             What Our Users Say
           </h2>
           <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
-            Real stories from real people who we have ve transformed their meal planning experience
+            Real stories from real people who we have transformed their meal planning experience
           </p>
         </div>
 
