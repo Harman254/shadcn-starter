@@ -17,83 +17,118 @@ import { redirect } from "next/navigation";
 import { UserDropdown } from "@/components/user-dropdown";
 import Footer from "@/components/footer";
 
-
 export default async function MealLayout({
   children,
 }: {
   children: ReactNode;
 }) {
   const session = await auth.api.getSession({
-    headers: await headers() // you need to pass the headers object.
+    headers: await headers(),
   });
 
   if (!session) {
     redirect("/sign-in");
   }
+  
   const user = session.user;
   const meals = await getMealsByUserId(user.id);
 
   return (
     <div className="grid h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
-      {/* Sidebar */}
-      <div className="hidden border-r bg-background/95 md:block h-screen">
+      {/* Desktop Sidebar */}
+      <div className="hidden border-r bg-background/95 md:block">
         <div className="flex flex-col h-full">
-          <div className="h-14 flex items-center border-b px-4 lg:h-[60px] lg:px-6">
+          {/* Desktop Header */}
+          <div className="h-14 flex items-center border-b px-4 lg:h-[60px] lg:px-6 shrink-0">
             <Link href="/" className="flex items-center gap-2">
               <span className="text-2xl font-semibold tracking-tighter">
                 Meal<span className="text-green-500 text-2xl">Wise</span>
               </span>
             </Link>
           </div>
-          {/* Nav links area, scrollable if needed */}
-          <nav className="flex-1 overflow-y-auto flex flex-col gap-1 px-2 text-sm font-medium lg:px-4 py-2">
-            <DashboardLinks />
-          </nav>
-          {/* User Button at Bottom - Always Visible, never scrolls */}
-          <div className="p-4 border-t mb-20  bg-background/95 mt-auto">
-            <UserDropdown user={user} />
+
+          {/* Desktop Navigation */}
+          <div className="flex-1 flex flex-col min-h-0">
+            <nav className="flex-1 overflow-y-auto px-2 lg:px-4 py-2">
+              <div className="flex flex-col gap-1 text-sm font-medium">
+                <DashboardLinks />
+              </div>
+            </nav>
+            
+            {/* Desktop UserDropdown - Fixed at bottom */}
+            <div className="border-t p-3 lg:p-4 bg-background/95 shrink-0">
+              <UserDropdown user={user} />
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="relative w-full flex min-h-screen flex-col">
-        <header className="flex h-14 items-center gap-4 border-b bg-background/95 px-4 lg:h-[60px] lg:px-6">
+      {/* Main Content Area */}
+      <div className="flex flex-col min-h-0 w-full">
+        {/* Mobile Header */}
+        <header className="flex h-14 items-center gap-4 border-b bg-background/95 px-4 lg:h-[60px] lg:px-6 shrink-0 md:justify-end">
           {/* Mobile Menu */}
           <Sheet>
             <SheetTrigger asChild>
-              <Button variant="outline" size="icon" className="md:hidden">
+              <Button 
+                variant="outline" 
+                size="icon" 
+                className="md:hidden bg-transparent border-muted-foreground/20 hover:bg-accent"
+              >
                 <Menu className="size-5" />
+                <span className="sr-only">Toggle navigation menu</span>
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="flex flex-col p-0 h-screen">
-              <div className="h-14 flex items-center border-b px-4 lg:h-[60px] lg:px-6">
-                <SheetTitle>
+            <SheetContent side="left" className="flex flex-col p-0 w-[280px] sm:w-[320px]">
+              {/* Mobile Sheet Header */}
+              <div className="h-14 flex items-center border-b px-4 shrink-0">
+                <SheetTitle className="text-left">
                   <Link href="/" className="flex items-center gap-2">
-                    <span className="text-2xl font-bold">
+                    <span className="text-xl font-bold sm:text-2xl">
                       Meal<span className="text-green-600">Wise</span>
                     </span>
                   </Link>
                 </SheetTitle>
               </div>
-              <div className="flex-1 flex flex-col h-full">
-                <nav className="flex-1 overflow-y-auto flex flex-col gap-1 px-2 text-sm font-medium lg:px-4 py-2">
-                  <DashboardLinks />
+              
+              {/* Mobile Navigation */}
+              <div className="flex-1 flex flex-col min-h-0">
+                <nav className="flex-1 overflow-y-auto px-3 py-4">
+                  <div className="flex flex-col gap-2 text-sm font-medium">
+                    <DashboardLinks />
+                  </div>
                 </nav>
-                {/* Mobile User Button - Always at bottom */}
-                <div className="border-t p-4 mt-auto bg-background/95">
+                
+                {/* Mobile UserDropdown - Fixed at bottom */}
+                <div className="border-t p-4 bg-background/95 shrink-0">
                   <UserDropdown user={user} />
                 </div>
               </div>
             </SheetContent>
           </Sheet>
+
+          {/* Desktop UserDropdown in header (optional alternative positioning) */}
+          <div className="hidden md:flex md:ml-auto">
+            {/* You can optionally add a secondary UserDropdown here for desktop header */}
+          </div>
         </header>
-        {/* Main content area */}
-        <main className="flex-1 overflow-y-auto">
-          {children}
+
+        {/* Main Content */}
+        <main className="flex-1 overflow-y-auto bg-background">
+          <div className="h-full">
+            {children}
+          </div>
         </main>
       </div>
-      <Toaster richColors closeButton theme="light" />
+
+      {/* Toast Notifications */}
+      <Toaster 
+        richColors 
+        closeButton 
+        theme="light" 
+        position="bottom-right"
+        className="md:mr-4"
+      />
     </div>
   );
 }
