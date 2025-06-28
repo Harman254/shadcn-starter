@@ -3,7 +3,7 @@ import React from 'react'
 
 const Loading = () => {
   return (
-        <Skeleton className='h-full w-full'/>
+        <Skeleton className='min-h-screen w-full'/>
   )
 }
 

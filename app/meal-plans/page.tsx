@@ -3,7 +3,7 @@ import { Metadata } from 'next'
 import { fetchMealPlansByUserId } from "@/data"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { CalendarIcon, UtensilsIcon, Plus, TrendingUp, Clock, Rocket, Target, BarChart3, Zap, Star, Crown } from "lucide-react"
+import { CalendarIcon, UtensilsIcon, Plus, TrendingUp, Clock, Target, Users, Filter, Search,  List,  ChefHat, Heart, Award, Star, Grid } from "lucide-react"
 import DeleteButton from "@/components/delete-button"
 import Link from "next/link"
 import type { MealPlan } from "@/types"
@@ -87,17 +87,28 @@ const MealPlans = async () => {
 
   if (!userId) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-6 bg-gradient-to-br from-slate-50 via-emerald-50/30 to-green-50/50 dark:from-slate-950 dark:via-slate-900/50 dark:to-slate-800/30">
-        <div className="backdrop-blur-xl bg-white/90 dark:bg-slate-900/90 border border-white/60 dark:border-slate-700/60 shadow-2xl rounded-3xl p-12 max-w-md text-center">
-          <div className="w-20 h-20 bg-gradient-to-br from-emerald-500 to-green-600 rounded-2xl flex items-center justify-center mx-auto mb-8 shadow-lg">
-            <UtensilsIcon className="w-10 h-10 text-white" />
-          </div>
-          <h3 className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-4">Authentication Required</h3>
-          <p className="text-slate-600 dark:text-slate-400 leading-relaxed mb-8">
-            Sign in to access your personalized meal planning experience and unlock your culinary journey.
-          </p>
-          <div className="w-full h-12 bg-gradient-to-r from-emerald-500 to-green-600 rounded-2xl flex items-center justify-center">
-            <span className="text-white font-semibold">Please Sign In</span>
+      <div className="min-h-screen flex items-center justify-center p-6 bg-gradient-to-br from-violet-50 via-purple-50 to-indigo-50 dark:from-slate-950 dark:via-violet-950 dark:to-indigo-950">
+        <div className="relative group">
+          <div className="absolute -inset-4 bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 rounded-3xl blur-2xl opacity-20 group-hover:opacity-30 transition-opacity duration-500"></div>
+          <div className="relative backdrop-blur-xl bg-white/95 dark:bg-slate-900/95 border border-violet-200/50 dark:border-violet-700/50 shadow-2xl rounded-3xl p-12 max-w-md text-center">
+            <div className="relative mb-8">
+              <div className="w-20 h-20 bg-gradient-to-br from-violet-500 via-purple-500 to-indigo-500 rounded-full flex items-center justify-center mx-auto shadow-2xl">
+                <ChefHat className="w-10 h-10 text-white" />
+              </div>
+              <div className="absolute -top-2 -right-2 w-8 h-8 bg-gradient-to-br from-pink-400 to-rose-500 rounded-full flex items-center justify-center animate-pulse">
+                <Star className="w-4 h-4 text-white" />
+              </div>
+            </div>
+            <h3 className="text-3xl font-bold bg-gradient-to-r from-violet-600 to-indigo-600 bg-clip-text text-transparent mb-4">Welcome Back!</h3>
+            <p className="text-slate-600 dark:text-slate-400 leading-relaxed mb-8">
+              Sign in to unlock your personalized culinary universe and start your flavor-packed adventure.
+            </p>
+            <div className="relative group/btn">
+              <div className="absolute -inset-2 bg-gradient-to-r from-violet-600 to-indigo-600 rounded-2xl blur opacity-50 group-hover/btn:opacity-75 transition-opacity duration-300"></div>
+              <div className="relative w-full h-12 bg-gradient-to-r from-violet-600 to-indigo-600 rounded-2xl flex items-center justify-center cursor-pointer hover:scale-105 transition-transform duration-300">
+                <span className="text-white font-semibold">Sign In to Continue</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -108,22 +119,36 @@ const MealPlans = async () => {
 
   if (mealPlans.length === 0) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-6 bg-gradient-to-br from-slate-50 via-emerald-50/30 to-green-50/50 dark:from-slate-950 dark:via-slate-900/50 dark:to-slate-800/30">
-        <div className="backdrop-blur-xl bg-white/90 dark:bg-slate-900/90 border border-white/60 dark:border-slate-700/60 shadow-2xl rounded-3xl p-12 max-w-lg text-center">
-          <div className="w-24 h-24 bg-gradient-to-br from-emerald-500 to-green-600 rounded-3xl flex items-center justify-center mx-auto mb-8 shadow-lg">
-            <UtensilsIcon className="w-12 h-12 text-white" />
+      <div className="min-h-screen flex items-center justify-center p-6 bg-gradient-to-br from-violet-50 via-purple-50 to-indigo-50 dark:from-slate-950 dark:via-violet-950 dark:to-indigo-950">
+        <div className="relative group max-w-2xl">
+          <div className="absolute -inset-8 bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 rounded-3xl blur-3xl opacity-20 group-hover:opacity-30 transition-opacity duration-700"></div>
+          <div className="relative backdrop-blur-xl bg-white/95 dark:bg-slate-900/95 border border-violet-200/50 dark:border-violet-700/50 shadow-2xl rounded-3xl p-16 text-center">
+            <div className="relative mb-12">
+              <div className="w-32 h-32 bg-gradient-to-br from-violet-500 via-purple-500 to-indigo-500 rounded-full flex items-center justify-center mx-auto shadow-2xl animate-pulse">
+                <UtensilsIcon className="w-16 h-16 text-white" />
+              </div>
+              <div className="absolute -top-4 -right-4 w-12 h-12 bg-gradient-to-br from-pink-400 to-rose-500 rounded-full flex items-center justify-center animate-bounce">
+                <Star className="w-6 h-6 text-white" />
+              </div>
+            </div>
+            <h3 className="text-5xl font-bold bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent mb-6">
+              Your Culinary Canvas Awaits
+            </h3>
+            <p className="text-xl text-slate-600 dark:text-slate-400 leading-relaxed mb-12 max-w-lg mx-auto">
+              Ready to craft your first masterpiece? Create personalized meal plans that transform cooking into an art form.
+            </p>
+            <Link
+              href="/meal-plans/new"
+              className="group/create relative inline-flex items-center gap-4 bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 text-white px-12 py-6 rounded-2xl font-bold text-lg hover:shadow-2xl hover:scale-110 transition-all duration-500 shadow-xl"
+            >
+              <div className="absolute -inset-2 bg-gradient-to-r from-violet-600 to-indigo-600 rounded-2xl blur opacity-50 group-hover/create:opacity-75 transition-opacity duration-300"></div>
+              <div className="relative flex items-center gap-4">
+                <Plus className="w-6 h-6 group-hover/create:rotate-180 transition-transform duration-500" />
+                Create Your First Masterpiece
+                <Star className="w-5 h-5 group-hover/create:animate-spin" />
+              </div>
+            </Link>
           </div>
-          <h3 className="text-3xl font-bold text-slate-900 dark:text-slate-100 mb-4">Start Your Culinary Journey</h3>
-          <p className="text-slate-600 dark:text-slate-400 text-lg leading-relaxed mb-8">
-            Create your first meal plan and discover amazing recipes tailored just for you.
-          </p>
-          <Link
-            href="/meal-plans/new"
-            className="inline-flex items-center gap-3 bg-gradient-to-r from-emerald-500 to-green-600 text-white px-8 py-4 rounded-2xl font-semibold hover:shadow-xl hover:scale-105 transition-all duration-300 shadow-lg"
-          >
-            <Plus className="w-5 h-5" />
-            Create Your First Plan
-          </Link>
         </div>
       </div>
     )
@@ -131,155 +156,100 @@ const MealPlans = async () => {
 
   const totalMeals = mealPlans.reduce((acc, plan) => acc + plan.duration * plan.mealsPerDay, 0)
   const totalDays = mealPlans.reduce((acc, plan) => acc + plan.duration, 0)
+  const avgMealsPerDay = Math.round(totalMeals / totalDays * 10) / 10
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-emerald-50/30 to-green-50/50 dark:from-slate-950 dark:via-slate-900/50 dark:to-slate-800/30">
-      {/* Hero Header */}
+    <div className="min-h-screen bg-gradient-to-br from-violet-50 via-purple-50 to-indigo-50 dark:from-slate-950 dark:via-violet-950 dark:to-indigo-950">
+      {/* Dynamic Header */}
       <div className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 via-green-500/5 to-slate-500/5"></div>
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_80%,rgba(16,185,129,0.1),transparent_50%),radial-gradient(circle_at_80%_20%,rgba(34,197,94,0.1),transparent_50%)]"></div>
-        <div className="relative container max-w-7xl mx-auto px-6 py-20">
-          <div className="flex flex-col lg:flex-row items-start justify-between gap-8 mb-16">
-            <div className="flex-1">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-green-600 rounded-2xl flex items-center justify-center shadow-lg">
-                  <Crown className="w-6 h-6 text-white" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_80%,rgba(139,69,244,0.15),transparent_50%),radial-gradient(circle_at_80%_20%,rgba(147,51,234,0.15),transparent_50%),radial-gradient(circle_at_40%_40%,rgba(99,102,241,0.1),transparent_50%)]"></div>
+        
+        {/* Floating Elements */}
+        <div className="absolute top-20 left-1/4 w-2 h-2 bg-violet-400 rounded-full animate-pulse opacity-60"></div>
+        <div className="absolute top-32 right-1/3 w-1 h-1 bg-purple-500 rounded-full animate-ping opacity-40"></div>
+        <div className="absolute bottom-40 left-1/6 w-3 h-3 bg-indigo-400 rounded-full animate-bounce opacity-50"></div>
+        
+        <div className="relative container max-w-7xl mx-auto px-6 py-24">
+          <div className="text-center max-w-4xl mx-auto mb-20">
+            <div className="flex items-center justify-center gap-3 mb-8">
+              <div className="relative">
+                <div className="w-16 h-16 bg-gradient-to-br from-violet-500 via-purple-500 to-indigo-500 rounded-2xl flex items-center justify-center shadow-xl">
+                  <ChefHat className="w-8 h-8 text-white" />
                 </div>
-                <Badge className="bg-gradient-to-r from-emerald-100 to-green-100 dark:from-emerald-900/50 dark:to-green-900/50 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-700 shadow-sm">
-                  Premium Experience
-                </Badge>
-                <div className="flex items-center gap-1">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                  ))}
+                <div className="absolute -top-2 -right-2 w-6 h-6 bg-gradient-to-br from-pink-400 to-rose-500 rounded-full flex items-center justify-center animate-pulse">
+                  <Heart className="w-3 h-3 text-white fill-current" />
                 </div>
               </div>
-              <h1 className="text-6xl lg:text-7xl font-bold bg-gradient-to-r from-slate-900 via-emerald-900 to-green-900 dark:from-slate-100 dark:via-emerald-100 dark:to-green-100 bg-clip-text text-transparent mb-6 leading-tight">
-                Your Meal Plans
-              </h1>
-              <p className="text-xl text-slate-600 dark:text-slate-400 max-w-2xl leading-relaxed">
-                Discover, organize, and enjoy your personalized nutrition journey with beautifully crafted meal plans
-                designed just for you.
-              </p>
+              <Badge className="bg-gradient-to-r from-violet-100 to-purple-100 dark:from-violet-900/50 dark:to-purple-900/50 text-violet-700 dark:text-violet-300 border-violet-200 dark:border-violet-700 text-lg px-4 py-2 shadow-lg">
+                <Award className="w-4 h-4 mr-2" />
+                Culinary Master
+              </Badge>
             </div>
-            <Link
-              href="/meal-plans/new"
-              className="group relative flex items-center gap-3 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white px-8 py-4 rounded-2xl font-semibold hover:shadow-2xl hover:scale-105 transition-all duration-300 shadow-xl"
-            >
-              <div className="absolute inset-0 bg-gradient-to-r from-emerald-600 to-green-600 rounded-2xl blur-xl opacity-50 group-hover:opacity-75 transition-opacity duration-300"></div>
-              <div className="relative flex items-center gap-3">
-                <Plus className="w-5 h-5 group-hover:rotate-90 transition-transform duration-300" />
-                Create New Plan
+            
+            <h1 className="text-7xl lg:text-8xl font-black mb-8 leading-none">
+              <span className="bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent">
+                Your Meal
+              </span>
+              <br />
+              <span className="bg-gradient-to-r from-indigo-600 via-purple-600 to-violet-600 bg-clip-text text-transparent">
+                Universe
+              </span>
+            </h1>
+            
+            <p className="text-2xl text-slate-600 dark:text-slate-400 mb-12 leading-relaxed">
+              Welcome to your personalized culinary cosmos where every meal is a new adventure waiting to unfold.
+            </p>
+            
+            {/* Action Bar */}
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
+              <Link
+                href="/meal-plans/new"
+                className="group relative flex items-center gap-3 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white px-8 py-4 rounded-2xl font-bold hover:shadow-2xl hover:scale-105 transition-all duration-300 shadow-xl"
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-violet-600 to-indigo-600 rounded-2xl blur-xl opacity-50 group-hover:opacity-75 transition-opacity duration-300"></div>
+                <div className="relative flex items-center gap-3">
+                  <Plus className="w-5 h-5 group-hover:rotate-90 transition-transform duration-300" />
+                  Craft New Plan
+                  <Star className="w-4 h-4 group-hover:animate-spin" />
+                </div>
+              </Link>
+              
+              <div className="flex items-center gap-2 bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl border border-violet-200/50 dark:border-violet-700/50 rounded-2xl px-6 py-4 shadow-lg">
+                <Search className="w-5 h-5 text-violet-500" />
+                <input 
+                  type="text" 
+                  placeholder="Search your plans..." 
+                  className="bg-transparent text-slate-700 dark:text-slate-300 placeholder-slate-500 outline-none w-40"
+                />
+                <Filter className="w-4 h-4 text-violet-400 cursor-pointer hover:text-violet-600 transition-colors" />
               </div>
-            </Link>
+              
+              <div className="flex items-center gap-2 bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl border border-violet-200/50 dark:border-violet-700/50 rounded-2xl p-2 shadow-lg">
+                <button className="p-2 rounded-xl bg-violet-500 text-white shadow-md">
+                  <Grid className="w-4 h-4" />
+                </button>
+                <button className="p-2 rounded-xl text-violet-500 hover:bg-violet-100 dark:hover:bg-violet-900/30 transition-colors">
+                  <List className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
           </div>
 
-          {/* Stats Dashboard */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16">
-            <StatCard value={mealPlans.length} label="Active Plans" icon={Rocket} color="emerald" />
-            <StatCard value={totalDays} label="Total Days" icon={Clock} color="green" />
-            <StatCard value={totalMeals} label="Total Meals" icon={TrendingUp} color="slate" />
+          {/* Enhanced Stats */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-20">
+            <MetricCard value={mealPlans.length} label="Active Plans" icon={Target} color="violet" trend="+2 this week" />
+            <MetricCard value={totalDays} label="Total Days" icon={Clock} color="purple" trend="Consistent!" />
+            <MetricCard value={totalMeals} label="Meals Planned" icon={UtensilsIcon} color="indigo" trend="Growing strong" />
+            <MetricCard value={avgMealsPerDay} label="Avg per Day" icon={TrendingUp} color="pink" trend="Perfect balance" />
           </div>
         </div>
       </div>
 
-      {/* Meal Plans Grid */}
-      <div className="container max-w-7xl mx-auto px-6 pb-20">
-        <div className="grid gap-8 lg:grid-cols-2 xl:grid-cols-3">
+      {/* Redesigned Plans Grid */}
+      <div className="container max-w-7xl mx-auto px-6 pb-24">
+        <div className="grid gap-8 md:grid-cols-2 xl:grid-cols-3">
           {mealPlans.map((mealPlan, index) => (
-            <Card
-              key={mealPlan.id}
-              className="group relative backdrop-blur-xl bg-white/90 dark:bg-slate-900/90 border border-white/50 dark:border-slate-700/50 shadow-xl hover:shadow-2xl rounded-3xl overflow-hidden transition-all duration-500 hover:scale-105 hover:-translate-y-2"
-              style={{
-                animationDelay: `${index * 100}ms`,
-                animation: "fadeInUp 0.6s ease-out forwards",
-                opacity: 0,
-                transform: "translateY(30px)",
-              }}
-            >
-              {/* Header */}
-              <div
-                className={`h-40 bg-gradient-to-br relative overflow-hidden ${
-                  index % 3 === 0
-                    ? "from-emerald-500 via-green-500 to-slate-600"
-                    : index % 3 === 1
-                    ? "from-green-500 via-emerald-500 to-slate-700"
-                    : "from-slate-600 via-emerald-600 to-green-600"
-                }`}
-              >
-                <div className="absolute inset-0 bg-black/10 dark:bg-black/20"></div>
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_30%,rgba(255,255,255,0.2),transparent_70%)]"></div>
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_70%,rgba(255,255,255,0.1),transparent_50%)]"></div>
-                
-                {/* Floating elements */}
-                <div className="absolute top-4 right-4">
-                  <Badge className="bg-white/20 dark:bg-white/10 border-white/30 dark:border-white/20 text-white backdrop-blur-sm shadow-lg">
-                    <Rocket className="w-3 h-3 mr-1" />
-                    {mealPlan.mealsPerDay} meals/day
-                  </Badge>
-                </div>
-                
-                <div className="absolute bottom-4 left-6 text-white/90 flex items-center gap-2">
-                  <Clock className="w-4 h-4" />
-                  <span className="text-sm font-medium">{mealPlan.duration} days</span>
-                </div>
-                
-                <div className="absolute top-4 left-4">
-                  <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
-                    <Target className="w-4 h-4 text-white" />
-                  </div>
-                </div>
-              </div>
-
-              <CardHeader className="pb-4 pt-6">
-                <Link
-                  href={`/meal-plans/${mealPlan.id}`}
-                  className="hover:underline group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors"
-                >
-                  <CardTitle className="text-2xl font-bold mb-2 leading-tight text-slate-900 dark:text-slate-100">
-                    {mealPlan.title}
-                  </CardTitle>
-                  <div className="text-lg font-semibold text-emerald-600 dark:text-emerald-400 mb-3 flex items-center gap-2">
-                    <BarChart3 className="w-4 h-4" />
-                    {mealPlan.duration}-Day Meal Plan
-                  </div>
-                  <CardDescription className="flex items-center text-slate-600 dark:text-slate-400">
-                    <CalendarIcon className="w-4 h-4 mr-2" />
-                    Created on{" "}
-                    {new Date(mealPlan.createdAt).toLocaleDateString("en-US", {
-                      year: "numeric",
-                      month: "long",
-                      day: "numeric",
-                    })}
-                  </CardDescription>
-                </Link>
-              </CardHeader>
-
-              <CardContent className="pt-0">
-                <div className="flex items-center gap-4 mb-6">
-                  <div className="w-14 h-14 bg-gradient-to-br from-emerald-100 to-emerald-200 dark:from-emerald-900/50 dark:to-emerald-800/50 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
-                    <UtensilsIcon className="w-7 h-7 text-emerald-600 dark:text-emerald-400" />
-                  </div>
-                  <div>
-                    <div className="text-3xl font-bold text-slate-900 dark:text-slate-100">
-                      {mealPlan.duration * mealPlan.mealsPerDay}
-                    </div>
-                    <div className="text-sm text-slate-600 dark:text-slate-400 font-medium">total meals planned</div>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between pt-6 border-t border-slate-200 dark:border-slate-700">
-                  <Link
-                    href={`/meal-plans/${mealPlan.id}`}
-                    className="group/link flex items-center gap-2 text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 font-semibold transition-colors"
-                  >
-                    <span>View Details</span>
-                    <TrendingUp className="w-4 h-4 group-hover/link:translate-x-1 transition-transform duration-200" />
-                  </Link>
-                  <DeleteButton id={mealPlan.id} />
-                </div>
-              </CardContent>
-            </Card>
+            <PlanCard key={mealPlan.id} plan={mealPlan} index={index} />
           ))}
         </div>
       </div>
@@ -287,31 +257,157 @@ const MealPlans = async () => {
   )
 }
 
-export default MealPlans
-
-const StatCard = ({
+const MetricCard = ({
   value,
   label,
   icon: Icon,
   color,
+  trend,
 }: {
   value: number
   label: string
   icon: React.ComponentType<{ className?: string }>
   color: string
-}) => (
-  <div className="group relative backdrop-blur-xl bg-white/80 dark:bg-slate-900/80 border border-white/40 dark:border-slate-700/40 rounded-2xl p-8 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 overflow-hidden">
-    <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 via-green-500/5 to-slate-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-    <div className="relative flex items-center gap-4">
-      <div
-        className={`w-16 h-16 bg-gradient-to-br from-${color}-500 to-${color}-600 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300`}
-      >
-        <Icon className="w-8 h-8 text-white" />
-      </div>
-      <div>
-        <p className="text-4xl font-bold text-slate-900 dark:text-slate-100">{value}</p>
-        <p className="text-slate-600 dark:text-slate-400 font-medium">{label}</p>
+  trend: string
+}) => {
+  const colorClasses = {
+    violet: "from-violet-500 to-violet-600",
+    purple: "from-purple-500 to-purple-600", 
+    indigo: "from-indigo-500 to-indigo-600",
+    pink: "from-pink-500 to-rose-500"
+  }
+
+  return (
+    <div className="group relative">
+      <div className="absolute -inset-1 bg-gradient-to-r from-violet-600 to-indigo-600 rounded-2xl blur opacity-20 group-hover:opacity-40 transition-opacity duration-500"></div>
+      <div className="relative backdrop-blur-xl bg-white/90 dark:bg-slate-900/90 border border-violet-200/50 dark:border-violet-700/50 rounded-2xl p-8 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 overflow-hidden">
+        <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-violet-500/10 to-purple-500/10 rounded-full -translate-y-8 translate-x-8"></div>
+        <div className="relative flex items-start justify-between mb-4">
+          <div className={`w-14 h-14 bg-gradient-to-br ${colorClasses[color as keyof typeof colorClasses]} rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300`}>
+            <Icon className="w-7 h-7 text-white" />
+          </div>
+          <Badge className="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs border-green-200 dark:border-green-700">
+            {trend}
+          </Badge>
+        </div>
+        <div className="relative">
+          <div className="text-4xl font-black text-slate-900 dark:text-slate-100 mb-1">{value}</div>
+          <div className="text-slate-600 dark:text-slate-400 font-medium">{label}</div>
+        </div>
       </div>
     </div>
-  </div>
-)
+  )
+}
+
+const PlanCard = ({ plan, index }: { plan: MealPlan; index: number }) => {
+  const gradients = [
+    "from-violet-500 via-purple-500 to-indigo-500",
+    "from-indigo-500 via-blue-500 to-cyan-500", 
+    "from-purple-500 via-pink-500 to-rose-500",
+    "from-emerald-500 via-teal-500 to-cyan-500",
+    "from-orange-500 via-red-500 to-pink-500",
+    "from-blue-500 via-indigo-500 to-purple-500"
+  ]
+
+  return (
+    <div
+      className="group relative"
+      style={{
+        animationDelay: `${index * 150}ms`,
+        animation: "fadeInUp 0.8s ease-out forwards",
+        opacity: 0,
+        transform: "translateY(40px)",
+      }}
+    >
+      <div className="absolute -inset-2 bg-gradient-to-r from-violet-600 to-indigo-600 rounded-3xl blur opacity-0 group-hover:opacity-25 transition-opacity duration-500"></div>
+      <Card className="relative backdrop-blur-xl bg-white/95 dark:bg-slate-900/95 border border-violet-200/50 dark:border-violet-700/50 shadow-xl hover:shadow-2xl rounded-3xl overflow-hidden transition-all duration-500 hover:scale-105 hover:-translate-y-3">
+        
+        {/* Dynamic Header */}
+        <div className={`h-48 bg-gradient-to-br ${gradients[index % gradients.length]} relative overflow-hidden`}>
+          <div className="absolute inset-0 bg-black/20 dark:bg-black/30"></div>
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_30%,rgba(255,255,255,0.3),transparent_70%)]"></div>
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_70%,rgba(255,255,255,0.2),transparent_50%)]"></div>
+          
+          {/* Floating particles */}
+          <div className="absolute top-6 left-6 w-2 h-2 bg-white/50 rounded-full animate-pulse"></div>
+          <div className="absolute top-12 right-8 w-1 h-1 bg-white/60 rounded-full animate-ping"></div>
+          <div className="absolute bottom-8 left-8 w-3 h-3 bg-white/40 rounded-full animate-bounce"></div>
+          
+          <div className="absolute inset-0 p-6 flex flex-col justify-between">
+            <div className="flex items-start justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
+                  <ChefHat className="w-5 h-5 text-white" />
+                </div>
+                <Badge className="bg-white/25 border-white/40 text-white backdrop-blur-sm shadow-lg text-sm">
+                  <Target className="w-3 h-3 mr-1" />
+                  {plan.mealsPerDay} meals/day
+                </Badge>
+              </div>
+              <div className="text-right">
+                <div className="text-white/90 text-sm font-medium">Duration</div>
+                <div className="text-white text-2xl font-bold">{plan.duration}d</div>
+              </div>
+            </div>
+            
+            <div className="text-white">
+              <div className="text-3xl font-black mb-2 leading-tight opacity-90">
+                {plan.duration * plan.mealsPerDay}
+              </div>
+              <div className="text-white/80 font-medium">total experiences</div>
+            </div>
+          </div>
+        </div>
+
+        <CardHeader className="pb-4 pt-8">
+          <Link
+            href={`/meal-plans/${plan.id}`}
+            className="group/link block hover:scale-105 transition-transform duration-300"
+          >
+            <CardTitle className="text-3xl font-black mb-3 leading-tight text-slate-900 dark:text-slate-100 group-hover/link:bg-gradient-to-r group-hover/link:from-violet-600 group-hover/link:to-indigo-600 group-hover/link:bg-clip-text group-hover/link:text-transparent transition-all duration-300">
+              {plan.title}
+            </CardTitle>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="text-xl font-bold text-violet-600 dark:text-violet-400 flex items-center gap-2">
+                <Star className="w-5 h-5" />
+                {plan.duration}-Day Journey
+              </div>
+              <Badge className="bg-gradient-to-r from-violet-100 to-purple-100 dark:from-violet-900/50 dark:to-purple-900/50 text-violet-700 dark:text-violet-300 border-violet-200 dark:border-violet-700">
+                <Users className="w-3 h-3 mr-1" />
+                Personal
+              </Badge>
+            </div>
+            <CardDescription className="flex items-center text-slate-600 dark:text-slate-400 text-base">
+              <CalendarIcon className="w-4 h-4 mr-2" />
+              Created on{" "}
+              {new Date(plan.createdAt).toLocaleDateString("en-US", {
+                year: "numeric",
+                month: "long", 
+                day: "numeric",
+              })}
+            </CardDescription>
+          </Link>
+        </CardHeader>
+
+        <CardContent className="pt-0 pb-8">
+          <div className="flex items-center justify-between pt-6 border-t border-violet-200/50 dark:border-violet-700/50">
+            <Link
+              href={`/meal-plans/${plan.id}`}
+              className="group/view flex items-center gap-3 bg-gradient-to-r from-violet-600 to-indigo-600 text-white px-6 py-3 rounded-xl font-bold hover:shadow-xl hover:scale-105 transition-all duration-300"
+            >
+              <span>Explore Journey</span>
+              <TrendingUp className="w-4 h-4 group-hover/view:translate-x-1 group-hover/view:scale-110 transition-transform duration-300" />
+            </Link>
+            <div className="flex items-center gap-2">
+              <div className="text-slate-400 hover:text-red-500 transition-colors">
+                <DeleteButton id={plan.id} />
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
+export default MealPlans
