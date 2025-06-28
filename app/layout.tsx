@@ -1,6 +1,5 @@
 
 import { ThemeProvider } from '@/components/theme-provider';
-import Footer2 from '@/components/footer';
 import { Toaster } from 'react-hot-toast';
 import '@/styles/globals.css';
 import Navbar from '@/components/Navbar';

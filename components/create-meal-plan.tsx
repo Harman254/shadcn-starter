@@ -384,9 +384,9 @@ const CreateMealPlan = ({ preferences }: CreateMealPlanProps) => {
                       { value: 10, label: "10 days", subtitle: "Extended plan", popular: false },
                       { value: 14, label: "14 days", subtitle: "Full cycle", popular: false },
                     ].map((option) => (
-                      <SelectItem key={option.value} value={option.value.toString()} className="py-4">
+                      <SelectItem key={option.value} value={option.value.toString()} className="py-3">
                         <div className="flex items-center justify-between w-full">
-                          <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-2">
                             <span className="font-medium text-base">{option.label}</span>
                             {option.popular && (
                               <Badge
@@ -424,9 +424,9 @@ const CreateMealPlan = ({ preferences }: CreateMealPlanProps) => {
                       { value: 5, label: "5 meals", subtitle: "Frequent", popular: false },
                       { value: 6, label: "6 meals", subtitle: "Athletic", popular: false },
                     ].map((option) => (
-                      <SelectItem key={option.value} value={option.value.toString()} className="py-4">
+                      <SelectItem key={option.value} value={option.value.toString()} className="py-3">
                         <div className="flex items-center justify-between w-full">
-                          <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-2">
                             <span className="font-medium text-base">{option.label}</span>
                             {option.popular && (
                               <Badge
@@ -437,7 +437,7 @@ const CreateMealPlan = ({ preferences }: CreateMealPlanProps) => {
                               </Badge>
                             )}
                           </div>
-                          <span className="text-sm text-slate-500 dark:text-slate-400">{option.subtitle}</span>
+                          <span className="text-sm text-slate-500 dark:text-slate-400 ml-3">{option.subtitle}</span>
                         </div>
                       </SelectItem>
                     ))}

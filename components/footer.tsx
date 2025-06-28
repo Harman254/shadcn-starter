@@ -2,9 +2,6 @@
 import Link from "next/link"
 import { Facebook, Instagram, Linkedin, Twitter } from "lucide-react"
 
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import Image from "next/image"
 
 export default function Footer() {
   return (
@@ -12,7 +9,6 @@ export default function Footer() {
       <div className="w-full max-w-screen-xl mx-auto p-4 md:py-8">
         <div className="sm:flex sm:items-center sm:justify-between">
           <Link href="/" className="flex items-center mb-4 sm:mb-0">
-            <Image src="/logo.png" alt="logo" width={50} height={50} />
             <span className="self-center text-2xl font-semibold whitespace-nowrap ml-2">
               Meal<span className="text-green-500">Wise</span>
             </span>

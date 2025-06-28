@@ -1,4 +1,3 @@
-Mealwise
 Mealwise is an AI-powered meal planning app built with the modern web stack — focused on helping users save time, eat healthier, and shop smarter. From personalized meal plans to AI-generated grocery lists, Mealwise is the smart kitchen companion for individuals, families, and fitness-focused users.
 
 🚀 The Journey So Far
