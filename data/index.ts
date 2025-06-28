@@ -761,6 +761,11 @@ export async function incrementMealPlanGeneration(userId: string) {
         }
       });
     } else {
+      // Check if we can increment (safeguard)
+      if (generationRecord.generationCount >= 2) {
+        throw new Error("Generation limit reached");
+      }
+      
       // Increment existing record
       generationRecord = await prisma.mealPlanGeneration.update({
         where: { id: generationRecord.id },
@@ -860,13 +865,17 @@ export async function validateAndIncrementMealPlanGeneration(userId: string) {
           throw new Error("Generation limit reached");
         }
         
+        // Ensure count doesn't go negative
+        const newCount = generationRecord.generationCount + 1;
+        if (newCount < 0) {
+          throw new Error("Invalid generation count");
+        }
+        
         // Increment existing record
         generationRecord = await tx.mealPlanGeneration.update({
           where: { id: generationRecord.id },
           data: {
-            generationCount: {
-              increment: 1
-            }
+            generationCount: newCount
           }
         });
       }
@@ -902,7 +911,7 @@ export async function validateAndIncrementMealPlanGeneration(userId: string) {
         }
       });
 
-      const currentCount = generationRecord?.generationCount || 0;
+      const currentCount = Math.max(0, generationRecord?.generationCount || 0); // Ensure non-negative
       const maxGenerations = 2; // Free users get 2 generations per week
 
       return {
@@ -1048,6 +1057,51 @@ export async function validateAndIncrementMealSwap(userId: string) {
     }
     
     console.error("Error validating and incrementing meal swap:", error);
+    throw error;
+  }
+}
+
+// Function to fix any existing negative generation counts
+export async function fixNegativeGenerationCounts() {
+  try {
+    const result = await prisma.mealPlanGeneration.updateMany({
+      where: {
+        generationCount: {
+          lt: 0
+        }
+      },
+      data: {
+        generationCount: 0
+      }
+    });
+    
+    console.log(`Fixed ${result.count} negative generation counts`);
+    return result.count;
+  } catch (error) {
+    console.error("Error fixing negative generation counts:", error);
+    throw error;
+  }
+}
+
+// Function to get current generation count with safety checks
+export async function getSafeMealPlanGenerationCount(userId: string) {
+  try {
+    const data = await getMealPlanGenerationCount(userId);
+    
+    // Ensure the count is never negative
+    const safeCount = Math.max(0, data.generationCount);
+    
+    // If the count was negative, fix it in the database
+    if (data.generationCount < 0) {
+      await fixNegativeGenerationCounts();
+    }
+    
+    return {
+      ...data,
+      generationCount: safeCount
+    };
+  } catch (error) {
+    console.error("Error getting safe meal plan generation count:", error);
     throw error;
   }
 }

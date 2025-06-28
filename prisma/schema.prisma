@@ -161,6 +161,7 @@ model mealPlanGeneration {
   updatedAt       DateTime @updatedAt
 
   @@unique([userId, weekStart]) // One record per user per week
+  @@map("meal_plan_generation") // Explicit table name
 }
 
 model MealSwapCount {

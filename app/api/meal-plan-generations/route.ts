@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
-import { getMealPlanGenerationCount, incrementMealPlanGeneration, validateAndIncrementMealPlanGeneration } from "@/data"
+import { getSafeMealPlanGenerationCount, validateAndIncrementMealPlanGeneration, checkMealPlanGenerationLimit } from "@/data"
 import { headers } from "next/headers"
 
 export async function GET() {
@@ -13,7 +13,7 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const data = await getMealPlanGenerationCount(session.user.id)
+    const data = await getSafeMealPlanGenerationCount(session.user.id)
     return NextResponse.json(data)
   } catch (error) {
     console.error("Error getting meal plan generations:", error)
@@ -40,8 +40,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Invalid JSON in request body" }, { status: 400 })
     }
 
-    if (action === "increment") {
-      const data = await incrementMealPlanGeneration(session.user.id)
+    if (action === "validate-only") {
+      // For read-only validation (no increment)
+      const data = await checkMealPlanGenerationLimit(session.user.id)
       return NextResponse.json(data)
     } else if (action === "validate-and-increment") {
       // Use atomic validation and increment for maximum security
@@ -63,7 +64,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Invalid action" }, { status: 400 })
     }
   } catch (error) {
-    console.error("Error incrementing meal plan generations:", error)
+    console.error("Error handling meal plan generations:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 } 
