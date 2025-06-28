@@ -3,6 +3,7 @@ import { persist } from 'zustand/middleware';
 
 interface Meal {
   name: string;
+  description: string;
   ingredients: string[];
   instructions: string;
   imageUrl?: string;

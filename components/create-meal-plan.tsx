@@ -36,6 +36,7 @@ import MealLoading from "./meal-plan-loading-new"
 
 interface Meal {
   name: string
+  description: string
   ingredients: string[]
   instructions: string
   imageUrl?: string
@@ -172,19 +173,29 @@ const CreateMealPlan = ({ preferences }: CreateMealPlanProps) => {
   const handleSaveMealPlan = async () => {
     try {
       setSavingMealPlan(true)
+      
+      // Log the data being sent for debugging
+      const saveData = {
+        title,
+        duration,
+        mealsPerDay,
+        days: mealPlan,
+        createdAt: new Date().toISOString(),
+      }
+      
+      console.log('Saving meal plan with data:', saveData)
+      
       const response = await fetch("/api/savemealplan", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title,
-          duration,
-          mealsPerDay,
-          days: mealPlan,
-          createdAt: new Date().toISOString(),
-        }),
+        body: JSON.stringify(saveData),
       })
 
+      console.log('Save response status:', response.status)
+      
       const data = await response.json()
+      console.log('Save response data:', data)
+      
       if (!response.ok || !data.success) {
         throw new Error(data.error || "Failed to save meal plan")
       }
@@ -195,7 +206,7 @@ const CreateMealPlan = ({ preferences }: CreateMealPlanProps) => {
       toast.success("Meal plan saved successfully!")
     } catch (error) {
       console.error("Error saving meal plan:", error)
-      toast.error("Failed to save meal plan")
+      toast.error(error instanceof Error ? error.message : "Failed to save meal plan")
     } finally {
       setSavingMealPlan(false)
     }
@@ -623,164 +634,165 @@ const CreateMealPlan = ({ preferences }: CreateMealPlanProps) => {
 
             {/* Meal Plan Content */}
             <Card className="border-0 shadow-2xl shadow-slate-200/20 dark:shadow-slate-900/40 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl overflow-hidden">
-              <div className="bg-gradient-to-r from-slate-50/80 via-white/80 to-slate-50/80 dark:from-slate-800/80 dark:via-slate-900/80 dark:to-slate-800/80 p-8 border-b border-slate-200/50 dark:border-slate-700/50">
-                <h1 className="text-4xl md:text-5xl font-bold tracking-tight leading-tight bg-gradient-to-r from-rose-500 via-purple-600 to-indigo-600 bg-clip-text text-transparent text-center">
-                  {title}
-                </h1>
-              </div>
+      <div className="bg-gradient-to-r from-slate-50/80 via-white/80 to-slate-50/80 dark:from-slate-800/80 dark:via-slate-900/80 dark:to-slate-800/80 p-8 border-b border-slate-200/50 dark:border-slate-700/50">
+        <h1 className="text-4xl md:text-5xl font-bold tracking-tight leading-tight bg-gradient-to-r from-rose-500 via-purple-600 to-indigo-600 bg-clip-text text-transparent text-center">
+          {title}
+        </h1>
+      </div>
 
-              <ScrollArea className="h-[600px] md:h-[700px] lg:h-[800px]">
-                <div className="p-4 md:p-6 lg:p-8 space-y-8 md:space-y-12 lg:space-y-16">
-                  {mealPlan.map((dayPlan, dayIndex) => (
-                    <div key={dayPlan.day} className="space-y-8">
-                      {/* Day Header */}
-                      <div className="flex items-center gap-3 md:gap-4 lg:gap-6">
-                        <div className="h-16 w-16 rounded-3xl bg-gradient-to-br from-[#08e605] to-green-600 flex items-center justify-center shadow-xl shadow-emerald-500/25">
-                          <span className="text-white font-bold text-xl">{dayPlan.day}</span>
-                        </div>
-                        <div>
-                          <h3 className="text-3xl font-bold text-slate-900 dark:text-slate-100">Day {dayPlan.day}</h3>
-                          <p className="text-slate-600 dark:text-slate-400 text-lg">
-                            {dayPlan.meals.length} meals planned for today
-                          </p>
-                        </div>
-                      </div>
+      <ScrollArea className="h-[600px] md:h-[700px] lg:h-[800px]">
+      <div className="p-4 md:p-6 lg:p-8 space-y-8 md:space-y-12 lg:space-y-16">
+      {mealPlan.map((dayPlan, dayIndex) => (
+            <div key={dayPlan.day} className="space-y-8">
+              {/* Day Header */}
+              <div className="flex items-center gap-3 md:gap-4 lg:gap-6">
+                <div className="h-16 w-16 rounded-3xl bg-gradient-to-br from-[#08e605] to-green-600 flex items-center justify-center shadow-xl shadow-emerald-500/25">
+                  <span className="text-white font-bold text-xl">{dayPlan.day}</span>
+                </div>
+                <div>
+                  <h3 className="text-3xl font-bold text-slate-900 dark:text-slate-100">Day {dayPlan.day}</h3>
+                  <p className="text-slate-600 dark:text-slate-400 text-lg">
+                    {dayPlan.meals.length} meals planned for today
+                  </p>
+                </div>
+              </div>
 
                       {/* Meals Grid */}
                       <div className="grid gap-8">
-                        {dayPlan.meals.map((meal, mealIndex) => (
-                          <Card
-                            key={mealIndex}
-                            className="group relative bg-gradient-to-br from-white via-slate-50/30 to-white dark:from-slate-800 dark:via-slate-900/30 dark:to-slate-800 border border-slate-200/60 dark:border-slate-700/60 shadow-lg shadow-slate-200/40 dark:shadow-slate-900/40 hover:shadow-xl hover:shadow-slate-200/60 dark:hover:shadow-slate-900/60 transition-all duration-300 overflow-hidden"
-                          >
+                {dayPlan.meals.map((meal, mealIndex) => (
+                  <Card
+                    key={mealIndex}
+                    className="group relative bg-gradient-to-br from-white via-slate-50/30 to-white dark:from-slate-800 dark:via-slate-900/30 dark:to-slate-800 border border-slate-200/60 dark:border-slate-700/60 shadow-lg shadow-slate-200/40 dark:shadow-slate-900/40 hover:shadow-xl hover:shadow-slate-200/60 dark:hover:shadow-slate-900/60 transition-all duration-300 overflow-hidden"
+                  >
                             {/* Meal Header */}
                             <div className="p-4 md:p-6 lg:p-8 pb-3 md:pb-4 lg:pb-6">
-                              <div className="flex items-start justify-between gap-6">
-                                <div className="flex-1">
-                                  <div className="flex items-center gap-4 mb-3">
-                                    <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-orange-400 to-red-500 flex items-center justify-center shadow-lg shadow-orange-500/25">
-                                      <Utensils className="h-5 w-5 text-white" />
-                                    </div>
-                                    <Badge
-                                      variant="secondary"
-                                      className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold px-3 py-1.5"
-                                    >
-                                      Meal {mealIndex + 1}
-                                    </Badge>
-                                  </div>
-                                  <h4 className="text-2xl font-bold text-slate-900 dark:text-slate-100 leading-tight">
-                                    {meal.name}
-                                  </h4>
-                                </div>
-                              </div>
+                      <div className="flex items-start justify-between gap-6">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-4 mb-3">
+                            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-orange-400 to-red-500 flex items-center justify-center shadow-lg shadow-orange-500/25">
+                              <Utensils className="h-5 w-5 text-white" />
                             </div>
+                            <Badge
+                              variant="secondary"
+                              className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold px-3 py-1.5"
+                            >
+                              Meal {mealIndex + 1}
+                            </Badge>
+                          </div>
+                          <h4 className="text-2xl font-bold text-slate-900 dark:text-slate-100 leading-tight">
+                            {meal.name}
+                          </h4>
+                        </div>
+                      </div>
+                    </div>
 
                             {/* Meal Content */}
                             <div className="px-4 md:px-6 lg:px-8 pb-4 md:pb-6 lg:pb-8 space-y-6 md:space-y-8">
-                              {/* Meal Image */}
-                              <div className="space-y-4">
-                                <div className="flex items-center gap-3">
-                                  <div className="h-8 w-8 rounded-xl bg-purple-100 dark:bg-purple-900/50 flex items-center justify-center">
-                                    <div className="h-3 w-3 rounded-full bg-purple-600 dark:bg-purple-400"></div>
-                                  </div>
-                                  <h5 className="text-lg font-bold text-slate-900 dark:text-slate-100">Meal Preview</h5>
-                                </div>
-                                <div className="relative overflow-hidden rounded-2xl border border-slate-200/50 dark:border-slate-700/50 shadow-lg">
-                                  <img
-                                    src={
-                                      meal.imageUrl ||
-                                      `/placeholder.svg?height=256&width=400&text=${encodeURIComponent(meal.name)}`
-                                    }
-                                    alt={`${meal.name} - Meal preview`}
-                                    className="w-full h-64 object-cover hover:scale-105 transition-transform duration-500"
-                                    onError={(e) => {
-                                      e.currentTarget.src = `/placeholder.svg?height=256&width=400&text=${encodeURIComponent(meal.name)}`
-                                    }}
-                                  />
-                                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent pointer-events-none"></div>
-                                </div>
-                              </div>
+                      {/* Meal Image */}
+                      <div className="space-y-4">
+                        <div className="flex items-center gap-3">
+                          <div className="h-8 w-8 rounded-xl bg-purple-100 dark:bg-purple-900/50 flex items-center justify-center">
+                            <div className="h-3 w-3 rounded-full bg-purple-600 dark:bg-purple-400"></div>
+                          </div>
+                          <h5 className="text-lg font-bold text-slate-900 dark:text-slate-100">Meal Preview</h5>
+                        </div>
+                        <div className="relative overflow-hidden rounded-2xl border border-slate-200/50 dark:border-slate-700/50 shadow-lg">
+                          <img
+                            src={
+                              meal.imageUrl ||
+                              `/placeholder.svg?height=256&width=400&text=${encodeURIComponent(meal.name)}`
+                            }
+                            alt={`${meal.name} - Meal preview`}
+                            className="w-full h-64 object-cover hover:scale-105 transition-transform duration-500"
+                            onError={(e) => {
+                              e.currentTarget.src = `/placeholder.svg?height=256&width=400&text=${encodeURIComponent(meal.name)}`
+                            }}
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent pointer-events-none"></div>
+                        </div>
+                      </div>
 
                               {/* Ingredients Section */}
                               <div className="space-y-4">
-                                <div className="flex items-center gap-3">
-                                  <div className="h-8 w-8 rounded-xl bg-green-100 dark:bg-green-900/50 flex items-center justify-center">
-                                    <div className="h-3 w-3 rounded-full bg-green-600 dark:bg-green-400"></div>
-                                  </div>
-                                  <h5 className="text-lg font-bold text-slate-900 dark:text-slate-100">Ingredients</h5>
-                                  <Badge variant="outline" className="ml-auto text-sm font-medium">
-                                    {meal.ingredients.length} items
-                                  </Badge>
-                                </div>
-                                <div className="bg-gradient-to-br from-slate-50/80 via-white/80 to-slate-50/80 dark:from-slate-800/50 dark:via-slate-900/50 dark:to-slate-800/50 rounded-xl md:rounded-2xl p-4 md:p-6 border border-slate-200/50 dark:border-slate-700/50 shadow-sm">
-                                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 md:gap-3">
-                                    {meal.ingredients.map((ingredient, i) => (
-                                      <div
-                                        key={i}
-                                        className="flex items-center gap-3 text-base text-slate-700 dark:text-slate-300"
-                                      >
-                                        <div className="h-2 w-2 rounded-full bg-green-500 flex-shrink-0"></div>
-                                        <span className="font-medium">{ingredient}</span>
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
+                        <div className="flex items-center gap-3">
+                          <div className="h-8 w-8 rounded-xl bg-green-100 dark:bg-green-900/50 flex items-center justify-center">
+                            <div className="h-3 w-3 rounded-full bg-green-600 dark:bg-green-400"></div>
+                          </div>
+                          <h5 className="text-lg font-bold text-slate-900 dark:text-slate-100">Ingredients</h5>
+                          <Badge variant="outline" className="ml-auto text-sm font-medium">
+                            {meal.ingredients.length} items
+                          </Badge>
+                        </div>
+                        <div className="bg-gradient-to-br from-slate-50/80 via-white/80 to-slate-50/80 dark:from-slate-800/50 dark:via-slate-900/50 dark:to-slate-800/50 rounded-xl md:rounded-2xl p-4 md:p-6 border border-slate-200/50 dark:border-slate-700/50 shadow-sm">
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 md:gap-3">
+                            {meal.ingredients.map((ingredient, i) => (
+                              <div
+                                key={i}
+                                className="flex items-center gap-3 text-base text-slate-700 dark:text-slate-300"
+                              >
+                                <div className="h-2 w-2 rounded-full bg-green-500 flex-shrink-0"></div>
+                                <span className="font-medium">{ingredient}</span>
                               </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
 
                               {/* Instructions Section */}
                               <div className="space-y-4">
-                                <div className="flex items-center gap-3">
-                                  <div className="h-8 w-8 rounded-xl bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center">
-                                    <div className="h-3 w-3 rounded-full bg-blue-600 dark:bg-blue-400"></div>
-                                  </div>
-                                  <h5 className="text-lg font-bold text-slate-900 dark:text-slate-100">
-                                    Cooking Instructions
-                                  </h5>
-                                </div>
-                                <div className="bg-gradient-to-br from-slate-50/80 via-white/80 to-slate-50/80 dark:from-slate-800/50 dark:via-slate-900/50 dark:to-slate-800/50 rounded-xl md:rounded-2xl p-4 md:p-6 border border-slate-200/50 dark:border-slate-700/50 shadow-sm">
-                                  <div className="space-y-3">
-                                    {meal.instructions
-                                      .split(/(?=\d+\.)/)
-                                      .filter((step) => step.trim())
-                                      .map((step, index) => {
-                                        const cleanStep = step.replace(/^\d+\.\s*/, "").trim()
-                                        if (!cleanStep) return null
+                        <div className="flex items-center gap-3">
+                          <div className="h-8 w-8 rounded-xl bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center">
+                            <div className="h-3 w-3 rounded-full bg-blue-600 dark:bg-blue-400"></div>
+                          </div>
+                          <h5 className="text-lg font-bold text-slate-900 dark:text-slate-100">
+                            Cooking Instructions
+                          </h5>
+                        </div>
+                        <div className="bg-gradient-to-br from-slate-50/80 via-white/80 to-slate-50/80 dark:from-slate-800/50 dark:via-slate-900/50 dark:to-slate-800/50 rounded-xl md:rounded-2xl p-4 md:p-6 border border-slate-200/50 dark:border-slate-700/50 shadow-sm">
+                          <div className="space-y-3">
+                            {meal.instructions
+                              .split(/(?=\d+\.)/)
+                              .filter((step) => step.trim())
+                              .map((step, index) => {
+                                const cleanStep = step.replace(/^\d+\.\s*/, "").trim()
+                                if (!cleanStep) return null
 
-                                        return (
-                                          <div key={index} className="flex gap-4">
-                                            <div className="flex-shrink-0 h-6 w-6 rounded-full bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center mt-0.5">
-                                              <span className="text-xs font-bold text-blue-600 dark:text-blue-400">
-                                                {index + 1}
-                                              </span>
-                                            </div>
-                                            <p className="text-base text-slate-700 dark:text-slate-300 leading-relaxed font-medium flex-1">
-                                              {cleanStep}
-                                            </p>
-                                          </div>
-                                        )
-                                      })}
+                                return (
+                                  <div key={index} className="flex gap-4">
+                                    <div className="flex-shrink-0 h-6 w-6 rounded-full bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center mt-0.5">
+                                      <span className="text-xs font-bold text-blue-600 dark:text-blue-400">
+                                        {index + 1}
+                                      </span>
+                                    </div>
+                                    <p className="text-base text-slate-700 dark:text-slate-300 leading-relaxed font-medium flex-1">
+                                      {cleanStep}
+                                    </p>
                                   </div>
-                                </div>
-                              </div>
-                            </div>
-
-                            {/* Hover Effect Border */}
-                            <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-[#08e605]/0 via-[#08e605]/5 to-lime-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
-                          </Card>
-                        ))}
+                                )
+                              })}
+                          </div>
+                        </div>
                       </div>
+                    </div>
+
+                    {/* Hover Effect Border */}
+                    <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-[#08e605]/0 via-[#08e605]/5 to-lime-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
+                  </Card>
+                ))}
+              </div>
+
 
                       {/* Day Separator */}
-                      {dayIndex < mealPlan.length - 1 && (
-                        <div className="flex items-center gap-6 py-8">
-                          <div className="flex-1 h-px bg-gradient-to-r from-transparent via-slate-200 dark:via-slate-700 to-transparent"></div>
-                          <div className="h-3 w-3 rounded-full bg-gradient-to-r from-[#08e605] to-green-600 shadow-lg shadow-emerald-500/25"></div>
-                          <div className="flex-1 h-px bg-gradient-to-r from-transparent via-slate-200 dark:via-slate-700 to-transparent"></div>
-                        </div>
-                      )}
-                    </div>
-                  ))}
+              {dayIndex < mealPlan.length - 1 && (
+                <div className="flex items-center gap-6 py-8">
+                  <div className="flex-1 h-px bg-gradient-to-r from-transparent via-slate-200 dark:via-slate-700 to-transparent"></div>
+                  <div className="h-3 w-3 rounded-full bg-gradient-to-r from-[#08e605] to-green-600 shadow-lg shadow-emerald-500/25"></div>
+                  <div className="flex-1 h-px bg-gradient-to-r from-transparent via-slate-200 dark:via-slate-700 to-transparent"></div>
                 </div>
+              )}
+            </div>
+          ))}
+        </div>
               </ScrollArea>
             </Card>
           </div>

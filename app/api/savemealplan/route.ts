@@ -36,7 +36,13 @@ export async function POST(request:Request) {
   });
   
     if (!session) {
-      redirect("/sign-in");
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: "User not authenticated" 
+        },
+        { status: 401 }
+      );
     }
     const userId = session.user.id;
 
@@ -49,6 +55,41 @@ export async function POST(request:Request) {
     // Parse the request body
     const input: SaveMealPlanInput = await request.json();
     
+    // Validate required fields
+    if (!input.title || !input.duration || !input.mealsPerDay || !input.days) {
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: "Missing required fields: title, duration, mealsPerDay, or days" 
+        },
+        { status: 400 }
+      );
+    }
+    
+    // Validate meal data structure
+    for (const day of input.days) {
+      if (!day.meals || !Array.isArray(day.meals)) {
+        return NextResponse.json(
+          { 
+            success: false, 
+            error: `Invalid meal data structure for day ${day.day}` 
+          },
+          { status: 400 }
+        );
+      }
+      
+      for (const meal of day.meals) {
+        if (!meal.name || !meal.description || !meal.ingredients || !meal.instructions) {
+          return NextResponse.json(
+            { 
+              success: false, 
+              error: `Missing required meal fields for meal: ${meal.name || 'unnamed'}` 
+            },
+            { status: 400 }
+          );
+        }
+      }
+    }
     
     // Create the main MealPlan record
     const mealPlan = await prisma.mealPlan.create({
@@ -124,7 +165,14 @@ export async function POST(request:Request) {
         { status: 200 }
     )
   } catch (error) {
-    console.error('Error in API route:', error);
+    console.error('Error in save meal plan API route:', error);
+    
+    // Log additional details for debugging
+    if (error instanceof Error) {
+      console.error('Error name:', error.name);
+      console.error('Error message:', error.message);
+      console.error('Error stack:', error.stack);
+    }
     
     // Return error response
     return NextResponse.json(
