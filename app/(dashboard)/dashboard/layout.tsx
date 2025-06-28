@@ -75,12 +75,12 @@ export default async function DashboardLayout({
                   </Link>
                 </SheetTitle>
               </div>
-              <div className="flex-1 flex flex-col h-full">
-                <nav className="flex-1 overflow-y-auto flex flex-col gap-1 px-2 text-sm font-medium lg:px-4 py-2">
+              <div className="flex-1 flex flex-col h-full relative">
+                <nav className="flex-1 overflow-y-auto flex flex-col gap-1 px-2 text-sm font-medium lg:px-4 py-2 pb-24">
                   <DashboardLinks />
                 </nav>
-                {/* Mobile User Button - Always at bottom */}
-                <div className="border-t p-4 mt-auto bg-background/95">
+                {/* Mobile User Button - Always at bottom left */}
+                <div className="absolute left-0 bottom-0 w-full border-t p-4 bg-background/95 z-10">
                   <UserDropdown user={user} />
                 </div>
               </div>
@@ -93,7 +93,6 @@ export default async function DashboardLayout({
 
         {/* Main content area */}
         <main className="flex-1 overflow-y-auto">{children}</main>
-        <Footer/>
       </div>
       <Toaster richColors closeButton theme="light" />
     </div>

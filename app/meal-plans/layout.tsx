@@ -92,7 +92,6 @@ export default async function MealLayout({
         <main className="flex-1 overflow-y-auto">
           {children}
         </main>
-        <Footer />
       </div>
       <Toaster richColors closeButton theme="light" />
     </div>

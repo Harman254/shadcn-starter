@@ -5,6 +5,7 @@ import '@/styles/globals.css';
 import Navbar from '@/components/Navbar';
 import { Analytics } from "@vercel/analytics/next"
 import { SpeedInsights } from "@vercel/speed-insights/next"
+import Footer from '@/components/footer';
 
 interface RootLayoutProps {
   children: React.ReactNode;
@@ -31,6 +32,8 @@ export default async function  RootLayout({ children }: RootLayoutProps) {
         <div className="flex min-h-screen bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 flex-col">
           <Navbar />
           {children}
+        <Footer />
+
         </div>
         <Toaster />
         <SpeedInsights />
