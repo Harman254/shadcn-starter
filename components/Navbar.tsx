@@ -31,7 +31,6 @@ import { ThemeToggle } from "./theme-toggle";
 import MobileMenuTrigger from "./mobile-menu";
 import NavMenuTriggerClient from "./nav-menu";
 import { useSession } from "@/lib/auth-client";
-import SignOut from "./auth/sign-out";
 
 interface Feature {
   title: string;
@@ -137,7 +136,6 @@ const Navbar = () => {
                 <Button asChild variant="outline">
                   <Link href="/dashboard">Go to Dashboard</Link>
                 </Button>
-                <SignOut />
               </>
             ) : (
               <>
@@ -213,7 +211,6 @@ const Navbar = () => {
                       <Button asChild variant="outline">
                         <Link href="/dashboard" onClick={closeSheet}>Go to Dashboard</Link>
                       </Button>
-                      <SignOut />
                     </>
                   ) : (
                     <>

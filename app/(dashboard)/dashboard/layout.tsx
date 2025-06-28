@@ -1,122 +1,101 @@
-import { ReactNode } from "react";
-import Link from "next/link";
-import { DashboardLinks } from "../dashboard-links";
-import {
-  Sheet,
-  SheetContent,
-  SheetTrigger,
-  SheetTitle,
-} from "@/components/ui/sheet";
-import { Button } from "@/components/ui/button";
-import { Menu, UserCog } from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { redirect } from "next/navigation";
-import { getAccount, getDBSession, getMealsByUserId } from "@/data";
-import { Toaster } from "@/components/ui/sonner";
-import { authClient } from "@/lib/auth-client";
-import { headers } from "next/headers";
-import { auth } from "@/lib/auth";
-import SignOut from "@/components/auth/sign-out";
-import { Sign } from "crypto";
+import Link from "next/link"
+import { DashboardLinks } from "../dashboard-links"
+import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet"
+import { Button } from "@/components/ui/button"
+import { Menu } from "lucide-react"
+import { getMealsByUserId } from "@/data"
+import { Toaster } from "@/components/ui/sonner"
+import type { ReactNode } from "react"
+import { headers } from "next/headers"
+import { auth } from "@/lib/auth"
+import { redirect } from "next/navigation"
+import { UserDropdown } from "@/components/user-dropdown"
+import Footer from "@/components/footer";
+
 
 
 export default async function DashboardLayout({
   children,
 }: {
-  children: ReactNode;
+  children: ReactNode
 }) {
-  
-  
-  
-
   const session = await auth.api.getSession({
-    headers: await headers() // you need to pass the headers object.
-});
+    headers: await headers(), // you need to pass the headers object.
+  })
 
   if (!session) {
-    redirect("/sign-in");
-  }
-const CheckOnbaord  = await getAccount(session.user.id);
-
-const isOnboarded = CheckOnbaord?.isOnboardingComplete 
-if (!isOnboarded) {
-  
-    redirect("/onboarding");
+    redirect("/sign-in")
   }
 
-
-  const user = session.user;
-
-  const meals = await getMealsByUserId(user.id);
+  const user = session.user
+  const meals = await getMealsByUserId(user.id)
 
   return (
-    <>
-      <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
-        {/* Sidebar */}
-        <div className="hidden border-r bg-background/95 md:block">
-          <div className="flex flex-col max-h-screen h-full gap-2">
-            <div className="h-14 flex items-center border-b px-4 lg:h-[60px] lg:px-6 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-              <Link href="/" className="flex items-center gap-2 transition-colors hover:opacity-80">
-                <p className="text-2xl font-bold tracking-tight antialiased">
-                  Meal<span className="text-green-600 font-extrabold">Wise</span>
-                </p>
-              </Link>
-            </div>
-            <div className="flex-1">
-              <nav className="grid items-start px-2 text-sm font-medium lg:px-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-                <div className="subpixel-antialiased">
-                  <DashboardLinks />
-                </div>
-              </nav>
-            </div>
+    <div className="grid h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
+      {/* Sidebar */}
+      <div className="hidden border-r bg-background/95 md:block h-screen">
+        <div className="flex flex-col h-full">
+          <div className="h-14 flex items-center border-b px-4 lg:h-[60px] lg:px-6">
+            <Link href="/" className="flex items-center gap-2">
+              <span className="text-2xl font-semibold tracking-tighter">
+                Meal<span className="text-green-500 text-2xl">Wise</span>
+              </span>
+            </Link>
+          </div>
+
+          {/* Nav links area, scrollable if needed */}
+          <nav className="flex-1 overflow-y-auto flex flex-col gap-1 px-2 text-sm font-medium lg:px-4 py-2">
+            <DashboardLinks />
+          </nav>
+
+          {/* User Button at Bottom - Always Visible, never scrolls */}
+          <div className="p-4 border-t mb-20  bg-background/95 mt-auto">
+            <UserDropdown user={user} />
           </div>
         </div>
+      </div>
 
-        {/* Main Content */}
-        <div className="flex flex-col">
-          <header className="flex h-14 items-center gap-4 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4 lg:h-[60px] lg:px-6">
-            {/* Mobile Menu */}
-            <Sheet>
-              <SheetTrigger asChild>
-                <Button variant="outline" size="icon" className="md:hidden">
-                  <Menu className="size-5" />
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="left" className="antialiased">
+      {/* Main Content */}
+      <div className="relative w-full flex min-h-screen flex-col">
+        <header className="flex h-14 items-center gap-4 border-b bg-background/95 px-4 lg:h-[60px] lg:px-6">
+          {/* Mobile Menu */}
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button variant="outline" size="icon" className="md:hidden bg-transparent">
+                <Menu className="size-5" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="flex flex-col p-0 h-screen">
+              <div className="h-14 flex items-center border-b px-4 lg:h-[60px] lg:px-6">
                 <SheetTitle>
-                  <div className="flex items-center gap-2 mb-4">
-                    <Link href="/" className="flex items-center gap-2 transition-colors hover:opacity-80">
-                      <p className="text-2xl font-bold tracking-tight">
-                        Meal<span className="text-green-600 font-extrabold">Wise</span>
-                      </p>
-                    </Link>
-                  </div>
+                  <Link href="/" className="flex items-center gap-2">
+                    <span className="text-2xl font-bold">
+                      Meal<span className="text-green-600">Wise</span>
+                    </span>
+                  </Link>
                 </SheetTitle>
-                <nav className="grid gap-2">
-                  <div className="subpixel-antialiased">
-                    <DashboardLinks />
-                  </div>
+              </div>
+              <div className="flex-1 flex flex-col h-full">
+                <nav className="flex-1 overflow-y-auto flex flex-col gap-1 px-2 text-sm font-medium lg:px-4 py-2">
+                  <DashboardLinks />
                 </nav>
-              </SheetContent>
-            </Sheet>
+                {/* Mobile User Button - Always at bottom */}
+                <div className="border-t p-4 mt-auto bg-background/95">
+                  <UserDropdown user={user} />
+                </div>
+              </div>
+            </SheetContent>
+          </Sheet>
 
-          
-          </header>
+          {/* Header content can go here */}
+          <div className="flex-1"></div>
+        </header>
 
-          {/* Full-width Main Section */}
-          <main className="flex flex-1 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 flex-col gap-4 p-4 lg:gap-6 lg:p-6 w-full">
-            {children}
-          </main>
-        </div>
+        {/* Main content area */}
+        <main className="flex-1 overflow-y-auto">{children}</main>
+        <Footer/>
       </div>
       <Toaster richColors closeButton theme="light" />
-    </>
-  );
+    </div>
+  )
 }
