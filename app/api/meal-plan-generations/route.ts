@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
-import { getSafeMealPlanGenerationCount, validateAndIncrementMealPlanGeneration, checkMealPlanGenerationLimit } from "@/data"
+import { getSafeMealPlanGenerationCount, validateAndIncrementMealPlanGeneration, checkMealPlanGenerationLimit, rollbackMealPlanGeneration } from "@/data"
 import { headers } from "next/headers"
 
 export async function GET() {
@@ -59,6 +59,10 @@ export async function POST(request: NextRequest) {
         }, { status: 429 })
       }
       
+      return NextResponse.json(data)
+    } else if (action === "rollback-generation") {
+      // Rollback generation count (decrement by 1)
+      const data = await rollbackMealPlanGeneration(session.user.id)
       return NextResponse.json(data)
     } else {
       return NextResponse.json({ error: "Invalid action" }, { status: 400 })

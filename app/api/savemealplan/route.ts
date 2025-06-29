@@ -7,6 +7,10 @@ import { headers } from "next/headers";
 import { auth } from '@/lib/auth'
 import { Meal as MealType } from '@/app/meal-plans/[id]/components/types';
 
+// Configure API route for larger request bodies
+export const maxDuration = 60; // 60 seconds timeout
+export const dynamic = 'force-dynamic';
+
 interface Meal extends MealType {}
 
 // Define the interface for day meal plan data
@@ -26,11 +30,11 @@ interface SaveMealPlanInput {
 
 // This is the API route handler for POST requests
 export async function POST(request:Request) {
-
-
-
   try {
-
+    // Log request details for debugging
+    const contentLength = request.headers.get('content-length')
+    console.log('Request content length:', contentLength)
+    
     const session = await auth.api.getSession({
       headers: await headers() // you need to pass the headers object.
   });
@@ -46,14 +50,47 @@ export async function POST(request:Request) {
     }
     const userId = session.user.id;
 
-    
-
     if (!userId){
       throw new Error("User not authenticated");
     }
 
+    // Test database connection
+    try {
+      await prisma.$connect()
+      console.log('Database connection successful')
+    } catch (dbError) {
+      console.error('Database connection failed:', dbError)
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: "Database connection failed" 
+        },
+        { status: 500 }
+      );
+    }
+
     // Parse the request body
-    const input: SaveMealPlanInput = await request.json();
+    let input: SaveMealPlanInput
+    try {
+      input = await request.json();
+    } catch (parseError) {
+      console.error('Failed to parse request body:', parseError)
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: "Invalid JSON in request body" 
+        },
+        { status: 400 }
+      );
+    }
+    
+    console.log('Parsed input:', {
+      title: input.title,
+      duration: input.duration,
+      mealsPerDay: input.mealsPerDay,
+      daysCount: input.days?.length,
+      totalMeals: input.days?.reduce((acc, day) => acc + day.meals.length, 0)
+    })
     
     // Validate required fields
     if (!input.title || !input.duration || !input.mealsPerDay || !input.days) {
@@ -102,45 +139,59 @@ export async function POST(request:Request) {
       },
     });
     
-    
+    console.log('Created meal plan with ID:', mealPlan.id)
 
     // For each day in the meal plan, create a DayMeal record
     for (const day of input.days) {
-      // Create a date for this day (using the day number to offset from today)
-      const dayDate = new Date();
-      dayDate.setDate(dayDate.getDate() + (day.day - 1)); // Offset by day number (1-based)
-      
-      // Create the DayMeal record
-      const dayMeal = await prisma.dayMeal.create({
-        data: {
-          date: dayDate,
-          mealPlanId: mealPlan.id, // Direct field assignment
-        },
-      });
-      
-      // For each meal in this day, create a Meal record
-      for (const meal of day.meals) {
-        // Determine meal type based on index or other logic
-        const mealIndex = day.meals.indexOf(meal);
-        let mealType = "snack";
+      try {
+        // Create a date for this day (using the day number to offset from today)
+        const dayDate = new Date();
+        dayDate.setDate(dayDate.getDate() + (day.day - 1)); // Offset by day number (1-based)
         
-        if (mealIndex === 0) mealType = "breakfast";
-        else if (mealIndex === 1) mealType = "lunch";
-        else if (mealIndex === 2) mealType = "dinner";
-        
-        // Create the Meal record
-        await prisma.meal.create({
+        // Create the DayMeal record
+        const dayMeal = await prisma.dayMeal.create({
           data: {
-            name: meal.name,
-            type: mealType,
-            description: meal.description,
-            calories: calculateCalories(meal.ingredients),
-            ingredients: meal.ingredients,
-            imageUrl: meal.imageUrl || null,
-            dayMealId: dayMeal.id,
-            instructions: meal.instructions,
+            date: dayDate,
+            mealPlanId: mealPlan.id, // Direct field assignment
           },
         });
+        
+        console.log(`Created day meal for day ${day.day} with ID:`, dayMeal.id)
+        
+        // For each meal in this day, create a Meal record
+        for (const meal of day.meals) {
+          try {
+            // Determine meal type based on index or other logic
+            const mealIndex = day.meals.indexOf(meal);
+            let mealType = "snack";
+            
+            if (mealIndex === 0) mealType = "breakfast";
+            else if (mealIndex === 1) mealType = "lunch";
+            else if (mealIndex === 2) mealType = "dinner";
+            
+            // Create the Meal record
+            const createdMeal = await prisma.meal.create({
+              data: {
+                name: meal.name,
+                type: mealType,
+                description: meal.description,
+                calories: calculateCalories(meal.ingredients),
+                ingredients: meal.ingredients,
+                imageUrl: meal.imageUrl || null,
+                dayMealId: dayMeal.id,
+                instructions: meal.instructions,
+              },
+            });
+            
+            console.log(`Created meal "${meal.name}" with ID:`, createdMeal.id)
+          } catch (mealError) {
+            console.error(`Error creating meal "${meal.name}":`, mealError)
+            throw new Error(`Failed to create meal "${meal.name}": ${mealError instanceof Error ? mealError.message : 'Unknown error'}`)
+          }
+        }
+      } catch (dayError) {
+        console.error(`Error creating day ${day.day}:`, dayError)
+        throw new Error(`Failed to create day ${day.day}: ${dayError instanceof Error ? dayError.message : 'Unknown error'}`)
       }
     }
 

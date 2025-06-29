@@ -65,14 +65,14 @@ export default async function MealLayout({
       {/* Main Content Area */}
       <div className="flex flex-col min-h-0 w-full">
         {/* Mobile Header */}
-        <header className="flex h-14 items-center gap-4 border-b bg-background/95 px-4 lg:h-[60px] lg:px-6 shrink-0 md:justify-end">
+        <header className="flex h-14 items-center gap-4 border-none bg-background/95 px-4 lg:h-[60px] lg:px-6 shrink-0 md:justify-end">
           {/* Mobile Menu */}
           <Sheet>
             <SheetTrigger asChild>
               <Button 
                 variant="outline" 
                 size="icon" 
-                className="md:hidden bg-transparent border-muted-foreground/20 hover:bg-accent"
+                className="md:hidden bg-transparent border-none hover:bg-accent"
               >
                 <Menu className="size-5" />
                 <span className="sr-only">Toggle navigation menu</span>

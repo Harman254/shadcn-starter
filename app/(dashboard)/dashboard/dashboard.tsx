@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import {
+  ArrowRight,
   ChefHat,
   ClipboardList,
   Heart,
@@ -124,12 +125,47 @@ function QuickNavCard({
   description: string;
 }) {
   return (
-    <div className="relative overflow-hidden bg-gradient-to-br from-slate-50/70 via-white/80 to-emerald-50/70 dark:from-slate-800/70 dark:via-slate-900/80 dark:to-emerald-900/70 rounded-xl p-6 shadow-xl shadow-slate-200/40 dark:shadow-slate-950/40 border border-slate-200/50 dark:border-slate-700/50 hover:shadow-2xl hover:shadow-emerald-300/30 dark:hover:shadow-emerald-900/50 transition-all duration-300 transform hover:-translate-y-1 cursor-pointer group backdrop-blur-sm">
-      <div className="text-emerald-600 mb-4 group-hover:scale-110 transition-transform">
-        {icon}
+    <div 
+      className="relative overflow-hidden bg-gradient-to-br from-slate-50/90 via-white/95 to-emerald-50/80 dark:from-slate-800/90 dark:via-slate-900/95 dark:to-emerald-900/80 rounded-2xl p-7 shadow-lg shadow-slate-200/60 dark:shadow-slate-950/60 border border-slate-200/60 dark:border-slate-700/60 hover:shadow-2xl hover:shadow-emerald-300/40 dark:hover:shadow-emerald-900/60 transition-all duration-500 transform hover:-translate-y-2 hover:scale-[1.02] cursor-pointer group backdrop-blur-md"
+    >
+      {/* Animated background glow */}
+      <div className="absolute inset-0 bg-gradient-to-br from-emerald-400/10 via-transparent to-blue-400/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+      
+      {/* Floating particles effect */}
+      <div className="absolute top-2 right-2 w-2 h-2 bg-emerald-400/30 rounded-full group-hover:animate-ping" />
+      <div className="absolute top-4 right-8 w-1 h-1 bg-blue-400/40 rounded-full group-hover:animate-bounce" style={{animationDelay: '0.2s'}} />
+      <div className="absolute top-6 right-4 w-1.5 h-1.5 bg-emerald-300/30 rounded-full group-hover:animate-pulse" style={{animationDelay: '0.4s'}} />
+      
+      <div className="relative z-10">
+        {/* Icon with enhanced animation */}
+        <div className="text-emerald-600 dark:text-emerald-400 mb-5 group-hover:scale-125 group-hover:rotate-3 transition-all duration-300 transform origin-center">
+          <div className="relative">
+            {icon}
+            {/* Icon glow effect */}
+            <div className="absolute inset-0 text-emerald-600 dark:text-emerald-400 opacity-0 group-hover:opacity-50 blur-sm transition-opacity duration-300">
+              {icon}
+            </div>
+          </div>
+        </div>
+        
+        {/* Title with subtle animation */}
+        <h3 className="text-xl font-bold bg-gradient-to-r from-slate-900 via-slate-800 to-emerald-800 dark:from-slate-100 dark:via-slate-200 dark:to-emerald-200 bg-clip-text text-transparent mb-3 group-hover:from-emerald-700 group-hover:via-emerald-600 group-hover:to-blue-600 dark:group-hover:from-emerald-300 dark:group-hover:via-emerald-200 dark:group-hover:to-blue-300 transition-all duration-300">
+          {title}
+        </h3>
+        
+        {/* Description with improved typography */}
+        <p className="text-slate-600 dark:text-slate-300 text-sm leading-relaxed mb-4 group-hover:text-slate-700 dark:group-hover:text-slate-200 transition-colors duration-300">
+          {description}
+        </p>
+        
+        {/* Arrow indicator */}
+        <div className="flex items-center justify-end">
+          <ArrowRight className="w-5 h-5 text-emerald-500/60 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transform translate-x-0 group-hover:translate-x-1 opacity-60 group-hover:opacity-100 transition-all duration-300" />
+        </div>
       </div>
-      <h3 className="text-lg font-semibold text-foreground mb-2">{title}</h3>
-      <p className="text-foreground/85 text-sm">{description}</p>
+      
+      {/* Bottom accent line */}
+      <div className="absolute bottom-0 left-0 w-0 h-1 bg-gradient-to-r from-emerald-500 to-blue-500 group-hover:w-full transition-all duration-500" />
     </div>
   );
 }

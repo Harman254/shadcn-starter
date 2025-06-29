@@ -61,7 +61,7 @@ export default async function DashboardLayout({
       {/* Main Content Area */}
       <div className="flex flex-col min-h-0 w-full">
         {/* Mobile Header */}
-        <header className="flex h-14 items-center gap-4 border-b bg-background/95 px-4 lg:h-[60px] lg:px-6 shrink-0 md:justify-end">
+        <header className="flex h-14 items-center gap-4 border-none bg-background/95 px-4 lg:h-[60px] lg:px-6 shrink-0 md:justify-end">
           {/* Mobile Menu */}
           <Sheet>
             <SheetTrigger asChild>
@@ -110,7 +110,7 @@ export default async function DashboardLayout({
 
         {/* Main Content */}
         <main className="flex-1 overflow-y-auto bg-background">
-          <div className="h-full">
+          <div className="h-full border-none">
             {children}
           </div>
         </main>

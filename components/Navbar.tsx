@@ -76,7 +76,7 @@ const Navbar = () => {
   ];
 
   return (
-    <div suppressHydrationWarning className="w-full border-b z-30 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <div suppressHydrationWarning className="w-full border-none z-30 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <nav className="flex items-center justify-between py-4">
           <Link href="/" className="flex items-center gap-2">

@@ -1105,3 +1105,81 @@ export async function getSafeMealPlanGenerationCount(userId: string) {
     throw error;
   }
 }
+
+// Function to rollback generation count (decrement by 1)
+export async function rollbackMealPlanGeneration(userId: string) {
+  try {
+    const now = new Date();
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - now.getDay()); // Start of week (Sunday)
+    startOfWeek.setHours(0, 0, 0, 0);
+
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 7);
+
+    // Use a transaction to ensure atomicity
+    const result = await prisma.$transaction(async (tx) => {
+      // Get current generation record for this week
+      const generationRecord = await tx.mealPlanGeneration.findFirst({
+        where: {
+          userId: userId,
+          weekStart: {
+            gte: startOfWeek,
+            lt: endOfWeek
+          }
+        }
+      });
+
+      if (!generationRecord) {
+        // No record to rollback
+        return {
+          success: true,
+          generationCount: 0,
+          maxGenerations: 2,
+          message: "No generation record found to rollback"
+        };
+      }
+
+      // Decrement the count, ensuring it doesn't go below 0
+      const newCount = Math.max(0, generationRecord.generationCount - 1);
+      
+      const updatedRecord = await tx.mealPlanGeneration.update({
+        where: { id: generationRecord.id },
+        data: {
+          generationCount: newCount
+        }
+      });
+
+      return {
+        success: true,
+        generationCount: updatedRecord.generationCount,
+        maxGenerations: 2,
+        message: "Generation count rolled back successfully"
+      };
+    });
+
+    return result;
+  } catch (error) {
+    console.error("Error rolling back meal plan generation:", error);
+    throw error;
+  }
+}
+
+// Function to check database health
+export async function checkDatabaseHealth() {
+  try {
+    // Test database connection with a simple query
+    await prisma.$queryRaw`SELECT 1`;
+    return {
+      healthy: true,
+      message: "Database connection is healthy"
+    };
+  } catch (error) {
+    console.error("Database health check failed:", error);
+    return {
+      healthy: false,
+      message: "Database connection failed",
+      error: error instanceof Error ? error.message : "Unknown error"
+    };
+  }
+}
