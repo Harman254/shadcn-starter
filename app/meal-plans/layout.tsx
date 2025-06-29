@@ -15,6 +15,7 @@ import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { UserDropdown } from "@/components/user-dropdown";
+import Footer from "@/components/footer";
 
 export default async function MealLayout({
   children,
