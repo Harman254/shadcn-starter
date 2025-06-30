@@ -75,8 +75,9 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
   };
 }
 
-interface Props { 
+interface Props {
   params: { id: string };
+  searchParams: { [key: string]: string | string[] | undefined };
 }
 
 export default async function GroceryListPage({ params }: Props) {
