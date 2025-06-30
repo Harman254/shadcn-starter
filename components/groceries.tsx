@@ -56,6 +56,14 @@ const GroceryList = ({ id }: GroceryListProps) => {
 
   const themeClasses = isDarkMode ? 'dark' : ''
 
+  // Helper to ensure only a single price is shown (no range)
+  const getSinglePrice = (price: string) => {
+    if (!price) return '';
+    // Split on dash, en dash, or em dash
+    const parts = price.split(/[-–—]/);
+    return parts[0].trim();
+  };
+
   if (isLoading) {
     return (
       <div className={`${themeClasses} min-h-screen bg-gradient-to-br from-rose-50 via-purple-50 to-indigo-100 dark:from-slate-900 dark:via-purple-900/20 dark:to-indigo-900/30 transition-all duration-1000`}>
@@ -200,18 +208,13 @@ const GroceryList = ({ id }: GroceryListProps) => {
                             </div>
                             <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
                                 <DollarSign className="w-4 h-4 text-emerald-500" />
-                                <span className="font-medium">{item.estimatedPrice}</span>
+                                <span className="font-medium">{getSinglePrice(item.estimatedPrice)}</span>
                             </div>
                             <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
-                                <div className="group relative flex items-center">
-                                  <span className="flex items-center gap-1 px-3 py-1 rounded-full bg-blue-50 dark:bg-blue-900/40 border border-blue-200 dark:border-blue-700 shadow-sm">
-                                    <MapPin className="w-4 h-4 text-blue-500" />
-                                    <span className="font-semibold text-blue-800 dark:text-blue-200 text-base">{item.suggestedLocation}</span>
-                                  </span>
-                                  <span className="absolute left-1/2 -top-8 -translate-x-1/2 scale-0 group-hover:scale-100 transition-transform bg-slate-900 text-white text-xs rounded px-2 py-1 whitespace-nowrap z-20 shadow-lg pointer-events-none">
-                                    Suggested store for this item
-                                  </span>
-                                </div>
+                                <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-900/40 border border-blue-100 dark:border-blue-800">
+                                  <MapPin className="w-3 h-3 text-blue-500" />
+                                  <span className="text-xs font-medium text-blue-800 dark:text-blue-200">{item.suggestedLocation}</span>
+                                </span>
                             </div>
                             <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
                                 <Tag className="w-4 h-4 text-pink-500" />
