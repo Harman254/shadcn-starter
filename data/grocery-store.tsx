@@ -115,15 +115,22 @@ export const useGroceryListStore = create<GroceryListState>()(
 
           const result = await response.json();
           
-          type GroceryItemFromAPI = { item: string; estimatedPrice: string; suggestedLocation?: string; [key: string]: any; };
-          const groceryItems: GroceryItem[] = result.groceryList.map((item: GroceryItemFromAPI) => ({ ...item, checked: false }));
-          const uniqueStores: string[] = Array.from(new Set(groceryItems.map(item => item.suggestedLocation).filter((loc): loc is string => !!loc)));
+          // The API now returns { groceryList: [...], locationInfo: {...} }
+          const groceryItems: GroceryItem[] = result.groceryList.map((item: any) => ({ ...item, checked: false }));
           
-          const userLocation = get().userLocation || { country: "US", city: "San Francisco", currencyCode: "USD", currencySymbol: "$" };
+          const userLocation: UserLocation = {
+              country: result.locationInfo.country || 'N/A',
+              city: result.locationInfo.city || 'N/A',
+              currencyCode: result.locationInfo.currencyCode,
+              currencySymbol: result.locationInfo.currencySymbol,
+          };
+          
+          const uniqueStores: string[] = result.locationInfo.localStores || [];
 
-          // --- Update state and cache ---
           const newCacheEntry: CachedGroceryList = { groceryList: groceryItems, stores: uniqueStores, userLocation };
+          
           set(state => ({
+            currentId: id,
             groceryList: groceryItems,
             filteredList: groceryItems,
             stores: uniqueStores,

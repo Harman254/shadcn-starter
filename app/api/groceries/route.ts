@@ -13,10 +13,12 @@ export async function GET(request: Request) {
   }
 
   try {
-    const groceryList = await generateGroceryListById(mealPlanId);
-    return NextResponse.json({ groceryList });
+    // The AI flow now returns the full object { groceryList, locationInfo }
+    const groceryData = await generateGroceryListById(mealPlanId);
+    return NextResponse.json(groceryData);
   } catch (error) {
     console.error(`Error generating grocery list for ID ${mealPlanId}:`, error);
-    return NextResponse.json({ error: 'Failed to generate grocery list' }, { status: 500 });
+    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+    return NextResponse.json({ error: `Failed to generate grocery list: ${errorMessage}` }, { status: 500 });
   }
 }

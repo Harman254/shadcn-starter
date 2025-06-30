@@ -1,11 +1,10 @@
 'use server'; // For Next.js Server Actions
 
 import { ai } from '../instance';
-import { z } from 'genkit';
-import { fetchMealPlanById, getLatestFullMealPlanByUserId } from '@/data';
-import type { FullMealPlanWithDays } from '@/types';
-import { headers } from 'next/headers';
+import { z } from 'zod';
+import { fetchMealPlanById } from '@/data/index';
 import { auth } from '@/lib/auth';
+import { headers } from 'next/headers';
 import { getLocationDataWithCaching } from '@/lib/location';
 
 /* ========================== */
@@ -14,20 +13,20 @@ import { getLocationDataWithCaching } from '@/lib/location';
 
 const GroceryItemSchema = z.object({
   item: z.string().describe("Name of the grocery item (consolidated)."),
-  estimatedPrice: z.string().describe("Estimated price range with appropriate currency symbol (e.g., '$3.50', '€2.00 - €4.00')."),
-  suggestedLocation: z.string().describe("Suggested store or location, preferably local to the user (e.g., 'Kroger', 'Tesco', 'Local Butcher')."),
+  quantity: z.string().describe('Quantity needed (e.g., "2 lbs", "1 cup", "3 units")'),
+  category: z.string().describe('Category (e.g., "Produce", "Dairy", "Meat", "Pantry")'),
+  estimatedPrice: z.string().describe("Estimated price range with local currency symbol (e.g., '$3.50', '€2-€4')."),
+  suggestedLocation: z.string().describe("Suggested local store (e.g., 'Kroger', 'Tesco', 'Local Butcher')."),
 });
 
-const LocationEnhancementSchema = z.object({
-  currencySymbol: z.string().describe("The appropriate currency symbol for this location (e.g., '$', '€', '£', 'KSh', '₹')"),
-  currencyCode: z.string().describe("The ISO currency code for this location (e.g., 'USD', 'EUR', 'GBP', 'KES', 'INR')"),
-  localStores: z.array(z.string()).describe("List of popular grocery stores/supermarkets in this specific city and country"),
-  priceContext: z.string().describe("Brief context about typical grocery pricing in this location")
+const LocationInfoSchema = z.object({
+  currencySymbol: z.string().describe("The currency symbol for the location (e.g., '$', '€')."),
+  localStores: z.array(z.string()).describe("List of popular local grocery stores."),
 });
 
 const GenerateGroceryListOutputSchema = z.object({
-  groceryList: z.array(GroceryItemSchema).describe("Consolidated grocery list with localized estimated prices and store suggestions."),
-  locationInfo: LocationEnhancementSchema.describe("Enhanced location information including currency and stores")
+  groceryList: z.array(GroceryItemSchema),
+  locationInfo: LocationInfoSchema,
 });
 
 export type GenerateGroceryListOutput = z.infer<typeof GenerateGroceryListOutputSchema>;
@@ -57,57 +56,29 @@ export type GenerateGroceryListInput = z.infer<typeof GenerateGroceryListInputSc
 /*           AI PROMPT        */
 /* ========================== */
 
-const prompt = ai.definePrompt({
-  name: 'generateGroceryListPrompt',
-  input: { schema: GenerateGroceryListInputSchema },
-  output: { schema: GenerateGroceryListOutputSchema },
+const groceryListPrompt = ai.definePrompt({
+  name: 'groceryListPrompt',
   prompt: `
-You are a comprehensive grocery and location assistant with deep knowledge of global markets, currencies, and retail chains.
+    You are a hyper-local grocery expert. Given a meal plan and user location, generate a consolidated grocery list with realistic local pricing and store suggestions.
 
-## USER LOCATION
-- City: {{userLocation.city}}
-- Country: {{userLocation.country}}
+    ## USER LOCATION
+    - City: {{userLocation.city}}
+    - Country: {{userLocation.country}}
 
-## YOUR TASKS
+    ## MEAL PLAN
+    {{#each meals}}
+    - **{{name}}**: {{ingredients}}
+    {{/each}}
 
-### 1. LOCATION ANALYSIS
-First, analyze the user's location and provide:
-- **Currency Symbol**: The correct currency symbol used in {{userLocation.city}}, {{userLocation.country}}
-- **Currency Code**: The ISO currency code for this location
-- **Local Stores**: List 5-8 popular grocery stores, supermarkets, or food retailers that actually exist in {{userLocation.city}}, {{userLocation.country}}. Include both major chains and notable local stores.
-- **Price Context**: Brief overview of typical grocery pricing levels in this location
+    ## CRITICAL RULES
+    1.  **Local Pricing:** Provide realistic price ranges in the local currency ({{userLocation.currencySymbol}}).
+    2.  **Local Stores:** Suggest real grocery stores that exist in {{userLocation.city}}.
+    3.  **Consolidate:** Combine identical ingredients and sum their quantities.
+    4.  **Categorize:** Assign a category to each item (Produce, Dairy, Meat, etc.).
+    5.  **Complete Output:** You MUST return a valid JSON object containing both the 'groceryList' and the 'locationInfo'.
 
-### 2. GROCERY LIST GENERATION
-Using the location analysis above, create a consolidated grocery list from these meals:
-
-{{#each meals}}
-**{{this.name}}**: {{#each this.ingredients}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}
-{{/each}}
-
-## CRITICAL RULES
-1. **INGREDIENTS ONLY**: Use only the exact ingredients listed above. Do not add, modify, or omit anything.
-2. **REALISTIC PRICING**: 
-   - Research actual current grocery prices for {{userLocation.city}}, {{userLocation.country}}
-   - Consider local economic conditions and cost of living
-   - Provide realistic price ranges using the correct local currency
-   - Base prices on typical single-item purchases, not bulk quantities
-3. **ACCURATE STORES**:
-   - Use only real grocery stores that exist in {{userLocation.city}}, {{userLocation.country}}
-   - Match items to appropriate store types (fresh produce → supermarkets, specialty items → specialty stores)
-   - Prioritize well-known chains and popular local stores
-4. **CONSOLIDATION**: 
-   - Merge identical ingredients (case-insensitive)
-   - Combine similar items logically (e.g., "red onion" + "onion" = "onion")
-5. **CURRENCY ACCURACY**: Use the correct currency symbol and realistic amounts for the location
-
-## OUTPUT REQUIREMENTS
-- Provide comprehensive location information including real stores and accurate currency details
-- Generate realistic grocery list with proper local pricing
-- Ensure all store suggestions are legitimate businesses in the specified location
-- Use current market knowledge for accurate price estimates
-
-Return a properly structured JSON response with both the grocery list and enhanced location information.
-`,
+    Return nothing but the JSON object.
+  `,
 });
 
 /* ========================== */
@@ -125,7 +96,7 @@ const generateGroceryListFlow = ai.defineFlow<
   },
   async (input) => {
     try {
-      const { output } = await prompt(input);
+      const { output } = await groceryListPrompt(input);
 
       if (!output) {
         throw new Error("Failed to generate grocery list. AI did not return expected output.");
@@ -207,9 +178,7 @@ export async function generateGroceryListFromMealPlan(
     const enhancedLocationData = {
       ...locationData,
       currencySymbol: result.locationInfo.currencySymbol,
-      currencyCode: result.locationInfo.currencyCode,
       localStores: result.locationInfo.localStores,
-      priceContext: result.locationInfo.priceContext
     };
     
     console.log("AI-enhanced location data:", enhancedLocationData);
@@ -254,44 +223,45 @@ async function getUserId() {
   return session.user.id;
 }
 
-const groceryItemSchema = z.object({
-  item: z.string().describe('Name of the grocery item'),
-  quantity: z.string().describe('Quantity needed (e.g., "2 lbs", "1 cup", "3 units")'),
-  category: z.string().describe('Category (e.g., "Produce", "Dairy", "Meat", "Pantry")'),
-});
-
-const groceryListSchema = z.object({
-  list: z.array(groceryItemSchema).describe('The detailed grocery list'),
-});
-
-const groceryListPrompt = ai.definePrompt(
-  {
-    name: 'groceryListPrompt',
-    prompt: `
-      You are an expert grocery list creator. Based on the following meal plan, generate a consolidated grocery list.
-      Combine quantities of the same ingredient. For example, if one meal needs 1 cup of rice and another needs 2 cups, the list should have "Rice, 3 cups".
-
-      Meal Plan Details:
-      {{#each days}}
-      Day {{day}}:
-        {{#each meals}}
-        - {{name}}: {{ingredients}}
-        {{/each}}
-      {{/each}}
-
-      Return the list as a valid JSON object matching the output schema.
-    `,
-  },
-);
-
-// New function to generate by ID
 export async function generateGroceryListById(mealPlanId: string) {
+  const session = await auth.api.getSession({ headers: await headers() });
+  const userId = session?.user?.id;
+  if (!userId) throw new Error("Authentication required to generate grocery list.");
+
   const mealPlan = await fetchMealPlanById(mealPlanId);
+  if (!mealPlan) throw new Error(`Meal plan with ID ${mealPlanId} not found.`);
 
-  if (!mealPlan) {
-    throw new Error(`Meal plan with ID ${mealPlanId} not found.`);
+  // Location data is crucial for the prompt's context
+  const locationData = await getLocationDataWithCaching(userId, session.session.id);
+  
+  const mealsForPrompt = mealPlan.days.flatMap(day => 
+    day.meals.map(meal => ({
+      name: meal.name,
+      ingredients: meal.ingredients.join(', '),
+    }))
+  );
+
+  const inputForAI = {
+    userLocation: {
+      city: locationData.city || 'San Francisco',
+      country: locationData.country || 'USA',
+      currencySymbol: locationData.currencySymbol || '$',
+    },
+    meals: mealsForPrompt,
+  };
+
+  // Correctly call the defined prompt function with proper configuration
+  const { output } = await groceryListPrompt(inputForAI, {
+    model: 'gemini-2.0-flash',
+    output: { schema: GenerateGroceryListOutputSchema },
+    config: {
+      temperature: 0.1,
+    },
+  });
+
+  if (!output) {
+    throw new Error("Failed to generate grocery list from AI. The response was empty.");
   }
-
-  const { output } = await groceryListPrompt(mealPlan);
-  return output?.list ?? [];
+  
+  return output;
 }
