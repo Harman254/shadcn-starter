@@ -19,7 +19,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       return NextResponse.json({ error: "Invalid or missing meal plan ID." }, { status: 400 });
     }
     
-    const { groceryList, locationData } = await generateGroceryListFromMealPlan(id);
+    const { groceryList, locationData } = await generateGroceryListFromMealPlan(id, session.user.id);
 
     const responsePayload = {
       groceryList: groceryList.groceryList,
