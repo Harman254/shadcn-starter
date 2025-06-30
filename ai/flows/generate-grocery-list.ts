@@ -2,7 +2,7 @@
 
 import { ai } from '../instance';
 import { z } from 'genkit';
-import { fetchMealPlanById} from '@/data';
+import { fetchMealPlanById, getLatestFullMealPlanByUserId } from '@/data';
 import type { FullMealPlanWithDays } from '@/types';
 import { headers } from 'next/headers';
 import { auth } from '@/lib/auth';
@@ -243,4 +243,55 @@ export async function generateGroceryListFromLatest(): Promise<{ groceryList: Ge
     console.error("Error in generateGroceryListFromLatest:", error);
     throw error;
   }
+}
+
+// Helper function to get the current user ID
+async function getUserId() {
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session?.user?.id) {
+    throw new Error('Authentication required');
+  }
+  return session.user.id;
+}
+
+const groceryItemSchema = z.object({
+  item: z.string().describe('Name of the grocery item'),
+  quantity: z.string().describe('Quantity needed (e.g., "2 lbs", "1 cup", "3 units")'),
+  category: z.string().describe('Category (e.g., "Produce", "Dairy", "Meat", "Pantry")'),
+});
+
+const groceryListSchema = z.object({
+  list: z.array(groceryItemSchema).describe('The detailed grocery list'),
+});
+
+const groceryListPrompt = ai.definePrompt(
+  {
+    name: 'groceryListPrompt',
+    prompt: `
+      You are an expert grocery list creator. Based on the following meal plan, generate a consolidated grocery list.
+      Combine quantities of the same ingredient. For example, if one meal needs 1 cup of rice and another needs 2 cups, the list should have "Rice, 3 cups".
+
+      Meal Plan Details:
+      {{#each days}}
+      Day {{day}}:
+        {{#each meals}}
+        - {{name}}: {{ingredients}}
+        {{/each}}
+      {{/each}}
+
+      Return the list as a valid JSON object matching the output schema.
+    `,
+  },
+);
+
+// New function to generate by ID
+export async function generateGroceryListById(mealPlanId: string) {
+  const mealPlan = await fetchMealPlanById(mealPlanId);
+
+  if (!mealPlan) {
+    throw new Error(`Meal plan with ID ${mealPlanId} not found.`);
+  }
+
+  const { output } = await groceryListPrompt(mealPlan);
+  return output?.list ?? [];
 }

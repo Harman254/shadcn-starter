@@ -19,23 +19,28 @@ interface UserLocation {
   currencySymbol: string
 }
 
+interface CachedGroceryList {
+  groceryList: GroceryItem[];
+  stores: string[];
+  userLocation: UserLocation | null;
+}
+
 interface GroceryListState {
-  // Current meal plan ID
-  currentId: string | null
+  // Cache for multiple lists
+  cachedLists: { [key: string]: CachedGroceryList };
   
-  // Main state
+  // Active list being displayed
+  currentId: string | null
   groceryList: GroceryItem[]
   filteredList: GroceryItem[]
   isLoading: boolean
   error: string | null
+  stores: string[]
+  userLocation: UserLocation | null
   
   // Filter state
   searchTerm: string
   filterStore: string | null
-  stores: string[]
-  
-  // User location
-  userLocation: UserLocation | null
   
   // Actions
   fetchGroceryList: (id: string | null) => Promise<void>
@@ -55,15 +60,8 @@ interface GroceryListState {
 
 // Helper function to parse price string to number
 const parsePrice = (priceString: string): number => {
-  // Extract all numbers from the string
-  const numbers = priceString.match(/\d+(\.\d+)?/g);
-
-  if (!numbers || numbers.length === 0) {
-    return 0;
-  }
-
-  // If it's a range, take the first number (lower bound)
-  // If it's a single number, take that number
+  const numbers = priceString.match(/\\d+(\\.\\d+)?/g);
+  if (!numbers || numbers.length === 0) return 0;
   return Number.parseFloat(numbers[0]) || 0;
 };
 
@@ -71,6 +69,7 @@ export const useGroceryListStore = create<GroceryListState>()(
   persist(
     (set, get) => ({
       // Initial state
+      cachedLists: {},
       currentId: null,
       groceryList: [],
       filteredList: [],
@@ -81,171 +80,131 @@ export const useGroceryListStore = create<GroceryListState>()(
       stores: [],
       userLocation: null,
       
-      // Actions
       fetchGroceryList: async (id: string | null) => {
-        // If the ID is the same as the current one and we already have data, don't refetch
-        if (id === get().currentId && get().groceryList.length > 0) {
-          return
+        if (!id) {
+          set({ error: "Invalid meal plan ID", isLoading: false, groceryList: [], filteredList: [], currentId: null });
+          return;
+        }
+
+        // --- Use Cache if available ---
+        const cachedData = get().cachedLists[id];
+        if (cachedData) {
+          set({
+            currentId: id,
+            groceryList: cachedData.groceryList,
+            filteredList: cachedData.groceryList,
+            stores: cachedData.stores,
+            userLocation: cachedData.userLocation,
+            isLoading: false,
+            error: null,
+            searchTerm: "",
+            filterStore: null,
+          });
+          return;
         }
         
+        // --- Fetch from API if not in cache ---
+        set({ isLoading: true, error: null, currentId: id, groceryList: [], filteredList: [] });
+
         try {
-          if (!id) {
-            set({ error: "Invalid meal plan ID", isLoading: false })
-            return
+          const response = await fetch(`/api/groceries?id=${id}`);
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Failed to fetch grocery list');
           }
+
+          const result = await response.json();
           
-          set({ isLoading: true, currentId: id })
+          type GroceryItemFromAPI = { item: string; estimatedPrice: string; suggestedLocation?: string; [key: string]: any; };
+          const groceryItems: GroceryItem[] = result.groceryList.map((item: GroceryItemFromAPI) => ({ ...item, checked: false }));
+          const uniqueStores: string[] = Array.from(new Set(groceryItems.map(item => item.suggestedLocation).filter((loc): loc is string => !!loc)));
           
-          const result = await generateGroceryListFromMealPlan(id)
-          
-          const groceryItems = result.groceryList.groceryList.map((item) => ({
-            ...item,
-            checked: false,
-          }))
-          
-          // Populate stores from AI's enhanced location info, not just item suggestions
-          const uniqueStores = Array.from(new Set(result.locationData.localStores as string[]))
-          
-          set({
+          const userLocation = get().userLocation || { country: "US", city: "San Francisco", currencyCode: "USD", currencySymbol: "$" };
+
+          // --- Update state and cache ---
+          const newCacheEntry: CachedGroceryList = { groceryList: groceryItems, stores: uniqueStores, userLocation };
+          set(state => ({
             groceryList: groceryItems,
             filteredList: groceryItems,
             stores: uniqueStores,
-            userLocation: {
-              country: result.locationData.country,
-              city: result.locationData.city,
-              currencyCode: result.locationData.currencyCode,
-              currencySymbol: result.locationData.currencySymbol,
-            },
+            userLocation: userLocation,
             isLoading: false,
-            error: null
-          })
+            cachedLists: { ...state.cachedLists, [id]: newCacheEntry },
+          }));
+
         } catch (err) {
-          set({
-            error: "Failed to load grocery list",
-            isLoading: false
-          })
-          console.error(err)
+          const errorMessage = err instanceof Error ? err.message : "An unknown error occurred";
+          set({ error: `Failed to load grocery list: ${errorMessage}`, isLoading: false });
+          console.error(err);
         }
       },
       
       toggleItemCheck: (index: number) => {
         set((state) => {
-          // Update filtered list
-          const updatedFilteredList = [...state.filteredList]
-          updatedFilteredList[index].checked = !updatedFilteredList[index].checked
+          const updatedFilteredList = [...state.filteredList];
+          updatedFilteredList[index].checked = !updatedFilteredList[index].checked;
+          const mainIndex = state.groceryList.findIndex(item => item.item === updatedFilteredList[index].item);
+          let updatedGroceryList = [...state.groceryList];
+          if (mainIndex !== -1) updatedGroceryList[mainIndex].checked = updatedFilteredList[index].checked;
           
-          // Find and update the item in the main grocery list
-          const mainIndex = state.groceryList.findIndex(
-            (item) => item.item === updatedFilteredList[index].item
-          )
-          
-          let updatedGroceryList = [...state.groceryList]
-          if (mainIndex !== -1) {
-            updatedGroceryList[mainIndex].checked = updatedFilteredList[index].checked
+          // Update cache
+          if (state.currentId) {
+            const updatedCacheEntry = { ...state.cachedLists[state.currentId], groceryList: updatedGroceryList };
+            return {
+              filteredList: updatedFilteredList,
+              groceryList: updatedGroceryList,
+              cachedLists: { ...state.cachedLists, [state.currentId]: updatedCacheEntry },
+            };
           }
           
-          return {
-            filteredList: updatedFilteredList,
-            groceryList: updatedGroceryList
-          }
-        })
+          return { filteredList: updatedFilteredList, groceryList: updatedGroceryList };
+        });
       },
       
       setSearchTerm: (term: string) => {
         set((state) => {
-          const { groceryList, filterStore } = state
-          
-          let result = [...groceryList]
-          
-          if (term) {
-            result = result.filter((item) => 
-              item.item.toLowerCase().includes(term.toLowerCase())
-            )
-          }
-          
-          if (filterStore) {
-            result = result.filter((item) => 
-              item.suggestedLocation === filterStore
-            )
-          }
-          
-          return {
-            searchTerm: term,
-            filteredList: result
-          }
-        })
+          let result = state.groceryList;
+          if (term) result = result.filter(item => item.item.toLowerCase().includes(term.toLowerCase()));
+          if (state.filterStore) result = result.filter(item => item.suggestedLocation === state.filterStore);
+          return { searchTerm: term, filteredList: result };
+        });
       },
       
       setFilterStore: (store: string | null) => {
         set((state) => {
-          const { groceryList, searchTerm } = state
-          
-          let result = [...groceryList]
-          
-          if (searchTerm) {
-            result = result.filter((item) => 
-              item.item.toLowerCase().includes(searchTerm.toLowerCase())
-            )
-          }
-          
-          if (store) {
-            result = result.filter((item) => 
-              item.suggestedLocation === store
-            )
-          }
-          
-          return {
-            filterStore: store,
-            filteredList: result
-          }
-        })
+          let result = state.groceryList;
+          if (state.searchTerm) result = result.filter(item => item.item.toLowerCase().includes(state.searchTerm.toLowerCase()));
+          if (store) result = result.filter(item => item.suggestedLocation === store);
+          return { filterStore: store, filteredList: result };
+        });
       },
       
       clearFilters: () => {
-        set((state) => ({
-          searchTerm: "",
-          filterStore: null,
-          filteredList: state.groceryList
-        }))
+        set((state) => ({ searchTerm: "", filterStore: null, filteredList: state.groceryList }));
       },
       
-      // Computed values
       getTotals: () => {
-        const state = get()
-        const allItems = state.groceryList.map((item) => parsePrice(item.estimatedPrice))
-        const checkedItems = state.groceryList
-          .filter((item) => item.checked)
-          .map((item) => parsePrice(item.estimatedPrice))
-        const uncheckedItems = state.groceryList
-          .filter((item) => !item.checked)
-          .map((item) => parsePrice(item.estimatedPrice))
-        
+        const state = get();
+        const allItems = state.groceryList.map(item => parsePrice(item.estimatedPrice));
+        const checkedItems = state.groceryList.filter(item => item.checked).map(item => parsePrice(item.estimatedPrice));
         return {
           total: allItems.reduce((sum, price) => sum + price, 0),
           completed: checkedItems.reduce((sum, price) => sum + price, 0),
-          remaining: uncheckedItems.reduce((sum, price) => sum + price, 0),
-        }
+          remaining: allItems.reduce((sum, price) => sum + price, 0) - checkedItems.reduce((sum, price) => sum + price, 0),
+        };
       },
       
       getCompletionPercentage: () => {
-        const state = get()
-        return state.groceryList.length > 0
-          ? (state.groceryList.filter((item) => item.checked).length / state.groceryList.length) * 100
-          : 0
+        const state = get();
+        return state.groceryList.length > 0 ? (state.groceryList.filter(item => item.checked).length / state.groceryList.length) * 100 : 0;
       }
     }),
     {
-      name: 'grocery-list-storage', // Name for localStorage
+      name: 'grocery-list-storage',
       partialize: (state) => ({
-        // Only persist these fields
-        currentId: state.currentId,
-        groceryList: state.groceryList,
-        filteredList: state.filteredList,
-        searchTerm: state.searchTerm,
-        filterStore: state.filterStore,
-        stores: state.stores,
+        cachedLists: state.cachedLists,
         userLocation: state.userLocation,
       }),
     }
   )
-)
+);
