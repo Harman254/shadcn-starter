@@ -3,8 +3,8 @@ import { Metadata } from 'next'
 import GroceryListClient from './grocery-list-client';
 
 // Generate metadata for the grocery list page
-export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
-  const { id } = await params;
+export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
+  const { id } = params;
 
   return {
     title: `Grocery List | MealWise - Smart Shopping for Your Meal Plan`,
@@ -75,8 +75,8 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   };
 }
 
-export default async function GroceryListPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
+export default async function GroceryListPage({ params }: { params: { id:string } }) {
+  const { id } = params;
   
   return (
     <Suspense fallback={<LoadingSkeleton />}>

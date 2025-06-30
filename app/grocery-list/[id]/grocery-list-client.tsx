@@ -1,8 +1,6 @@
-'use client';
 
 import React from 'react';
 import GroceryList from '@/components/groceries';
-import { usePathname, useSearchParams } from 'next/navigation';
 
 interface GroceryListClientProps {
   id: string;

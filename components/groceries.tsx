@@ -376,6 +376,10 @@ const GroceryList = ({ id }: GroceryListProps) => {
                             </h3>
                             <div className="flex items-center space-x-4 mt-2">
                               <div className="flex items-center text-sm text-slate-600 dark:text-slate-400">
+                                <ShoppingBag className="w-4 h-4 mr-1" />
+                                <span className="font-semibold text-slate-900 dark:text-white">{item.quantity}</span>
+                              </div>
+                              <div className="flex items-center text-sm text-slate-600 dark:text-slate-400">
                                 <DollarSign className="w-4 h-4 mr-1" />
                                 <span className="font-semibold text-slate-900 dark:text-white">{item.estimatedPrice}</span>
                               </div>
@@ -386,6 +390,14 @@ const GroceryList = ({ id }: GroceryListProps) => {
                                   className="text-xs bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 border-0 shadow-sm"
                                 >
                                   {item.suggestedLocation}
+                                </Badge>
+                              </div>
+                              <div className="flex items-center text-sm text-slate-600 dark:text-slate-400">
+                                <Badge
+                                  variant="outline"
+                                  className="text-xs"
+                                >
+                                  {item.category}
                                 </Badge>
                               </div>
                             </div>

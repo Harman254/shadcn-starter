@@ -7,6 +7,8 @@ import type { GenerateGroceryListOutput } from "@/ai/flows/generate-grocery-list
 
 interface GroceryItem {
   item: string
+  quantity: string
+  category: string
   estimatedPrice: string
   suggestedLocation: string
   checked: boolean
@@ -107,7 +109,7 @@ export const useGroceryListStore = create<GroceryListState>()(
         set({ isLoading: true, error: null, currentId: id, groceryList: [], filteredList: [] });
 
         try {
-          const response = await fetch(`/api/groceries?id=${id}`);
+          const response = await fetch(`/api/grocery-list/${id}`);
           if (!response.ok) {
             const errorData = await response.json();
             throw new Error(errorData.error || 'Failed to fetch grocery list');
@@ -141,8 +143,11 @@ export const useGroceryListStore = create<GroceryListState>()(
 
         } catch (err) {
           const errorMessage = err instanceof Error ? err.message : "An unknown error occurred";
-          set({ error: `Failed to load grocery list: ${errorMessage}`, isLoading: false });
-          console.error(err);
+          console.error("Error fetching grocery list:", err);
+          set({
+            error: errorMessage,
+            isLoading: false,
+          });
         }
       },
       
