@@ -13,6 +13,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { UserCog, User, LogOut, ChevronDown } from "lucide-react"
 import { signOut } from "@/lib/auth-client"
 import SignOut from "./auth/sign-out"
+import { useRouter } from "next/navigation"
 
 interface UserDropdownProps {
   user: {
@@ -33,10 +34,9 @@ const getInitials = (name: string) => {
 }
 
 export function UserDropdown({ user }: UserDropdownProps) {
-  const handleSignOut = async () => {
-    await SignOut()
-  }
 
+  const router = useRouter()
+  
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -95,9 +95,9 @@ export function UserDropdown({ user }: UserDropdownProps) {
           <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/30 group-hover:bg-blue-200 dark:group-hover:bg-blue-900/50 transition-colors">
             <User className="h-4 w-4 text-blue-600 dark:text-blue-400" />
           </div>
-          <span className="font-medium text-slate-700 dark:text-slate-300 group-hover:text-slate-900 dark:group-hover:text-slate-100">
+          <Button onClick={() =>router.push('/dashboard/profile') } className="font-medium text-slate-700 dark:text-slate-300 group-hover:text-slate-900 dark:group-hover:text-slate-100">
             Profile
-          </span>
+          </Button>
         </DropdownMenuItem>
 
         <DropdownMenuItem className="group flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-all duration-200 focus:bg-slate-100 dark:focus:bg-slate-800">
