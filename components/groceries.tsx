@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Search, ShoppingBag, Check, Filter, DollarSign, CheckCircle2, Circle, MapPin, TrendingUp, Clock,  Zap, Target, BarChart3, Rocket, Heart, Star } from "lucide-react"
+import { Search, ShoppingBag, Check, Filter, DollarSign, CheckCircle2, Circle, MapPin, TrendingUp, Clock,  Zap, Target, BarChart3, Rocket, Heart, Star, Tag } from "lucide-react"
 import { useGroceryListStore } from "@/data/grocery-store"
 import { motion, AnimatePresence } from "framer-motion"
 
@@ -176,19 +176,31 @@ const GroceryList = ({ id }: GroceryListProps) => {
                 <AnimatePresence>
                   {filteredList.map((item, index) => (
                     <motion.div key={item.id} initial={{ opacity: 0, x: -50 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 50, transition: { duration: 0.3 } }} transition={{ duration: 0.5, delay: index * 0.05 }}
-                      className={`p-8 flex items-center justify-between transition-all duration-500 hover:bg-gradient-to-r hover:from-purple-50/50 hover:to-pink-50/50 dark:hover:from-purple-900/20 dark:hover:to-pink-900/20 group relative overflow-hidden ${item.checked ? "bg-gradient-to-r from-emerald-50/80 to-cyan-50/80 dark:from-emerald-900/20 dark:to-cyan-900/20" : ""}`}>
+                      className={`p-6 flex items-center justify-between transition-all duration-500 hover:bg-gradient-to-r hover:from-purple-50/50 hover:to-pink-50/50 dark:hover:from-purple-900/20 dark:hover:to-pink-900/20 group relative overflow-hidden ${item.checked ? "bg-gradient-to-r from-emerald-50/80 to-cyan-50/80 dark:from-emerald-900/20 dark:to-cyan-900/20" : ""}`}>
                       <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"><div className="absolute top-4 right-4 w-2 h-2 bg-purple-400 rounded-full animate-ping"></div><div className="absolute bottom-4 left-4 w-1 h-1 bg-pink-400 rounded-full animate-pulse"></div></div>
-                      <div className="flex items-center space-x-6 flex-1 relative z-10">
-                        <motion.button onClick={() => toggleItemCheck(item.id)} whileHover={{ scale: 1.2 }} whileTap={{ scale: 0.9 }} className={`flex-shrink-0 w-10 h-10 rounded-full border-3 flex items-center justify-center transition-all duration-500 shadow-xl hover:shadow-2xl ${item.checked ? "bg-gradient-to-r from-emerald-500 to-cyan-500 border-emerald-400 text-white shadow-emerald-500/50" : "border-purple-300 dark:border-purple-600 hover:border-emerald-400 dark:hover:border-emerald-400 bg-white dark:bg-slate-800 hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 dark:hover:from-purple-900/50 dark:hover:to-pink-900/50"}`}>
-                          {item.checked ? <div className="animate-bounce"><Check className="w-5 h-5" /></div> : <div className="w-3 h-3 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>}
+                      <div className="flex items-center space-x-4 flex-1 relative z-10">
+                        <motion.button onClick={() => toggleItemCheck(item.id)} whileHover={{ scale: 1.2 }} whileTap={{ scale: 0.9 }} className={`flex-shrink-0 w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all duration-500 shadow-xl hover:shadow-2xl ${item.checked ? "bg-gradient-to-r from-emerald-500 to-cyan-500 border-emerald-400 text-white shadow-emerald-500/50" : "border-purple-300 dark:border-purple-600 hover:border-emerald-400 dark:hover:border-emerald-400 bg-white dark:bg-slate-800 hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 dark:hover:from-purple-900/50 dark:hover:to-pink-900/50"}`}>
+                          {item.checked ? <div className="animate-bounce"><Check className="w-5 h-5" /></div> : <div className="w-2 h-2 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>}
                         </motion.button>
                         <div className="flex-1 min-w-0">
-                          <h3 className={`text-xl font-bold transition-all duration-500 ${item.checked ? "line-through text-slate-400 dark:text-slate-500" : "text-slate-900 dark:text-white group-hover:bg-gradient-to-r group-hover:from-purple-600 group-hover:to-pink-600 group-hover:bg-clip-text group-hover:text-transparent"}`}>{item.checked ? "✅ " : "🛒 "}{item.item}</h3>
-                          <div className="flex items-center flex-wrap gap-4 mt-3">
-                            <div className="flex items-center bg-white/60 dark:bg-slate-700/60 backdrop-blur-sm px-3 py-2 rounded-full shadow-lg border border-purple-200/30 dark:border-purple-700/30"><ShoppingBag className="w-4 h-4 mr-2 text-purple-500" /><span className="font-bold text-purple-800 dark:text-purple-200">{item.quantity}</span></div>
-                            <div className="flex items-center bg-white/60 dark:bg-slate-700/60 backdrop-blur-sm px-3 py-2 rounded-full shadow-lg border border-emerald-200/30 dark:border-emerald-700/30"><DollarSign className="w-4 h-4 mr-2 text-emerald-500" /><span className="font-bold text-emerald-800 dark:text-emerald-200">{item.estimatedPrice}</span></div>
-                            <div className="flex items-center bg-white/60 dark:bg-slate-700/60 backdrop-blur-sm px-3 py-2 rounded-full shadow-lg border border-blue-200/30 dark:border-blue-700/30"><MapPin className="w-4 h-4 mr-2 text-blue-500" /><span className="font-bold text-blue-800 dark:text-blue-200 text-sm">{item.suggestedLocation}</span></div>
-                            <div className="bg-gradient-to-r from-pink-500 to-rose-500 text-white px-3 py-2 rounded-full text-sm font-bold shadow-lg">{item.category}</div>
+                          <h3 className={`text-lg font-semibold transition-all duration-500 ${item.checked ? "line-through text-slate-400 dark:text-slate-500" : "text-slate-900 dark:text-white group-hover:bg-gradient-to-r group-hover:from-purple-600 group-hover:to-pink-600 group-hover:bg-clip-text group-hover:text-transparent"}`}>{item.checked ? "✅ " : "🛒 "}{item.item}</h3>
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-2 mt-3 text-sm">
+                            <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
+                                <ShoppingBag className="w-4 h-4 text-purple-500" />
+                                <span className="font-medium">{item.quantity}</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
+                                <DollarSign className="w-4 h-4 text-emerald-500" />
+                                <span className="font-medium">{item.estimatedPrice}</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
+                                <MapPin className="w-4 h-4 text-blue-500" />
+                                <span className="font-medium truncate">{item.suggestedLocation}</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
+                                <Tag className="w-4 h-4 text-pink-500" />
+                                <span className="font-medium">{item.category}</span>
+                            </div>
                           </div>
                         </div>
                       </div>
