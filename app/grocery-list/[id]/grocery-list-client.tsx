@@ -1,12 +1,12 @@
+'use client'
 
 import React from 'react';
 import GroceryList from '@/components/groceries';
+import { useParams } from 'next/navigation';
 
-interface GroceryListClientProps {
-  id: string;
-}
-
-export default function GroceryListClient({ id }: GroceryListClientProps) {
+export default function GroceryListClient() {
+  const params = useParams();
+  const id = params.id as string;
 
   if (!id) {
     return <div className="text-red-500">Error: No ID provided in the URL.</div>;

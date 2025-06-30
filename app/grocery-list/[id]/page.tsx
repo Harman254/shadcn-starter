@@ -80,12 +80,11 @@ interface Props {
   searchParams: { [key: string]: string | string[] | undefined };
 }
 
-export default async function GroceryListPage({ params }: Props) {
-  const { id } = params;
+export default async function GroceryListPage() {
   
   return (
     <Suspense fallback={<LoadingSkeleton />}>
-      <GroceryListClient id={id} />
+      <GroceryListClient />
     </Suspense>
   )
 }
