@@ -95,20 +95,36 @@ export function UserDropdown({ user }: UserDropdownProps) {
           <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/30 group-hover:bg-blue-200 dark:group-hover:bg-blue-900/50 transition-colors">
             <User className="h-4 w-4 text-blue-600 dark:text-blue-400" />
           </div>
-          <Button onClick={() =>router.push('/dashboard/profile') } className="font-medium text-slate-700 dark:text-slate-300 group-hover:text-slate-900 dark:group-hover:text-slate-100">
-            Profile
-          </Button>
+          <Button 
+  onClick={() => router.push('/dashboard/profile')} 
+  className="
+    relative overflow-hidden
+    px-6 py-2.5 
+    font-medium text-slate-700 dark:text-slate-300
+    bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-700
+    border border-slate-200 dark:border-slate-600
+    rounded-lg
+    shadow-sm hover:shadow-md
+    transition-all duration-300 ease-in-out
+    group
+    hover:scale-[1.02] hover:-translate-y-0.5
+    hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 
+    dark:hover:from-blue-900/20 dark:hover:to-indigo-900/20
+    hover:border-blue-300 dark:hover:border-blue-500
+    active:scale-[0.98] active:translate-y-0
+    focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800
+    before:absolute before:inset-0 before:bg-gradient-to-r before:from-blue-500/0 before:to-purple-500/0 
+    before:transition-all before:duration-300 before:opacity-0
+    hover:before:opacity-10 hover:before:from-blue-500/20 hover:before:to-purple-500/20
+  "
+>
+  <span className="relative z-10 group-hover:text-slate-900 dark:group-hover:text-slate-100 transition-colors duration-300">
+    Profile
+  </span>
+</Button>
         </DropdownMenuItem>
 
-        <DropdownMenuItem className="group flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-all duration-200 focus:bg-slate-100 dark:focus:bg-slate-800">
-          <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-purple-100 dark:bg-purple-900/30 group-hover:bg-purple-200 dark:group-hover:bg-purple-900/50 transition-colors">
-            <UserCog className="h-4 w-4 text-purple-600 dark:text-purple-400" />
-          </div>
-          <span className="font-medium text-slate-700 dark:text-slate-300 group-hover:text-slate-900 dark:group-hover:text-slate-100">
-            Settings
-          </span>
-        </DropdownMenuItem>
-
+        
         <DropdownMenuSeparator className="my-2 bg-slate-200 dark:bg-slate-700" />
 
         <DropdownMenuItem asChild className="cursor-pointer group">
