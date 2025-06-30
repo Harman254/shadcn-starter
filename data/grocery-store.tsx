@@ -109,25 +109,18 @@ export const useGroceryListStore = create<GroceryListState>()(
         set({ isLoading: true, error: null, currentId: id, groceryList: [], filteredList: [] });
 
         try {
-          const response = await fetch(`/api/grocery-list/${id}`);
-          if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || 'Failed to fetch grocery list');
-          }
+          const { groceryList, locationData } = await generateGroceryListFromMealPlan(id);
 
-          const result = await response.json();
-          
-          // The API now returns { groceryList: [...], locationInfo: {...} }
-          const groceryItems: GroceryItem[] = result.groceryList.map((item: any) => ({ ...item, checked: false }));
+          const groceryItems: GroceryItem[] = groceryList.groceryList.map((item: any) => ({ ...item, checked: false }));
           
           const userLocation: UserLocation = {
-              country: result.locationInfo.country || 'N/A',
-              city: result.locationInfo.city || 'N/A',
-              currencyCode: result.locationInfo.currencyCode,
-              currencySymbol: result.locationInfo.currencySymbol,
+              country: locationData.country || 'N/A',
+              city: locationData.city || 'N/A',
+              currencyCode: locationData.currencyCode,
+              currencySymbol: locationData.currencySymbol,
           };
           
-          const uniqueStores: string[] = result.locationInfo.localStores || [];
+          const uniqueStores: string[] = locationData.localStores || [];
 
           const newCacheEntry: CachedGroceryList = { groceryList: groceryItems, stores: uniqueStores, userLocation };
           

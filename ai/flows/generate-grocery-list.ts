@@ -139,10 +139,14 @@ const generateGroceryListFlow = ai.defineFlow(
  * This function is a server action that can be called from client components.
  */
 export async function generateGroceryListFromMealPlan(
-  mealplanId: string,
-  userId: string
+  mealplanId: string
 ): Promise<{ groceryList: GenerateGroceryListOutput; locationData: any }> {
   try {
+    const session = await auth.api.getSession({
+      headers: await headers()
+    });
+
+    const userId = session?.user?.id;
     if (!userId) {
       throw new Error("Unauthorized: A user ID must be provided.");
     }
@@ -152,9 +156,7 @@ export async function generateGroceryListFromMealPlan(
       throw new Error("No meal plan found");
     }
 
-    // Since we don't have the session object, we can't get session.id for caching.
-    // We will rely on the userId for the cache key, which is still effective.
-    const locationData = await getLocationDataWithCaching(userId, 'default-session');
+    const locationData = await getLocationDataWithCaching(userId, session.session.id);
     
     const simplifiedMeals = MealPlan.days.flatMap(day => 
       day.meals.map(meal => ({
