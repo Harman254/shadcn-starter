@@ -63,9 +63,12 @@ interface GroceryListState {
 
 // Helper function to parse price string to number
 const parsePrice = (priceString: string): number => {
-  const numbers = priceString.match(/\\d+(\\.\\d+)?/g);
+  if (!priceString) return 0;
+  // This regex handles currency symbols, commas, and decimal points.
+  const numbers = priceString.match(/[\d,]+(?:\.\d+)?/);
   if (!numbers || numbers.length === 0) return 0;
-  return Number.parseFloat(numbers[0]) || 0;
+  // Remove commas before parsing to float
+  return Number.parseFloat(numbers[0].replace(/,/g, '')) || 0;
 };
 
 export const useGroceryListStore = create<GroceryListState>()(

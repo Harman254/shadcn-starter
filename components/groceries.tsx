@@ -155,20 +155,7 @@ const GroceryList = ({ id }: GroceryListProps) => {
               <h2 className="text-xl font-bold bg-gradient-to-r from-slate-600 to-slate-800 dark:from-slate-200 dark:to-slate-400 bg-clip-text text-transparent mb-4">
                 Shop at Your Favorite Local Stores
               </h2>
-              <div className="flex flex-wrap items-center justify-center gap-4">
-                {stores.map((store, index) => (
-                  <motion.div
-                    key={index}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.1 }}
-                    className="flex items-center gap-2 bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm px-4 py-2 rounded-full shadow-lg border border-purple-200/30 dark:border-purple-700/30"
-                  >
-                    <MapPin className="w-5 h-5 text-purple-500" />
-                    <span className="font-semibold text-purple-800 dark:text-purple-200">{store}</span>
-                  </motion.div>
-                ))}
-              </div>
+              advanced checkout coming soon
             </div>
           )}
         </div>
@@ -216,8 +203,15 @@ const GroceryList = ({ id }: GroceryListProps) => {
                                 <span className="font-medium">{item.estimatedPrice}</span>
                             </div>
                             <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
-                                <MapPin className="w-4 h-4 text-blue-500" />
-                                <span className="font-medium truncate">{item.suggestedLocation}</span>
+                                <div className="group relative flex items-center">
+                                  <span className="flex items-center gap-1 px-3 py-1 rounded-full bg-blue-50 dark:bg-blue-900/40 border border-blue-200 dark:border-blue-700 shadow-sm">
+                                    <MapPin className="w-4 h-4 text-blue-500" />
+                                    <span className="font-semibold text-blue-800 dark:text-blue-200 text-base">{item.suggestedLocation}</span>
+                                  </span>
+                                  <span className="absolute left-1/2 -top-8 -translate-x-1/2 scale-0 group-hover:scale-100 transition-transform bg-slate-900 text-white text-xs rounded px-2 py-1 whitespace-nowrap z-20 shadow-lg pointer-events-none">
+                                    Suggested store for this item
+                                  </span>
+                                </div>
                             </div>
                             <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
                                 <Tag className="w-4 h-4 text-pink-500" />
