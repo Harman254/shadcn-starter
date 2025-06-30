@@ -12,29 +12,56 @@ export interface Location {
     localStores?: string[];
 }
 
-export const getLocationDataFromIp = async (ipAddress: string) => {
+export const getLocationDataFromIp = async (ipAddress: string): Promise<Location> => {
+    try {
+        const response = await fetch(`https://ip-api.com/json/${ipAddress}?fields=status,message,country,city,currency`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
 
-    const response = await fetch(`http://ip-api.com/json/${ipAddress}`, {
-        method: 'GET',
-        headers: {
-            'Content-Type': 'application/json'
+        if (!response.ok) {
+            console.error(`Failed to fetch location data from ip-api for IP: ${ipAddress}. Status: ${response.status}`);
+            return {
+                country: 'United States', city: 'San Francisco', currencyCode: 'USD', currencySymbol: '$', localStores: []
+            };
         }
-    })
 
-    if (!response.ok) {
-        throw new Error('Failed to fetch location data')
+        const data = await response.json();
+
+        if (data.status === 'fail') {
+            console.error(`ip-api returned failure for IP ${ipAddress}: ${data.message}`);
+            return {
+                country: 'United States', city: 'San Francisco', currencyCode: 'USD', currencySymbol: '$', localStores: []
+            };
+        }
+
+        // The free API may not return currency symbol. We'll use a map for common ones.
+        const currencyMap: { [key: string]: string } = {
+            'USD': '$', 'EUR': '€', 'GBP': '£', 'JPY': '¥', 'CAD': '$', 'AUD': '$'
+        };
+        
+        const currencyCode = data.currency || 'USD';
+        const currencySymbol = currencyMap[currencyCode] || '$';
+
+        return {
+            country: data.country || 'United States',
+            city: data.city || 'San Francisco',
+            currencyCode: currencyCode,
+            currencySymbol: currencySymbol,
+            localStores: []
+        };
+    } catch (error) {
+        console.error(`Exception in getLocationDataFromIp for IP ${ipAddress}:`, error);
+        return {
+            country: 'United States',
+            city: 'San Francisco',
+            currencyCode: 'USD',
+            currencySymbol: '$',
+            localStores: []
+        };
     }
-
-    const data = await response.json()
-
-    // Map ip-api response to our Location interface
-    return {
-        country: data.country || 'Unknown',
-        city: data.city || 'Unknown',
-        currencyCode: data.currency.code || '$', // ip-api provides currency code directly
-        currencySymbol: data.currency.symbol || '$',
-        localStores: [] // This will be populated by the AI flow
-    } as Location;
 }
 
 // Get cached location data from user object
@@ -88,43 +115,61 @@ export const updateUserLocation = async (userId: string, location: Location): Pr
 
 // Get location data with caching - checks user object first, then fetches from IP
 export const getLocationDataWithCaching = async (userId: string, sessionId: string): Promise<Location> => {
-    // First, try to get cached location from user object
-    const cachedLocation = await getCachedUserLocation(userId);
-    
-    if (cachedLocation) {
-        console.log(`Using cached location for user ${userId}: ${cachedLocation.city}, ${cachedLocation.country}`);
-        return cachedLocation;
+    try {
+        // First, try to get cached location from user object
+        const cachedLocation = await getCachedUserLocation(userId);
+        
+        if (cachedLocation) {
+            console.log(`Using cached location for user ${userId}: ${cachedLocation.city}, ${cachedLocation.country}`);
+            return cachedLocation;
+        }
+        
+        // If no cached location, fetch from IP and cache it
+        console.log(`No cached location found for user ${userId}, fetching from IP...`);
+        const userIpAddress = await getUserIpAddress(sessionId);
+        if (!userIpAddress) {
+            console.warn("Could not find user IP address. Using default location.");
+            return { country: 'United States', city: 'San Francisco', currencyCode: 'USD', currencySymbol: '$', localStores: [] };
+        }
+        
+        const locationData = await getLocationDataFromIp(userIpAddress);
+        
+        // Cache the location data in user object (excluding localStores which will be populated in AI flow)
+        await updateUserLocation(userId, { ...locationData, localStores: [] }); // Exclude localStores from DB cache
+        
+        console.log(`Cached new location for user ${userId}: ${locationData.city}, ${locationData.country}`);
+        return locationData;
+    } catch (error) {
+        console.error("Error in getLocationDataWithCaching, returning default location:", error);
+        return {
+            country: 'United States',
+            city: 'San Francisco',
+            currencyCode: 'USD',
+            currencySymbol: '$',
+            localStores: []
+        };
     }
-    
-    // If no cached location, fetch from IP and cache it
-    console.log(`No cached location found for user ${userId}, fetching from IP...`);
-    const userIpAddress = await getUserIpAddress(sessionId);
-    if (!userIpAddress) {
-        throw new Error("User IP address not found");
-    }
-    
-    const locationData = await getLocationDataFromIp(userIpAddress);
-    
-    // Cache the location data in user object (excluding localStores which will be populated in AI flow)
-    await updateUserLocation(userId, { ...locationData, localStores: [] }); // Exclude localStores from DB cache
-    
-    console.log(`Cached new location for user ${userId}: ${locationData.city}, ${locationData.country}`);
-    return locationData;
 }
 
-export const getUserIpAddress = async (sessionId: string): Promise<string> => {
-    const session = await prisma.session.findUnique({
-      where: {
-        id: sessionId,
-      },
-    });
-    if (!session || !session.ipAddress) {
-      throw new Error("Session not found or IP address not available");
-    }
+export const getUserIpAddress = async (sessionId: string): Promise<string | null> => {
+    try {
+        const session = await prisma.session.findUnique({
+          where: {
+            id: sessionId,
+          },
+        });
+        if (!session || !session.ipAddress) {
+          console.warn("Session not found or IP address not available for session:", sessionId);
+          return null;
+        }
 
-    console.log(`User IP Address for session ${sessionId}: ${session.ipAddress}`);
-  
-    
-    return session.ipAddress;
+        console.log(`User IP Address for session ${sessionId}: ${session.ipAddress}`);
+      
+        
+        return session.ipAddress;
+    } catch (error) {
+        console.error("Error fetching IP from session:", error);
+        return null;
+    }
   };
       

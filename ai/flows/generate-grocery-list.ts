@@ -192,8 +192,24 @@ export async function generateGroceryListFromMealPlan(
       locationData: enhancedLocationData 
     };
   } catch (error) {
-    console.error("Error in generateGroceryListFromMealPlan:", error);
-    throw error;
+    console.error("Error in generateGroceryListFromMealPlan, returning empty list:", error);
+    // Return a default empty state to prevent UI errors
+    return {
+      groceryList: {
+        groceryList: [],
+        locationInfo: {
+          currencySymbol: '$',
+          localStores: [],
+        },
+      },
+      locationData: {
+        country: 'United States',
+        city: 'San Francisco',
+        currencyCode: 'USD',
+        currencySymbol: '$',
+        localStores: [],
+      },
+    };
   }
 }
 
