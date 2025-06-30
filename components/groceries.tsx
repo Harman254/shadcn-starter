@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Search, ShoppingBag, Check, Filter, DollarSign, CheckCircle2, Circle, MapPin, TrendingUp, Clock,  Zap, Target, BarChart3, Rocket, Heart, Star, Tag } from "lucide-react"
+import { Search, ShoppingBag, Check, Filter, DollarSign, CheckCircle2, Circle, MapPin, TrendingUp, Clock,  Zap, Target, BarChart3, Rocket, Heart, Star, Tag,  } from "lucide-react"
 import { useGroceryListStore } from "@/data/grocery-store"
 import { motion, AnimatePresence } from "framer-motion"
 
@@ -147,6 +147,28 @@ const GroceryList = ({ id }: GroceryListProps) => {
                 <span className="font-bold text-purple-800 dark:text-purple-200">{userLocation.city}, {userLocation.country}</span>
               </div>
               <div className="bg-gradient-to-r from-emerald-500 to-cyan-500 text-white px-4 py-2 rounded-full shadow-lg text-sm font-bold animate-pulse">🌟 Live Pricing</div>
+            </div>
+          )}
+
+          {stores && stores.length > 0 && (
+            <div className="mt-8 text-center">
+              <h2 className="text-xl font-bold bg-gradient-to-r from-slate-600 to-slate-800 dark:from-slate-200 dark:to-slate-400 bg-clip-text text-transparent mb-4">
+                Shop at Your Favorite Local Stores
+              </h2>
+              <div className="flex flex-wrap items-center justify-center gap-4">
+                {stores.map((store, index) => (
+                  <motion.div
+                    key={index}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.1 }}
+                    className="flex items-center gap-2 bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm px-4 py-2 rounded-full shadow-lg border border-purple-200/30 dark:border-purple-700/30"
+                  >
+                    <MapPin className="w-5 h-5 text-purple-500" />
+                    <span className="font-semibold text-purple-800 dark:text-purple-200">{store}</span>
+                  </motion.div>
+                ))}
+              </div>
             </div>
           )}
         </div>

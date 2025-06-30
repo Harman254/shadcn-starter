@@ -28,7 +28,7 @@ const GroceryItemSchema = z.object({
   item: z.string().describe("Name of the grocery item (consolidated)."),
   quantity: z.string().describe('Quantity needed (e.g., "2 lbs", "1 cup", "3 units")'),
   category: z.string().describe('Category (e.g., "Produce", "Dairy", "Meat", "Pantry")'),
-  estimatedPrice: z.string().describe("Estimated price range with local currency symbol (e.g., '$3.50', '€2-€4')."),
+  estimatedPrice: z.string().describe("Estimated price as a single value with local currency symbol (e.g., '$3.50', '€2.75')."),
   suggestedLocation: z.string().describe("Suggested local store (e.g., 'Kroger', 'Tesco', 'Local Butcher')."),
 });
 
@@ -85,7 +85,7 @@ const groceryListPrompt = ai.definePrompt({
     {{/each}}
 
     ## CRITICAL RULES
-    1.  **Local Pricing:** Provide realistic price ranges in the local currency ({{userLocation.currencySymbol}}).
+    1.  **Local Pricing:** Provide realistic single price estimates in the local currency ({{userLocation.currencySymbol}}), not a price range. The 'estimatedPrice' field should be a string containing the currency symbol and the price (e.g., "$4.99").
     2.  **Local Stores:** Suggest real grocery stores that exist in {{userLocation.city}}.
     3.  **Consolidate:** Combine identical ingredients and sum their quantities.
     4.  **Categorize:** Assign a category to each item (Produce, Dairy, Meat, etc.).
