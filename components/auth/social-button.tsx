@@ -69,34 +69,104 @@ export const SignInButton = ({
     }
   }, [provider, callbackURL, loading, setExternalLoading]);
 
+  // Provider-specific styling
+  const getProviderStyles = () => {
+    switch (provider) {
+      case 'google':
+        return {
+          container: "hover:bg-blue-50 dark:hover:bg-blue-950/20 border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-700",
+          text: "text-gray-700 dark:text-gray-200 group-hover:text-blue-700 dark:group-hover:text-blue-300"
+        };
+      case 'github':
+        return {
+          container: "hover:bg-gray-50 dark:hover:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600",
+          text: "text-gray-700 dark:text-gray-200 group-hover:text-gray-900 dark:group-hover:text-white"
+        };
+      case 'discord':
+        return {
+          container: "hover:bg-indigo-50 dark:hover:bg-indigo-950/20 border-gray-200 dark:border-gray-700 hover:border-indigo-300 dark:hover:border-indigo-700",
+          text: "text-gray-700 dark:text-gray-200 group-hover:text-indigo-700 dark:group-hover:text-indigo-300"
+        };
+      default:
+        return {
+          container: "hover:bg-gray-50 dark:hover:bg-gray-800 border-gray-200 dark:border-gray-700",
+          text: "text-gray-700 dark:text-gray-200"
+        };
+    }
+  };
+
+  const providerStyles = getProviderStyles();
+
   return (
     <Button
       type="button"
       variant="outline"
       size="lg"
       className={cn(
-        "w-full relative h-12 px-4",
-        "bg-white hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700",
-        "border border-gray-200 dark:border-gray-700",
-        "text-gray-700 dark:text-gray-200",
-        "transition-colors duration-200",
+        "group w-full relative h-12 px-6",
+        "bg-white/80 backdrop-blur-sm dark:bg-gray-800/80",
+        providerStyles.container,
+        "transition-all duration-300 ease-out",
         "flex items-center justify-center gap-3",
         "font-medium text-base",
-        "shadow-sm hover:shadow-md",
-        "rounded-lg"
+        "shadow-sm hover:shadow-lg hover:shadow-black/5",
+        "rounded-xl",
+        "transform hover:scale-[1.02] active:scale-[0.98]",
+        "disabled:transform-none disabled:opacity-60 disabled:cursor-not-allowed",
+        "border-2",
+        // Focus styles
+        "focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500",
+        // Loading state
+        loading && "cursor-not-allowed"
       )}
       disabled={loading}
       onClick={handleSignIn}
     >
-      {loading ? (
-        <Loader2 className="w-5 h-5 animate-spin text-gray-500 dark:text-gray-400" />
-      ) : (
-        <div className="w-5 h-5 flex items-center justify-center">
-          {icon}
-        </div>
-      )}
-      <span className="flex-1 text-center">{title}</span>
+      {/* Background gradient overlay */}
+      <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+      
+      {/* Icon/Spinner */}
+      <div className="relative z-10 flex items-center justify-center">
+        {loading ? (
+          <div className="relative">
+            <Loader2 className="w-5 h-5 animate-spin text-gray-500 dark:text-gray-400" />
+            {/* Spinning ring effect */}
+            <div className="absolute inset-0 w-5 h-5 border-2 border-transparent border-t-blue-500 rounded-full animate-spin opacity-30" />
+          </div>
+        ) : (
+          <div className={cn(
+            "w-5 h-5 flex items-center justify-center transition-transform duration-200",
+            "group-hover:scale-110"
+          )}>
+            {icon}
+          </div>
+        )}
+      </div>
+      
+      {/* Button Text */}
+      <span className={cn(
+        "relative z-10 flex-1 text-center transition-colors duration-200",
+        providerStyles.text,
+        loading && "opacity-70"
+      )}>
+        {loading ? (
+          <span className="inline-flex items-center gap-2">
+            Connecting...
+            <div className="flex gap-1">
+              <div className="w-1 h-1 bg-current rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+              <div className="w-1 h-1 bg-current rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+              <div className="w-1 h-1 bg-current rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+            </div>
+          </span>
+        ) : (
+          title
+        )}
+      </span>
+
+      {/* Ripple effect on click */}
+      <div className="absolute inset-0 rounded-xl overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-blue-500/10 opacity-0 group-active:opacity-100 transition-opacity duration-150" />
+      </div>
     </Button>
   );
 };
-
