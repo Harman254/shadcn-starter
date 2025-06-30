@@ -3,22 +3,22 @@ import { generateGroceryListFromMealPlan } from '@/ai/flows/generate-grocery-lis
 import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, context: { params: { id: string } }) {
   try {
     const session = await auth.api.getSession({
       headers: await headers(),
     });
-    
+
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    
-    const { id } = params;
+
+    const { id } = context.params;
 
     if (!id) {
       return NextResponse.json({ error: "Invalid or missing meal plan ID." }, { status: 400 });
     }
-    
+
     const { groceryList, locationData } = await generateGroceryListFromMealPlan(id, session.user.id);
 
     const responsePayload = {
@@ -30,7 +30,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     };
 
     return NextResponse.json(responsePayload);
-    
+
   } catch (error) {
     console.error("Error in GET /api/grocery-list/[id]:", error);
     const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred.";
