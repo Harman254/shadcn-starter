@@ -6,6 +6,7 @@ import { generateGroceryListFromMealPlan } from "@/ai/flows/generate-grocery-lis
 import type { GenerateGroceryListOutput } from "@/ai/flows/generate-grocery-list"
 
 interface GroceryItem {
+  id: string;
   item: string
   quantity: string
   category: string
@@ -46,7 +47,7 @@ interface GroceryListState {
   
   // Actions
   fetchGroceryList: (id: string | null) => Promise<void>
-  toggleItemCheck: (index: number) => void
+  toggleItemCheck: (itemId: string) => void
   setSearchTerm: (term: string) => void
   setFilterStore: (store: string | null) => void
   clearFilters: () => void
@@ -144,25 +145,33 @@ export const useGroceryListStore = create<GroceryListState>()(
         }
       },
       
-      toggleItemCheck: (index: number) => {
+      toggleItemCheck: (itemId: string) => {
         set((state) => {
-          const updatedFilteredList = [...state.filteredList];
-          updatedFilteredList[index].checked = !updatedFilteredList[index].checked;
-          const mainIndex = state.groceryList.findIndex(item => item.item === updatedFilteredList[index].item);
-          let updatedGroceryList = [...state.groceryList];
-          if (mainIndex !== -1) updatedGroceryList[mainIndex].checked = updatedFilteredList[index].checked;
-          
-          // Update cache
-          if (state.currentId) {
-            const updatedCacheEntry = { ...state.cachedLists[state.currentId], groceryList: updatedGroceryList };
-            return {
-              filteredList: updatedFilteredList,
+          const toggleItem = (list: GroceryItem[]) => 
+            list.map(item => 
+              item.id === itemId ? { ...item, checked: !item.checked } : item
+            );
+
+          const updatedGroceryList = toggleItem(state.groceryList);
+          const updatedFilteredList = toggleItem(state.filteredList);
+
+          // Update cache if the list is cached
+          if (state.currentId && state.cachedLists[state.currentId]) {
+            const updatedCacheEntry = {
+              ...state.cachedLists[state.currentId],
               groceryList: updatedGroceryList,
+            };
+            return {
+              groceryList: updatedGroceryList,
+              filteredList: updatedFilteredList,
               cachedLists: { ...state.cachedLists, [state.currentId]: updatedCacheEntry },
             };
           }
-          
-          return { filteredList: updatedFilteredList, groceryList: updatedGroceryList };
+
+          return { 
+            groceryList: updatedGroceryList,
+            filteredList: updatedFilteredList,
+          };
         });
       },
       

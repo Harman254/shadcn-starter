@@ -24,6 +24,7 @@ import { getLocationDataWithCaching } from '@/lib/location';
 
 // Schema for a single grocery item in the list
 const GroceryItemSchema = z.object({
+  id: z.string().describe("A unique ID for the grocery item."),
   item: z.string().describe("Name of the grocery item (consolidated)."),
   quantity: z.string().describe('Quantity needed (e.g., "2 lbs", "1 cup", "3 units")'),
   category: z.string().describe('Category (e.g., "Produce", "Dairy", "Meat", "Pantry")'),
@@ -88,7 +89,8 @@ const groceryListPrompt = ai.definePrompt({
     2.  **Local Stores:** Suggest real grocery stores that exist in {{userLocation.city}}.
     3.  **Consolidate:** Combine identical ingredients and sum their quantities.
     4.  **Categorize:** Assign a category to each item (Produce, Dairy, Meat, etc.).
-    5.  **Complete Output:** You MUST return a valid JSON object containing both the 'groceryList' and the 'locationInfo'.
+    5.  **Generate IDs:** Assign a unique string ID to each item.
+    6.  **Complete Output:** You MUST return a valid JSON object containing both the 'groceryList' and the 'locationInfo'.
 
     Return nothing but the JSON object.
   `,
