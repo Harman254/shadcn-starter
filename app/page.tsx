@@ -2,8 +2,9 @@ import { Metadata } from 'next'
 import Cta10 from "../components/cta";
 import Feature17 from "@/components/features";
 import Testimonial14 from "@/components/testimonials";
-import  { Hero1 } from "@/components/hero";
+// import  { Hero1 } from "@/components/hero";
 import CTA from "../components/cta";
+import HeroGeometric from '@/components/hero';
 
 export const metadata: Metadata = {
   title: 'MealWise - Personalized AI Meal Plans for Your Lifestyle | Smart Nutrition Planning',
@@ -87,7 +88,9 @@ export default async function IndexPage() {
  
   return (
     <>
-    <Hero1 heading="Personalized AI Meal Plans for Your Lifestyle" image={image} description='this is all you need' />
+    {/* <Hero1 heading="Personalized AI Meal Plans for Your Lifestyle" image={image} description='this is all you need' /> */}
+<HeroGeometric />
+
     <Feature17 />
     <Testimonial14 />
     <CTA />
