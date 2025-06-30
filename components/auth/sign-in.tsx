@@ -93,145 +93,146 @@ const SignIn = () => {
 
     return (
         <CardWrapper
-        cardTitle='Sign In'
-        cardDescription='Enter your email below to login to your account'
+        cardTitle="Sign In"
+        cardDescription="Enter your email below to login to your account"
         cardFooterDescription="Don't have an account?"
-        cardFooterLink='/sign-up'
-        cardFooterLinkTitle='Sign up'
-    >
+        cardFooterLink="/sign-up"
+        cardFooterLinkTitle="Sign up"
+      >
         <Form {...form}>
-            <form className='space-y-6' onSubmit={form.handleSubmit(onSubmit)}>
-                <div className="space-y-5">
-                    <FormField
-                        control={form.control}
-                        name="email"
-                        render={({ field }) => (
-                            <FormItem className="space-y-2">
-                                <FormLabel className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                                    <Mail className="w-4 h-4 text-gray-500" />
-                                    Email Address
-                                </FormLabel>
-                                <FormControl>
-                                    <div className="relative group">
-                                        <Input
-                                            className='h-12 px-4 text-base bg-gray-50/50 border-gray-200 rounded-xl transition-all duration-200 focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 disabled:opacity-60 disabled:cursor-not-allowed'
-                                            disabled={loading}
-                                            type="email"
-                                            placeholder='Enter your email address'
-                                            {...field}
-                                        />
-                                        <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-blue-500/5 to-purple-500/5 opacity-0 group-focus-within:opacity-100 transition-opacity duration-200 pointer-events-none" />
-                                    </div>
-                                </FormControl>
-                                <FormMessage className="text-xs" />
-                            </FormItem>
-                        )}
-                    />
-                    
-                    <FormField
-                        control={form.control}
-                        name="password"
-                        render={({ field }) => (
-                            <FormItem className="space-y-2">
-                                <FormLabel className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                                    <Lock className="w-4 h-4 text-gray-500" />
-                                    Password
-                                </FormLabel>
-                                <FormControl>
-                                    <div className="relative group">
-                                        <Input
-                                            className='h-12 px-4 pr-12 text-base bg-gray-50/50 border-gray-200 rounded-xl transition-all duration-200 focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 disabled:opacity-60 disabled:cursor-not-allowed'
-                                            disabled={loading}
-                                            type={showPassword ? "text" : "password"}
-                                            placeholder='Enter your password'
-                                            {...field}
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={togglePasswordVisibility}
-                                            className="absolute inset-y-0 right-0 pr-3 flex items-center hover:bg-gray-100/80 rounded-r-xl transition-all duration-200 group"
-                                            aria-label={showPassword ? "Hide password" : "Show password"}
-                                        >
-                                            {showPassword ? (
-                                                <EyeOffIcon className="h-5 w-5 text-gray-400 group-hover:text-gray-600 transition-colors" />
-                                            ) : (
-                                                <EyeIcon className="h-5 w-5 text-gray-400 group-hover:text-gray-600 transition-colors" />
-                                            )}
-                                        </button>
-                                        <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-blue-500/5 to-purple-500/5 opacity-0 group-focus-within:opacity-100 transition-opacity duration-200 pointer-events-none" />
-                                    </div>
-                                </FormControl>
-                                <FormMessage className="text-xs" />
-                            </FormItem>
-                        )}
-                    />
+          <form className="space-y-6" onSubmit={form.handleSubmit(onSubmit)}>
+            <div className="space-y-5">
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem className="space-y-2">
+                    <FormLabel className="text-sm font-semibold text-foreground flex items-center gap-2">
+                      <Mail className="w-4 h-4 text-muted-foreground" />
+                      Email Address
+                    </FormLabel>
+                    <FormControl>
+                      <div className="relative group">
+                        <Input
+                          className="h-12 px-4 text-base bg-background/50 border-border rounded-xl transition-all duration-200 focus:bg-background focus:border-primary focus:ring-2 focus:ring-primary/10 disabled:opacity-60 disabled:cursor-not-allowed dark:bg-muted/20 dark:focus:bg-background"
+                          disabled={loading}
+                          type="email"
+                          placeholder="Enter your email address"
+                          {...field}
+                        />
+                        <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-primary/5 to-primary/5 opacity-0 group-focus-within:opacity-100 transition-opacity duration-200 pointer-events-none" />
+                      </div>
+                    </FormControl>
+                    <FormMessage className="text-xs" />
+                  </FormItem>
+                )}
+              />
+  
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem className="space-y-2">
+                    <FormLabel className="text-sm font-semibold text-foreground flex items-center gap-2">
+                      <Lock className="w-4 h-4 text-muted-foreground" />
+                      Password
+                    </FormLabel>
+                    <FormControl>
+                      <div className="relative group">
+                        <Input
+                          className="h-12 px-4 pr-12 text-base bg-background/50 border-border rounded-xl transition-all duration-200 focus:bg-background focus:border-primary focus:ring-2 focus:ring-primary/10 disabled:opacity-60 disabled:cursor-not-allowed dark:bg-muted/20 dark:focus:bg-background"
+                          disabled={loading}
+                          type={showPassword ? "text" : "password"}
+                          placeholder="Enter your password"
+                          {...field}
+                        />
+                        <button
+                          type="button"
+                          onClick={togglePasswordVisibility}
+                          className="absolute inset-y-0 right-0 pr-3 flex items-center hover:bg-muted/50 rounded-r-xl transition-all duration-200 group"
+                          aria-label={showPassword ? "Hide password" : "Show password"}
+                        >
+                          {showPassword ? (
+                            <EyeOffIcon className="h-5 w-5 text-muted-foreground group-hover:text-foreground transition-colors" />
+                          ) : (
+                            <EyeIcon className="h-5 w-5 text-muted-foreground group-hover:text-foreground transition-colors" />
+                          )}
+                        </button>
+                        <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-primary/5 to-primary/5 opacity-0 group-focus-within:opacity-100 transition-opacity duration-200 pointer-events-none" />
+                      </div>
+                    </FormControl>
+                    <FormMessage className="text-xs" />
+                  </FormItem>
+                )}
+              />
+            </div>
+  
+            {/* Status Messages */}
+            <div className="space-y-3">
+              <FormError message={error} />
+              <FormSuccess message={success} />
+            </div>
+  
+            {/* Forgot Password Link */}
+            <div className="flex justify-end">
+              <Link
+                href="/forgot-password"
+                className="text-sm text-primary hover:text-primary/80 font-medium hover:underline transition-colors duration-200"
+              >
+                Forgot your password?
+              </Link>
+            </div>
+  
+            {/* Login Button */}
+            <Button
+              disabled={loading}
+              type="submit"
+              className="w-full h-12 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-xl transition-all duration-200 transform hover:scale-[1.02] focus:scale-[1.02] disabled:transform-none disabled:opacity-60 shadow-lg shadow-primary/25 disabled:shadow-none"
+            >
+              {loading ? (
+                <div className="flex items-center justify-center gap-2">
+                  <div className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+                  Signing in...
                 </div>
-
-                {/* Status Messages */}
-                <div className="space-y-3">
-                    <FormError message={error} />
-                    <FormSuccess message={success} />
-                </div>
-
-                {/* Forgot Password Link */}
-                <div className="flex justify-end">
-                    <Link 
-                        href="/forgot-password" 
-                        className="text-sm text-blue-600 hover:text-blue-700 font-medium hover:underline transition-colors duration-200"
-                    >
-                        Forgot your password?
-                    </Link>
-                </div>
-
-                {/* Login Button */}
-                <Button 
-                    disabled={loading} 
-                    type="submit" 
-                    className='w-full h-12 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold rounded-xl transition-all duration-200 transform hover:scale-[1.02] focus:scale-[1.02] disabled:transform-none disabled:opacity-60 shadow-lg shadow-blue-600/25 disabled:shadow-none'
-                >
-                    {loading ? (
-                        <div className="flex items-center justify-center gap-2">
-                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                            Signing in...
-                        </div>
-                    ) : (
-                        "Sign In"
-                    )}
-                </Button>
-
-                {/* Divider */}
-                <div className="relative my-6">
-                    <div className="absolute inset-0 flex items-center">
-                        <div className="w-full border-t border-gray-200"></div>
-                    </div>
-                    <div className="relative flex justify-center text-sm">
-                        <span className="px-4 bg-white text-gray-500 font-medium">Or continue with</span>
-                    </div>
-                </div>
-
-                {/* Social Login Buttons */}
-                <div className="space-y-3">
-                    <SignInButton 
-                        title="Continue with Google" 
-                        provider="google" 
-                        callbackURL="/" 
-                        icon={<LogoIcons.Google />} 
-                        loading={googleLoading} 
-                        setLoading={setGoogleLoading} 
-                    />
-                    <SignInButton 
-                        title="Continue with GitHub" 
-                        provider="github" 
-                        callbackURL="/" 
-                        icon={<LogoIcons.Github />} 
-                        loading={githubLoading} 
-                        setLoading={setGithubLoading} 
-                    />
-                </div>
-            </form>
+              ) : (
+                "Sign In"
+              )}
+            </Button>
+  
+            {/* Divider */}
+            <div className="relative my-6">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-border"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-4 bg-background text-muted-foreground font-medium">Or continue with</span>
+              </div>
+            </div>
+  
+            {/* Social Login Buttons */}
+            <div className="space-y-3">
+              <SignInButton
+                title="Continue with Google"
+                provider="google"
+                callbackURL="/"
+                icon={<LogoIcons.Google />}
+                loading={googleLoading}
+                setLoading={setGoogleLoading}
+              />
+              <SignInButton
+                title="Continue with GitHub"
+                provider="github"
+                callbackURL="/"
+                icon={<LogoIcons.Github />}
+                loading={githubLoading}
+                setLoading={setGithubLoading}
+              />
+            </div>
+          </form>
         </Form>
-    </CardWrapper>
+      </CardWrapper>
     )
-}
-
-export default SignIn
+  }
+  
+  export default SignIn
+  

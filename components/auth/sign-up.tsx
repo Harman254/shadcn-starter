@@ -16,7 +16,7 @@ import { signUp } from '@/lib/auth-client'
 import { useRouter } from 'next/navigation'
 import FormSuccess from '../form-success'
 import { LogoIcons } from '../icons'
-import { Eye, EyeOff } from 'lucide-react'
+import { Eye, EyeOff, Lock, Mail, User } from 'lucide-react'
 
 const SignUp = () => {
     const router = useRouter();
@@ -86,110 +86,160 @@ const SignUp = () => {
 
     return (
         <CardWrapper
-            cardTitle='SignUp'
-            cardDescription='Create a new account'
-            cardFooterLink='/sign-in'
-            cardFooterDescription='Already have an account?'
-            cardFooterLinkTitle='Login'
-        >
-            <Form {...form}>
-                <form className='space-y-4' onSubmit={form.handleSubmit(onSubmit)}>
-                    <FormField
-                        control={form.control}
-                        name="name"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Name</FormLabel>
-                                <FormControl>
-                                    <Input
-                                        disabled={loading}
-                                        type="text"
-                                        placeholder='John'
-                                        {...field} 
-                                    />
-                                </FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-                    <FormField
-                        control={form.control}
-                        name="email"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Email</FormLabel>
-                                <FormControl>
-                                    <Input
-                                        disabled={loading}
-                                        type="email"
-                                        placeholder='example@gmail.com'
-                                        {...field}
-                                    />
-                                </FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-                    <FormField
-                        control={form.control}
-                        name="password"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Password</FormLabel>
-                                <FormControl>
-                                    <div className="relative">
-                                        <Input
-                                            disabled={loading}
-                                            type={showPassword ? "text" : "password"}
-                                            placeholder='********'
-                                            {...field}
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={togglePasswordVisibility}
-                                            className="absolute inset-y-0 right-0 pr-3 flex items-center text-sm leading-5"
-                                            aria-label={showPassword ? "Hide password" : "Show password"}
-                                        >
-                                            {showPassword ? (
-                                                <EyeOff className="h-5 w-5 text-gray-500 hover:text-gray-700" />
-                                            ) : (
-                                                <Eye className="h-5 w-5 text-gray-500 hover:text-gray-700" />
-                                            )}
-                                        </button>
-                                    </div>
-                                </FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-                    <FormError message={error} />
-                    <FormSuccess message={success} />
-                    <Button disabled={loading} type="submit" className='w-full'>
-                        {loading ? "Creating account..." : "Submit"}
-                    </Button>
-                    <div>
-                        <div>
-                            <SignInButton 
-                                title="Sign in with Github" 
-                                provider="github" 
-                                callbackURL="https://www.aimealwise.com/api/auth/callback/github" 
-                                icon={<LogoIcons.Github />} 
-                                loading={githubLoading} 
-                                setLoading={setGithubLoading}
-                            />
-                            <SignInButton 
-                                title="Sign in with Google" 
-                                provider="google" 
-                                callbackURL="https://www.aimealwise.com/api/auth/callback/google" 
-                                icon={<LogoIcons.Google />} 
-                                loading={googleLoading} 
-                                setLoading={setGoogleLoading} 
-                            />
-                        </div>
+      cardTitle="Sign Up"
+      cardDescription="Create a new account"
+      cardFooterLink="/sign-in"
+      cardFooterDescription="Already have an account?"
+      cardFooterLinkTitle="Sign In"
+    >
+      <Form {...form}>
+        <form className="space-y-6" onSubmit={form.handleSubmit(onSubmit)}>
+          <div className="space-y-5">
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem className="space-y-2">
+                  <FormLabel className="text-sm font-semibold text-foreground flex items-center gap-2">
+                    <User className="w-4 h-4 text-muted-foreground" />
+                    Full Name
+                  </FormLabel>
+                  <FormControl>
+                    <div className="relative group">
+                      <Input
+                        className="h-12 px-4 text-base bg-background/50 border-border rounded-xl transition-all duration-200 focus:bg-background focus:border-primary focus:ring-2 focus:ring-primary/10 disabled:opacity-60 disabled:cursor-not-allowed dark:bg-muted/20 dark:focus:bg-background"
+                        disabled={loading}
+                        type="text"
+                        placeholder="Enter your full name"
+                        {...field}
+                      />
+                      <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-primary/5 to-primary/5 opacity-0 group-focus-within:opacity-100 transition-opacity duration-200 pointer-events-none" />
                     </div>
-                </form>
-            </Form>
-        </CardWrapper>
+                  </FormControl>
+                  <FormMessage className="text-xs" />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem className="space-y-2">
+                  <FormLabel className="text-sm font-semibold text-foreground flex items-center gap-2">
+                    <Mail className="w-4 h-4 text-muted-foreground" />
+                    Email Address
+                  </FormLabel>
+                  <FormControl>
+                    <div className="relative group">
+                      <Input
+                        className="h-12 px-4 text-base bg-background/50 border-border rounded-xl transition-all duration-200 focus:bg-background focus:border-primary focus:ring-2 focus:ring-primary/10 disabled:opacity-60 disabled:cursor-not-allowed dark:bg-muted/20 dark:focus:bg-background"
+                        disabled={loading}
+                        type="email"
+                        placeholder="Enter your email address"
+                        {...field}
+                      />
+                      <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-primary/5 to-primary/5 opacity-0 group-focus-within:opacity-100 transition-opacity duration-200 pointer-events-none" />
+                    </div>
+                  </FormControl>
+                  <FormMessage className="text-xs" />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="password"
+              render={({ field }) => (
+                <FormItem className="space-y-2">
+                  <FormLabel className="text-sm font-semibold text-foreground flex items-center gap-2">
+                    <Lock className="w-4 h-4 text-muted-foreground" />
+                    Password
+                  </FormLabel>
+                  <FormControl>
+                    <div className="relative group">
+                      <Input
+                        className="h-12 px-4 pr-12 text-base bg-background/50 border-border rounded-xl transition-all duration-200 focus:bg-background focus:border-primary focus:ring-2 focus:ring-primary/10 disabled:opacity-60 disabled:cursor-not-allowed dark:bg-muted/20 dark:focus:bg-background"
+                        disabled={loading}
+                        type={showPassword ? "text" : "password"}
+                        placeholder="Create a strong password"
+                        {...field}
+                      />
+                      <button
+                        type="button"
+                        onClick={togglePasswordVisibility}
+                        className="absolute inset-y-0 right-0 pr-3 flex items-center hover:bg-muted/50 rounded-r-xl transition-all duration-200 group"
+                        aria-label={showPassword ? "Hide password" : "Show password"}
+                      >
+                        {showPassword ? (
+                          <EyeOff className="h-5 w-5 text-muted-foreground group-hover:text-foreground transition-colors" />
+                        ) : (
+                          <Eye className="h-5 w-5 text-muted-foreground group-hover:text-foreground transition-colors" />
+                        )}
+                      </button>
+                      <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-primary/5 to-primary/5 opacity-0 group-focus-within:opacity-100 transition-opacity duration-200 pointer-events-none" />
+                    </div>
+                  </FormControl>
+                  <FormMessage className="text-xs" />
+                </FormItem>
+              )}
+            />
+          </div>
+
+          {/* Status Messages */}
+          <div className="space-y-3">
+            <FormError message={error} />
+            <FormSuccess message={success} />
+          </div>
+
+          {/* Sign Up Button */}
+          <Button
+            disabled={loading}
+            type="submit"
+            className="w-full h-12 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-xl transition-all duration-200 transform hover:scale-[1.02] focus:scale-[1.02] disabled:transform-none disabled:opacity-60 shadow-lg shadow-primary/25 disabled:shadow-none"
+          >
+            {loading ? (
+              <div className="flex items-center justify-center gap-2">
+                <div className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+                Creating account...
+              </div>
+            ) : (
+              "Create Account"
+            )}
+          </Button>
+
+          {/* Divider */}
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-border"></div>
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-4 bg-background text-muted-foreground font-medium">Or continue with</span>
+            </div>
+          </div>
+
+          {/* Social Login Buttons */}
+          <div className="space-y-3">
+            <SignInButton
+              title="Continue with Google"
+              provider="google"
+              callbackURL="https://www.aimealwise.com/api/auth/callback/google"
+              icon={<LogoIcons.Google />}
+              loading={googleLoading}
+              setLoading={setGoogleLoading}
+            />
+            <SignInButton
+              title="Continue with GitHub"
+              provider="github"
+              callbackURL="https://www.aimealwise.com/api/auth/callback/github"
+              icon={<LogoIcons.Github />}
+              loading={githubLoading}
+              setLoading={setGithubLoading}
+            />
+          </div>
+        </form>
+      </Form>
+    </CardWrapper>
     )
 }
 
