@@ -97,7 +97,7 @@ const GroceryList = ({ id }: GroceryListProps) => {
            <div className="w-24 h-24 bg-gradient-to-br from-red-100 to-orange-100 dark:from-red-900/50 dark:to-orange-900/50 rounded-full flex items-center justify-center mx-auto mb-8 shadow-xl">
              <Zap className="w-12 h-12 text-red-500 dark:text-red-400 animate-bounce" />
            </div>
-           <h3 className="text-3xl font-black text-red-800 dark:text-red-200 mb-4 bg-gradient-to-r from-red-600 to-orange-600 bg-clip-text text-transparent">Oops! Magic Failed</h3>
+           <h3 className="text-3xl font-black dark:text-red-200 mb-4 bg-gradient-to-r from-red-600 to-orange-600 bg-clip-text text-transparent">Oops! Magic Failed</h3>
            <p className="text-red-600 dark:text-red-300 text-md mb-8">{error}</p>
            <button 
              onClick={() => fetchGroceryList(id)} 
