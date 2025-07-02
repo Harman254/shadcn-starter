@@ -67,12 +67,14 @@ const CreateMealPlan = ({ preferences }: CreateMealPlanProps) => {
   const [generationCount, setGenerationCount] = useState(0)
   const [maxGenerations, setMaxGenerations] = useState(2)
   const { setTitle, resetTitle } = useMealPlanTitleStore()
-  const router = useRouter()
   const { hasFeature, unlockFeature, getFeatureBadge } = useProFeatures()
   const title = useMealPlanTitleStore((state) => state.title)
   const isUnlimitedGenerations = hasFeature("unlimited-meal-plans")
   const { data: session, isPending } = useSession();
   const { open: openAuthModal } = useAuthModal();
+
+
+  const router =useRouter()
 
   // Fetch generation count on mount
   useEffect(() => {
@@ -109,14 +111,24 @@ const CreateMealPlan = ({ preferences }: CreateMealPlanProps) => {
       return;
     }
 
-    // Optionally, check onboarding status via API
-    // Uncomment and implement if you want to enforce onboarding before generation
-    // const onboardRes = await fetch("/api/user/profile");
-    // const onboardData = await onboardRes.json();
-    // if (!onboardData?.isOnboardingComplete) {
-    //   window.location.href = "/onboarding";
-    //   return;
-    // }
+    // Enforce onboarding before allowing meal plan generation
+    try {
+      const onboardRes = await fetch("/api/user/profile");
+      if (onboardRes.ok) {
+        const onboardData = await onboardRes.json();
+        if (!onboardData.user?.Account?.isOnboardingComplete) {
+          toast.error("Please complete onboarding before generating a meal plan.");
+          router.push('/onboarding')
+          return;
+        }
+      } else if (onboardRes.status === 401) {
+        openAuthModal("sign-in");
+        return;
+      }
+    } catch (err) {
+      toast.error("Could not verify onboarding status. Please try again.");
+      return;
+    }
 
     const { duration, mealsPerDay } = useMealPlanStore.getState()
     const isUnlimitedGenerations = hasFeature("unlimited-meal-plans")
@@ -137,14 +149,7 @@ const CreateMealPlan = ({ preferences }: CreateMealPlanProps) => {
 
         if (validationResponse.status === 429) {
           const errorData = await validationResponse.json()
-          console.log('Generation limit reached:', errorData)
-          toast.error(
-            "You've reached your weekly meal plan generation limit! Upgrade to Pro for unlimited generations.",
-            {
-              duration: 4000,
-              icon: "👑",
-            },
-          )
+         
           unlockFeature(PRO_FEATURES["unlimited-meal-plans"])
           setLoading(false)
           return
