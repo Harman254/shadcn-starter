@@ -1,21 +1,31 @@
 import CreateMealPlan from '@/components/create-meal-plan'
-import { fetchOnboardingData } from '@/data'
+import { fetchOnboardingData, getAccount } from '@/data'
+import { auth } from '@/lib/auth'
 import { UserPreference } from '@/types'
+import { headers } from 'next/headers'
 import React from 'react'
 
+
+
+
 const MealNew = async () => {
-  let preferences: UserPreference[] = []
-  try {
-    // Try to fetch preferences if user is logged in
-    const userId = null // Replace with logic to get userId from session if available
-    if (userId) {
-      preferences = await fetchOnboardingData(userId)
+
+    const user = await auth.api.getSession({
+        headers: await headers()
+    })
+
+    let isOnboardComplete = false;
+    let preferences: UserPreference[] = [];
+    if (user?.user?.id) {
+      const checkOnboard = await getAccount(user.user.id);
+      isOnboardComplete = !!checkOnboard?.isOnboardingComplete;
+      try {
+        preferences = await fetchOnboardingData(user.user.id);
+      } catch (e) {
+        preferences = [];
+      }
     }
-  } catch (e) {
-    // Not logged in or error fetching preferences, use empty
-    preferences = []
-  }
-  return <CreateMealPlan preferences={preferences} />
+    return <CreateMealPlan isOnboardComplete={isOnboardComplete} preferences={preferences} />
 }
 
 export default MealNew 

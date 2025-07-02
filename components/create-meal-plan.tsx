@@ -31,6 +31,7 @@ import { useProFeatures, PRO_FEATURES } from "@/hooks/use-pro-features"
 import MealLoading from "./meal-plan-loading-new"
 import { useSession } from "@/lib/auth-client"
 import { useAuthModal } from "@/components/AuthModalProvider"
+import { User } from "better-auth/types"
 
 /* ======================== */
 /*        Interfaces         */
@@ -51,13 +52,14 @@ export interface DayMealPlan {
 
 interface CreateMealPlanProps {
   preferences: UserPreference[]
+  isOnboardComplete: boolean
 }
 
 /* ======================== */
 /*         Component         */
 /* ======================== */
 
-const CreateMealPlan = ({ preferences }: CreateMealPlanProps) => {
+const CreateMealPlan = ({ preferences, isOnboardComplete }: CreateMealPlanProps) => {
   const { mealPlan, duration, mealsPerDay, setDuration, setMealsPerDay, setMealPlan, clearMealPlan } =
     useMealPlanStore()
   const [loading, setLoading] = useState(false)
@@ -65,7 +67,7 @@ const CreateMealPlan = ({ preferences }: CreateMealPlanProps) => {
   const [regenerating, setRegenerating] = useState(false)
   const [generated, setGenerated] = useState(false)
   const [generationCount, setGenerationCount] = useState(0)
-  const [maxGenerations, setMaxGenerations] = useState(2)
+  const [maxGenerations, setMaxGenerations] = useState(3)
   const { setTitle, resetTitle } = useMealPlanTitleStore()
   const { hasFeature, unlockFeature, getFeatureBadge } = useProFeatures()
   const title = useMealPlanTitleStore((state) => state.title)
@@ -93,7 +95,7 @@ const CreateMealPlan = ({ preferences }: CreateMealPlanProps) => {
           console.error("Error fetching generation count:", error)
           // Set safe defaults if there's an error
           setGenerationCount(0)
-          setMaxGenerations(2)
+          setMaxGenerations(3)
         }
       }
     }
@@ -110,23 +112,10 @@ const CreateMealPlan = ({ preferences }: CreateMealPlanProps) => {
       openAuthModal("sign-in");
       return;
     }
-
-    // Enforce onboarding before allowing meal plan generation
-    try {
-      const onboardRes = await fetch("/api/user/profile");
-      if (onboardRes.ok) {
-        const onboardData = await onboardRes.json();
-        if (!onboardData.user?.Account?.isOnboardingComplete) {
-          toast.error("Please complete onboarding before generating a meal plan.");
-          router.push('/onboarding')
-          return;
-        }
-      } else if (onboardRes.status === 401) {
-        openAuthModal("sign-in");
-        return;
-      }
-    } catch (err) {
-      toast.error("Could not verify onboarding status. Please try again.");
+    // Enforce onboarding via prop
+    if (!isOnboardComplete) {
+      toast.error("Please complete onboarding before generating a meal plan.");
+      router.push('/onboarding')
       return;
     }
 
