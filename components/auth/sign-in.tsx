@@ -231,7 +231,7 @@ const SignIn: React.FC<SignInProps> = ({ onSwitchToSignUp, onSuccess }) => {
                     </div>
 
                     <div className="text-center mt-6">
-                      <span className="text-sm text-gray-500 dark:text-gray-400">Don't have an account?</span>
+                      <span className="text-sm text-gray-500 dark:text-gray-400">Don&apos;t have an account?</span>
                       <button
                         className="ml-2 text-indigo-600 dark:text-indigo-400 font-semibold underline hover:text-rose-500 transition"
                         onClick={handleSwitchToSignUp}
