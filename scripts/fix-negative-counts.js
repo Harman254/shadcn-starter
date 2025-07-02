@@ -45,12 +45,12 @@ async function fixNegativeCounts() {
     const overLimitRecords = await prisma.mealPlanGeneration.findMany({
       where: {
         generationCount: {
-          gt: 2
+          gt: 3
         }
       }
     });
     
-    console.log(`Found ${overLimitRecords.length} records over the limit (2)`);
+    console.log(`Found ${overLimitRecords.length} records over the limit (3)`);
     
     if (overLimitRecords.length > 0) {
       console.log('📝 Records over limit:');
@@ -62,15 +62,15 @@ async function fixNegativeCounts() {
       const result = await prisma.mealPlanGeneration.updateMany({
         where: {
           generationCount: {
-            gt: 2
+            gt: 3
           }
         },
         data: {
-          generationCount: 2
+          generationCount: 3
         }
       });
       
-      console.log(`✅ Capped ${result.count} counts at the limit (2)`);
+      console.log(`✅ Capped ${result.count} counts at the limit (3)`);
     }
     
   } catch (error) {

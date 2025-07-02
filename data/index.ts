@@ -720,7 +720,7 @@ export async function getMealPlanGenerationCount(userId: string) {
 
     return {
       generationCount: generationRecord.generationCount,
-      maxGenerations: 2, // Free users get 2 generations per week
+      maxGenerations: 3, // Free users get 3 generations per week
       weekStart: generationRecord.weekStart,
       weekEnd: endOfWeek
     };
@@ -762,7 +762,7 @@ export async function incrementMealPlanGeneration(userId: string) {
       });
     } else {
       // Check if we can increment (safeguard)
-      if (generationRecord.generationCount >= 2) {
+      if (generationRecord.generationCount >= 3) {
         throw new Error("Generation limit reached");
       }
       
@@ -780,7 +780,7 @@ export async function incrementMealPlanGeneration(userId: string) {
     return {
       success: true,
       generationCount: generationRecord.generationCount,
-      maxGenerations: 2
+      maxGenerations: 3
     };
   } catch (error) {
     console.error("Error incrementing meal plan generation:", error);
@@ -810,7 +810,7 @@ export async function checkMealPlanGenerationLimit(userId: string) {
     });
 
     const currentCount = generationRecord?.generationCount || 0;
-    const maxGenerations = 2; // Free users get 2 generations per week
+    const maxGenerations = 3; // Free users get 3 generations per week
 
     return {
       canGenerate: currentCount < maxGenerations,
@@ -861,7 +861,7 @@ export async function validateAndIncrementMealPlanGeneration(userId: string) {
         });
       } else {
         // Check if we can increment
-        if (generationRecord.generationCount >= 2) {
+        if (generationRecord.generationCount >= 3) {
           throw new Error("Generation limit reached");
         }
         
@@ -883,7 +883,7 @@ export async function validateAndIncrementMealPlanGeneration(userId: string) {
       return {
         success: true,
         generationCount: generationRecord.generationCount,
-        maxGenerations: 2,
+        maxGenerations: 3,
         canGenerate: true
       };
     });
@@ -912,7 +912,7 @@ export async function validateAndIncrementMealPlanGeneration(userId: string) {
       });
 
       const currentCount = Math.max(0, generationRecord?.generationCount || 0); // Ensure non-negative
-      const maxGenerations = 2; // Free users get 2 generations per week
+      const maxGenerations = 3; // Free users get 3 generations per week
 
       return {
         success: false,
@@ -1135,7 +1135,7 @@ export async function rollbackMealPlanGeneration(userId: string) {
         return {
           success: true,
           generationCount: 0,
-          maxGenerations: 2,
+          maxGenerations: 3,
           message: "No generation record found to rollback"
         };
       }
@@ -1153,7 +1153,7 @@ export async function rollbackMealPlanGeneration(userId: string) {
       return {
         success: true,
         generationCount: updatedRecord.generationCount,
-        maxGenerations: 2,
+        maxGenerations: 3,
         message: "Generation count rolled back successfully"
       };
     });
