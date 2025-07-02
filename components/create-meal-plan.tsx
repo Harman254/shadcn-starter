@@ -102,6 +102,13 @@ const CreateMealPlan = ({ preferences, isOnboardComplete }: CreateMealPlanProps)
     fetchGenerationCount()
   }, [isUnlimitedGenerations])
 
+  // Ensure default duration is 5 days if not set
+  useEffect(() => {
+    if (!duration || duration < 2) {
+      setDuration(5);
+    }
+  }, []);
+
   /* ======================== */
   /*       Functions           */
   /* ======================== */
@@ -449,7 +456,7 @@ const CreateMealPlan = ({ preferences, isOnboardComplete }: CreateMealPlanProps)
                   <Calendar className="h-4 w-4 sm:h-5 sm:w-5 text-emerald-600 dark:text-emerald-400" />
                   Plan Duration
                 </Label>
-                <Select value={duration.toString()} onValueChange={(v) => setDuration(Number.parseInt(v))}>
+                <Select value={duration?.toString() || '5'} onValueChange={(v) => setDuration(Number.parseInt(v))}>
                   <SelectTrigger className="h-12 sm:h-14 text-sm sm:text-base border-slate-200 dark:border-slate-700 hover:border-emerald-300 dark:hover:border-emerald-500 transition-all duration-200 focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 bg-white dark:bg-slate-900 font-medium">
                     <SelectValue />
                   </SelectTrigger>
