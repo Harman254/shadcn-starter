@@ -32,6 +32,7 @@ import MealLoading from "./meal-plan-loading-new"
 import { useSession } from "@/lib/auth-client"
 import { useAuthModal } from "@/components/AuthModalProvider"
 import { User } from "better-auth/types"
+import { CldImage } from 'next-cloudinary'
 
 /* ======================== */
 /*        Interfaces         */
@@ -74,7 +75,15 @@ const CreateMealPlan = ({ preferences, isOnboardComplete }: CreateMealPlanProps)
   const isUnlimitedGenerations = hasFeature("unlimited-meal-plans")
   const { data: session, isPending } = useSession();
   const { open: openAuthModal } = useAuthModal();
-
+  const [cloudinaryImages, setCloudinaryImages] = useState<string[]>([
+    'https://res.cloudinary.com/dcidanigq/image/upload/v1742112004/cld-sample-4.jpg',
+    'https://res.cloudinary.com/dcidanigq/image/upload/v1742112002/samples/breakfast.jpg',
+    'https://res.cloudinary.com/dcidanigq/image/upload/v1742111994/samples/food/pot-mussels.jpg',
+    'https://res.cloudinary.com/dcidanigq/image/upload/v1742111994/samples/food/dessert.jpg',
+    'https://res.cloudinary.com/dcidanigq/image/upload/v1742112003/samples/dessert-on-a-plate.jpg',
+    'https://res.cloudinary.com/dcidanigq/image/upload/v1742111994/samples/food/fish-vegetables.jpg'
+  ]);
+  const [imagesLoading, setImagesLoading] = useState(false);
 
   const router =useRouter()
 
@@ -113,6 +122,18 @@ const CreateMealPlan = ({ preferences, isOnboardComplete }: CreateMealPlanProps)
   /*       Functions           */
   /* ======================== */
 
+  // Helper to assign images to meals
+  const assignCloudinaryImagesToMealPlan = (mealPlan: DayMealPlan[], images: string[]) => {
+    let imageIdx = 0;
+    return mealPlan.map(day => ({
+      ...day,
+      meals: day.meals.map(meal => ({
+        ...meal,
+        imageUrl: images[imageIdx++ % images.length]
+      }))
+    }));
+  };
+
   const generateMealPlan = async () => {
     // Check authentication before proceeding
     if (!session || !session.user?.id) {
@@ -129,6 +150,11 @@ const CreateMealPlan = ({ preferences, isOnboardComplete }: CreateMealPlanProps)
     const { duration, mealsPerDay } = useMealPlanStore.getState()
     const isUnlimitedGenerations = hasFeature("unlimited-meal-plans")
     let generationIncremented = false
+
+    if (imagesLoading || cloudinaryImages.length === 0) {
+      toast.error('Cloudinary images not loaded. Please try again.');
+      return;
+    }
 
     try {
       setLoading(true)
@@ -181,6 +207,8 @@ const CreateMealPlan = ({ preferences, isOnboardComplete }: CreateMealPlanProps)
       }
 
       const titleresult = await generateMealPlanTitle(result.mealPlan)
+      const mealPlanWithImages = assignCloudinaryImagesToMealPlan(result.mealPlan, cloudinaryImages);
+
       setTitle(titleresult.title)
 
       if (!titleresult?.title) {
@@ -191,7 +219,7 @@ const CreateMealPlan = ({ preferences, isOnboardComplete }: CreateMealPlanProps)
       }
 
       const today = new Date().toISOString()
-      setMealPlan(result.mealPlan, duration, mealsPerDay, today)
+      setMealPlan(mealPlanWithImages, duration, mealsPerDay, today)
       setGenerated(true)
       setTimeout(() => setGenerated(false), 3000)
       toast.success("Meal plan generated successfully!")
@@ -573,11 +601,16 @@ const CreateMealPlan = ({ preferences, isOnboardComplete }: CreateMealPlanProps)
               <div className="space-y-4 sm:space-y-6">
                 <Button
                   onClick={generateMealPlan}
-                  disabled={loading}
+                  disabled={loading || imagesLoading || cloudinaryImages.length === 0}
                   size="lg"
                   className="w-full h-14 sm:h-16 text-base sm:text-lg font-semibold bg-gradient-to-r from-[#08e605] via-green-600 to-lime-600 hover:from-emerald-700 hover:via-teal-700 hover:to-cyan-700 text-white shadow-xl shadow-emerald-500/25 hover:shadow-emerald-500/40 transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] disabled:transform-none disabled:opacity-50"
                 >
-                  {loading ? (
+                  {imagesLoading ? (
+                    <>
+                      <Loader2 className="mr-2 sm:mr-3 h-5 w-5 sm:h-6 sm:w-6 animate-spin" />
+                      Loading Images...
+                    </>
+                  ) : loading ? (
                     <>
                       <Loader2 className="mr-2 sm:mr-3 h-5 w-5 sm:h-6 sm:w-6 animate-spin" />
                       <span className="hidden sm:inline">Generating Your Perfect Plan...</span>
@@ -803,16 +836,13 @@ const CreateMealPlan = ({ preferences, isOnboardComplete }: CreateMealPlanProps)
                         <h5 className="text-lg font-bold text-slate-900 dark:text-slate-100">Meal Preview</h5>
                       </div>
                       <div className="relative overflow-hidden rounded-2xl border border-slate-200/50 dark:border-slate-700/50 shadow-lg">
-                        <img
-                          src={
-                            meal.imageUrl ||
-                            `/placeholder.svg?height=256&width=400&text=${encodeURIComponent(meal.name)}`
-                          }
-                          alt={`${meal.name} - Meal preview`}
-                          className="w-full h-64 object-cover hover:scale-105 transition-transform duration-500"
-                          onError={(e) => {
-                            e.currentTarget.src = `/placeholder.svg?height=256&width=400&text=${encodeURIComponent(meal.name)}`
-                          }}
+                        <CldImage
+                          width={400}
+                          height={256}
+                    
+                          src={cloudinaryImages[mealIndex % cloudinaryImages.length] || ''}
+                          alt={`${meal.name} - Cloudinary preview`}
+                          className="w-full h-64 object-cover hover:scale-105 transition-transform duration-500 rounded-2xl border border-slate-200/50 dark:border-slate-700/50 shadow-lg"
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent pointer-events-none"></div>
                       </div>
@@ -906,7 +936,7 @@ const CreateMealPlan = ({ preferences, isOnboardComplete }: CreateMealPlanProps)
           )}
         </div>
       </div>
-    
+  
   );
 };
 
