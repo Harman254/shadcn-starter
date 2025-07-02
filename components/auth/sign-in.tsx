@@ -17,15 +17,22 @@ import { useRouter } from 'next/navigation'
 import FormSuccess from '../form-success'
 import Link from 'next/link'
 import { LogoIcons } from '../icons'
-import {  EyeIcon, EyeOffIcon, Mail } from 'lucide-react'
+import { EyeIcon, EyeOffIcon, Mail } from 'lucide-react'
 import { Lock } from 'lucide-react'
+import { useAuthModal } from "@/components/AuthModalProvider"
 
-const SignIn = () => {
+interface SignInProps {
+  onSwitchToSignUp?: () => void;
+  onSuccess?: () => void;
+}
+
+const SignIn: React.FC<SignInProps> = ({ onSwitchToSignUp, onSuccess }) => {
     const router = useRouter()
     const { error, success, loading, setSuccess, setError, setLoading, resetState } = useAuthState();
     const [googleLoading, setGoogleLoading] = React.useState(false)
     const [githubLoading, setGithubLoading] = React.useState(false)
     const [showPassword, setShowPassword] = useState(false)
+    const { switchToSignUp, close: closeAuthModal } = useAuthModal();
 
     const form = useForm<z.infer<typeof LoginSchema>>({
         resolver: zodResolver(LoginSchema),
@@ -35,36 +42,44 @@ const SignIn = () => {
         }
     })
 
+    const handleSuccess = () => {
+        setSuccess("Logged in successfully");
+        closeAuthModal();
+        onSuccess?.();
+    };
+
+    const handleSwitchToSignUp = () => {
+        if (onSwitchToSignUp) {
+            onSwitchToSignUp();
+        } else {
+            switchToSignUp();
+        }
+    };
+
     const onSubmit = async (values: z.infer<typeof LoginSchema>) => {
         try {
           resetState()
           setLoading(true)
           
-          // Using the signIn method from auth-client.ts
           const result = await signIn.email({
             email: values.email,
             password: values.password,
           }, {
-            // Callbacks to handle different states of the authentication process
             onRequest: () => {
               console.log("Login request started");
-              // Already set loading state above
             },
             onResponse: () => {
               console.log("Login response received");
-              // Keep loading state until we process the response
             },
             onSuccess: () => {
               console.log("Login successful");
               setLoading(false);
-              setSuccess("Logged in successfully");
-              router.push('/');
+              handleSuccess();
             },
             onError: (ctx) => {
               console.error("Login error:", ctx.error);
               setLoading(false);
               
-              // Handle specific error cases
               if (ctx.error.status === 403) {
                 setError("Please verify your email address before logging in");
               } else if (ctx.error.status === 401) {
@@ -75,7 +90,6 @@ const SignIn = () => {
             }
           });
           
-          // This code will only run if the callbacks above don't handle the response
           if (!result.data && !error) {
             setLoading(false);
             setError("Login failed. Please check your credentials.");
@@ -92,147 +106,144 @@ const SignIn = () => {
     }
 
     return (
-        <CardWrapper
-        cardTitle="Sign In"
-        cardDescription="Enter your email below to login to your account"
-        cardFooterDescription="Don't have an account?"
-        cardFooterLink="/sign-up"
-        cardFooterLinkTitle="Sign up"
-      >
-        <Form {...form}>
-          <form className="space-y-6" onSubmit={form.handleSubmit(onSubmit)}>
-            <div className="space-y-5">
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem className="space-y-2">
-                    <FormLabel className="text-sm font-semibold text-foreground flex items-center gap-2">
-                      <Mail className="w-4 h-4 text-muted-foreground" />
-                      Email Address
-                    </FormLabel>
-                    <FormControl>
-                      <div className="relative group">
-                        <Input
-                          className="h-12 px-4 text-base bg-background/50 border-border rounded-xl transition-all duration-200 focus:bg-background focus:border-primary focus:ring-2 focus:ring-primary/10 disabled:opacity-60 disabled:cursor-not-allowed dark:bg-muted/20 dark:focus:bg-background"
-                          disabled={loading}
-                          type="email"
-                          placeholder="Enter your email address"
-                          {...field}
+        <div className="w-full max-w-md mx-auto bg-white dark:bg-[#18181b] rounded-2xl shadow-xl p-6 sm:p-8 border border-gray-100 dark:border-gray-800">
+            <h2 className="text-2xl sm:text-3xl font-bold mb-2 text-center">Sign In</h2>
+            <p className="text-base sm:text-lg text-center mb-6 text-gray-500 dark:text-gray-400">Enter your email below to login to your account</p>
+            <Form {...form}>
+                <form className="space-y-6" onSubmit={form.handleSubmit(onSubmit)}>
+                    <div className="space-y-5">
+                        <FormField
+                            control={form.control}
+                            name="email"
+                            render={({ field }) => (
+                                <FormItem className="space-y-2">
+                                    <FormLabel className="text-sm font-semibold text-foreground flex items-center gap-2">
+                                        <Mail className="w-4 h-4 text-muted-foreground" />
+                                        Email Address
+                                    </FormLabel>
+                                    <FormControl>
+                                        <div className="relative group">
+                                            <Input
+                                                className="block w-full h-12 px-4 mb-4 text-base bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
+                                                disabled={loading}
+                                                type="email"
+                                                placeholder="Enter your email address"
+                                                {...field}
+                                            />
+                                            <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-primary/5 to-primary/5 opacity-0 group-focus-within:opacity-100 transition-opacity duration-200 pointer-events-none" />
+                                        </div>
+                                    </FormControl>
+                                    <FormMessage className="text-xs" />
+                                </FormItem>
+                            )}
                         />
-                        <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-primary/5 to-primary/5 opacity-0 group-focus-within:opacity-100 transition-opacity duration-200 pointer-events-none" />
-                      </div>
-                    </FormControl>
-                    <FormMessage className="text-xs" />
-                  </FormItem>
-                )}
-              />
-  
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem className="space-y-2">
-                    <FormLabel className="text-sm font-semibold text-foreground flex items-center gap-2">
-                      <Lock className="w-4 h-4 text-muted-foreground" />
-                      Password
-                    </FormLabel>
-                    <FormControl>
-                      <div className="relative group">
-                        <Input
-                          className="h-12 px-4 pr-12 text-base bg-background/50 border-border rounded-xl transition-all duration-200 focus:bg-background focus:border-primary focus:ring-2 focus:ring-primary/10 disabled:opacity-60 disabled:cursor-not-allowed dark:bg-muted/20 dark:focus:bg-background"
-                          disabled={loading}
-                          type={showPassword ? "text" : "password"}
-                          placeholder="Enter your password"
-                          {...field}
+
+                        <FormField
+                            control={form.control}
+                            name="password"
+                            render={({ field }) => (
+                                <FormItem className="space-y-2">
+                                    <FormLabel className="text-sm font-semibold text-foreground flex items-center gap-2">
+                                        <Lock className="w-4 h-4 text-muted-foreground" />
+                                        Password
+                                    </FormLabel>
+                                    <FormControl>
+                                        <div className="relative group">
+                                            <Input
+                                                className="block w-full h-12 px-4 pr-12 mb-4 text-base bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
+                                                disabled={loading}
+                                                type={showPassword ? "text" : "password"}
+                                                placeholder="Enter your password"
+                                                {...field}
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={togglePasswordVisibility}
+                                                className="absolute inset-y-0 right-0 pr-3 flex items-center hover:bg-muted/50 rounded-r-xl transition-all duration-200 group"
+                                                aria-label={showPassword ? "Hide password" : "Show password"}
+                                            >
+                                                {showPassword ? (
+                                                    <EyeOffIcon className="h-5 w-5 text-muted-foreground group-hover:text-foreground transition-colors" />
+                                                ) : (
+                                                    <EyeIcon className="h-5 w-5 text-muted-foreground group-hover:text-foreground transition-colors" />
+                                                )}
+                                            </button>
+                                        </div>
+                                    </FormControl>
+                                    <FormMessage className="text-xs" />
+                                </FormItem>
+                            )}
                         />
-                        <button
-                          type="button"
-                          onClick={togglePasswordVisibility}
-                          className="absolute inset-y-0 right-0 pr-3 flex items-center hover:bg-muted/50 rounded-r-xl transition-all duration-200 group"
-                          aria-label={showPassword ? "Hide password" : "Show password"}
+                    </div>
+
+                    <div className="space-y-3">
+                        <FormError message={error} />
+                        <FormSuccess message={success} />
+                    </div>
+
+                    <div className="flex justify-end">
+                        <Link
+                            href="/forgot-password"
+                            className="text-sm text-primary hover:text-primary/80 font-medium hover:underline transition-colors duration-200"
                         >
-                          {showPassword ? (
-                            <EyeOffIcon className="h-5 w-5 text-muted-foreground group-hover:text-foreground transition-colors" />
-                          ) : (
-                            <EyeIcon className="h-5 w-5 text-muted-foreground group-hover:text-foreground transition-colors" />
-                          )}
-                        </button>
-                        <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-primary/5 to-primary/5 opacity-0 group-focus-within:opacity-100 transition-opacity duration-200 pointer-events-none" />
-                      </div>
-                    </FormControl>
-                    <FormMessage className="text-xs" />
-                  </FormItem>
-                )}
-              />
-            </div>
-  
-            {/* Status Messages */}
-            <div className="space-y-3">
-              <FormError message={error} />
-              <FormSuccess message={success} />
-            </div>
-  
-            {/* Forgot Password Link */}
-            <div className="flex justify-end">
-              <Link
-                href="/forgot-password"
-                className="text-sm text-primary hover:text-primary/80 font-medium hover:underline transition-colors duration-200"
-              >
-                Forgot your password?
-              </Link>
-            </div>
-  
-            {/* Login Button */}
-            <Button
-              disabled={loading}
-              type="submit"
-              className="w-full h-12 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-xl transition-all duration-200 transform hover:scale-[1.02] focus:scale-[1.02] disabled:transform-none disabled:opacity-60 shadow-lg shadow-primary/25 disabled:shadow-none"
-            >
-              {loading ? (
-                <div className="flex items-center justify-center gap-2">
-                  <div className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
-                  Signing in...
-                </div>
-              ) : (
-                "Sign In"
-              )}
-            </Button>
-  
-            {/* Divider */}
-            <div className="relative my-6">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-border"></div>
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-4 bg-background text-muted-foreground font-medium">Or continue with</span>
-              </div>
-            </div>
-  
-            {/* Social Login Buttons */}
-            <div className="space-y-3">
-              <SignInButton
-                title="Continue with Google"
-                provider="google"
-                callbackURL="/"
-                icon={<LogoIcons.Google />}
-                loading={googleLoading}
-                setLoading={setGoogleLoading}
-              />
-              <SignInButton
-                title="Continue with GitHub"
-                provider="github"
-                callbackURL="/"
-                icon={<LogoIcons.Github />}
-                loading={githubLoading}
-                setLoading={setGithubLoading}
-              />
-            </div>
-          </form>
-        </Form>
-      </CardWrapper>
+                            Forgot your password?
+                        </Link>
+                    </div>
+
+                    <button
+                        disabled={loading}
+                        type="submit"
+                        className="w-full h-12 mt-4 text-base font-semibold rounded-xl bg-gradient-to-r from-indigo-500 to-rose-500 text-white shadow-lg hover:scale-105 transition"
+                    >
+                        {loading ? (
+                            <div className="flex items-center justify-center gap-2">
+                                <div className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+                                Signing in...
+                            </div>
+                        ) : (
+                            "Sign In"
+                        )}
+                    </button>
+
+                    <div className="relative flex items-center my-6">
+                        <div className="flex-grow border-t border-border"></div>
+                        <span className="mx-4 text-muted-foreground font-medium">Or continue with</span>
+                        <div className="flex-grow border-t border-border"></div>
+                    </div>
+
+                    <div className="space-y-3">
+                        <SignInButton
+                            title="Continue with Google"
+                            provider="google"
+                            callbackURL="/"
+                            icon={<LogoIcons.Google />}
+                            loading={googleLoading}
+                            setLoading={setGoogleLoading}
+                        />
+                        <SignInButton
+                            title="Continue with GitHub"
+                            provider="github"
+                            callbackURL="/"
+                            icon={<LogoIcons.Github />}
+                            loading={githubLoading}
+                            setLoading={setGithubLoading}
+                        />
+                    </div>
+
+                    <div className="text-center mt-6">
+                      <span className="text-sm text-gray-500 dark:text-gray-400">Don't have an account?</span>
+                      <button
+                        className="ml-2 text-indigo-600 dark:text-indigo-400 font-semibold underline hover:text-rose-500 transition"
+                        onClick={handleSwitchToSignUp}
+                        type="button"
+                      >
+                        Sign up
+                      </button>
+                    </div>
+                </form>
+            </Form>
+        </div>
     )
-  }
-  
-  export default SignIn
-  
+}
+
+export default SignIn

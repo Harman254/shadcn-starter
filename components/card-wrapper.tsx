@@ -17,6 +17,8 @@ interface CardWrapperType {
   cardFooterDescription?: string;
   cardFooterLink?: string;
   className?: string;
+  onFooterLinkClick?: () => void;
+  showFooterAsButton?: boolean;
 }
 
 const CardWrapper = ({
@@ -27,23 +29,35 @@ const CardWrapper = ({
   cardFooterDescription = '',
   cardFooterLink,
   className = '',
+  onFooterLinkClick,
+  showFooterAsButton = false,
 }: CardWrapperType) => {
   return (
-    <Card className={`w-[400px] relative ${className}`}>
+    <Card className={`w-full max-w-md sm:max-w-lg mx-auto relative rounded-2xl shadow-xl p-4 sm:p-8 ${className}`}>
       <CardHeader>
-        <CardTitle>{cardTitle}</CardTitle>
-        <CardDescription>{cardDescription}</CardDescription>
+        <CardTitle className="text-2xl sm:text-3xl font-bold mb-2 text-center" >{cardTitle}</CardTitle>
+        <CardDescription className="text-base sm:text-lg text-center mb-6">{cardDescription}</CardDescription>
       </CardHeader>
       <CardContent>{children}</CardContent>
-      {cardFooterLink && (
+      {(cardFooterLink || onFooterLinkClick) && (
         <CardFooter className="flex items-center justify-center gap-x-1">
           {cardFooterDescription && <span>{cardFooterDescription}</span>}
-          <Link
-            href={cardFooterLink}
-            className="underline text-blue-500 hover:text-blue-700"
-            legacyBehavior>
-            {cardFooterLinkTitle}
-          </Link>
+          {showFooterAsButton && onFooterLinkClick ? (
+            <button
+              type="button"
+              className="underline text-blue-500 hover:text-blue-700 bg-transparent border-none p-0 m-0 cursor-pointer"
+              onClick={onFooterLinkClick}
+            >
+              {cardFooterLinkTitle}
+            </button>
+          ) : cardFooterLink ? (
+            <Link
+              href={cardFooterLink}
+              className="underline text-blue-500 hover:text-blue-700"
+              legacyBehavior>
+              {cardFooterLinkTitle}
+            </Link>
+          ) : null}
         </CardFooter>
       )}
     </Card>

@@ -30,6 +30,7 @@ import { ThemeToggle } from "./theme-toggle";
 // Client components to handle interactive elements
 import MobileMenuTrigger from "./mobile-menu";
 import NavMenuTriggerClient from "./nav-menu";
+import { useAuthModal } from "@/components/AuthModalProvider";
 import { useSession } from "@/lib/auth-client";
 
 interface Feature {
@@ -39,10 +40,11 @@ interface Feature {
 }
 
 const Navbar = () => {
-  const session = useSession();
-  // Ensure isSignedIn is strictly checking for a valid session with user data
-  const isSignedIn = !!(session && session.data && session.data.user);
-  const user = session?.data?.user;
+  const { open } = useAuthModal();
+  const { data: session } = useSession();
+  // Use session?.user for auth checks
+  const isSignedIn = !!session?.user;
+  const user = session?.user;
   
   // State to control sheet open/closed
   const [isSheetOpen, setIsSheetOpen] = useState(false);
@@ -139,12 +141,8 @@ const Navbar = () => {
               </>
             ) : (
               <>
-                <Button asChild variant="outline">
-                  <Link href="/sign-in">Sign in</Link>
-                </Button>
-                <Button asChild>
-                  <Link href="/sign-up">Start for free</Link>
-                </Button>
+                <Button variant="outline" onClick={() => open("sign-in")}>Sign in</Button>
+                <Button onClick={() => open("sign-up")}>Start for free</Button>
               </>
             )}
           </div>
@@ -214,12 +212,8 @@ const Navbar = () => {
                     </>
                   ) : (
                     <>
-                      <Button asChild variant="outline">
-                        <Link href="/sign-in" onClick={closeSheet}>Sign in</Link>
-                      </Button>
-                      <Button asChild>
-                        <Link href="/sign-up" onClick={closeSheet}>Start for free</Link>
-                      </Button>
+                      <Button variant="outline" onClick={() => { closeSheet(); open("sign-in") }}>Sign in</Button>
+                      <Button onClick={() => { closeSheet(); open("sign-up") }}>Start for free</Button>
                     </>
                   )}
                 </div>
