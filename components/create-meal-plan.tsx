@@ -455,13 +455,14 @@ const CreateMealPlan = ({ preferences, isOnboardComplete }: CreateMealPlanProps)
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
+                    {/* Limiting to max 5 days for now due to API payload limits. Longer durations will be supported later or via a server action. */}
                     {[
                       { value: 2, label: "2 days", subtitle: "Quick start", popular: false },
                       { value: 3, label: "3 days", subtitle: "Weekend plan", popular: false },
                       { value: 5, label: "5 days", subtitle: "Work week", popular: false },
-                      { value: 7, label: "7 days", subtitle: "Most popular", popular: true },
-                      { value: 10, label: "10 days", subtitle: "Extended plan", popular: false },
-                      { value: 14, label: "14 days", subtitle: "Full cycle", popular: false },
+                      // { value: 7, label: "7 days", subtitle: "Most popular", popular: true },
+                      // { value: 10, label: "10 days", subtitle: "Extended plan", popular: false },
+                      // { value: 14, label: "14 days", subtitle: "Full cycle", popular: false },
                     ].map((option) => (
                       <SelectItem key={option.value} value={option.value.toString()} className="py-2 sm:py-3">
                         <div className="flex items-center justify-between w-full">
