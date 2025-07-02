@@ -15,7 +15,7 @@ const SignOut = () => {
       await signOut({
         fetchOptions: {
           onSuccess: () => {
-            router.push("/")
+            router.push("/meal-plans/new")
           },
           onError: () => {
             setIsLoading(false)
