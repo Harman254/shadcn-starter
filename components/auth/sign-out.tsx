@@ -15,7 +15,7 @@ const SignOut = () => {
       await signOut({
         fetchOptions: {
           onSuccess: () => {
-            router.push("/sign-in")
+            router.push("/")
           },
           onError: () => {
             setIsLoading(false)
