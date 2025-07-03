@@ -162,8 +162,13 @@ export default function Footer() {
                 href="/" 
                 className="font-semibold hover:text-green-600 dark:hover:text-green-400 transition-colors duration-300"
               >
-                <span className="text-gray-900 dark:text-white">Meal</span>
-                <span className="text-green-600 dark:text-green-400">Wise</span>
+                <span
+                className={cn(
+                  "bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 via-black/90 to-rose-500 dark:from-indigo-300 dark:via-white/90 dark:to-rose-300 ",
+                  pacifico.className,
+                )}
+              >Mealwise
+                </span>
               </Link>
               . All rights reserved.
             </p>

@@ -790,6 +790,19 @@ export async function incrementMealPlanGeneration(userId: string) {
 
 export async function checkMealPlanGenerationLimit(userId: string) {
   try {
+    // Check subscription status first
+    const subscription = await getSubscriptionByUserId(userId);
+    if (subscription && (subscription.plan === "pro" || subscription.plan === "enterprise")) {
+      // Pro/Enterprise users: unlimited generations
+      return {
+        canGenerate: true,
+        currentCount: 0,
+        maxGenerations: Infinity,
+        remaining: Infinity,
+        weekStart: null,
+        weekEnd: null
+      };
+    }
     const now = new Date();
     const startOfWeek = new Date(now);
     startOfWeek.setDate(now.getDate() - now.getDay()); // Start of week (Sunday)
@@ -829,6 +842,17 @@ export async function checkMealPlanGenerationLimit(userId: string) {
 // Server action for atomic validation and increment
 export async function validateAndIncrementMealPlanGeneration(userId: string) {
   try {
+    // Check subscription status first
+    const subscription = await getSubscriptionByUserId(userId);
+    if (subscription && (subscription.plan === "pro" || subscription.plan === "enterprise")) {
+      // Pro/Enterprise users: unlimited generations
+      return {
+        success: true,
+        generationCount: 0, // Not tracked for pro
+        maxGenerations: Infinity,
+        canGenerate: true
+      };
+    }
     const now = new Date();
     const startOfWeek = new Date(now);
     startOfWeek.setDate(now.getDate() - now.getDay()); // Start of week (Sunday)

@@ -88,32 +88,34 @@ const CreateMealPlan = ({ preferences, isOnboardComplete }: CreateMealPlanProps)
 
   const router =useRouter()
 
-  // Fetch generation count on mount
-  useEffect(() => {
-    const fetchGenerationCount = async () => {
-      setCountLoading(true)
-      if (!isUnlimitedGenerations) {
-        try {
-          const response = await fetch("/api/meal-plan-generations")
-          if (response.ok) {
-            const data = await response.json()
-            // Ensure count is never negative and always a number
-            const safeCount = Math.max(0, Number(data.generationCount) || 0)
-            setGenerationCount(safeCount)
-            setMaxGenerations(Number(data.maxGenerations) || 3)
-          } else {
-            setGenerationCount(0)
-            setMaxGenerations(3)
-          }
-        } catch (error) {
+  // Fetch generation count function (top-level)
+  const fetchGenerationCount = async () => {
+    setCountLoading(true)
+    if (!isUnlimitedGenerations) {
+      try {
+        const response = await fetch("/api/meal-plan-generations")
+        if (response.ok) {
+          const data = await response.json()
+          // Ensure count is never negative and always a number
+          const safeCount = Math.max(0, Number(data.generationCount) || 0)
+          setGenerationCount(safeCount)
+          setMaxGenerations(Number(data.maxGenerations) || 3)
+        } else {
           setGenerationCount(0)
           setMaxGenerations(3)
         }
+      } catch (error) {
+        setGenerationCount(0)
+        setMaxGenerations(3)
       }
-      setCountLoading(false)
     }
-    fetchGenerationCount()
-  }, [isUnlimitedGenerations])
+    setCountLoading(false)
+  }
+
+  // Fetch generation count on mount
+  useEffect(() => {
+    fetchGenerationCount();
+  }, [isUnlimitedGenerations]);
 
   // Ensure default duration is 5 days if not set
   useEffect(() => {
@@ -206,7 +208,14 @@ const CreateMealPlan = ({ preferences, isOnboardComplete }: CreateMealPlanProps)
       }
 
       const titleresult = await generateMealPlanTitle(result.mealPlan)
-      const mealPlanWithImages = assignCloudinaryImagesToMealPlan(result.mealPlan, cloudinaryImages);
+      const mealPlanWithImages = assignCloudinaryImagesToMealPlan(result.mealPlan, cloudinaryImages).map(day => ({
+        ...day,
+        coverImageUrl: cloudinaryImages[0],
+        meals: day.meals.map(meal => ({
+          ...meal,
+          coverImageUrl: cloudinaryImages[0]
+        })),
+      }));
 
       setTitle(titleresult.title)
 
@@ -246,8 +255,16 @@ const CreateMealPlan = ({ preferences, isOnboardComplete }: CreateMealPlanProps)
         title,
         duration,
         mealsPerDay,
-        days: mealPlan,
+        days: mealPlan.map(day => ({
+          ...day,
+          coverImageUrl: cloudinaryImages[0] || "",
+          meals: day.meals.map(meal => ({
+            ...meal,
+            coverImageUrl: cloudinaryImages[0] || "",
+          })),
+        })),
         createdAt: new Date().toISOString(),
+        coverImageUrl: cloudinaryImages[0] || "",
       }
       
       console.log('Saving meal plan with data:', saveData)
@@ -289,6 +306,8 @@ const CreateMealPlan = ({ preferences, isOnboardComplete }: CreateMealPlanProps)
       resetTitle()
       router.push("/meal-plans")
       toast.success("Meal plan saved successfully!")
+      // Refetch generation count after save
+      fetchGenerationCount();
     } catch (error) {
       console.error("Error saving meal plan:", error)
       toast.error(error instanceof Error ? error.message : "Failed to save meal plan")
@@ -349,7 +368,15 @@ const CreateMealPlan = ({ preferences, isOnboardComplete }: CreateMealPlanProps)
       }
 
       const today = new Date().toISOString()
-      setMealPlan(result.mealPlan, duration, mealsPerDay, today)
+      const mealPlanWithImages = assignCloudinaryImagesToMealPlan(result.mealPlan, cloudinaryImages).map(day => ({
+        ...day,
+        coverImageUrl: cloudinaryImages[0] || "",
+        meals: day.meals.map(meal => ({
+          ...meal,
+          coverImageUrl: cloudinaryImages[0] || "",
+        })),
+      }));
+      setMealPlan(mealPlanWithImages, duration, mealsPerDay, today)
       toast.success("Meal plan regenerated successfully!")
     } catch (error) {
       console.error("Error regenerating meal plan:", error)

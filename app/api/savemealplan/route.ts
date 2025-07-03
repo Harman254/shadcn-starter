@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { auth } from '@/lib/auth'
 import { Meal as MealType } from '@/app/meal-plans/[id]/components/types';
+import { incrementMealPlanGeneration } from "@/data";
 
 // Configure API route for larger request bodies
 export const maxDuration = 60; // 60 seconds timeout
@@ -206,6 +207,9 @@ export async function POST(request:Request) {
         }
       }
     });
+    
+    // Increment meal plan generation count
+    await incrementMealPlanGeneration(userId);
     
     // Return success response
     return NextResponse.json(

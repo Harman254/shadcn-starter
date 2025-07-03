@@ -29,6 +29,7 @@ model MealPlan {
   mealsPerDay Int
   days        DayMeal[]   // One-to-many: each meal plan has many days
   createdAt   DateTime    @default(now())
+  coverImageUrl String?   // Cover image for the meal plan
 }
 
 
