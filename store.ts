@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import type { UserPreference } from "@/types";
 
 interface Meal {
   name: string;
@@ -77,3 +78,11 @@ export const useMealPlanTitleStore = create<MealPlanState>()(
     }
   )
 );
+
+export const useUserStore = create((set) => ({
+  isOnboardingComplete: false,
+  setIsOnboardingComplete: (val: boolean) => set({ isOnboardingComplete: val }),
+  preferences: [] as UserPreference[],
+  setPreferences: (prefs: UserPreference[]) => set({ preferences: prefs }),
+  // ...other user state
+}));

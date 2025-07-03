@@ -2,18 +2,27 @@
 import Link from "next/link"
 import { Facebook, Instagram, Linkedin, Twitter, ArrowUp } from "lucide-react"
 
+import { cn } from "@/lib/utils"
+import { Pacifico } from "next/font/google"
+
+
+const pacifico = Pacifico({
+  subsets: ["latin"],
+  weight: ["400"],
+  variable: "--font-pacifico",
+})
+
 export default function Footer() {
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
-
+ 
   return (
-    <footer className="relative bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white overflow-hidden">
-      {/* Animated background elements */}
-      <div className="absolute inset-0 opacity-10">
-        <div className="absolute top-10 left-10 w-32 h-32 bg-green-500 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute bottom-10 right-10 w-24 h-24 bg-blue-500 rounded-full blur-2xl animate-pulse delay-1000"></div>
-        <div className="absolute top-1/2 left-1/2 w-40 h-40 bg-purple-500 rounded-full blur-3xl animate-pulse delay-500"></div>
+    <footer className="relative bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 overflow-hidden">
+      {/* Subtle background pattern */}
+      <div className="absolute inset-0 opacity-[0.02] dark:opacity-[0.03]">
+        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-green-500/20 via-transparent to-blue-500/20"></div>
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(34,197,94,0.1),transparent_70%)]"></div>
       </div>
       
       {/* Main content */}
@@ -23,21 +32,22 @@ export default function Footer() {
           {/* Brand section */}
           <div className="lg:col-span-1">
             <Link href="/" className="inline-block group">
-              <h2 className="text-5xl font-black tracking-tight mb-4 transition-all duration-300 group-hover:scale-105">
-                <span className="bg-gradient-to-r from-white via-gray-100 to-white bg-clip-text text-transparent">
-                  Meal
-                </span>
-                <span className="bg-gradient-to-r from-green-400 via-green-500 to-green-600 bg-clip-text text-transparent">
-                  Wise
+              <h2 className="text-4xl font-bold tracking-tight mb-4 transition-all duration-300 group-hover:scale-105">
+              <span
+                className={cn(
+                  "bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 via-black/90 to-rose-500 dark:from-indigo-300 dark:via-white/90 dark:to-rose-300 ",
+                  pacifico.className,
+                )}
+              >Mealwise
                 </span>
               </h2>
             </Link>
-            <p className="text-gray-300 text-lg leading-relaxed mb-6 font-light">
-              Transforming the way you think about nutrition, one meal at a time.
+            <p className="text-gray-600 dark:text-gray-300 text-base leading-relaxed mb-8 max-w-sm">
+              Transforming the way you think about nutrition, one meal at a time. Your personal guide to healthier eating.
             </p>
             
             {/* Social links */}
-            <div className="flex space-x-4">
+            <div className="flex space-x-3">
               {[
                 { icon: Facebook, href: "#", label: "Facebook" },
                 { icon: Instagram, href: "#", label: "Instagram" },
@@ -47,11 +57,10 @@ export default function Footer() {
                 <Link
                   key={label}
                   href={href}
-                  className="group relative p-3 bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 hover:bg-white/10 hover:border-green-500/50 transition-all duration-300 hover:scale-110"
+                  className="group relative p-3 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 hover:border-green-500/50 dark:hover:border-green-400/50 transition-all duration-300 hover:scale-110 hover:shadow-lg"
                   aria-label={label}
                 >
-                  <Icon className="w-5 h-5 text-gray-400 group-hover:text-green-400 transition-colors duration-300" />
-                  <div className="absolute inset-0 bg-gradient-to-r from-green-500/20 to-blue-500/20 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-xl"></div>
+                  <Icon className="w-5 h-5 text-gray-500 dark:text-gray-400 group-hover:text-green-600 dark:group-hover:text-green-400 transition-colors duration-300" />
                 </Link>
               ))}
             </div>
@@ -60,8 +69,8 @@ export default function Footer() {
           {/* Navigation links */}
           <div className="lg:col-span-2 grid grid-cols-2 md:grid-cols-4 gap-8">
             <div>
-              <h3 className="text-xl font-bold mb-6 text-white">Company</h3>
-              <nav className="space-y-3">
+              <h3 className="text-lg font-semibold mb-6 text-gray-900 dark:text-white">Company</h3>
+              <nav className="space-y-4">
                 {[
                   { href: "/about", label: "About" },
                   { href: "/careers", label: "Careers" },
@@ -70,7 +79,7 @@ export default function Footer() {
                   <Link
                     key={label}
                     href={href}
-                    className="block text-gray-400 hover:text-green-400 transition-all duration-300 hover:translate-x-1 font-medium"
+                    className="block text-gray-600 dark:text-gray-300 hover:text-green-600 dark:hover:text-green-400 transition-all duration-300 hover:translate-x-1 text-sm font-medium"
                   >
                     {label}
                   </Link>
@@ -79,8 +88,8 @@ export default function Footer() {
             </div>
             
             <div>
-              <h3 className="text-xl font-bold mb-6 text-white">Product</h3>
-              <nav className="space-y-3">
+              <h3 className="text-lg font-semibold mb-6 text-gray-900 dark:text-white">Product</h3>
+              <nav className="space-y-4">
                 {[
                   { href: "/features", label: "Features" },
                   { href: "/pricing", label: "Pricing" },
@@ -89,7 +98,7 @@ export default function Footer() {
                   <Link
                     key={label}
                     href={href}
-                    className="block text-gray-400 hover:text-green-400 transition-all duration-300 hover:translate-x-1 font-medium"
+                    className="block text-gray-600 dark:text-gray-300 hover:text-green-600 dark:hover:text-green-400 transition-all duration-300 hover:translate-x-1 text-sm font-medium"
                   >
                     {label}
                   </Link>
@@ -98,8 +107,8 @@ export default function Footer() {
             </div>
             
             <div>
-              <h3 className="text-xl font-bold mb-6 text-white">Support</h3>
-              <nav className="space-y-3">
+              <h3 className="text-lg font-semibold mb-6 text-gray-900 dark:text-white">Support</h3>
+              <nav className="space-y-4">
                 {[
                   { href: "/contact", label: "Contact" },
                   { href: "/help", label: "Help Center" },
@@ -108,7 +117,7 @@ export default function Footer() {
                   <Link
                     key={label}
                     href={href}
-                    className="block text-gray-400 hover:text-green-400 transition-all duration-300 hover:translate-x-1 font-medium"
+                    className="block text-gray-600 dark:text-gray-300 hover:text-green-600 dark:hover:text-green-400 transition-all duration-300 hover:translate-x-1 text-sm font-medium"
                   >
                     {label}
                   </Link>
@@ -117,8 +126,8 @@ export default function Footer() {
             </div>
             
             <div>
-              <h3 className="text-xl font-bold mb-6 text-white">Legal</h3>
-              <nav className="space-y-3">
+              <h3 className="text-lg font-semibold mb-6 text-gray-900 dark:text-white">Legal</h3>
+              <nav className="space-y-4">
                 {[
                   { href: "/privacy", label: "Privacy Policy" },
                   { href: "/terms", label: "Terms of Service" },
@@ -127,7 +136,7 @@ export default function Footer() {
                   <Link
                     key={label}
                     href={href}
-                    className="block text-gray-400 hover:text-green-400 transition-all duration-300 hover:translate-x-1 font-medium"
+                    className="block text-gray-600 dark:text-gray-300 hover:text-green-600 dark:hover:text-green-400 transition-all duration-300 hover:translate-x-1 text-sm font-medium"
                   >
                     {label}
                   </Link>
@@ -137,47 +146,49 @@ export default function Footer() {
           </div>
         </div>
         
-        {/* Divider with gradient */}
+        {/* Elegant divider */}
         <div className="relative mb-8">
           <div className="absolute inset-0 flex items-center">
-            <div className="w-full h-px bg-gradient-to-r from-transparent via-white/20 to-transparent"></div>
+            <div className="w-full h-px bg-gradient-to-r from-transparent via-gray-300 dark:via-gray-600 to-transparent"></div>
           </div>
         </div>
         
         {/* Bottom section */}
-        <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
+        <div className="flex flex-col md:flex-row justify-between items-center space-y-6 md:space-y-0">
           <div className="text-center md:text-left">
-            <p className="text-gray-400 text-sm">
+            <p className="text-gray-500 dark:text-gray-400 text-sm">
               © {new Date().getFullYear()} {" "}
               <Link 
                 href="/" 
-                className="font-semibold hover:text-green-400 transition-colors duration-300"
+                className="font-semibold hover:text-green-600 dark:hover:text-green-400 transition-colors duration-300"
               >
-                <span className="text-white">Meal</span>
-                <span className="text-green-500">Wise</span>
+                <span className="text-gray-900 dark:text-white">Meal</span>
+                <span className="text-green-600 dark:text-green-400">Wise</span>
               </Link>
               . All rights reserved.
             </p>
-            <p className="text-gray-500 text-xs mt-1">
-              Crafted with ❤️ for better nutrition
+            <p className="text-gray-400 dark:text-gray-500 text-xs mt-1 flex items-center justify-center md:justify-start">
+              Crafted with 
+              <span className="text-red-500 mx-1 animate-pulse">❤️</span>
+              for better nutrition
             </p>
           </div>
           
           {/* Back to top button */}
           <button
             onClick={scrollToTop}
-            className="group flex items-center space-x-2 px-4 py-2 bg-white/5 backdrop-blur-sm rounded-full border border-white/10 hover:bg-white/10 hover:border-green-500/50 transition-all duration-300 hover:scale-105"
+            className="group flex items-center space-x-2 px-4 py-2 bg-gray-50 dark:bg-gray-800 rounded-full border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 hover:border-green-500/50 dark:hover:border-green-400/50 transition-all duration-300 hover:scale-105 hover:shadow-lg"
           >
-            <span className="text-sm font-medium text-gray-400 group-hover:text-green-400 transition-colors duration-300">
+            <span className="text-sm font-medium text-gray-600 dark:text-gray-300 group-hover:text-green-600 dark:group-hover:text-green-400 transition-colors duration-300">
               Back to top
             </span>
-            <ArrowUp className="w-4 h-4 text-gray-400 group-hover:text-green-400 transition-all duration-300 group-hover:-translate-y-1" />
+            <ArrowUp className="w-4 h-4 text-gray-600 dark:text-gray-300 group-hover:text-green-600 dark:group-hover:text-green-400 transition-all duration-300 group-hover:-translate-y-1" />
           </button>
         </div>
       </div>
       
-      {/* Bottom gradient line */}
-      <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-green-500 via-blue-500 to-purple-500"></div>
+      {/* Clean bottom accent */}
+      <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-green-500/50 via-green-600 to-green-500/50 dark:from-green-400/50 dark:via-green-500 dark:to-green-400/50"></div>
     </footer>
   )
 }

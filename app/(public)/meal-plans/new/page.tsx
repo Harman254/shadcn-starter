@@ -1,12 +1,10 @@
 import CreateMealPlan from '@/components/create-meal-plan'
+import Footer from '@/components/footer'
 import { fetchOnboardingData, getAccount } from '@/data'
 import { auth } from '@/lib/auth'
 import { UserPreference } from '@/types'
 import { headers } from 'next/headers'
 import React from 'react'
-
-
-
 
 const MealNew = async () => {
 
@@ -25,7 +23,12 @@ const MealNew = async () => {
         preferences = [];
       }
     }
-    return <CreateMealPlan isOnboardComplete={isOnboardComplete} preferences={preferences} />
+
+    return  <>
+    <CreateMealPlan isOnboardComplete={isOnboardComplete} preferences={preferences} />
+    <Footer />
+    
+    </>
 }
 
 export default MealNew 

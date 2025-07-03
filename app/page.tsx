@@ -5,6 +5,7 @@ import Testimonial14 from "@/components/testimonials";
 // import  { Hero1 } from "@/components/hero";
 import CTA from "../components/cta";
 import HeroGeometric from '@/components/hero';
+import Footer from '@/components/footer';
 
 export const metadata: Metadata = {
   title: 'MealWise - Personalized AI Meal Plans for Your Lifestyle | Smart Nutrition Planning',
@@ -94,6 +95,7 @@ export default async function IndexPage() {
     <Feature17 />
     <Testimonial14 />
     <CTA />
+    <Footer />
     
 
     

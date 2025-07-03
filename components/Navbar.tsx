@@ -32,12 +32,20 @@ import MobileMenuTrigger from "./mobile-menu";
 import NavMenuTriggerClient from "./nav-menu";
 import { useAuthModal } from "@/components/AuthModalProvider";
 import { useSession } from "@/lib/auth-client";
+import { Pacifico } from "next/font/google";
+import { cn } from "@/lib/utils";
 
 interface Feature {
   title: string;
   description: string;
   href: string;
 }
+
+const pacifico = Pacifico({
+  subsets: ["latin"],
+  weight: ["400"],
+  variable: "--font-pacifico",
+})
 
 const Navbar = () => {
   const { open } = useAuthModal();
@@ -87,7 +95,13 @@ const Navbar = () => {
               className="max-h-8"
               alt="MealWise Logo"
             /> */}
-            <span className="text-lg font-semibold tracking-tighter">Meal<span className="text-green-500 text-lg">Wise</span></span> 
+           <span
+                className={cn(
+                  "bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 via-black/90 to-rose-500 dark:from-indigo-300 dark:via-white/90 dark:to-rose-300 ",
+                  pacifico.className,
+                )}
+              >Mealwise
+                </span>
           </Link>
 
           <ThemeToggle />
@@ -161,7 +175,13 @@ const Navbar = () => {
                       className="max-h-8"
                       alt="MealWise Logo"
                     /> */}
-                    <span className="text-lg font-semibold tracking-tighter">Meal <span className="text-green-500">Wise</span></span>
+                    <span
+                className={cn(
+                  "bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 via-black/90 to-rose-500 dark:from-indigo-300 dark:via-white/90 dark:to-rose-300 ",
+                  pacifico.className,
+                )}
+              >Mealwise
+                </span>
                   </Link>
                 </SheetTitle>
               </SheetHeader>

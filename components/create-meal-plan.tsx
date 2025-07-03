@@ -113,7 +113,7 @@ const CreateMealPlan = ({ preferences, isOnboardComplete }: CreateMealPlanProps)
 
   // Ensure default duration is 5 days if not set
   useEffect(() => {
-    if (!duration || duration < 2) {
+    if (!duration || ![2, 3, 5].includes(duration)) {
       setDuration(5);
     }
   }, []);
@@ -149,7 +149,6 @@ const CreateMealPlan = ({ preferences, isOnboardComplete }: CreateMealPlanProps)
 
     const { duration, mealsPerDay } = useMealPlanStore.getState()
     const isUnlimitedGenerations = hasFeature("unlimited-meal-plans")
-    let generationIncremented = false
 
     if (imagesLoading || cloudinaryImages.length === 0) {
       toast.error('Cloudinary images not loaded. Please try again.');
@@ -160,18 +159,17 @@ const CreateMealPlan = ({ preferences, isOnboardComplete }: CreateMealPlanProps)
       setLoading(true)
       resetTitle()
 
-      // For free users, validate and increment atomically before generating
+      // For free users, validate only (no increment here)
       if (!isUnlimitedGenerations) {
-        console.log('Validating and incrementing generation count...')
+        console.log('Validating generation count...')
         const validationResponse = await fetch("/api/meal-plan-generations", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "validate-and-increment" }),
+          body: JSON.stringify({ action: "validate-only" }),
         })
 
         if (validationResponse.status === 429) {
           const errorData = await validationResponse.json()
-         
           unlockFeature(PRO_FEATURES["unlimited-meal-plans"])
           setLoading(false)
           return
@@ -185,9 +183,7 @@ const CreateMealPlan = ({ preferences, isOnboardComplete }: CreateMealPlanProps)
         }
 
         const validationData = await validationResponse.json()
-        console.log('Generation count incremented successfully:', validationData)
         setGenerationCount(validationData.generationCount)
-        generationIncremented = true
       }
 
       const input: GenerateMealPlanInput = {
@@ -225,21 +221,6 @@ const CreateMealPlan = ({ preferences, isOnboardComplete }: CreateMealPlanProps)
       toast.success("Meal plan generated successfully!")
     } catch (error) {
       console.error("Error generating meal plan:", error)
-      
-      // Rollback generation count if generation failed
-      if (generationIncremented && !isUnlimitedGenerations) {
-        try {
-          await fetch("/api/meal-plan-generations", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ action: "rollback-generation" }),
-          })
-          console.log("Generation count rolled back due to failure")
-        } catch (rollbackError) {
-          console.error("Failed to rollback generation count:", rollbackError)
-        }
-      }
-      
       toast.error("Failed to generate meal plan")
       clearMealPlan()
     } finally {
