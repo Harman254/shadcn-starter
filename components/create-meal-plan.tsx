@@ -231,6 +231,8 @@ const CreateMealPlan = ({ preferences, isOnboardComplete }: CreateMealPlanProps)
       setGenerated(true)
       setTimeout(() => setGenerated(false), 3000)
       toast.success("Meal plan generated successfully!")
+      // Always refetch generation count after generation
+      fetchGenerationCount();
     } catch (error) {
       console.error("Error generating meal plan:", error)
       toast.error("Failed to generate meal plan")
@@ -378,6 +380,8 @@ const CreateMealPlan = ({ preferences, isOnboardComplete }: CreateMealPlanProps)
       }));
       setMealPlan(mealPlanWithImages, duration, mealsPerDay, today)
       toast.success("Meal plan regenerated successfully!")
+      // Always refetch generation count after regeneration
+      fetchGenerationCount();
     } catch (error) {
       console.error("Error regenerating meal plan:", error)
       toast.error("Failed to regenerate meal plan")
