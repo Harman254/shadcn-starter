@@ -67,8 +67,9 @@ const CreateMealPlan = ({ preferences, isOnboardComplete }: CreateMealPlanProps)
   const [savingMealPlan, setSavingMealPlan] = useState(false)
   const [regenerating, setRegenerating] = useState(false)
   const [generated, setGenerated] = useState(false)
-  const [generationCount, setGenerationCount] = useState(0)
-  const [maxGenerations, setMaxGenerations] = useState(3)
+  const [generationCount, setGenerationCount] = useState<number>(0)
+  const [maxGenerations, setMaxGenerations] = useState<number>(3)
+  const [countLoading, setCountLoading] = useState<boolean>(true)
   const { setTitle, resetTitle } = useMealPlanTitleStore()
   const { hasFeature, unlockFeature, getFeatureBadge } = useProFeatures()
   const title = useMealPlanTitleStore((state) => state.title)
@@ -90,23 +91,26 @@ const CreateMealPlan = ({ preferences, isOnboardComplete }: CreateMealPlanProps)
   // Fetch generation count on mount
   useEffect(() => {
     const fetchGenerationCount = async () => {
+      setCountLoading(true)
       if (!isUnlimitedGenerations) {
         try {
           const response = await fetch("/api/meal-plan-generations")
           if (response.ok) {
             const data = await response.json()
-            // Ensure count is never negative
-            const safeCount = Math.max(0, data.generationCount)
+            // Ensure count is never negative and always a number
+            const safeCount = Math.max(0, Number(data.generationCount) || 0)
             setGenerationCount(safeCount)
-            setMaxGenerations(data.maxGenerations)
+            setMaxGenerations(Number(data.maxGenerations) || 3)
+          } else {
+            setGenerationCount(0)
+            setMaxGenerations(3)
           }
         } catch (error) {
-          console.error("Error fetching generation count:", error)
-          // Set safe defaults if there's an error
           setGenerationCount(0)
           setMaxGenerations(3)
         }
       }
+      setCountLoading(false)
     }
     fetchGenerationCount()
   }, [isUnlimitedGenerations])
@@ -169,8 +173,7 @@ const CreateMealPlan = ({ preferences, isOnboardComplete }: CreateMealPlanProps)
         })
 
         if (validationResponse.status === 429) {
-          const errorData = await validationResponse.json()
-          unlockFeature(PRO_FEATURES["unlimited-meal-plans"])
+          handleUnlockPro()
           setLoading(false)
           return
         }
@@ -317,7 +320,7 @@ const CreateMealPlan = ({ preferences, isOnboardComplete }: CreateMealPlanProps)
               icon: "👑",
             },
           )
-          unlockFeature(PRO_FEATURES["unlimited-meal-plans"])
+          handleUnlockPro()
           setRegenerating(false)
           return
         } else if (!validationResponse.ok) {
@@ -358,6 +361,13 @@ const CreateMealPlan = ({ preferences, isOnboardComplete }: CreateMealPlanProps)
 
   const totalMeals = duration * mealsPerDay
   const estimatedTime = Math.ceil(duration * 0.5)
+
+  // After unlocking pro, reset state and update UI
+  const handleUnlockPro = () => {
+    unlockFeature(PRO_FEATURES["unlimited-meal-plans"])
+    setGenerationCount(0)
+    setMaxGenerations(3)
+  }
 
   /* ======================== */
   /*         Render            */
@@ -406,11 +416,21 @@ const CreateMealPlan = ({ preferences, isOnboardComplete }: CreateMealPlanProps)
                     </div>
                     <div>
                       <h3 className="text-2xl font-bold text-slate-900 dark:text-slate-50">Free Plan</h3>
-                      <p className="text-lg text-slate-600 dark:text-slate-300 font-medium">{generationCount}/{maxGenerations} generations used this week</p>
+                      <p className="text-lg text-slate-600 dark:text-slate-300 font-medium">
+                        {countLoading
+                          ? 'Loading...'
+                          : `${Number.isFinite(generationCount) && Number.isFinite(maxGenerations) ? generationCount : 0}/${Number.isFinite(maxGenerations) ? maxGenerations : 3} generations used this week`}
+                      </p>
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className="text-3xl font-black text-emerald-600 dark:text-emerald-400">{maxGenerations - generationCount}</div>
+                    <div className="text-3xl font-black text-emerald-600 dark:text-emerald-400">
+                      {countLoading
+                        ? '...'
+                        : Number.isFinite(maxGenerations - generationCount)
+                          ? Math.max(0, maxGenerations - generationCount)
+                          : 0}
+                    </div>
                     <div className="text-sm text-emerald-600/80 dark:text-emerald-400/80 font-semibold">remaining</div>
                   </div>
                 </div>
