@@ -91,7 +91,7 @@ const NotificationSettings = () => {
                       <CheckCircle className="h-3 w-3 mr-1" />
                       Subscribed
                     </Badge>
-                    <p className="text-sm text-green-600 dark:text-green-400">You'll receive notifications</p>
+                    <p className="text-sm text-green-600 dark:text-green-400">You&apos;ll receive notifications</p>
                   </>
                 ) : (
                   <>
