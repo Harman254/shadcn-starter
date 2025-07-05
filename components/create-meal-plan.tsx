@@ -184,7 +184,7 @@ const CreateMealPlan = ({ preferences, isOnboardComplete }: CreateMealPlanProps)
           return;
         }
         const validationData = await validationResponse.json();
-        if (validationData.canGenerate === false || validationData.currentCount === 0) {
+        if (!validationData.canGenerate) {
           handleUnlockPro();
           setLoading(false);
           return;

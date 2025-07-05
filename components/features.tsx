@@ -1,5 +1,8 @@
+'use client'
+
 import React from "react"
 import { DollarSign, MessageSquare, PersonStanding, Timer, Zap, ZoomIn } from "lucide-react"
+import { useRouter } from "next/navigation";
 
 const Feature17 = ({
   heading = "Smarter Meal Planning",
@@ -43,6 +46,7 @@ const Feature17 = ({
     },
   ],
 }) => {
+  const router = useRouter();
   return (
     <section className="py-24 bg-gradient-to-b from-background/5 to-background/95 ">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -90,7 +94,7 @@ const Feature17 = ({
 
         {/* CTA */}
         <div className="text-center mt-16">
-          <button className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-xl">
+          <button onClick={() => router.push('/meal-plans/new')} className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-xl">
             Start Your Journey Today
           </button>
         </div>

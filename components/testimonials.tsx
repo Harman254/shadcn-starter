@@ -1,6 +1,7 @@
 'use client';
 import React, { useState, useEffect } from "react";
 import { Star, Quote, ChevronLeft, ChevronRight } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 const testimonials = [
   {
@@ -52,6 +53,8 @@ const TestimonialCarousel = () => {
     
     return () => clearInterval(timer);
   }, []);
+
+  const router = useRouter();
 
   return (
     <section className="py-16 md:py-24 bg-background/95 ">
@@ -141,7 +144,7 @@ const TestimonialCarousel = () => {
         
         {/* CTA */}
         <div className="text-center">
-          <button className="px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-300 hover:scale-105 shadow-lg">
+          <button onClick={() => router.push('https://whatsapp.com/channel/0029VbAJcIx9RZAQgqWFuu0G')} className="px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-300 hover:scale-105 shadow-lg">
             Join Our Community
           </button>
         </div>
