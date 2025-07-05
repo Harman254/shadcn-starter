@@ -58,7 +58,7 @@ const NotificationSettings = () => {
             <div>
               <h3 className="font-semibold text-red-800 dark:text-red-200">Notifications Not Supported</h3>
               <p className="text-sm text-red-600 dark:text-red-300">
-                Your browser doesn't support push notifications. Please use a modern browser like Chrome, Firefox, or Safari.
+                Your browser doesnot support push notifications. Please use a modern browser like Chrome, Firefox, or Safari.
               </p>
             </div>
           </div>
@@ -130,7 +130,7 @@ const NotificationSettings = () => {
             Notification Preferences
           </CardTitle>
           <CardDescription>
-            Choose which types of notifications you'd like to receive
+            Choose which types of notifications you would like to receive
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
