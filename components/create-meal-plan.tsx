@@ -165,11 +165,31 @@ const CreateMealPlan = ({ preferences, isOnboardComplete }: CreateMealPlanProps)
       setLoading(true)
       resetTitle()
 
-      // Block generation if free user and out of generations
-      if (!isUnlimitedGenerations && generationCount === 0) {
-        toast.error("You have reached your weekly meal plan limit! Upgrade to Pro for unlimited generations.");
-        handleUnlockPro();
-        return;
+      // Backend validation before generation for free users
+      if (!isUnlimitedGenerations) {
+        const validationResponse = await fetch("/api/meal-plan-generations", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "validate-only" }),
+        })
+        if (validationResponse.status === 429) {
+          toast.error("You have reached your weekly meal plan limit! Upgrade to Pro for unlimited generations.");
+          handleUnlockPro();
+          setLoading(false);
+          return;
+        }
+        if (!validationResponse.ok) {
+          toast.error("Failed to validate generation limits. Please try again.");
+          setLoading(false);
+          return;
+        }
+        const validationData = await validationResponse.json();
+        if (validationData.canGenerate === false || validationData.currentCount === 0) {
+          toast.error("You have reached your weekly meal plan limit! Upgrade to Pro for unlimited generations.");
+          handleUnlockPro();
+          setLoading(false);
+          return;
+        }
       }
 
       const input: GenerateMealPlanInput = {
@@ -233,32 +253,6 @@ const CreateMealPlan = ({ preferences, isOnboardComplete }: CreateMealPlanProps)
     try {
       setSavingMealPlan(true)
 
-      // Decrement generation count for free users
-      if (!isUnlimitedGenerations) {
-        const decrementResponse = await fetch("/api/meal-plan-generations", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "decrement" }),
-        })
-
-        if (decrementResponse.status === 429) {
-          toast.error(
-            "You have reached your weekly meal plan save limit! Upgrade to Pro for unlimited saves.",
-            {
-              duration: 4000,
-              icon: "👑",
-            },
-          )
-          handleUnlockPro()
-          setSavingMealPlan(false)
-          return
-        } else if (!decrementResponse.ok) {
-          toast.error("Failed to decrement generation count. Please try again.")
-          setSavingMealPlan(false)
-          return
-        }
-      }
-      
       // Log the data being sent for debugging
       const saveData = {
         title,

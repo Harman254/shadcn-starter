@@ -1165,6 +1165,16 @@ export async function rollbackMealPlanGeneration(userId: string) {
         };
       }
 
+      // If already zero, block further decrement and return error
+      if (generationRecord.generationCount === 0) {
+        return {
+          success: false,
+          error: 'No generations remaining',
+          generationCount: 0,
+          maxGenerations: 3
+        };
+      }
+
       // Decrement the count, ensuring it doesn't go below 0
       const newCount = Math.max(0, generationRecord.generationCount - 1);
       
