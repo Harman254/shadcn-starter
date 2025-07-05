@@ -185,7 +185,6 @@ const CreateMealPlan = ({ preferences, isOnboardComplete }: CreateMealPlanProps)
         }
         const validationData = await validationResponse.json();
         if (validationData.canGenerate === false || validationData.currentCount === 0) {
-          toast.error("You have reached your weekly meal plan limit! Upgrade to Pro for unlimited generations.");
           handleUnlockPro();
           setLoading(false);
           return;
@@ -267,7 +266,7 @@ const CreateMealPlan = ({ preferences, isOnboardComplete }: CreateMealPlanProps)
           })),
         })),
         createdAt: new Date().toISOString(),
-        coverImageUrl: cloudinaryImages[0] || "",
+        coverImageUrl: cloudinaryImages[0],
       }
       
       console.log("Saving meal plan with data:", saveData)
@@ -411,7 +410,7 @@ const CreateMealPlan = ({ preferences, isOnboardComplete }: CreateMealPlanProps)
   return (
     <div
       suppressHydrationWarning
-      className="relative min-h-screen w-full bg-gradient-to-br from-slate-50 via-white to-slate-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950"
+      className="relative min-h-screen w-full bg-gradient-to-br from-zinc-50 via-white to-zinc-50 dark:from-zinc-950 dark:via-zinc-900 dark:to-zinc-950"
     >
       {/* Premium Background Effects */}
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-blue-100/20 via-transparent to-transparent dark:from-blue-900/10" />
@@ -438,7 +437,7 @@ const CreateMealPlan = ({ preferences, isOnboardComplete }: CreateMealPlanProps)
 
         <div className="grid gap-6">
           {!isUnlimitedGenerations ? (
-            <div className="bg-gradient-to-r from-white via-slate-50/50 to-white dark:from-slate-900 dark:via-slate-800/50 dark:to-slate-900 border border-slate-200/60 dark:border-slate-700/60 rounded-3xl shadow-2xl shadow-slate-900/5 dark:shadow-slate-900/20 backdrop-blur-xl overflow-hidden">
+            <div className="bg-gradient-to-r from-white via-slate-50/50 to-white dark:from-zinc-900 dark:via-zinc-800/50 dark:to-zinc-900 border border-slate-200/60 dark:border-zinc-700/60 rounded-3xl shadow-2xl shadow-slate-900/5 dark:shadow-slate-900/20 backdrop-blur-xl overflow-hidden">
               <div className="p-8">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
@@ -446,7 +445,7 @@ const CreateMealPlan = ({ preferences, isOnboardComplete }: CreateMealPlanProps)
                       <Lock className="w-7 h-7 text-white" />
                     </div>
                     <div>
-                      <h3 className="text-2xl font-bold text-slate-900 dark:text-slate-50">Free Plan</h3>
+                      <h3 className="text-2xl tracking-tight font-bold text-slate-900 dark:text-slate-50">Free Plan</h3>
                       <p className="text-lg text-slate-600 dark:text-slate-300 font-medium">
                         {countLoading
                           ? 'Loading...'
@@ -468,7 +467,7 @@ const CreateMealPlan = ({ preferences, isOnboardComplete }: CreateMealPlanProps)
               </div>
             </div>
           ) : (
-            <div className="bg-gradient-to-r from-white via-slate-50/50 to-white dark:from-slate-900 dark:via-slate-800/50 dark:to-slate-900 border border-slate-200/60 dark:border-slate-700/60 rounded-3xl shadow-2xl shadow-slate-900/5 dark:shadow-slate-900/20 backdrop-blur-xl overflow-hidden">
+            <div className="bg-gradient-to-r from-white via-zinc-50/50 to-white dark:from-zinc-900 dark:via-zinc-800/50 dark:to-zinc-900 border border-zinc-200/60 dark:border-zinc-700/60 rounded-3xl shadow-2xl shadow-zinc-900/5 dark:shadow-slate-900/20 backdrop-blur-xl overflow-hidden">
               <div className="p-8">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
@@ -490,7 +489,7 @@ const CreateMealPlan = ({ preferences, isOnboardComplete }: CreateMealPlanProps)
           )}
         </div>
 
-        <Card className="border-0 shadow-2xl shadow-slate-900/10 dark:shadow-slate-900/40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl">
+        <Card className="border-0 shadow-2xl shadow-zinc-900/10 dark:shadow-zinc-900/40 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl">
           <CardHeader className="bg-gradient-to-r from-slate-50/90 via-white/90 to-slate-50/90 dark:from-slate-800/90 dark:via-slate-900/90 dark:to-slate-800/90 border-b border-slate-200/60 dark:border-slate-700/60 p-4 sm:p-6 md:p-8">
             <div className="flex items-center gap-3 sm:gap-4">
               <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-2xl bg-gradient-to-br from-emerald-600 to-teal-600 dark:from-emerald-500 dark:to-teal-500 flex items-center justify-center shadow-lg shadow-emerald-500/30">
@@ -637,7 +636,7 @@ const CreateMealPlan = ({ preferences, isOnboardComplete }: CreateMealPlanProps)
               <div className="space-y-4 sm:space-y-6">
                 <Button
                   onClick={generateMealPlan}
-                  disabled={loading || imagesLoading || cloudinaryImages.length === 0 || (!isUnlimitedGenerations && generationCount === 0)}
+                  disabled={loading || imagesLoading || cloudinaryImages.length === 0 }
                   size="lg"
                   className="w-full h-14 sm:h-16 text-base sm:text-lg font-semibold bg-gradient-to-r from-[#08e605] via-green-600 to-lime-600 hover:from-emerald-700 hover:via-teal-700 hover:to-cyan-700 text-white shadow-xl shadow-emerald-500/25 hover:shadow-emerald-500/40 transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] disabled:transform-none disabled:opacity-50"
                 >
