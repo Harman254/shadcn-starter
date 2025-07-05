@@ -6,6 +6,7 @@ import { Analytics } from "@vercel/analytics/next"
 import { SpeedInsights } from "@vercel/speed-insights/next"
 import Footer from '@/components/footer';
 import { AuthModalProvider } from '@/components/AuthModalProvider';
+import PushEngageScript from '@/components/PushEngageScript';
 
 interface RootLayoutProps {
   children: React.ReactNode;
@@ -34,6 +35,7 @@ export default async function  RootLayout({ children }: RootLayoutProps) {
           <Toaster />
           <SpeedInsights />
           <Analytics />
+          <PushEngageScript />
         </AuthModalProvider>
       </ThemeProvider>
     </body>
