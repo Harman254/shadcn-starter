@@ -30,7 +30,7 @@ export default async function DashboardLayout({
   })
 
   if (!session) {
-    redirect("/sign-in")
+    redirect("/")
   }
 
   const user = session.user

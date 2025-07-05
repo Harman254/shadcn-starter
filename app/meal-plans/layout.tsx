@@ -15,8 +15,6 @@ import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { UserDropdown } from "@/components/user-dropdown";
-import Footer from "@/components/footer";
-
 
 import { Pacifico } from "next/font/google"
 import { cn } from "@/lib/utils";
@@ -38,7 +36,7 @@ export default async function MealLayout({
   });
 
   if (!session) {
-    redirect("/sign-in");
+    redirect("/");
   }
   
   const user = session.user;
