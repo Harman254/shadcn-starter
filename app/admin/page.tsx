@@ -1,6 +1,7 @@
 'use client'
 import React, { useState } from 'react'
 import CloudinaryUpload from '@/components/CloudinaryUpload'
+import AdminContactList from '@/components/AdminContactList'
 
 const AdminPage = () => {
   const [uploadedUrl, setUploadedUrl] = useState<string | null>(null)
@@ -75,6 +76,7 @@ const AdminPage = () => {
           <h2 className="text-xl font-semibold text-zinc-800 dark:text-zinc-100 mb-2">Coming Soon</h2>
           <p className="text-zinc-500 dark:text-zinc-400">More admin features will be available here soon.</p>
         </section>
+        <AdminContactList />
       </div>
     </main>
   )

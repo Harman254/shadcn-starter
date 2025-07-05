@@ -1,6 +1,7 @@
 "use server"
 
 import { z } from "zod"
+import prisma from '@/lib/prisma'
 
 const contactFormSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
@@ -23,6 +24,17 @@ export async function submitContactForm(formData: FormData) {
 
     // Validate the data
     const validatedData = contactFormSchema.parse(data)
+
+    // Save to database
+    await prisma.contactSubmission.create({
+      data: {
+        firstName: validatedData.firstName,
+        lastName: validatedData.lastName,
+        email: validatedData.email,
+        subject: validatedData.subject,
+        message: validatedData.message,
+      }
+    })
 
     // Here you would typically:
     // 1. Save to database

@@ -175,3 +175,13 @@ model MealSwapCount {
 
   @@unique([userId, weekStart])
 }
+
+model ContactSubmission {
+  id          String   @id @default(cuid())
+  firstName   String
+  lastName    String
+  email       String
+  subject     String
+  message     String
+  submittedAt DateTime @default(now())
+}

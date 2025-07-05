@@ -165,31 +165,12 @@ const CreateMealPlan = ({ preferences, isOnboardComplete }: CreateMealPlanProps)
       setLoading(true)
       resetTitle()
 
-      // For free users, validate only (no increment here)
-      // if (!isUnlimitedGenerations) {
-      //   console.log('Validating generation count...')
-      //   const validationResponse = await fetch("/api/meal-plan-generations", {
-      //     method: "POST",
-      //     headers: { "Content-Type": "application/json" },
-      //     body: JSON.stringify({ action: "validate-only" }),
-      //   })
-
-      //   if (validationResponse.status === 429) {
-      //     handleUnlockPro()
-      //     setLoading(false)
-      //     return
-      //   }
-
-      //   if (!validationResponse.ok) {
-      //     console.error('Generation validation failed:', validationResponse.status)
-      //     toast.error("Failed to validate generation limits. Please try again.")
-      //     setLoading(false)
-      //     return
-      //   }
-
-      //   const validationData = await validationResponse.json()
-      //   setGenerationCount(validationData.generationCount)
-      // }
+      // Block generation if free user and out of generations
+      if (!isUnlimitedGenerations && generationCount === 0) {
+        toast.error("You have reached your weekly meal plan limit! Upgrade to Pro for unlimited generations.");
+        handleUnlockPro();
+        return;
+      }
 
       const input: GenerateMealPlanInput = {
         duration,
@@ -662,7 +643,7 @@ const CreateMealPlan = ({ preferences, isOnboardComplete }: CreateMealPlanProps)
               <div className="space-y-4 sm:space-y-6">
                 <Button
                   onClick={generateMealPlan}
-                  disabled={loading || imagesLoading || cloudinaryImages.length === 0}
+                  disabled={loading || imagesLoading || cloudinaryImages.length === 0 || (!isUnlimitedGenerations && generationCount === 0)}
                   size="lg"
                   className="w-full h-14 sm:h-16 text-base sm:text-lg font-semibold bg-gradient-to-r from-[#08e605] via-green-600 to-lime-600 hover:from-emerald-700 hover:via-teal-700 hover:to-cyan-700 text-white shadow-xl shadow-emerald-500/25 hover:shadow-emerald-500/40 transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] disabled:transform-none disabled:opacity-50"
                 >
