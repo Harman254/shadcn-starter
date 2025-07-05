@@ -166,30 +166,30 @@ const CreateMealPlan = ({ preferences, isOnboardComplete }: CreateMealPlanProps)
       resetTitle()
 
       // For free users, validate only (no increment here)
-      if (!isUnlimitedGenerations) {
-        console.log('Validating generation count...')
-        const validationResponse = await fetch("/api/meal-plan-generations", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "validate-only" }),
-        })
+      // if (!isUnlimitedGenerations) {
+      //   console.log('Validating generation count...')
+      //   const validationResponse = await fetch("/api/meal-plan-generations", {
+      //     method: "POST",
+      //     headers: { "Content-Type": "application/json" },
+      //     body: JSON.stringify({ action: "validate-only" }),
+      //   })
 
-        if (validationResponse.status === 429) {
-          handleUnlockPro()
-          setLoading(false)
-          return
-        }
+      //   if (validationResponse.status === 429) {
+      //     handleUnlockPro()
+      //     setLoading(false)
+      //     return
+      //   }
 
-        if (!validationResponse.ok) {
-          console.error('Generation validation failed:', validationResponse.status)
-          toast.error("Failed to validate generation limits. Please try again.")
-          setLoading(false)
-          return
-        }
+      //   if (!validationResponse.ok) {
+      //     console.error('Generation validation failed:', validationResponse.status)
+      //     toast.error("Failed to validate generation limits. Please try again.")
+      //     setLoading(false)
+      //     return
+      //   }
 
-        const validationData = await validationResponse.json()
-        setGenerationCount(validationData.generationCount)
-      }
+      //   const validationData = await validationResponse.json()
+      //   setGenerationCount(validationData.generationCount)
+      // }
 
       const input: GenerateMealPlanInput = {
         duration,
@@ -234,7 +234,7 @@ const CreateMealPlan = ({ preferences, isOnboardComplete }: CreateMealPlanProps)
       // Always refetch generation count after generation
       fetchGenerationCount();
     } catch (error) {
-      console.error("Error generating meal plan:", error)
+      console.error("Error generating meal plan")
       toast.error("Failed to generate meal plan")
       clearMealPlan()
     } finally {
@@ -251,6 +251,32 @@ const CreateMealPlan = ({ preferences, isOnboardComplete }: CreateMealPlanProps)
 
     try {
       setSavingMealPlan(true)
+
+      // Decrement generation count for free users
+      if (!isUnlimitedGenerations) {
+        const decrementResponse = await fetch("/api/meal-plan-generations", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "decrement" }),
+        })
+
+        if (decrementResponse.status === 429) {
+          toast.error(
+            "You have reached your weekly meal plan save limit! Upgrade to Pro for unlimited saves.",
+            {
+              duration: 4000,
+              icon: "👑",
+            },
+          )
+          handleUnlockPro()
+          setSavingMealPlan(false)
+          return
+        } else if (!decrementResponse.ok) {
+          toast.error("Failed to decrement generation count. Please try again.")
+          setSavingMealPlan(false)
+          return
+        }
+      }
       
       // Log the data being sent for debugging
       const saveData = {
@@ -259,22 +285,22 @@ const CreateMealPlan = ({ preferences, isOnboardComplete }: CreateMealPlanProps)
         mealsPerDay,
         days: mealPlan.map(day => ({
           ...day,
-          coverImageUrl: cloudinaryImages[0] || "",
+          coverImageUrl: cloudinaryImages[0] ,
           meals: day.meals.map(meal => ({
             ...meal,
-            coverImageUrl: cloudinaryImages[0] || "",
+            coverImageUrl: cloudinaryImages[0] 
           })),
         })),
         createdAt: new Date().toISOString(),
         coverImageUrl: cloudinaryImages[0] || "",
       }
       
-      console.log('Saving meal plan with data:', saveData)
-      console.log('Data size:', JSON.stringify(saveData).length, 'characters')
+      console.log("Saving meal plan with data:", saveData)
+      console.log("Data size:", JSON.stringify(saveData).length, "characters")
       
       // Show warning for large meal plans
       if (duration >= 14) {
-        toast.loading('Saving large meal plan... This may take a moment.', {
+        toast.loading("Saving large meal plan... This may take a moment.", {
           duration: 3000,
         })
       }
@@ -285,20 +311,20 @@ const CreateMealPlan = ({ preferences, isOnboardComplete }: CreateMealPlanProps)
         body: JSON.stringify(saveData),
       })
 
-      console.log('Save response status:', response.status)
-      console.log('Save response headers:', Object.fromEntries(response.headers.entries()))
+      console.log("Save response status:", response.status)
+      console.log("Save response headers:", Object.fromEntries(response.headers.entries()))
       
       // Check if response is JSON
-      const contentType = response.headers.get('content-type')
-      if (!contentType || !contentType.includes('application/json')) {
+      const contentType = response.headers.get("content-type")
+      if (!contentType || !contentType.includes("application/json")) {
         // Response is not JSON, likely an HTML error page
         const textResponse = await response.text()
-        console.error('Non-JSON response received:', textResponse.substring(0, 500))
+        console.error("Non-JSON response received:", textResponse.substring(0, 500))
         throw new Error(`Server returned non-JSON response (${response.status}): ${textResponse.substring(0, 200)}`)
       }
       
       const data = await response.json()
-      console.log('Save response data:', data)
+      console.log("Save response data:", data)
       
       if (!response.ok || !data.success) {
         throw new Error(data.error || "Failed to save meal plan")
@@ -325,35 +351,34 @@ const CreateMealPlan = ({ preferences, isOnboardComplete }: CreateMealPlanProps)
     try {
       setRegenerating(true)
 
-      if (!isUnlimitedGenerations) {
-        const validationResponse = await fetch("/api/meal-plan-generations", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "validate-and-increment" }),
-        })
+      // if (!isUnlimitedGenerations) {
+      //   const validationResponse = await fetch("/api/meal-plan-generations", {
+      //     method: "POST",
+      //     headers: { "Content-Type": "application/json" },
+      //     body: JSON.stringify({ action: "validate-and-increment" }),
+      //   })
 
-        if (validationResponse.status === 429) {
-          const errorData = await validationResponse.json()
-          toast.error(
-            "You've reached your weekly meal plan generation limit! Upgrade to Pro for unlimited generations.",
-            {
-              duration: 4000,
-              icon: "👑",
-            },
-          )
-          handleUnlockPro()
-          setRegenerating(false)
-          return
-        } else if (!validationResponse.ok) {
-          toast.error("Failed to validate generation limits. Please try again.")
-          setRegenerating(false)
-          return
-        } else {
-          const validationData = await validationResponse.json()
-          setGenerationCount(validationData.generationCount)
-        }
-      }
-
+      //   if (validationResponse.status === 429) {
+      //     const errorData = await validationResponse.json()
+      //     toast.error(
+      //       "You\'ve reached your weekly meal plan generation limit! Upgrade to Pro for unlimited generations.",
+      //       {
+      //         duration: 4000,
+      //         icon: "👑",
+      //       },
+      //     )
+      //     handleUnlockPro()
+      //     setRegenerating(false)
+      //     return
+      //   } else if (!validationResponse.ok) {
+      //     toast.error("Failed to validate generation limits. Please try again.")
+      //     setRegenerating(false)
+      //     return
+      //   } else {
+      //     const validationData = await validationResponse.json()
+      //     setGenerationCount(validationData.generationCount)
+      //   }
+      // }
       const { duration, mealsPerDay } = useMealPlanStore.getState()
       const input: GenerateMealPlanInput = {
         duration,
@@ -522,6 +547,8 @@ const CreateMealPlan = ({ preferences, isOnboardComplete }: CreateMealPlanProps)
                   </SelectTrigger>
                   <SelectContent className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700">
                     {[
+
+
                       { value: 2, label: "2 days", subtitle: "Quick start", popular: false },
                       { value: 3, label: "3 days", subtitle: "Weekend plan", popular: false },
                       { value: 5, label: "5 days", subtitle: "Work week", popular: false },
@@ -559,6 +586,8 @@ const CreateMealPlan = ({ preferences, isOnboardComplete }: CreateMealPlanProps)
                   </SelectTrigger>
                   <SelectContent className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700">
                     {[
+
+
                       { value: 1, label: "1 meal", subtitle: "OMAD", popular: false },
                       { value: 2, label: "2 meals", subtitle: "Intermittent", popular: false },
                       { value: 3, label: "3 meals", subtitle: "Traditional", popular: true },
@@ -972,4 +1001,5 @@ const CreateMealPlan = ({ preferences, isOnboardComplete }: CreateMealPlanProps)
   );
 };
 
-export default CreateMealPlan;
+export default CreateMealPlan;    
+

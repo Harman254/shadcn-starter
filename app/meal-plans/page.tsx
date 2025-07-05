@@ -10,6 +10,7 @@ import type { MealPlan } from "@/types"
 import { headers } from "next/headers"
 import { auth } from "@/lib/auth"
 import { MetricCard, PlanCard } from "./components"
+import Footer from '@/components/footer'
 
 export const metadata: Metadata = {
   title: 'My Meal Plans | MealWise - Personalized AI Meal Planning',
@@ -237,12 +238,20 @@ const MealPlans = async () => {
           </div>
 
           {/* Enhanced Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-20">
-            <MetricCard value={mealPlans.length} label="Active Plans" icon={Target} color="violet" trend="+2 this week" />
-            <MetricCard value={totalDays} label="Total Days" icon={Clock} color="purple" trend="Consistent!" />
-            <MetricCard value={totalMeals} label="Meals Planned" icon={UtensilsIcon} color="indigo" trend="Growing strong" />
-            <MetricCard value={avgMealsPerDay} label="Avg per Day" icon={TrendingUp} color="pink" trend="Perfect balance" />
-          </div>
+          <Card className="mb-20">
+            <CardHeader>
+              <CardTitle>Meal Plan Stats</CardTitle>
+              <CardDescription>Overview of your meal planning progress</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <MetricCard value={mealPlans.length} label="Active Plans" icon={Target} color="violet" trend="+2 this week" />
+                <MetricCard value={totalDays} label="Total Days" icon={Clock} color="purple" trend="Consistent!" />
+                <MetricCard value={totalMeals} label="Meals Planned" icon={UtensilsIcon} color="indigo" trend="Growing strong" />
+                <MetricCard value={avgMealsPerDay} label="Avg per Day" icon={TrendingUp} color="pink" trend="Perfect balance" />
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
 
@@ -254,6 +263,7 @@ const MealPlans = async () => {
           ))}
         </div>
       </div>
+      <Footer />
     </div>
   )
 }

@@ -2,6 +2,7 @@
 
 import  prisma  from "@/lib/prisma";
 import { MealPlan, UserPreference } from "@/types";
+import { startOfWeek } from "date-fns";
 
 
 import { revalidatePath } from "next/cache";
@@ -1207,3 +1208,33 @@ export async function checkDatabaseHealth() {
     };
   }
 }
+
+
+
+export async function resetMealPlanGenerationCount(userId: string) {
+  try {
+    const now = new Date();
+    const weekStart = startOfWeek(now, { weekStartsOn: 0 });
+
+    let record = await prisma.mealPlanGeneration.findFirst({
+      where: { userId, weekStart },
+    });
+
+    if (!record) {
+      record = await prisma.mealPlanGeneration.create({
+        data: { userId, weekStart, generationCount: 0 },
+      });
+    } else {
+      record = await prisma.mealPlanGeneration.update({
+        where: { id: record.id },
+        data: { generationCount: 0 },
+      });
+    }
+    return { success: true, record };
+  } catch (error) {
+    console.error("Error resetting meal plan generation count in data layer:", error);
+    throw error;
+  }
+}
+
+

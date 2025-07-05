@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { startOfWeek } from 'date-fns';
 import { auth } from '@/lib/auth';
+import { resetMealPlanGenerationCount } from '@/data'; // Im
+// 
+// 
+// 
+// port the new data function
 
 export async function POST(request: NextRequest) {
   try {
@@ -24,28 +28,17 @@ export async function POST(request: NextRequest) {
       userId = user.id;
     }
 
-    // Find the current week's start (Sunday)
-    const now = new Date();
-    const weekStart = startOfWeek(now, { weekStartsOn: 0 });
+    // Use the new data layer function to reset the count
+    const result = await resetMealPlanGenerationCount(userId);
 
-    // Find or create the mealPlanGeneration record for this user and week
-    let record = await prisma.mealPlanGeneration.findFirst({
-      where: { userId, weekStart },
-    });
-    if (!record) {
-      record = await prisma.mealPlanGeneration.create({
-        data: { userId, weekStart, generationCount: 0 },
-      });
+    if (result.success) {
+      return NextResponse.json({ success: true, record: result.record });
     } else {
-      await prisma.mealPlanGeneration.update({
-        where: { id: record.id },
-        data: { generationCount: 0 },
-      });
+      return NextResponse.json({ success: false, error: 'Failed to reset generation count' }, { status: 500 });
     }
-
-    return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error resetting generation count:', error);
     return NextResponse.json({ success: false, error: error instanceof Error ? error.message : 'Unknown error' }, { status: 500 });
   }
-} 
+}
+

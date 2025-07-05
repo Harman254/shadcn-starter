@@ -8,6 +8,7 @@ import MealPlanCalendar from "./components/meal-plan-calendar";
 import DayMealCard from "./components/day-meal-card";
 import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
+import Footer from '@/components/footer';
 
 // Generate metadata for the meal plan detail page
 export async function generateMetadata({ params }: MealPlanDetailPageProps): Promise<Metadata> {
@@ -139,6 +140,7 @@ const MealPlanDetailPage = async ({ params }: MealPlanDetailPageProps) => {
             <DayMealCard key={day.id} day={day} dayIndex={index} userId={userId || ""} />
           ))}
         </div>
+        <Footer />
       </div>
     // </div>
   );

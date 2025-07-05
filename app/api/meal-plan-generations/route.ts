@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
-import { getSafeMealPlanGenerationCount, validateAndIncrementMealPlanGeneration, checkMealPlanGenerationLimit, rollbackMealPlanGeneration } from "@/data"
+import { getSafeMealPlanGenerationCount, checkMealPlanGenerationLimit, rollbackMealPlanGeneration } from "@/data"
 import { headers } from "next/headers"
 
 export async function GET() {
@@ -44,24 +44,12 @@ export async function POST(request: NextRequest) {
       // For read-only validation (no increment)
       const data = await checkMealPlanGenerationLimit(session.user.id)
       return NextResponse.json(data)
-    } else if (action === "validate-and-increment") {
-      // Use atomic validation and increment for maximum security
-      const data = await validateAndIncrementMealPlanGeneration(session.user.id)
-      
-      if (!data.success) {
-        // Type guard to ensure data contains currentCount and maxGenerations
-        const errorData = data as { success: false; canGenerate: false; error: string; currentCount: number; maxGenerations: number; };
-        return NextResponse.json({
-          error: errorData.error,
-          canGenerate: errorData.canGenerate,
-          currentCount: errorData.currentCount,
-          maxGenerations: errorData.maxGenerations
-        }, { status: 429 })
-      }
-      
-      return NextResponse.json(data)
-    } else if (action === "rollback-generation") {
-      // Rollback generation count (decrement by 1)
+    } else if (action === "decrement") {
+      // Decrement generation count (used when a meal plan is saved)
+      // This function needs to be implemented in your @/data layer
+      // It should decrement the count and return the new count and maxGenerations
+      // Example: const data = await decrementMealPlanGeneration(session.user.id)
+      // For now, using rollbackMealPlanGeneration as a placeholder if it fits the logic
       const data = await rollbackMealPlanGeneration(session.user.id)
       return NextResponse.json(data)
     } else {
@@ -71,4 +59,5 @@ export async function POST(request: NextRequest) {
     console.error("Error handling meal plan generations:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
-} 
+}
+

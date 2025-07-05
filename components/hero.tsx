@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils"
 import { Button } from "./ui/button"
 import { useRouter } from "next/navigation"
 
-const pacifico = Pacifico({
+ const pacifico = Pacifico({
   subsets: ["latin"],
   weight: ["400"],
   variable: "--font-pacifico",

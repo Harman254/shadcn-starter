@@ -17,6 +17,17 @@ import { redirect } from "next/navigation";
 import { UserDropdown } from "@/components/user-dropdown";
 import Footer from "@/components/footer";
 
+
+import { Pacifico } from "next/font/google"
+import { cn } from "@/lib/utils";
+
+
+const pacifico = Pacifico({
+  subsets: ["latin"],
+  weight: ["400"],
+  variable: "--font-pacifico",
+})
+
 export default async function MealLayout({
   children,
 }: {
@@ -41,9 +52,13 @@ export default async function MealLayout({
           {/* Desktop Header */}
           <div className="h-14 flex items-center border-b px-4 lg:h-[60px] lg:px-6 shrink-0">
             <Link href="/" className="flex items-center gap-2">
-              <span className="text-2xl font-semibold tracking-tighter">
-                Meal<span className="text-green-500 text-2xl">Wise</span>
-              </span>
+            <span
+                className={cn(
+                  "bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 via-black/90 to-rose-500 dark:from-indigo-300 dark:via-white/90 dark:to-rose-300 ",
+                  pacifico.className,
+                )}
+              >Mealwise
+                </span>
             </Link>
           </div>
 
@@ -84,9 +99,13 @@ export default async function MealLayout({
               <div className="h-14 flex items-center border-b px-4 shrink-0">
                 <SheetTitle className="text-left">
                   <Link href="/" className="flex items-center gap-2">
-                    <span className="text-xl font-bold sm:text-2xl">
-                      Meal<span className="text-green-600">Wise</span>
-                    </span>
+                  <span
+                className={cn(
+                  "bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 via-black/90 to-rose-500 dark:from-indigo-300 dark:via-white/90 dark:to-rose-300 ",
+                  pacifico.className,
+                )}
+              >Mealwise
+                </span>
                   </Link>
                 </SheetTitle>
               </div>
