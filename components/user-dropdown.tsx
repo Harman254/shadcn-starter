@@ -36,26 +36,6 @@ const getInitials = (name: string) => {
 
 export function UserDropdown({ user }: UserDropdownProps) {
   const router = useRouter()
-  const [isSigningOut, setIsSigningOut] = useState(false)
-
-  const handleSignOut = async () => {
-    try {
-      setIsSigningOut(true)
-      await signOut({
-        fetchOptions: {
-          onSuccess: () => {
-            router.push("/meal-plans/new")
-          },
-          onError: () => {
-            setIsSigningOut(false)
-          }
-        }
-      })
-    } catch (error) {
-      setIsSigningOut(false)
-      console.error('Sign out error:', error)
-    }
-  }
 
   return (
     <DropdownMenu>
@@ -138,18 +118,13 @@ export function UserDropdown({ user }: UserDropdownProps) {
 
         <DropdownMenuItem
           className="group flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer hover:bg-red-50 dark:hover:bg-red-900/20 transition-all duration-200 focus:bg-red-50 dark:focus:bg-red-900/20"
-          
         >
           <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-red-100 dark:bg-red-900/30 group-hover:bg-red-200 dark:group-hover:bg-red-900/50 transition-colors">
-            {isSigningOut ? (
-              <Loader2 className="h-4 w-4 text-red-600 dark:text-red-400 animate-spin" />
-            ) : (
-              <SignOut />
-            )}
+            <SignOut />
           </div>
           <div className="flex flex-col">
             <span className="text-sm font-medium text-red-900 dark:text-red-100 group-hover:text-red-800 dark:group-hover:text-red-200">
-              {isSigningOut ? 'Signing out...' : 'Sign out'}
+              Sign out
             </span>
           </div>
         </DropdownMenuItem>
