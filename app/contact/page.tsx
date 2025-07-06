@@ -32,20 +32,7 @@ export default function ContactPage() {
 
           {/* Contact Information */}
           <div className="space-y-6">
-            <Card className="shadow-lg">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Mail className="h-5 w-5 text-orange-600" />
-                  Email Support
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-gray-600 mb-2">For general inquiries:</p>
-                <p className="font-medium">hello@mealplanner.com</p>
-                <p className="text-gray-600 mt-4 mb-2">For technical support:</p>
-                <p className="font-medium">support@mealplanner.com</p>
-              </CardContent>
-            </Card>
+           
 
             <Card className="shadow-lg">
               <CardHeader>
