@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useFormStatus } from "react-dom"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -10,13 +11,28 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Loader2, CheckCircle, AlertCircle } from "lucide-react"
 import { submitContactForm } from "@/actions/contact"
 
+function SubmitButton() {
+  const { pending } = useFormStatus()
+  
+  return (
+    <Button type="submit" className="w-full bg-orange-600 hover:bg-orange-700" disabled={pending}>
+      {pending ? (
+        <>
+          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          Sending Message...
+        </>
+      ) : (
+        "Send Message"
+      )}
+    </Button>
+  )
+}
+
 export function ContactForm() {
-  const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitStatus, setSubmitStatus] = useState<"idle" | "success" | "error">("idle")
   const [message, setMessage] = useState("")
 
   async function handleSubmit(formData: FormData) {
-    setIsSubmitting(true)
     setSubmitStatus("idle")
 
     try {
@@ -35,27 +51,19 @@ export function ContactForm() {
     } catch (error) {
       setSubmitStatus("error")
       setMessage("Something went wrong. Please try again.")
-    } finally {
-      setIsSubmitting(false)
     }
   }
 
   return (
-    <form id="contact-form" action={handleSubmit} className="space-y-6 relative">
-      {/* Loading overlay */}
-      {isSubmitting && (
-        <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/70 dark:bg-zinc-900/70 rounded-lg">
-          <Loader2 className="h-8 w-8 animate-spin text-orange-600" />
-        </div>
-      )}
+    <form id="contact-form" action={handleSubmit} className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="firstName">First Name *</Label>
-          <Input id="firstName" name="firstName" required placeholder="Enter your first name" disabled={isSubmitting} />
+          <Input id="firstName" name="firstName" required placeholder="Enter your first name" />
         </div>
         <div className="space-y-2">
           <Label htmlFor="lastName">Last Name *</Label>
-          <Input id="lastName" name="lastName" required placeholder="Enter your last name" disabled={isSubmitting} />
+          <Input id="lastName" name="lastName" required placeholder="Enter your last name" />
         </div>
       </div>
 
@@ -67,13 +75,12 @@ export function ContactForm() {
           type="email"
           required
           placeholder="Enter your email address"
-          disabled={isSubmitting}
         />
       </div>
 
       <div className="space-y-2">
         <Label htmlFor="subject">Subject *</Label>
-        <Select name="subject" required disabled={isSubmitting}>
+        <Select name="subject" required>
           <SelectTrigger>
             <SelectValue placeholder="Select a subject" />
           </SelectTrigger>
@@ -97,7 +104,6 @@ export function ContactForm() {
           required
           placeholder="Tell us how we can help you..."
           className="min-h-[120px]"
-          disabled={isSubmitting}
         />
       </div>
 
@@ -114,16 +120,7 @@ export function ContactForm() {
         </Alert>
       )} */}
 
-      <Button type="submit" className="w-full bg-orange-600 hover:bg-orange-700" disabled={isSubmitting}>
-        {isSubmitting ? (
-          <>
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Sending Message...
-          </>
-        ) : (
-          "Send Message"
-        )}
-      </Button>
+      <SubmitButton />
 
       <p className="text-sm text-gray-500 text-center">
         By submitting this form, you agree to our privacy policy and terms of service.
