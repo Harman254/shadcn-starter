@@ -773,7 +773,7 @@ const CreateMealPlan = ({ preferences, isOnboardComplete }: CreateMealPlanProps)
                         <div className="mb-4 flex items-center gap-3 p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 shadow pulse-animate">
                           <Lightbulb className="h-6 w-6 text-emerald-500 animate-bounce" />
                           <span className="text-emerald-900 dark:text-emerald-200 font-semibold text-base">
-                            Don't forget to <span className="underline">save your meal plan</span> so you can access it anytime!
+                            Don&apos;t forget to <span className="underline">save your meal plan</span> so you can access it anytime!
                           </span>
                         </div>
                       )}
