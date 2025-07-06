@@ -19,6 +19,7 @@ const NotificationSettings = () => {
     nutritionTips: true,
     weeklyReports: false,
     specialOffers: false,
+    generationUpdates: true,
   });
 
   const handleSubscribe = async () => {
@@ -180,6 +181,23 @@ const NotificationSettings = () => {
                 id="nutritionTips"
                 checked={settings.nutritionTips}
                 onCheckedChange={() => handleSettingChange('nutritionTips')}
+                disabled={!isSubscribed}
+              />
+            </div>
+
+            <Separator />
+
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <Label htmlFor="generationUpdates" className="font-medium">Generation Updates</Label>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  Notifications when your meal plan generations reset or when you reach limits
+                </p>
+              </div>
+              <Switch
+                id="generationUpdates"
+                checked={settings.generationUpdates}
+                onCheckedChange={() => handleSettingChange('generationUpdates')}
                 disabled={!isSubscribed}
               />
             </div>

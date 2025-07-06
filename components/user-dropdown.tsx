@@ -151,7 +151,6 @@ export function UserDropdown({ user }: UserDropdownProps) {
             <span className="text-sm font-medium text-red-900 dark:text-red-100 group-hover:text-red-800 dark:group-hover:text-red-200">
               {isSigningOut ? 'Signing out...' : 'Sign out'}
             </span>
-            <span className="text-xs text-red-600 dark:text-red-400">End your session</span>
           </div>
         </DropdownMenuItem>
       </DropdownMenuContent>

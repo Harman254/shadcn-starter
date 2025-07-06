@@ -789,6 +789,34 @@ export async function incrementMealPlanGeneration(userId: string) {
   }
 }
 
+// Function to send notification when user runs out of generations
+export async function notifyGenerationLimitReached(userId: string) {
+  try {
+    const notificationResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/notifications/send`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        title: '🚀 Upgrade to Pro for Unlimited Meal Plans!',
+        message: 'You have used all your weekly generations. Upgrade to Pro for unlimited meal plans and advanced features!',
+        url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/pricing`,
+        category: 'upgrade-reminder',
+        userId: userId
+      }),
+    });
+
+    if (notificationResponse.ok) {
+      console.log(`✅ Generation limit notification sent to user ${userId}`);
+    } else {
+      console.error(`❌ Failed to send generation limit notification to user ${userId}`);
+    }
+  } catch (notificationError) {
+    console.error('Error sending generation limit notification:', notificationError);
+  }
+}
+
+// Enhanced checkMealPlanGenerationLimit with notifications
 export async function checkMealPlanGenerationLimit(userId: string) {
   try {
     // Check subscription status first
@@ -825,9 +853,15 @@ export async function checkMealPlanGenerationLimit(userId: string) {
 
     const currentCount = generationRecord?.generationCount || 0;
     const maxGenerations = 3; // Free users get 3 generations per week
+    const canGenerate = currentCount < maxGenerations;
+
+    // Send notification if user has reached the limit
+    if (!canGenerate) {
+      await notifyGenerationLimitReached(userId);
+    }
 
     return {
-      canGenerate: currentCount < maxGenerations,
+      canGenerate,
       currentCount,
       maxGenerations,
       remaining: Math.max(0, maxGenerations - currentCount),
@@ -1108,7 +1142,93 @@ export async function fixNegativeGenerationCounts() {
   }
 }
 
-// Function to get current generation count with safety checks
+// Function to check if generation count has reset and send notification
+export async function checkAndNotifyGenerationReset(userId: string) {
+  try {
+    const now = new Date();
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - now.getDay()); // Start of week (Sunday)
+    startOfWeek.setHours(0, 0, 0, 0);
+
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 7);
+
+    // Get current generation record for this week
+    const currentRecord = await prisma.mealPlanGeneration.findFirst({
+      where: {
+        userId: userId,
+        weekStart: {
+          gte: startOfWeek,
+          lt: endOfWeek
+        }
+      }
+    });
+
+    // Get last week's record to check if there was a reset
+    const lastWeekStart = new Date(startOfWeek);
+    lastWeekStart.setDate(startOfWeek.getDate() - 7);
+    
+    const lastWeekEnd = new Date(startOfWeek);
+    
+    const lastWeekRecord = await prisma.mealPlanGeneration.findFirst({
+      where: {
+        userId: userId,
+        weekStart: {
+          gte: lastWeekStart,
+          lt: lastWeekEnd
+        }
+      }
+    });
+
+    // Check if this is a new week and user had used generations last week
+    const isNewWeek = !currentRecord || currentRecord.generationCount === 0;
+    const hadUsageLastWeek = lastWeekRecord && lastWeekRecord.generationCount > 0;
+
+    if (isNewWeek && hadUsageLastWeek) {
+      // Send notification about reset
+      try {
+        const notificationResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/notifications/send`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            title: '🎉 Your meal plan generations have reset!',
+            message: 'You now have 3 new meal plan generations available this week. Start planning your perfect meals!',
+            url: `${process.env.NEXT_PUBLIC_APP_URL}/meal-plans/new`,
+            category: 'generation-reset',
+            userId: userId
+          }),
+        });
+
+        if (notificationResponse.ok) {
+          console.log(`✅ Generation reset notification sent to user ${userId}`);
+        } else {
+          console.error(`❌ Failed to send generation reset notification to user ${userId}`);
+        }
+      } catch (notificationError) {
+        console.error('Error sending generation reset notification:', notificationError);
+      }
+    }
+
+    return {
+      isNewWeek,
+      hadUsageLastWeek,
+      currentCount: currentRecord?.generationCount || 0,
+      lastWeekCount: lastWeekRecord?.generationCount || 0
+    };
+  } catch (error) {
+    console.error('Error checking generation reset:', error);
+    return {
+      isNewWeek: false,
+      hadUsageLastWeek: false,
+      currentCount: 0,
+      lastWeekCount: 0
+    };
+  }
+}
+
+// Enhanced function to get generation count with reset notification
 export async function getSafeMealPlanGenerationCount(userId: string) {
   try {
     const data = await getMealPlanGenerationCount(userId);
@@ -1120,6 +1240,9 @@ export async function getSafeMealPlanGenerationCount(userId: string) {
     if (data.generationCount < 0) {
       await fixNegativeGenerationCounts();
     }
+
+    // Check for generation reset and send notification if needed
+    await checkAndNotifyGenerationReset(userId);
     
     return {
       ...data,

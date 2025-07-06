@@ -23,6 +23,7 @@ import {
   Calendar,
   ChefHat,
   Target,
+  Lightbulb,
 } from "lucide-react"
 import toast from "react-hot-toast"
 import { generateMealPlanTitle } from "@/ai/flows/generateMealPlanTitle"
@@ -85,6 +86,7 @@ const CreateMealPlan = ({ preferences, isOnboardComplete }: CreateMealPlanProps)
     'https://res.cloudinary.com/dcidanigq/image/upload/v1742111994/samples/food/fish-vegetables.jpg'
   ]);
   const [imagesLoading, setImagesLoading] = useState(false);
+  const [showSaveHint, setShowSaveHint] = useState(false)
 
   const router =useRouter()
 
@@ -123,6 +125,13 @@ const CreateMealPlan = ({ preferences, isOnboardComplete }: CreateMealPlanProps)
       setDuration(5);
     }
   }, []);
+
+  // Show the save hint only the first time a plan is generated in a session
+  useEffect(() => {
+    if (mealPlan.length > 0 && !showSaveHint) {
+      setShowSaveHint(true)
+    }
+  }, [mealPlan.length])
 
   /* ======================== */
   /*       Functions           */
@@ -307,7 +316,8 @@ const CreateMealPlan = ({ preferences, isOnboardComplete }: CreateMealPlanProps)
       clearMealPlan()
       resetTitle()
       router.push("/meal-plans")
-      toast.success("Meal plan saved successfully!")
+      toast.success("Meal plan saved! You can view it in your dashboard.")
+      setShowSaveHint(false)
       // Refetch generation count after save
       fetchGenerationCount();
     } catch (error) {
@@ -759,11 +769,19 @@ const CreateMealPlan = ({ preferences, isOnboardComplete }: CreateMealPlanProps)
 
                     {/* Action Buttons */}
                     <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+                      {showSaveHint && mealPlan.length > 0 && (
+                        <div className="mb-4 flex items-center gap-3 p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 shadow pulse-animate">
+                          <Lightbulb className="h-6 w-6 text-emerald-500 animate-bounce" />
+                          <span className="text-emerald-900 dark:text-emerald-200 font-semibold text-base">
+                            Don't forget to <span className="underline">save your meal plan</span> so you can access it anytime!
+                          </span>
+                        </div>
+                      )}
                       <Button
                         onClick={handleSaveMealPlan}
                         disabled={savingMealPlan}
                         size="lg"
-                        className="h-10 sm:h-12 px-6 sm:px-8 bg-gradient-to-r from-[#08e605] to-green-600 hover:from-emerald-700 hover:to-teal-700 text-white shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40 transition-all duration-200 font-semibold text-sm sm:text-base"
+                        className={`h-10 sm:h-12 px-6 sm:px-8 bg-gradient-to-r from-[#08e605] to-green-600 hover:from-emerald-700 hover:to-teal-700 text-white shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40 transition-all duration-200 font-semibold text-sm sm:text-base ${showSaveHint ? 'animate-pulse' : ''}`}
                       >
                         {savingMealPlan ? (
                           <>

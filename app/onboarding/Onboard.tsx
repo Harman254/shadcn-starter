@@ -144,23 +144,25 @@ const OnboardingPage = () => {
    * Add a custom cuisine to preferences
    */
   const addCustomCuisine = () => {
-    const trimmedCuisine = customCuisine.trim().toLowerCase()
-    
+    const trimmedCuisine = customCuisine.trim()
+    // Prevent empty or input containing any digits
     if (!trimmedCuisine) {
       toast.error("Please enter a cuisine name")
       return
     }
-
-    if (formData.cuisinePreferences.includes(trimmedCuisine)) {
+    if (/\d/.test(trimmedCuisine)) {
+      toast.error("Cuisine name cannot contain numbers")
+      return
+    }
+    // Prevent duplicate
+    if (formData.cuisinePreferences.includes(trimmedCuisine.toLowerCase())) {
       toast.error("This cuisine is already in your preferences")
       return
     }
-
     setFormData(prev => ({
       ...prev,
-      cuisinePreferences: [...prev.cuisinePreferences, trimmedCuisine]
+      cuisinePreferences: [...prev.cuisinePreferences, trimmedCuisine.toLowerCase()]
     }))
-    
     setCustomCuisine("")
     setShowCustomInput(false)
     toast.success(`Added "${trimmedCuisine}" to your cuisine preferences`)
@@ -538,7 +540,15 @@ const OnboardingPage = () => {
                           type="text"
                           placeholder="Enter custom cuisine..."
                           value={customCuisine}
-                          onChange={(e) => setCustomCuisine(e.target.value)}
+                          onChange={(e) => {
+                            // Prevent input containing any digits
+                            const value = e.target.value
+                            if (/\d/.test(value)) {
+                              toast.error("Cuisine name cannot contain numbers")
+                              return
+                            }
+                            setCustomCuisine(value)
+                          }}
                           onKeyPress={(e) => e.key === 'Enter' && addCustomCuisine()}
                           className="flex-1 px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-xl sm:rounded-2xl bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-500 dark:placeholder-slate-400 focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-base sm:text-lg font-medium"
                           autoFocus
