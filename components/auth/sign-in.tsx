@@ -215,7 +215,7 @@ const SignIn: React.FC<SignInProps> = ({ onSwitchToSignUp, onSuccess }) => {
                         <SignInButton
                             title="Continue with Google"
                             provider="google"
-                            callbackURL="/"
+                            callbackURL="/meal-plans/new"
                             icon={<LogoIcons.Google />}
                             loading={googleLoading}
                             setLoading={setGoogleLoading}
@@ -223,7 +223,7 @@ const SignIn: React.FC<SignInProps> = ({ onSwitchToSignUp, onSuccess }) => {
                         <SignInButton
                             title="Continue with GitHub"
                             provider="github"
-                            callbackURL="/"
+                            callbackURL="/meal-plans/new"
                             icon={<LogoIcons.Github />}
                             loading={githubLoading}
                             setLoading={setGithubLoading}
