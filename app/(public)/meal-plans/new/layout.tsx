@@ -30,9 +30,11 @@ export default async function PublicMealLayout({
 }: {
   children: ReactNode;
 }) {
-  
-  
-
+  // Get user session but don't redirect if not authenticated (public page)
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+  const user = session?.user || null;
 
   return (
     <div className="grid h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
@@ -62,7 +64,7 @@ export default async function PublicMealLayout({
             
             {/* Desktop UserDropdown - Fixed at bottom */}
             <div className="border-t p-3 lg:p-4 bg-background/95 shrink-0">
-              {/* <UserDropdown user={user} /> */}
+              {user ? <UserDropdown user={user} /> : null}
             </div>
           </div>
         </div>
@@ -110,7 +112,7 @@ export default async function PublicMealLayout({
                 
                 {/* Mobile UserDropdown - Fixed at bottom */}
                 <div className="border-t p-4 bg-background/95 shrink-0">
-                  {/* <UserDropdown user={user} /> */}
+                  {user ? <UserDropdown user={user} /> : null}
                 </div>
               </div>
             </SheetContent>
