@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion"
 import { Pacifico } from "next/font/google"
-import Image from "next/image"
+import { CldImage } from 'next-cloudinary'
 import { cn } from "@/lib/utils"
 import { Button } from "./ui/button"
 import { useRouter } from "next/navigation"
@@ -83,10 +83,12 @@ const  HeroGeometric = ({
   badge = "Mealwise Nutrition",
   title1 = "Eat Better. Spend Smarter. Plan Faster",
   title2 = "with Mealwise",
+  imageSrc = "https://res.cloudinary.com/dcidanigq/image/upload/v1742111996/samples/food/spices.jpg",
 }: {
   badge?: string
   title1?: string
   title2?: string
+  imageSrc?: string
 }) => {
   const fadeUpVariants = {
     hidden: { opacity: 0, y: 30 },
@@ -154,40 +156,68 @@ const  HeroGeometric = ({
       </div>
 
       <div className="relative z-10 container mx-auto px-4 md:px-6">
-        <div className="max-w-3xl mx-auto text-center">
+        <div className="flex flex-col-reverse md:flex-row items-center justify-between max-w-6xl mx-auto gap-8 md:gap-20">
+          <div className="w-full md:w-1/2 text-center md:text-left">
+            <motion.div
+              custom={0}
+              variants={fadeUpVariants}
+              initial="hidden"
+              animate="visible"
+              className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-black/[0.03] dark:bg-white/[0.03] border border-black/[0.08] dark:border-white/[0.08] mb-8 md:mb-12"
+            >
+              <span className="text-sm text-black/60 dark:text-white/60 tracking-wide">{badge}</span>
+            </motion.div>
+
+            <motion.div custom={1} variants={fadeUpVariants} initial="hidden" animate="visible">
+              <h1 className="text-4xl sm:text-6xl md:text-8xl font-bold mb-6 md:mb-8 tracking-tight">
+                <span className="bg-clip-text text-transparent bg-gradient-to-b from-black to-black/80 dark:from-white dark:to-white/80">{title1}</span>
+                <br />
+                <span
+                  className={cn(
+                    "bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 via-black/90 to-rose-500 dark:from-indigo-300 dark:via-white/90 dark:to-rose-300 ",
+                    pacifico.className,
+                  )}
+                >
+                  {title2}
+                </span>
+              </h1>
+            </motion.div>
+
+            <motion.div custom={2} variants={fadeUpVariants} initial="hidden" animate="visible">
+              <p className="text-base sm:text-lg md:text-xl text-black/60 dark:text-white/40 mb-8 leading-relaxed font-light tracking-wide max-w-xl mx-auto px-4">
+                we are changing the way you find your meals to make you eat healthy meals with AI
+              </p>
+            </motion.div>
+            <motion.div custom={3} variants={fadeUpVariants} initial="hidden" animate="visible">
+              <Button onClick={() => router.push('/meal-plans/new')} size="lg" className="bg-gradient-to-r from-rose-500 to-indigo-500 text-white font-bold py-3 px-8 rounded-full shadow-lg hover:scale-105 transform transition-transform duration-300 ease-in-out">Create a Meal Plan</Button>
+            </motion.div>
+          </div>
           <motion.div
-            custom={0}
-            variants={fadeUpVariants}
-            initial="hidden"
-            animate="visible"
-            className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-black/[0.03] dark:bg-white/[0.03] border border-black/[0.08] dark:border-white/[0.08] mb-8 md:mb-12"
+            initial={{ opacity: 0, y: 60, rotate: 6 }}
+            animate={{ opacity: 1, y: 0, rotate: 6 }}
+            transition={{ duration: 1.2, delay: 0.5, ease: [0.23, 0.86, 0.39, 0.96] }}
+            className="w-full md:w-1/2 flex justify-center items-center mb-12 md:mb-0 relative"
+            style={{ zIndex: 20 }}
+            aria-hidden="true"
           >
-            {/* <Image src="https://kokonutui.com/logo.svg" alt="Kokonut UI" width={20} height={20} /> */}
-            <span className="text-sm text-black/60 dark:text-white/60 tracking-wide">{badge}</span>
-          </motion.div>
-
-          <motion.div custom={1} variants={fadeUpVariants} initial="hidden" animate="visible">
-            <h1 className="text-4xl sm:text-6xl md:text-8xl font-bold mb-6 md:mb-8 tracking-tight">
-              <span className="bg-clip-text text-transparent bg-gradient-to-b from-black to-black/80 dark:from-white dark:to-white/80">{title1}</span>
-              <br />
-              <span
-                className={cn(
-                  "bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 via-black/90 to-rose-500 dark:from-indigo-300 dark:via-white/90 dark:to-rose-300 ",
-                  pacifico.className,
-                )}
+            <div className="absolute -z-10 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90%] h-[90%] md:w-[110%] md:h-[110%] rounded-3xl bg-gradient-to-br from-rose-400/30 via-indigo-400/20 to-amber-300/20 blur-3xl opacity-80" />
+            <div className="p-[3px] rounded-3xl bg-gradient-to-r from-indigo-400 via-rose-400 to-amber-300">
+              <motion.div
+                animate={{ y: [0, -10, 0] }}
+                transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+                className="rounded-3xl overflow-hidden"
               >
-                {title2}
-              </span>
-            </h1>
-          </motion.div>
-
-          <motion.div custom={2} variants={fadeUpVariants} initial="hidden" animate="visible">
-            <p className="text-base sm:text-lg md:text-xl text-black/60 dark:text-white/40 mb-8 leading-relaxed font-light tracking-wide max-w-xl mx-auto px-4">
-              we are changing the way you find your meals to make you eat healthy meals with AI
-            </p>
-          </motion.div>
-          <motion.div custom={3} variants={fadeUpVariants} initial="hidden" animate="visible">
-            <Button onClick={() => router.push('/meal-plans/new')} size="lg" className="bg-gradient-to-r from-rose-500 to-indigo-500 text-white font-bold py-3 px-8 rounded-full shadow-lg hover:scale-105 transform transition-transform duration-300 ease-in-out">Create a Meal Plan</Button>
+                <CldImage
+                  src={imageSrc}
+                  alt="Mealwise hero food spices"
+                  width={700}
+                  height={520}
+                  className="rounded-3xl shadow-2xl border border-black/10 dark:border-white/10 object-cover max-h-[480px] w-full md:w-[600px] lg:w-[700px] scale-105 md:scale-110 rotate-6 bg-white/80 dark:bg-[#18181b]/80"
+                  priority
+                  draggable={false}
+                />
+              </motion.div>
+            </div>
           </motion.div>
         </div>
       </div>

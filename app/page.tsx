@@ -6,6 +6,7 @@ import Testimonial14 from "@/components/testimonials";
 import CTA from "../components/cta";
 import HeroGeometric from '@/components/hero';
 import Footer from '@/components/footer';
+import { Companies } from '@/components/socialproof';
 
 export const metadata: Metadata = {
   title: 'MealWise - Personalized AI Meal Plans for Your Lifestyle | Smart Nutrition Planning',
@@ -91,6 +92,7 @@ export default async function IndexPage() {
     <>
     {/* <Hero1 heading="Personalized AI Meal Plans for Your Lifestyle" image={image} description='this is all you need' /> */}
 <HeroGeometric />
+<Companies />
 
     <Feature17 />
     <Testimonial14 />
