@@ -34,12 +34,12 @@ const SignOut = () => {
       disabled={isLoading}
       variant="ghost"
       size="sm"
-      className="w-full justify-start gap-2 text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors duration-200 px-3 py-2 h-auto"
+      className="w-full justify-start gap-2 text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800/60 transition-colors duration-200 px-3 py-2 h-auto"
     >
       {isLoading ? (
-        <Loader2 className="h-4 w-4 animate-spin" />
+        <Loader2 className="h-4 w-4 animate-spin text-zinc-500 dark:text-zinc-400" />
       ) : (
-        <LogOut className="h-4 w-4" />
+        <LogOut className="h-4 w-4 text-zinc-500 dark:text-zinc-400" />
       )}
       <span className="text-sm font-medium">
         {isLoading ? 'Signing out...' : 'Sign Out'}

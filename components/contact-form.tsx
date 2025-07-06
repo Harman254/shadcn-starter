@@ -7,7 +7,6 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-// import { Alert, AlertDescription } from "@/components/ui/alert-dialog"
 import { Loader2, CheckCircle, AlertCircle } from "lucide-react"
 import { submitContactForm } from "@/actions/contact"
 
@@ -107,18 +106,7 @@ export function ContactForm() {
         />
       </div>
 
-      {/* {submitStatus !== "idle" && (
-        <Alert className={submitStatus === "success" ? "border-green-200 bg-green-50" : "border-red-200 bg-red-50"}>
-          {submitStatus === "success" ? (
-            <CheckCircle className="h-4 w-4 text-green-600" />
-          ) : (
-            <AlertCircle className="h-4 w-4 text-red-600" />
-          )}
-          <AlertDescription className={submitStatus === "success" ? "text-green-800" : "text-red-800"}>
-            {message}
-          </AlertDescription>
-        </Alert>
-      )} */}
+  
 
       <SubmitButton />
 
