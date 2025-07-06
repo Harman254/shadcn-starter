@@ -71,12 +71,15 @@ export default function ProfilePage() {
         // Fetch meal planning stats
         const statsRes = await fetch("/api/getmealplans")
         if (statsRes.ok) {
-          const mealPlans = await statsRes.json()
-                  setMealStatsData(prev => ({
-          ...prev,
-          totalPlans: mealPlans.length || 0,
-          totalMeals: mealPlans.reduce((acc: number, plan: any) => acc + (plan.days?.length || 0) * (plan.mealsPerDay || 3), 0),
-        }))
+          const response = await statsRes.json()
+          // Handle different response formats
+          const mealPlans = Array.isArray(response) ? response : response.mealPlans || response.data || []
+          
+          setMealStatsData(prev => ({
+            ...prev,
+            totalPlans: mealPlans.length || 0,
+            totalMeals: Array.isArray(mealPlans) ? mealPlans.reduce((acc: number, plan: any) => acc + (plan.days?.length || 0) * (plan.mealsPerDay || 3), 0) : 0,
+          }))
         }
       } catch (err: any) {
         setError(err.message || "Unknown error")
@@ -92,7 +95,7 @@ export default function ProfilePage() {
       <div className="min-h-screen bg-gradient-to-br from-emerald-950 via-gray-900 to-teal-950 flex items-center justify-center">
         <div className="text-center space-y-4">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-400 mx-auto"></div>
-          <p className="text-gray-300">Loading your nutrition profile...</p>
+          <p className="text-gray-300">Loading your  profile...</p>
         </div>
       </div>
     )
