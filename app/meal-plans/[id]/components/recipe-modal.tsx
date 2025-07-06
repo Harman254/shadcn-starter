@@ -20,6 +20,7 @@ type Meal = {
   rating?: number
   tags?: string[]
   imageUrl?: string | null
+  instructions?: string
 }
 
 type RecipeModalProps = {
@@ -33,7 +34,7 @@ const RecipeModal = ({ meal, onClose, userId }: RecipeModalProps) => {
   const [isLiked, setIsLiked] = useState(false)
   const [isLikeLoading, setIsLikeLoading] = useState(false)
   const [isLikeInitialized, setIsLikeInitialized] = useState(false)
-  const [activeTab, setActiveTab] = useState<"ingredients" | "nutrition">("ingredients")
+  const [activeTab, setActiveTab] = useState<"ingredients" | "nutrition" | "instructions">("ingredients")
   const [visibleIngredients, setVisibleIngredients] = useState(0)
   const [isVisible, setIsVisible] = useState(false)
   const [mounted, setMounted] = useState(false)
@@ -170,6 +171,8 @@ const RecipeModal = ({ meal, onClose, userId }: RecipeModalProps) => {
               setActiveTab('ingredients')
             } else if (tabId === 'nutrition-tab') {
               setActiveTab('nutrition')
+            } else if (tabId === 'instructions-tab') {
+              setActiveTab('instructions')
             }
           }
           break
@@ -446,6 +449,15 @@ const RecipeModal = ({ meal, onClose, userId }: RecipeModalProps) => {
                 id="ingredients-tab"
                 controls="ingredients-panel"
               />
+              
+              <Tab
+                label="Instructions"
+                icon={<ChefHat className="w-3 h-3 sm:w-4 sm:h-4" />}
+                active={activeTab === "instructions"}
+                onClick={() => setActiveTab("instructions")}
+                id="instructions-tab"
+                controls="instructions-panel"
+              />
               <Tab
                 label="Nutrition"
                 icon={<Flame className="w-3 h-3 sm:w-4 sm:h-4" />}
@@ -476,7 +488,40 @@ const RecipeModal = ({ meal, onClose, userId }: RecipeModalProps) => {
                 ))}
               </div>
             )}
-            {activeTab === "nutrition" && (
+           
+            {activeTab === "instructions" && (
+              <div
+                className="bg-white dark:bg-gray-900 rounded-lg p-4 sm:p-6 border shadow-sm space-y-4"
+                role="tabpanel"
+                id="instructions-panel"
+                aria-labelledby="instructions-tab"
+              >
+                <h2 className="sr-only">Instructions</h2>
+                {meal.instructions && meal.instructions.trim() ? (
+                  <ol className="space-y-4 text-left">
+                    {meal.instructions.split(/(?=\d+\.)/).filter(step => step.trim()).map((step, idx) => {
+                      const cleanStep = step.replace(/^\d+\.\s*/, "").trim()
+                      return (
+                        <li
+                          key={idx}
+                          className="flex items-start gap-4 p-4 rounded-xl bg-gradient-to-r from-emerald-50/80 via-white/80 to-emerald-50/80 dark:from-emerald-900/40 dark:via-gray-900/60 dark:to-emerald-900/40 border border-emerald-100 dark:border-emerald-900 shadow-sm hover:shadow-md transition-shadow group"
+                        >
+                          <span className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center font-bold text-lg bg-emerald-500 text-white shadow group-hover:scale-110 transition-transform">
+                            {idx + 1}
+                          </span>
+                          <span className="text-gray-800 dark:text-gray-100 text-base sm:text-lg font-medium leading-relaxed">
+                            {cleanStep}
+                          </span>
+                        </li>
+                      )
+                    })}
+                  </ol>
+                ) : (
+                  <div className="text-gray-500 dark:text-gray-400 italic">No instructions provided for this meal.</div>
+                )}
+              </div>
+            )}
+             {activeTab === "nutrition" && (
               <div
                 className="bg-white dark:bg-gray-900 rounded-lg p-4 sm:p-6 border shadow-sm grid grid-cols-2 gap-4 sm:gap-6 text-center"
                 role="tabpanel"

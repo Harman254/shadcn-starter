@@ -41,7 +41,7 @@ const SignOut = () => {
       ) : (
         <LogOut className="h-4 w-4 text-zinc-500 dark:text-zinc-400" />
       )}
-      <span className="text-sm font-medium">
+      <span className="text-md text-red-500 font-medium">
         {isLoading ? 'Signing out...' : 'Sign Out'}
       </span>
     </Button>
