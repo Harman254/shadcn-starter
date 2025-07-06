@@ -232,10 +232,10 @@ export default function ProfilePage() {
             {/* Nutrition Goals */}
             <Card className="border-0 shadow-lg bg-white/90 dark:bg-slate-900/90">
               <CardHeader className="pb-4">
-                <CardTitle className="flex items-center gap-2 text-xl">
-                  <Target className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-                  Today's Nutrition Goals
-                </CardTitle>
+                                  <CardTitle className="flex items-center gap-2 text-xl">
+                    <Target className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                    Today&apos;s Nutrition Goals
+                  </CardTitle>
                 <CardDescription className="dark:text-gray-400">Track your daily nutrition targets</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -490,7 +490,7 @@ export default function ProfilePage() {
             {/* Weekly Progress */}
             <Card className="border-0 shadow-lg bg-white/90 dark:bg-slate-900/90">
               <CardHeader>
-                <CardTitle className="text-lg dark:text-white">This Week's Progress</CardTitle>
+                <CardTitle className="text-lg dark:text-white">This Week&apos;s Progress</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex items-center justify-between">
@@ -498,7 +498,7 @@ export default function ProfilePage() {
                   <span className="text-sm font-medium">2/3 completed</span>
                 </div>
                 <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                  <div className="h-2 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500" style={{ width: '67%' }}></div>
+                  <div className="h-2 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500" style={{ width: "67%" }}></div>
                 </div>
                 
                 <div className="flex items-center justify-between">
@@ -506,7 +506,7 @@ export default function ProfilePage() {
                   <span className="text-sm font-medium">85% achieved</span>
                 </div>
                 <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                  <div className="h-2 rounded-full bg-gradient-to-r from-blue-500 to-purple-500" style={{ width: '85%' }}></div>
+                  <div className="h-2 rounded-full bg-gradient-to-r from-blue-500 to-purple-500" style={{ width: "85%" }}></div>
                 </div>
 
                 <Button variant="outline" className="w-full bg-transparent">
