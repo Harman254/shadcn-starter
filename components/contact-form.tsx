@@ -41,7 +41,13 @@ export function ContactForm() {
   }
 
   return (
-    <form id="contact-form" action={handleSubmit} className="space-y-6">
+    <form id="contact-form" action={handleSubmit} className="space-y-6 relative">
+      {/* Loading overlay */}
+      {isSubmitting && (
+        <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/70 dark:bg-zinc-900/70 rounded-lg">
+          <Loader2 className="h-8 w-8 animate-spin text-orange-600" />
+        </div>
+      )}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="firstName">First Name *</Label>
