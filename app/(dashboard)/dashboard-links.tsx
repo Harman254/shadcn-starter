@@ -39,8 +39,8 @@ const dashboardLinks = [
   },
   {
     id: 1,
-    name: "Pricing",
-    href: "/dashboard/pricing",
+    name: "Blog",
+    href: "/blog",
     icon: UserCog,
   },
 ];

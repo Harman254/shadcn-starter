@@ -35,7 +35,7 @@ const CheckoutPage = () => {
                 </li>
                 <li className="flex items-center">
                   <CheckIcon />
-                  <span className="ml-2">2 AI meal plans per week</span>
+                  <span className="ml-2">3 AI meal plans per week</span>
                 </li>
                 <li className="flex items-center">
                   <CheckIcon />

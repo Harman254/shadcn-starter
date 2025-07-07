@@ -16,6 +16,7 @@ import {
   Share2,
   MessageCircle
 } from 'lucide-react';
+import Footer from '@/components/footer';
 
 interface BlogPost {
   id: number;
@@ -370,6 +371,8 @@ const Blog: React.FC = () => {
           </div>
         </div>
       </section>
+      <Footer />
+      
 
     </div>
   );

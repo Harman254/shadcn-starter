@@ -130,11 +130,16 @@ export const PRO_FEATURES: Record<string, ProFeature> = {
   }
 }
 
-export const useProFeatures = (): UseProFeaturesReturn => {
+export const useProFeatures = (): UseProFeaturesReturn & {
+  upgradeModalFeature: ProFeature | null;
+  setUpgradeModalFeature: (feature: ProFeature | null) => void;
+  requestUpgradeModal: (feature?: ProFeature) => void;
+} => {
   const { data: session } = useSession()
   const [subscription, setSubscription] = useState<Subscription | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const router = useRouter()
+  const [upgradeModalFeature, setUpgradeModalFeature] = useState<ProFeature | null>(null)
 
   // Check subscription status
   const checkSubscription = useCallback(async () => {
@@ -226,34 +231,24 @@ export const useProFeatures = (): UseProFeaturesReturn => {
     return !hasFeature(featureId)
   }, [hasFeature])
 
-  // Unlock feature (show upgrade prompt and redirect to pricing)
-  const unlockFeature = useCallback((feature: ProFeature) => {
-    if (canAccess(feature)) {
-      return
-    }
-
-    showUpgradeModal(feature)
-  }, [canAccess])
-
-  // Show upgrade modal and redirect to pricing
-  const showUpgradeModal = useCallback((feature?: ProFeature) => {
+  // Show upgrade modal (UI should render modal when this is set)
+  const requestUpgradeModal = useCallback((feature?: ProFeature) => {
     if (!session?.user) {
       toast.error("Please sign in to access premium features")
       return
     }
+    setUpgradeModalFeature(feature || null)
+  }, [session?.user])
 
-    const message = feature 
-      ? `Upgrade to Pro to unlock ${feature.name}`
-      : "Upgrade to Pro to unlock all premium features"
-    
-    toast.error(message, {
-      duration: 4000,
-      icon: "👑"
-    })
+  // Update unlockFeature and showUpgradeModal to use requestUpgradeModal
+  const unlockFeature = useCallback((feature: ProFeature) => {
+    if (canAccess(feature)) {
+      return
+    }
+    requestUpgradeModal(feature)
+  }, [canAccess, requestUpgradeModal])
 
-    // Redirect to pricing page
-    router.push("/dashboard/pricing")
-  }, [session?.user, router])
+  const showUpgradeModal = requestUpgradeModal
 
   // Get feature icon
   const getFeatureIcon = useCallback((feature: ProFeature): React.ReactNode => {
@@ -319,7 +314,12 @@ export const useProFeatures = (): UseProFeaturesReturn => {
     // UI helpers
     getFeatureIcon,
     getUpgradeMessage,
-    getFeatureBadge
+    getFeatureBadge,
+    
+    // Modal state
+    upgradeModalFeature,
+    setUpgradeModalFeature,
+    requestUpgradeModal
   }
 }
 

@@ -8,6 +8,7 @@ import HeroGeometric from '@/components/hero';
 import Footer from '@/components/footer';
 import { Companies } from '@/components/socialproof';
 import VideoPlayer from '@/components/magicui/hero-video-dialog';
+import  Pricing4  from '@/components/prices'
 
 
 export const metadata: Metadata = {
@@ -101,6 +102,8 @@ export default async function IndexPage() {
 
     <Feature17 />
     <Testimonial14 />
+    <Pricing4 />
+    
     <CTA />
     <Footer />
     

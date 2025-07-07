@@ -189,7 +189,7 @@ const  HeroGeometric = ({
               </p>
             </motion.div>
             <motion.div custom={3} variants={fadeUpVariants} initial="hidden" animate="visible">
-              <Button onClick={() => router.push('/meal-plans/new')} size="lg" className="bg-gradient-to-r from-rose-500 to-indigo-500 text-white font-bold py-3 px-8 rounded-full shadow-lg hover:scale-105 transform transition-transform duration-300 ease-in-out">Create a Meal Plan</Button>
+              <Button onClick={() => router.push('/meal-plans/new')} size="lg" className="bg-gradient-to-r from-rose-500 to-indigo-500 text-white font-bold py-3 px-8 rounded-full shadow-lg hover:scale-105 transform transition-transform duration-300 ease-in-out">Generate a Meal Plan</Button>
             </motion.div>
           </div>
           <motion.div

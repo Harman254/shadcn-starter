@@ -10,15 +10,17 @@ const testimonials = [
     name: "Jane Doe",
     role: "Home Chef",
     rating: 5,
-    initials: "JD"
+    initials: "JD",
+    image: "/pexels-angela-roma-7479790.jpg"
   },
   {
     id: 2,
     text: "I love how easy it is to stay on track with my fitness goals. The app's AI suggests meal plans that are perfect for my workouts!",
-    name: "Mark Smith",
+    name: "Dana Smith",
     role: "Fitness Enthusiast",
     rating: 5,
-    initials: "MS"
+    initials: "MS",
+    image: "/pexels-gabby-k-6999225.jpg"
   },
   {
     id: 3,
@@ -26,7 +28,8 @@ const testimonials = [
     name: "Emily White",
     role: "Professional",
     rating: 5,
-    initials: "EW"
+    initials: "EW",
+    image: "/pexels-keira-burton-6084178.jpg"
   },
 ];
 
@@ -97,9 +100,17 @@ const TestimonialCarousel = () => {
           <div className="text-center">
             {/* Avatar */}
             <div className="mb-6">
-              <div className="w-20 h-20 mx-auto bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-xl">
-                {testimonials[current].initials}
-              </div>
+              {testimonials[current].image ? (
+                <img
+                  src={testimonials[current].image}
+                  alt={testimonials[current].name}
+                  className="w-20 h-20 mx-auto rounded-full object-cover shadow-lg border-4 border-white dark:border-gray-800"
+                />
+              ) : (
+                <div className="w-20 h-20 mx-auto bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-xl">
+                  {testimonials[current].initials}
+                </div>
+              )}
             </div>
             
             {/* Rating */}
