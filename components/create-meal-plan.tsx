@@ -420,7 +420,13 @@ const CreateMealPlan = ({ preferences, isOnboardComplete }: CreateMealPlanProps)
 
   return (
     <>
-    <SubscriptionModal />
+      <SubscriptionModal
+        featureId={upgradeModalFeature?.id}
+        open={!!upgradeModalFeature}
+        onOpenChange={(open) => {
+          if (!open) setUpgradeModalFeature(null);
+        }}
+      />
       
       <div
         suppressHydrationWarning
