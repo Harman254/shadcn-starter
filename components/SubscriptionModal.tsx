@@ -42,9 +42,7 @@ export default function SubscriptionModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogTrigger asChild>
-        <button className="btn btn-primary">{triggerLabel}</button>
-      </DialogTrigger>
+      
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Choose Your Plan</DialogTitle>

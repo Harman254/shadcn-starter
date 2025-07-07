@@ -34,6 +34,7 @@ import { useSession } from "@/lib/auth-client"
 import { useAuthModal } from "@/components/AuthModalProvider"
 import { User } from "better-auth/types"
 import { CldImage } from 'next-cloudinary'
+import SubscriptionModal from "./SubscriptionModal"
 
 /* ======================== */
 /*        Interfaces         */
@@ -419,6 +420,7 @@ const CreateMealPlan = ({ preferences, isOnboardComplete }: CreateMealPlanProps)
 
   return (
     <>
+    <SubscriptionModal />
       
       <div
         suppressHydrationWarning
