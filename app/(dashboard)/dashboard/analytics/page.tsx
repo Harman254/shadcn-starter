@@ -27,6 +27,15 @@ import {
   Timer,
   BookOpen,
 } from "lucide-react"
+import { cn } from "@/lib/utils"
+import { Pacifico } from "next/font/google"
+
+
+const pacifico = Pacifico({
+  subsets: ["latin"],
+  weight: ["400"],
+  variable: "--font-pacifico",
+})
 
 export default async function AnalyticsDashboard() {
   const session = await auth.api.getSession({ headers: await headers() })
@@ -234,9 +243,14 @@ export default async function AnalyticsDashboard() {
               <BarChart3 className="h-6 w-6 text-white dark:text-zinc-200" />
             </div>
             <div>
-              <h1 className="text-4xl font-bold tracking-tight text-slate-900 dark:text-zinc-100">
-                Meal<span className="text-green-600 dark:text-green-400">Wise</span> Analytics
-              </h1>
+              <h1 className="tracking-tighter text-xl">
+            <span
+                className={cn(
+                  "bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 via-black/90 to-rose-500 dark:from-indigo-300 dark:via-white/90 dark:to-rose-300 ",
+                  pacifico.className,
+                )}
+              >Mealwise
+                </span>Analytics</h1>
               <p className="text-lg text-slate-600 mt-1 dark:text-zinc-400">
                 Insights into your culinary journey and meal planning success
               </p>
