@@ -1,12 +1,11 @@
-"use client"
-
-import { useState, useEffect } from "react"
+import { auth } from "@/lib/auth"
+import { headers } from "next/headers"
+import prisma from "@/lib/prisma"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Progress } from "@/components/ui/progress"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
   Calendar,
   TrendingUp,
@@ -19,702 +18,572 @@ import {
   Apple,
   Flame,
   BarChart3,
-  PieChart,
   Activity,
   Award,
-  Users,
   Star,
+  Crown,
+  Zap,
+  Trophy,
+  Timer,
+  BookOpen,
 } from "lucide-react"
 
-interface AnalyticsData {
-  overview: {
-    totalMealsCooked: number
-    totalRecipesTried: number
-    averageCookTime: number
-    favoriteRecipes: number
-    weeklyMealPlanCompletion: number
-    caloriesThisWeek: number
-    targetCalories: number
-  }
-  nutrition: {
-    dailyCalories: number[]
-    macros: {
-      protein: number
-      carbs: number
-      fats: number
-    }
-    weeklyNutritionScore: number
-    hydrationGoal: number
-    hydrationActual: number
-  }
-  mealPlanning: {
-    plannedVsActual: {
-      planned: number
-      actual: number
-    }
-    mealPrepFrequency: {
-      breakfast: number
-      lunch: number
-      dinner: number
-      snacks: number
-    }
-    cuisinePreferences: Array<{
-      cuisine: string
-      percentage: number
-      count: number
-    }>
-  }
-  recipes: {
-    topPerforming: Array<{
-      id: string
-      name: string
-      rating: number
-      cookCount: number
-      avgCookTime: number
-      difficulty: string
-      image: string
-    }>
-    recentActivity: Array<{
-      action: string
-      recipe: string
-      date: string
-      rating?: number
-    }>
-  }
-  trends: {
-    weeklyStats: Array<{
-      week: string
-      mealsCooked: number
-      recipesDiscovered: number
-      avgRating: number
-    }>
-    monthlyComparison: {
-      thisMonth: number
-      lastMonth: number
-      change: number
-    }
-  }
-}
+export default async function AnalyticsDashboard() {
+  const session = await auth.api.getSession({ headers: await headers() })
 
-// Mock analytics data
-const mockAnalyticsData: AnalyticsData = {
-  overview: {
-    totalMealsCooked: 127,
-    totalRecipesTried: 43,
-    averageCookTime: 32,
-    favoriteRecipes: 18,
-    weeklyMealPlanCompletion: 85,
-    caloriesThisWeek: 12450,
-    targetCalories: 14000,
-  },
-  nutrition: {
-    dailyCalories: [1850, 2100, 1950, 2200, 1800, 2050, 1900],
-    macros: {
-      protein: 25,
-      carbs: 45,
-      fats: 30,
-    },
-    weeklyNutritionScore: 87,
-    hydrationGoal: 8,
-    hydrationActual: 6.5,
-  },
-  mealPlanning: {
-    plannedVsActual: {
-      planned: 21,
-      actual: 18,
-    },
-    mealPrepFrequency: {
-      breakfast: 85,
-      lunch: 70,
-      dinner: 95,
-      snacks: 40,
-    },
-    cuisinePreferences: [
-      { cuisine: "Italian", percentage: 28, count: 12 },
-      { cuisine: "Asian", percentage: 22, count: 9 },
-      { cuisine: "Mediterranean", percentage: 18, count: 8 },
-      { cuisine: "American", percentage: 15, count: 6 },
-      { cuisine: "Mexican", percentage: 10, count: 4 },
-      { cuisine: "Other", percentage: 7, count: 4 },
-    ],
-  },
-  recipes: {
-    topPerforming: [
-      {
-        id: "1",
-        name: "Creamy Garlic Pasta",
-        rating: 4.9,
-        cookCount: 8,
-        avgCookTime: 25,
-        difficulty: "Easy",
-        image: "/placeholder.svg?height=60&width=60",
-      },
-      {
-        id: "2",
-        name: "Honey Glazed Salmon",
-        rating: 4.8,
-        cookCount: 6,
-        avgCookTime: 20,
-        difficulty: "Medium",
-        image: "/placeholder.svg?height=60&width=60",
-      },
-      {
-        id: "3",
-        name: "Thai Green Curry",
-        rating: 4.7,
-        cookCount: 5,
-        avgCookTime: 35,
-        difficulty: "Hard",
-        image: "/placeholder.svg?height=60&width=60",
-      },
-    ],
-    recentActivity: [
-      { action: "Cooked", recipe: "Mediterranean Quinoa Bowl", date: "2024-01-15", rating: 5 },
-      { action: "Liked", recipe: "BBQ Pulled Pork", date: "2024-01-14" },
-      { action: "Cooked", recipe: "Chocolate Chip Cookies", date: "2024-01-13", rating: 4 },
-      { action: "Saved", recipe: "Vegetarian Tacos", date: "2024-01-12" },
-      { action: "Cooked", recipe: "Creamy Garlic Pasta", date: "2024-01-11", rating: 5 },
-    ],
-  },
-  trends: {
-    weeklyStats: [
-      { week: "Week 1", mealsCooked: 18, recipesDiscovered: 5, avgRating: 4.2 },
-      { week: "Week 2", mealsCooked: 21, recipesDiscovered: 7, avgRating: 4.5 },
-      { week: "Week 3", mealsCooked: 19, recipesDiscovered: 4, avgRating: 4.3 },
-      { week: "Week 4", mealsCooked: 23, recipesDiscovered: 8, avgRating: 4.6 },
-    ],
-    monthlyComparison: {
-      thisMonth: 127,
-      lastMonth: 98,
-      change: 29.6,
-    },
-  },
-}
+  if (!session?.user?.id) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center">
+        <Card className="w-full max-w-md mx-4">
+          <CardContent className="pt-6 text-center">
+            <div className="w-16 h-16 mx-auto mb-4 bg-slate-100 rounded-full flex items-center justify-center">
+              <BarChart3 className="h-8 w-8 text-slate-400" />
+            </div>
+            <h2 className="text-xl font-semibold text-slate-900 mb-2">Sign In Required</h2>
+            <p className="text-slate-600 mb-4">Please sign in to view your analytics dashboard.</p>
+            <Button>Sign In</Button>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
 
-export default function AnalyticsDashboard() {
-  const [data, setData] = useState<AnalyticsData | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [selectedPeriod, setSelectedPeriod] = useState("week")
+  const userId = session.user.id
+  const analytics = await prisma.userAnalytics.findUnique({ where: { userId } })
+  const account = await prisma.account.findFirst({ where: { userId }, select: { isPro: true } })
 
-  useEffect(() => {
-    const fetchAnalytics = async () => {
-      setLoading(true)
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-      setData(mockAnalyticsData)
-      setLoading(false)
+  if (!analytics) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center">
+        <Card className="w-full max-w-lg mx-4">
+          <CardContent className="pt-6 text-center">
+            <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-br from-green-100 to-emerald-100 rounded-full flex items-center justify-center">
+              <ChefHat className="h-10 w-10 text-green-600" />
+            </div>
+            <h2 className="text-2xl font-bold text-slate-900 mb-3">Start Your Journey</h2>
+            <p className="text-slate-600 mb-6 leading-relaxed">
+              No analytics data found yet. Start saving meal plans and cooking recipes to see your personalized insights
+              and achievements!
+            </p>
+            <Button className="bg-green-600 hover:bg-green-700">
+              <Utensils className="mr-2 h-4 w-4" />
+              Create Your First Meal Plan
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  // Milestone badges
+  const mealBadges = [
+    { count: 10, label: "First 10 Meals", icon: <Utensils className="h-4 w-4" />, color: "bg-green-500" },
+    { count: 50, label: "Half Century", icon: <Trophy className="h-4 w-4" />, color: "bg-blue-500" },
+    { count: 100, label: "Centurion Chef", icon: <Crown className="h-4 w-4" />, color: "bg-yellow-500" },
+  ].filter((b) => analytics.totalMealsCooked >= b.count)
+
+  const recipeBadges = [
+    { count: 5, label: "Recipe Explorer", icon: <BookOpen className="h-4 w-4" />, color: "bg-purple-500" },
+    { count: 20, label: "Culinary Adventurer", icon: <Trophy className="h-4 w-4" />, color: "bg-indigo-500" },
+    { count: 50, label: "Master Chef", icon: <ChefHat className="h-4 w-4" />, color: "bg-orange-500" },
+  ].filter((b) => analytics.totalRecipesTried >= b.count)
+
+  // Motivational message
+  let motivation = {
+    title: "Keep Going Strong! 💪",
+    message: "Every meal you cook is a step toward mastering your culinary journey.",
+  }
+
+  if (analytics.totalMealsCooked >= 100) {
+    motivation = {
+      title: "Meal Master Achieved! 🏆",
+      message: "Incredible consistency and dedication to your cooking goals.",
     }
-
-    fetchAnalytics()
-  }, [])
-
-  const getDifficultyColor = (difficulty: string) => {
-    switch (difficulty) {
-      case "Easy":
-        return "bg-green-100 text-green-800"
-      case "Medium":
-        return "bg-yellow-100 text-yellow-800"
-      case "Hard":
-        return "bg-red-100 text-red-800"
-      default:
-        return "bg-gray-100 text-gray-800"
+  } else if (analytics.totalMealsCooked >= 50) {
+    motivation = {
+      title: "Amazing Progress! 🌟",
+      message: "50+ meals cooked shows real commitment to your culinary journey.",
+    }
+  } else if (analytics.totalMealsCooked >= 10) {
+    motivation = {
+      title: "Great Start! 🚀",
+      message: "You're building excellent cooking habits. Keep it up!",
     }
   }
 
+  // Helper functions
   const getChangeIcon = (change: number) => {
     return change > 0 ? (
-      <TrendingUp className="h-4 w-4 text-green-600" />
+      <TrendingUp className="h-4 w-4 text-emerald-600" />
+    ) : change < 0 ? (
+      <TrendingDown className="h-4 w-4 text-red-500" />
     ) : (
-      <TrendingDown className="h-4 w-4 text-red-600" />
+      <Activity className="h-4 w-4 text-slate-400" />
     )
   }
 
-  if (loading) {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex items-center justify-center min-h-[400px]">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-            <p className="text-muted-foreground">Loading your analytics...</p>
-          </div>
-        </div>
-      </div>
-    )
+  const getProgressColor = (value: number, max: number) => {
+    const percentage = (value / max) * 100
+    if (percentage >= 80) return "bg-green-500"
+    if (percentage >= 60) return "bg-yellow-500"
+    if (percentage >= 40) return "bg-orange-500"
+    return "bg-red-500"
   }
-
-  if (!data) return null
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      {/* Header */}
-      <div className="mb-8">
-        <div className="flex items-center gap-2 mb-2">
-          <BarChart3 className="h-6 w-6 text-primary" />
-          <h1 className="text-3xl tracking-tight font-bold">Meal<span className="text-green-500">Wise</span> Analytics</h1>
-        </div>
-        <p className="text-muted-foreground">Insights into your cooking journey and meal planning habits</p>
-      </div>
-
-      {/* Period Selector */}
-      <div className="flex gap-2 mb-6">
-        {["week", "month", "quarter"].map((period) => (
-          <Button
-            key={period}
-            variant={selectedPeriod === period ? "default" : "outline"}
-            size="sm"
-            onClick={() => setSelectedPeriod(period)}
-            className="capitalize"
-          >
-            {period}
-          </Button>
-        ))}
-      </div>
-
-      <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="nutrition">Nutrition</TabsTrigger>
-          <TabsTrigger value="planning">Planning</TabsTrigger>
-          <TabsTrigger value="recipes">Recipes</TabsTrigger>
-          <TabsTrigger value="trends">Trends</TabsTrigger>
-        </TabsList>
-
-        {/* Overview Tab */}
-        <TabsContent value="overview" className="space-y-6">
-          {/* Key Metrics */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Meals Cooked</CardTitle>
-                <Utensils className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{data.overview.totalMealsCooked}</div>
-                <div className="flex items-center gap-1 text-xs text-green-600">
-                  {getChangeIcon(data.trends.monthlyComparison.change)}
-                  <span>+{data.trends.monthlyComparison.change.toFixed(1)}% from last month</span>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Recipes Tried</CardTitle>
-                <ChefHat className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{data.overview.totalRecipesTried}</div>
-                <p className="text-xs text-muted-foreground">New recipes discovered</p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Avg Cook Time</CardTitle>
-                <Clock className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{data.overview.averageCookTime}m</div>
-                <p className="text-xs text-muted-foreground">Per meal</p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Favorite Recipes</CardTitle>
-                <Heart className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{data.overview.favoriteRecipes}</div>
-                <p className="text-xs text-muted-foreground">Recipes you loved</p>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Weekly Progress */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Target className="h-5 w-5" />
-                  Weekly Meal Plan Completion
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span>Progress</span>
-                    <span>{data.overview.weeklyMealPlanCompletion}%</span>
-                  </div>
-                  <Progress value={data.overview.weeklyMealPlanCompletion} className="h-2" />
-                  <p className="text-xs text-muted-foreground">
-                    {Math.round((data.overview.weeklyMealPlanCompletion / 100) * 21)} of 21 planned meals completed
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Flame className="h-5 w-5" />
-                  Weekly Calorie Goal
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span>Calories</span>
-                    <span>
-                      {data.overview.caloriesThisWeek.toLocaleString()} /{" "}
-                      {data.overview.targetCalories.toLocaleString()}
-                    </span>
-                  </div>
-                  <Progress
-                    value={(data.overview.caloriesThisWeek / data.overview.targetCalories) * 100}
-                    className="h-2"
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    {data.overview.targetCalories - data.overview.caloriesThisWeek} calories remaining this week
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        {/* Nutrition Tab */}
-        <TabsContent value="nutrition" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Apple className="h-5 w-5" />
-                  Daily Calories This Week
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((day, index) => (
-                    <div key={day} className="flex items-center justify-between">
-                      <span className="text-sm font-medium">{day}</span>
-                      <div className="flex items-center gap-2">
-                        <div className="w-32 bg-gray-200 rounded-full h-2">
-                          <div
-                            className="bg-primary h-2 rounded-full"
-                            style={{ width: `${(data.nutrition.dailyCalories[index] / 2500) * 100}%` }}
-                          />
-                        </div>
-                        <span className="text-sm text-muted-foreground w-16 text-right">
-                          {data.nutrition.dailyCalories[index]}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <PieChart className="h-5 w-5" />
-                  Macronutrient Breakdown
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 bg-blue-500 rounded-full" />
-                      <span className="text-sm">Protein</span>
-                    </div>
-                    <span className="text-sm font-medium">{data.nutrition.macros.protein}%</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 bg-green-500 rounded-full" />
-                      <span className="text-sm">Carbs</span>
-                    </div>
-                    <span className="text-sm font-medium">{data.nutrition.macros.carbs}%</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 bg-yellow-500 rounded-full" />
-                      <span className="text-sm">Fats</span>
-                    </div>
-                    <span className="text-sm font-medium">{data.nutrition.macros.fats}%</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Award className="h-5 w-5" />
-                  Nutrition Score
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50 dark:from-zinc-900 dark:via-zinc-950 dark:to-zinc-900">
+      <div className="container mx-auto px-4 py-8 max-w-7xl">
+        {/* Pro Banner or Upgrade CTA */}
+        {account?.isPro ? (
+          <Card className="mb-8 border-0 bg-gradient-to-r from-emerald-500 via-green-500 to-teal-500 text-white shadow-xl dark:from-zinc-800 dark:via-zinc-900 dark:to-zinc-800 dark:text-zinc-100">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-center gap-3">
+                <Crown className="h-6 w-6" />
                 <div className="text-center">
-                  <div className="text-4xl font-bold text-green-600 mb-2">{data.nutrition.weeklyNutritionScore}</div>
-                  <p className="text-sm text-muted-foreground">Weekly nutrition score</p>
-                  <Badge variant="secondary" className="mt-2 bg-green-100 text-green-800">
-                    Excellent
-                  </Badge>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Activity className="h-5 w-5" />
-                  Hydration Goal
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span>Daily Average</span>
-                    <span>
-                      {data.nutrition.hydrationActual} / {data.nutrition.hydrationGoal} glasses
-                    </span>
-                  </div>
-                  <Progress
-                    value={(data.nutrition.hydrationActual / data.nutrition.hydrationGoal) * 100}
-                    className="h-2"
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    {data.nutrition.hydrationGoal - data.nutrition.hydrationActual} more glasses to reach daily goal
+                  <h3 className="text-lg font-semibold">MealWise Pro Member</h3>
+                  <p className="text-emerald-100 text-sm dark:text-zinc-300">
+                    Thank you for supporting us! Enjoy unlimited access to all premium features.
                   </p>
                 </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        {/* Planning Tab */}
-        <TabsContent value="planning" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Calendar className="h-5 w-5" />
-                  Planned vs Actual Meals
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm">Planned Meals</span>
-                    <span className="text-2xl font-bold">{data.mealPlanning.plannedVsActual.planned}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm">Actual Meals</span>
-                    <span className="text-2xl font-bold text-green-600">
-                      {data.mealPlanning.plannedVsActual.actual}
-                    </span>
-                  </div>
-                  <div className="pt-2 border-t">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground">Success Rate</span>
-                      <span className="text-sm font-medium">
-                        {Math.round(
-                          (data.mealPlanning.plannedVsActual.actual / data.mealPlanning.plannedVsActual.planned) * 100,
-                        )}
-                        %
-                      </span>
-                    </div>
+                <Crown className="h-6 w-6" />
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card className="mb-8 border-0 bg-gradient-to-r from-amber-400 via-orange-400 to-yellow-400 text-white shadow-xl dark:from-zinc-800 dark:via-zinc-900 dark:to-zinc-800 dark:text-zinc-100">
+            <CardContent className="p-6">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <Zap className="h-6 w-6" />
+                  <div>
+                    <h3 className="text-lg font-semibold">Unlock Premium Insights</h3>
+                    <p className="text-orange-100 text-sm dark:text-zinc-300">
+                      Get advanced analytics, meal recommendations, and exclusive features
+                    </p>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
+                <Button
+                  variant="secondary"
+                  className="bg-white text-orange-600 hover:bg-orange-50 font-semibold shadow-md dark:bg-zinc-700 dark:text-yellow-400 dark:hover:bg-zinc-600"
+                >
+                  <Crown className="mr-2 h-4 w-4" />
+                  Upgrade to Pro
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Utensils className="h-5 w-5" />
-                  Meal Prep Frequency
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {Object.entries(data.mealPlanning.mealPrepFrequency).map(([meal, percentage]) => (
-                    <div key={meal} className="space-y-1">
-                      <div className="flex justify-between text-sm">
-                        <span className="capitalize">{meal}</span>
-                        <span>{percentage}%</span>
-                      </div>
-                      <Progress value={percentage} className="h-2" />
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+        {/* Motivational Message */}
+        <Card className="mb-8 border-0 bg-gradient-to-r from-green-50 to-emerald-50 border-l-4 border-l-green-500 dark:from-zinc-800 dark:to-zinc-900 dark:border-l-zinc-700">
+          <CardContent className="p-6">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center dark:bg-zinc-700">
+                <Heart className="h-6 w-6 text-green-600 dark:text-zinc-200" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-green-900 dark:text-zinc-100">{motivation.title}</h3>
+                <p className="text-green-700 dark:text-zinc-300">{motivation.message}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
-          <Card>
+        {/* Achievement Badges */}
+        {(mealBadges.length > 0 || recipeBadges.length > 0) && (
+          <Card className="mb-8 dark:bg-zinc-800 dark:text-zinc-100">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5" />
-                Cuisine Preferences
+              <CardTitle className="flex items-center gap-2 text-xl">
+                <Award className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
+                Your Achievements
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                {data.mealPlanning.cuisinePreferences.map((cuisine) => (
-                  <div key={cuisine.cuisine} className="text-center p-4 border rounded-lg">
-                    <div className="text-2xl font-bold text-primary mb-1">{cuisine.percentage}%</div>
-                    <div className="text-sm font-medium mb-1">{cuisine.cuisine}</div>
-                    <div className="text-xs text-muted-foreground">{cuisine.count} recipes</div>
-                  </div>
+              <div className="flex flex-wrap gap-3">
+                {mealBadges.map((badge) => (
+                  <Badge
+                    key={badge.label}
+                    className={`${badge.color} text-white px-4 py-2 text-sm font-medium shadow-md dark:bg-zinc-700 dark:text-zinc-100`}
+                  >
+                    <div className="flex items-center gap-2">
+                      {badge.icon}
+                      {badge.label}
+                    </div>
+                  </Badge>
+                ))}
+                {recipeBadges.map((badge) => (
+                  <Badge
+                    key={badge.label}
+                    className={`${badge.color} text-white px-4 py-2 text-sm font-medium shadow-md dark:bg-zinc-700 dark:text-zinc-100`}
+                  >
+                    <div className="flex items-center gap-2">
+                      {badge.icon}
+                      {badge.label}
+                    </div>
+                  </Badge>
                 ))}
               </div>
             </CardContent>
           </Card>
-        </TabsContent>
+        )}
 
-        {/* Recipes Tab */}
-        <TabsContent value="recipes" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card>
+        {/* Header */}
+        <div className="mb-8">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg flex items-center justify-center dark:from-zinc-700 dark:to-zinc-900">
+              <BarChart3 className="h-6 w-6 text-white dark:text-zinc-200" />
+            </div>
+            <div>
+              <h1 className="text-4xl font-bold tracking-tight text-slate-900 dark:text-zinc-100">
+                Meal<span className="text-green-600 dark:text-green-400">Wise</span> Analytics
+              </h1>
+              <p className="text-lg text-slate-600 mt-1 dark:text-zinc-400">
+                Insights into your culinary journey and meal planning success
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <Tabs defaultValue="overview" className="space-y-8">
+          <TabsList className="grid w-full grid-cols-5 h-12 bg-slate-100 p-1 rounded-lg">
+            <TabsTrigger value="overview" className="text-sm font-medium">
+              Overview
+            </TabsTrigger>
+            <TabsTrigger value="nutrition" className="text-sm font-medium">
+              Nutrition
+            </TabsTrigger>
+            <TabsTrigger value="planning" className="text-sm font-medium">
+              Planning
+            </TabsTrigger>
+            <TabsTrigger value="recipes" className="text-sm font-medium">
+              Recipes
+            </TabsTrigger>
+            <TabsTrigger value="trends" className="text-sm font-medium">
+              Trends
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Overview Tab */}
+          <TabsContent value="overview" className="space-y-8">
+            {/* Key Metrics */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <Card className="border-0 shadow-md hover:shadow-lg transition-shadow duration-200">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+                  <CardTitle className="text-sm font-semibold text-slate-600 uppercase tracking-wide">
+                    Total Meals
+                  </CardTitle>
+                  <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <Utensils className="h-5 w-5 text-blue-600" />
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold text-slate-900 mb-2">{analytics.totalMealsCooked}</div>
+                  <div className="flex items-center gap-2 text-sm">
+                    {getChangeIcon(5)}
+                    <span className="text-emerald-600 font-medium">+12% from last month</span>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="border-0 shadow-md hover:shadow-lg transition-shadow duration-200">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+                  <CardTitle className="text-sm font-semibold text-slate-600 uppercase tracking-wide">
+                    Recipes Tried
+                  </CardTitle>
+                  <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                    <ChefHat className="h-5 w-5 text-purple-600" />
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold text-slate-900 mb-2">{analytics.totalRecipesTried}</div>
+                  <p className="text-sm text-slate-500 font-medium">New recipes discovered</p>
+                </CardContent>
+              </Card>
+
+              <Card className="border-0 shadow-md hover:shadow-lg transition-shadow duration-200">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+                  <CardTitle className="text-sm font-semibold text-slate-600 uppercase tracking-wide">
+                    Avg Cook Time
+                  </CardTitle>
+                  <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
+                    <Clock className="h-5 w-5 text-orange-600" />
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold text-slate-900 mb-2">
+                    {analytics.averageCookTime}
+                    <span className="text-lg text-slate-500">min</span>
+                  </div>
+                  <p className="text-sm text-slate-500 font-medium">Per meal preparation</p>
+                </CardContent>
+              </Card>
+
+              <Card className="border-0 shadow-md hover:shadow-lg transition-shadow duration-200">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+                  <CardTitle className="text-sm font-semibold text-slate-600 uppercase tracking-wide">
+                    Favorites
+                  </CardTitle>
+                  <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
+                    <Heart className="h-5 w-5 text-red-600" />
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold text-slate-900 mb-2">{analytics.favoriteRecipes}</div>
+                  <p className="text-sm text-slate-500 font-medium">Recipes you loved</p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Progress Section */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Card className="border-0 shadow-md">
+                <CardHeader>
+                  <CardTitle className="text-xl font-semibold flex items-center gap-2">
+                    <Target className="h-5 w-5 text-green-600" />
+                    Monthly Goals
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div>
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-sm font-medium text-slate-700">Meals Cooked</span>
+                      <span className="text-sm font-semibold text-slate-900">15/20</span>
+                    </div>
+                    <Progress value={75} className="h-2" />
+                  </div>
+                  <div>
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-sm font-medium text-slate-700">New Recipes</span>
+                      <span className="text-sm font-semibold text-slate-900">3/5</span>
+                    </div>
+                    <Progress value={60} className="h-2" />
+                  </div>
+                  <div>
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-sm font-medium text-slate-700">Healthy Meals</span>
+                      <span className="text-sm font-semibold text-slate-900">12/15</span>
+                    </div>
+                    <Progress value={80} className="h-2" />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="border-0 shadow-md">
+                <CardHeader>
+                  <CardTitle className="text-xl font-semibold flex items-center gap-2">
+                    <Activity className="h-5 w-5 text-blue-600" />
+                    Recent Activity
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-3 p-3 bg-green-50 rounded-lg">
+                      <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                        <Utensils className="h-4 w-4 text-green-600" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-slate-900">Cooked Chicken Stir Fry</p>
+                        <p className="text-xs text-slate-500">2 hours ago</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg">
+                      <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                        <BookOpen className="h-4 w-4 text-blue-600" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-slate-900">Saved Mediterranean Bowl</p>
+                        <p className="text-xs text-slate-500">1 day ago</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 p-3 bg-purple-50 rounded-lg">
+                      <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
+                        <Heart className="h-4 w-4 text-purple-600" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-slate-900">Favorited Pasta Recipe</p>
+                        <p className="text-xs text-slate-500">3 days ago</p>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          {/* Nutrition Tab */}
+          <TabsContent value="nutrition" className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Card className="border-0 shadow-md">
+                <CardHeader>
+                  <CardTitle className="text-xl font-semibold flex items-center gap-2">
+                    <Apple className="h-5 w-5 text-green-600" />
+                    Nutritional Balance
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="text-center p-6 bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg">
+                      <div className="text-3xl font-bold text-green-700 mb-2">85%</div>
+                      <p className="text-sm text-green-600 font-medium">Healthy Meal Score</p>
+                    </div>
+                    <div className="grid grid-cols-3 gap-4 text-center">
+                      <div className="p-3 bg-blue-50 rounded-lg">
+                        <div className="text-lg font-bold text-blue-700">32%</div>
+                        <p className="text-xs text-blue-600">Protein</p>
+                      </div>
+                      <div className="p-3 bg-yellow-50 rounded-lg">
+                        <div className="text-lg font-bold text-yellow-700">45%</div>
+                        <p className="text-xs text-yellow-600">Carbs</p>
+                      </div>
+                      <div className="p-3 bg-purple-50 rounded-lg">
+                        <div className="text-lg font-bold text-purple-700">23%</div>
+                        <p className="text-xs text-purple-600">Fats</p>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="border-0 shadow-md">
+                <CardHeader>
+                  <CardTitle className="text-xl font-semibold flex items-center gap-2">
+                    <Flame className="h-5 w-5 text-orange-600" />
+                    Calorie Tracking
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-center p-6 bg-gradient-to-br from-orange-50 to-red-50 rounded-lg">
+                    <div className="text-3xl font-bold text-orange-700 mb-2">1,847</div>
+                    <p className="text-sm text-orange-600 font-medium">Avg Daily Calories</p>
+                    <div className="mt-4">
+                      <Progress value={73} className="h-2" />
+                      <p className="text-xs text-slate-500 mt-2">73% of recommended intake</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          {/* Planning Tab */}
+          <TabsContent value="planning" className="space-y-6">
+            <Card className="border-0 shadow-md">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Star className="h-5 w-5" />
-                  Top Performing Recipes
+                <CardTitle className="text-xl font-semibold flex items-center gap-2">
+                  <Calendar className="h-5 w-5 text-blue-600" />
+                  Meal Planning Insights
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {data.recipes.topPerforming.map((recipe, index) => (
-                    <div key={recipe.id} className="flex items-center gap-3 p-3 border rounded-lg">
-                      <div className="text-lg font-bold text-muted-foreground w-6">#{index + 1}</div>
-                      <Avatar className="h-12 w-12">
-                        <AvatarImage src={recipe.image || "/placeholder.svg"} alt={recipe.name} />
-                        <AvatarFallback>{recipe.name.slice(0, 2)}</AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium truncate">{recipe.name}</div>
-                        <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                          <span>★ {recipe.rating}</span>
-                          <span>{recipe.cookCount} times cooked</span>
-                          <span>{recipe.avgCookTime}m avg</span>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="text-center p-6 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg">
+                    <div className="text-2xl font-bold text-blue-700 mb-2">4.2</div>
+                    <p className="text-sm text-blue-600 font-medium">Days Planned Ahead</p>
+                  </div>
+                  <div className="text-center p-6 bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg">
+                    <div className="text-2xl font-bold text-green-700 mb-2">89%</div>
+                    <p className="text-sm text-green-600 font-medium">Plan Completion Rate</p>
+                  </div>
+                  <div className="text-center p-6 bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg">
+                    <div className="text-2xl font-bold text-purple-700 mb-2">$127</div>
+                    <p className="text-sm text-purple-600 font-medium">Avg Monthly Savings</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Recipes Tab */}
+          <TabsContent value="recipes" className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Card className="border-0 shadow-md">
+                <CardHeader>
+                  <CardTitle className="text-xl font-semibold flex items-center gap-2">
+                    <Star className="h-5 w-5 text-yellow-600" />
+                    Top Rated Recipes
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {["Mediterranean Quinoa Bowl", "Honey Garlic Salmon", "Vegetable Stir Fry"].map((recipe, index) => (
+                      <div key={recipe} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+                        <span className="font-medium text-slate-900">{recipe}</span>
+                        <div className="flex items-center gap-1">
+                          <Star className="h-4 w-4 text-yellow-500 fill-current" />
+                          <span className="text-sm font-semibold">{(4.8 - index * 0.1).toFixed(1)}</span>
                         </div>
                       </div>
-                      <Badge variant="secondary" className={getDifficultyColor(recipe.difficulty)}>
-                        {recipe.difficulty}
-                      </Badge>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
 
-            <Card>
+              <Card className="border-0 shadow-md">
+                <CardHeader>
+                  <CardTitle className="text-xl font-semibold flex items-center gap-2">
+                    <Timer className="h-5 w-5 text-green-600" />
+                    Quick Meals
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-center p-6 bg-gradient-to-br from-green-50 to-teal-50 rounded-lg">
+                    <div className="text-2xl font-bold text-green-700 mb-2">67%</div>
+                    <p className="text-sm text-green-600 font-medium">Meals under 30 minutes</p>
+                    <p className="text-xs text-slate-500 mt-2">You love quick and efficient cooking!</p>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          {/* Trends Tab */}
+          <TabsContent value="trends" className="space-y-6">
+            <Card className="border-0 shadow-md">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Activity className="h-5 w-5" />
-                  Recent Activity
+                <CardTitle className="text-xl font-semibold flex items-center gap-2">
+                  <TrendingUp className="h-5 w-5 text-green-600" />
+                  Cooking Trends
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-3">
-                  {data.recipes.recentActivity.map((activity, index) => (
-                    <div key={index} className="flex items-center gap-3 text-sm">
-                      <div className="w-2 h-2 bg-primary rounded-full flex-shrink-0" />
-                      <div className="flex-1">
-                        <span className="font-medium">{activity.action}</span>
-                        <span className="text-muted-foreground"> {activity.recipe}</span>
-                        {activity.rating && <span className="text-yellow-600"> (★ {activity.rating})</span>}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-4">
+                    <h4 className="font-semibold text-slate-900">Most Active Days</h4>
+                    {["Sunday", "Wednesday", "Saturday"].map((day, index) => (
+                      <div key={day} className="flex items-center justify-between">
+                        <span className="text-slate-700">{day}</span>
+                        <div className="flex items-center gap-2">
+                          <div className="w-20 h-2 bg-slate-200 rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-green-500 rounded-full"
+                              style={{ width: `${90 - index * 15}%` }}
+                            />
+                          </div>
+                          <span className="text-sm font-medium text-slate-600">{90 - index * 15}%</span>
+                        </div>
                       </div>
-                      <div className="text-xs text-muted-foreground">
-                        {new Date(activity.date).toLocaleDateString()}
+                    ))}
+                  </div>
+                  <div className="space-y-4">
+                    <h4 className="font-semibold text-slate-900">Popular Cuisines</h4>
+                    {["Mediterranean", "Asian", "American"].map((cuisine, index) => (
+                      <div key={cuisine} className="flex items-center justify-between">
+                        <span className="text-slate-700">{cuisine}</span>
+                        <div className="flex items-center gap-2">
+                          <div className="w-20 h-2 bg-slate-200 rounded-full overflow-hidden">
+                            <div className="h-full bg-blue-500 rounded-full" style={{ width: `${85 - index * 20}%` }} />
+                          </div>
+                          <span className="text-sm font-medium text-slate-600">{85 - index * 20}%</span>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
               </CardContent>
             </Card>
-          </div>
-        </TabsContent>
-
-        {/* Trends Tab */}
-        <TabsContent value="trends" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <TrendingUp className="h-5 w-5" />
-                Weekly Cooking Trends
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {data.trends.weeklyStats.map((week, index) => (
-                  <div key={index} className="grid grid-cols-4 gap-4 p-3 border rounded-lg">
-                    <div className="text-center">
-                      <div className="text-sm text-muted-foreground">Week</div>
-                      <div className="font-medium">{week.week}</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-sm text-muted-foreground">Meals</div>
-                      <div className="font-medium">{week.mealsCooked}</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-sm text-muted-foreground">New Recipes</div>
-                      <div className="font-medium">{week.recipesDiscovered}</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-sm text-muted-foreground">Avg Rating</div>
-                      <div className="font-medium">★ {week.avgRating}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm">This Month</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{data.trends.monthlyComparison.thisMonth}</div>
-                <p className="text-xs text-muted-foreground">meals cooked</p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm">Last Month</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{data.trends.monthlyComparison.lastMonth}</div>
-                <p className="text-xs text-muted-foreground">meals cooked</p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm">Growth</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center gap-1">
-                  <div className="text-2xl font-bold text-green-600">
-                    +{data.trends.monthlyComparison.change.toFixed(1)}%
-                  </div>
-                  {getChangeIcon(data.trends.monthlyComparison.change)}
-                </div>
-                <p className="text-xs text-muted-foreground">vs last month</p>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-      </Tabs>
+          </TabsContent>
+        </Tabs>
+      </div>
     </div>
   )
 }

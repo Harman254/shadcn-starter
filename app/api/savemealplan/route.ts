@@ -210,7 +210,28 @@ export async function POST(request:Request) {
     
     // Increment meal plan generation count
     await incrementMealPlanGeneration(userId);
-    
+
+    // --- Analytics Tracking ---
+    // Count total meals and unique recipes in this meal plan
+    const allMeals = savedMealPlan?.days.flatMap(day => day.meals) || [];
+    const totalMeals = allMeals.length;
+    const uniqueRecipes = new Set(allMeals.map(meal => meal.name)).size;
+
+    // Upsert UserAnalytics
+    await prisma.userAnalytics.upsert({
+      where: { userId },
+      update: {
+        totalMealsCooked: { increment: totalMeals },
+        totalRecipesTried: { increment: uniqueRecipes },
+      },
+      create: {
+        userId,
+        totalMealsCooked: totalMeals,
+        totalRecipesTried: uniqueRecipes,
+      },
+    });
+    // --- End Analytics Tracking ---
+
     // Return success response
     return NextResponse.json(
         { 

@@ -85,6 +85,8 @@ model User {
   currencyCode     String? // Stored user's currency code
   currencySymbol   String? // Stored user's currency symbol
 
+  analytics        UserAnalytics?
+
   @@unique([email])
   @@map("user")
 }
@@ -184,4 +186,21 @@ model ContactSubmission {
   subject     String
   message     String
   submittedAt DateTime @default(now())
+}
+
+model UserAnalytics {
+  id                String   @id @default(uuid())
+  userId            String   @unique
+  totalMealsCooked  Int      @default(0)
+  totalRecipesTried Int      @default(0)
+  averageCookTime   Int      @default(0)
+  favoriteRecipes   Int      @default(0)
+  weeklyMealPlanCompletion Int @default(0)
+  caloriesThisWeek  Int      @default(0)
+  targetCalories    Int      @default(0)
+  // Add more fields as needed for nutrition, trends, etc.
+
+  user              User     @relation(fields: [userId], references: [id])
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 }
