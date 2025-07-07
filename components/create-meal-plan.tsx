@@ -34,7 +34,6 @@ import { useSession } from "@/lib/auth-client"
 import { useAuthModal } from "@/components/AuthModalProvider"
 import { User } from "better-auth/types"
 import { CldImage } from 'next-cloudinary'
-import SubscriptionModal from "@/components/SubscriptionModal"
 
 /* ======================== */
 /*        Interfaces         */
@@ -420,13 +419,7 @@ const CreateMealPlan = ({ preferences, isOnboardComplete }: CreateMealPlanProps)
 
   return (
     <>
-      <SubscriptionModal
-        featureId={upgradeModalFeature?.id || undefined}
-        open={!!upgradeModalFeature}
-        onOpenChange={(open) => {
-          if (!open) setUpgradeModalFeature(null);
-        }}
-      />
+      
       <div
         suppressHydrationWarning
         className="relative min-h-screen w-full bg-gradient-to-br from-zinc-50 via-white to-zinc-50 dark:from-zinc-950 dark:via-zinc-900 dark:to-zinc-950"

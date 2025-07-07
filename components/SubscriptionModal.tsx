@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   Dialog,
   DialogTrigger,
@@ -10,6 +10,7 @@ import {
   DialogClose
 } from "@/components/ui/dialog";
 import { useProFeatures, PRO_FEATURES } from "@/hooks/use-pro-features";
+import { authClient } from '@/lib/auth-client';
 
 // Reusable checkmark icon component
 const CheckIcon = () => (
@@ -30,12 +31,11 @@ export default function SubscriptionModal({
   onOpenChange?: (open: boolean) => void;
 }) {
   const {
-    isLoading,
-    showUpgradeModal,
     canAccess,
     subscription
   } = useProFeatures();
 
+  const [isPending, setIsPending] = useState(false);
   const feature = PRO_FEATURES[featureId];
   const isUnlocked = canAccess(feature);
   const currentPlan = subscription?.plan || "free";
@@ -99,11 +99,21 @@ export default function SubscriptionModal({
                   <span className="w-full block text-green-600 font-semibold text-center">Already Unlocked!</span>
                 ) : (
                   <button
+                    onClick={async () => {
+                      setIsPending(true);
+                      try {
+                        await authClient.checkout({
+                          products: ['d6f79514-fa26-4b48-a8f4-da20e3d087c5'],
+                          slug: 'Mealwise-Pro',
+                        });
+                      } finally {
+                        setIsPending(false);
+                      }
+                    }}
+                    disabled={isPending}
                     className="w-full px-3 py-2 bg-gradient-to-r from-blue-600 to-indigo-700 text-white font-medium rounded shadow hover:shadow-lg transition-all duration-200 text-xs"
-                    onClick={() => showUpgradeModal(feature)}
-                    disabled={isLoading}
                   >
-                    {isLoading ? "Processing..." : "Upgrade Now"}
+                    {isPending ? "Processing..." : "Upgrade Now"}
                   </button>
                 )}
               </div>
