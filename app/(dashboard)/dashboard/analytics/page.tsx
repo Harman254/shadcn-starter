@@ -245,25 +245,28 @@ export default async function AnalyticsDashboard() {
         </div>
 
         <Tabs defaultValue="overview" className="space-y-8">
-          <TabsList className="grid w-full grid-cols-5 h-12 bg-slate-100 p-1 rounded-lg">
+          <TabsList className="grid w-full grid-cols-5 h-12 bg-slate-100 p-1 rounded-lg dark:bg-zinc-800">
             <TabsTrigger value="overview" className="text-sm font-medium">
               Overview
             </TabsTrigger>
-            <TabsTrigger value="nutrition" className="text-sm font-medium">
-              Nutrition
+            <TabsTrigger value="achievements" className="text-sm font-medium">
+              Achievements
             </TabsTrigger>
-            <TabsTrigger value="planning" className="text-sm font-medium">
-              Planning
+            <TabsTrigger value="nutrition" className="text-sm font-medium" disabled={!account?.isPro}>
+              Nutrition {account?.isPro ? null : <span className="ml-1 text-xs text-zinc-400">Pro</span>}
             </TabsTrigger>
-            <TabsTrigger value="recipes" className="text-sm font-medium">
-              Recipes
+            <TabsTrigger value="planning" className="text-sm font-medium" disabled={!account?.isPro}>
+              Planning {account?.isPro ? null : <span className="ml-1 text-xs text-zinc-400">Pro</span>}
             </TabsTrigger>
-            <TabsTrigger value="trends" className="text-sm font-medium">
-              Trends
+            <TabsTrigger value="recipes" className="text-sm font-medium" disabled={!account?.isPro}>
+              Recipes {account?.isPro ? null : <span className="ml-1 text-xs text-zinc-400">Pro</span>}
+            </TabsTrigger>
+            <TabsTrigger value="trends" className="text-sm font-medium" disabled={!account?.isPro}>
+              Trends {account?.isPro ? null : <span className="ml-1 text-xs text-zinc-400">Pro</span>}
             </TabsTrigger>
           </TabsList>
 
-          {/* Overview Tab */}
+          {/* Overview Tab - for all users */}
           <TabsContent value="overview" className="space-y-8">
             {/* Key Metrics */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -410,177 +413,92 @@ export default async function AnalyticsDashboard() {
             </div>
           </TabsContent>
 
-          {/* Nutrition Tab */}
-          <TabsContent value="nutrition" className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card className="border-0 shadow-md">
+          {/* Achievements Tab - for all users */}
+          <TabsContent value="achievements" className="space-y-8">
+            {(mealBadges.length > 0 || recipeBadges.length > 0) ? (
+              <Card className="mb-8 dark:bg-zinc-800 dark:text-zinc-100">
                 <CardHeader>
-                  <CardTitle className="text-xl font-semibold flex items-center gap-2">
-                    <Apple className="h-5 w-5 text-green-600" />
-                    Nutritional Balance
+                  <CardTitle className="flex items-center gap-2 text-xl">
+                    <Award className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
+                    Your Achievements
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4">
-                    <div className="text-center p-6 bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg">
-                      <div className="text-3xl font-bold text-green-700 mb-2">85%</div>
-                      <p className="text-sm text-green-600 font-medium">Healthy Meal Score</p>
-                    </div>
-                    <div className="grid grid-cols-3 gap-4 text-center">
-                      <div className="p-3 bg-blue-50 rounded-lg">
-                        <div className="text-lg font-bold text-blue-700">32%</div>
-                        <p className="text-xs text-blue-600">Protein</p>
-                      </div>
-                      <div className="p-3 bg-yellow-50 rounded-lg">
-                        <div className="text-lg font-bold text-yellow-700">45%</div>
-                        <p className="text-xs text-yellow-600">Carbs</p>
-                      </div>
-                      <div className="p-3 bg-purple-50 rounded-lg">
-                        <div className="text-lg font-bold text-purple-700">23%</div>
-                        <p className="text-xs text-purple-600">Fats</p>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="border-0 shadow-md">
-                <CardHeader>
-                  <CardTitle className="text-xl font-semibold flex items-center gap-2">
-                    <Flame className="h-5 w-5 text-orange-600" />
-                    Calorie Tracking
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-center p-6 bg-gradient-to-br from-orange-50 to-red-50 rounded-lg">
-                    <div className="text-3xl font-bold text-orange-700 mb-2">1,847</div>
-                    <p className="text-sm text-orange-600 font-medium">Avg Daily Calories</p>
-                    <div className="mt-4">
-                      <Progress value={73} className="h-2" />
-                      <p className="text-xs text-slate-500 mt-2">73% of recommended intake</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-
-          {/* Planning Tab */}
-          <TabsContent value="planning" className="space-y-6">
-            <Card className="border-0 shadow-md">
-              <CardHeader>
-                <CardTitle className="text-xl font-semibold flex items-center gap-2">
-                  <Calendar className="h-5 w-5 text-blue-600" />
-                  Meal Planning Insights
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div className="text-center p-6 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg">
-                    <div className="text-2xl font-bold text-blue-700 mb-2">4.2</div>
-                    <p className="text-sm text-blue-600 font-medium">Days Planned Ahead</p>
-                  </div>
-                  <div className="text-center p-6 bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg">
-                    <div className="text-2xl font-bold text-green-700 mb-2">89%</div>
-                    <p className="text-sm text-green-600 font-medium">Plan Completion Rate</p>
-                  </div>
-                  <div className="text-center p-6 bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg">
-                    <div className="text-2xl font-bold text-purple-700 mb-2">$127</div>
-                    <p className="text-sm text-purple-600 font-medium">Avg Monthly Savings</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Recipes Tab */}
-          <TabsContent value="recipes" className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card className="border-0 shadow-md">
-                <CardHeader>
-                  <CardTitle className="text-xl font-semibold flex items-center gap-2">
-                    <Star className="h-5 w-5 text-yellow-600" />
-                    Top Rated Recipes
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {["Mediterranean Quinoa Bowl", "Honey Garlic Salmon", "Vegetable Stir Fry"].map((recipe, index) => (
-                      <div key={recipe} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-                        <span className="font-medium text-slate-900">{recipe}</span>
-                        <div className="flex items-center gap-1">
-                          <Star className="h-4 w-4 text-yellow-500 fill-current" />
-                          <span className="text-sm font-semibold">{(4.8 - index * 0.1).toFixed(1)}</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="border-0 shadow-md">
-                <CardHeader>
-                  <CardTitle className="text-xl font-semibold flex items-center gap-2">
-                    <Timer className="h-5 w-5 text-green-600" />
-                    Quick Meals
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-center p-6 bg-gradient-to-br from-green-50 to-teal-50 rounded-lg">
-                    <div className="text-2xl font-bold text-green-700 mb-2">67%</div>
-                    <p className="text-sm text-green-600 font-medium">Meals under 30 minutes</p>
-                    <p className="text-xs text-slate-500 mt-2">You love quick and efficient cooking!</p>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-
-          {/* Trends Tab */}
-          <TabsContent value="trends" className="space-y-6">
-            <Card className="border-0 shadow-md">
-              <CardHeader>
-                <CardTitle className="text-xl font-semibold flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5 text-green-600" />
-                  Cooking Trends
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-4">
-                    <h4 className="font-semibold text-slate-900">Most Active Days</h4>
-                    {["Sunday", "Wednesday", "Saturday"].map((day, index) => (
-                      <div key={day} className="flex items-center justify-between">
-                        <span className="text-slate-700">{day}</span>
+                  <div className="flex flex-wrap gap-3">
+                    {mealBadges.map((badge) => (
+                      <Badge
+                        key={badge.label}
+                        className={`${badge.color} text-white px-4 py-2 text-sm font-medium shadow-md dark:bg-zinc-700 dark:text-zinc-100`}
+                      >
                         <div className="flex items-center gap-2">
-                          <div className="w-20 h-2 bg-slate-200 rounded-full overflow-hidden">
-                            <div
-                              className="h-full bg-green-500 rounded-full"
-                              style={{ width: `${90 - index * 15}%` }}
-                            />
-                          </div>
-                          <span className="text-sm font-medium text-slate-600">{90 - index * 15}%</span>
+                          {badge.icon}
+                          {badge.label}
                         </div>
-                      </div>
+                      </Badge>
                     ))}
-                  </div>
-                  <div className="space-y-4">
-                    <h4 className="font-semibold text-slate-900">Popular Cuisines</h4>
-                    {["Mediterranean", "Asian", "American"].map((cuisine, index) => (
-                      <div key={cuisine} className="flex items-center justify-between">
-                        <span className="text-slate-700">{cuisine}</span>
+                    {recipeBadges.map((badge) => (
+                      <Badge
+                        key={badge.label}
+                        className={`${badge.color} text-white px-4 py-2 text-sm font-medium shadow-md dark:bg-zinc-700 dark:text-zinc-100`}
+                      >
                         <div className="flex items-center gap-2">
-                          <div className="w-20 h-2 bg-slate-200 rounded-full overflow-hidden">
-                            <div className="h-full bg-blue-500 rounded-full" style={{ width: `${85 - index * 20}%` }} />
-                          </div>
-                          <span className="text-sm font-medium text-slate-600">{85 - index * 20}%</span>
+                          {badge.icon}
+                          {badge.label}
                         </div>
-                      </div>
+                      </Badge>
                     ))}
                   </div>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="text-center text-zinc-400 dark:text-zinc-500">No achievements yet. Start cooking to earn badges!</div>
+            )}
+          </TabsContent>
+
+          {/* Pro-only Tabs with placeholders if not dynamic */}
+          <TabsContent value="nutrition" className="space-y-8">
+            {account?.isPro ? (
+              <Card className="dark:bg-zinc-800 dark:text-zinc-100">
+                <CardContent className="p-8 text-center">
+                  <Apple className="mx-auto mb-4 h-8 w-8 text-green-600 dark:text-green-400" />
+                  <div className="text-xl font-semibold mb-2">Nutrition Analytics</div>
+                  <div className="text-zinc-500 dark:text-zinc-400">Advanced nutrition analytics coming soon for Pro users!</div>
+                </CardContent>
+              </Card>
+            ) : null}
+          </TabsContent>
+          <TabsContent value="planning" className="space-y-8">
+            {account?.isPro ? (
+              <Card className="dark:bg-zinc-800 dark:text-zinc-100">
+                <CardContent className="p-8 text-center">
+                  <Calendar className="mx-auto mb-4 h-8 w-8 text-blue-600 dark:text-blue-400" />
+                  <div className="text-xl font-semibold mb-2">Meal Planning Insights</div>
+                  <div className="text-zinc-500 dark:text-zinc-400">Advanced planning analytics coming soon for Pro users!</div>
+                </CardContent>
+              </Card>
+            ) : null}
+          </TabsContent>
+          <TabsContent value="recipes" className="space-y-8">
+            {account?.isPro ? (
+              <Card className="dark:bg-zinc-800 dark:text-zinc-100">
+                <CardContent className="p-8 text-center">
+                  <ChefHat className="mx-auto mb-4 h-8 w-8 text-purple-600 dark:text-purple-400" />
+                  <div className="text-xl font-semibold mb-2">Recipe Analytics</div>
+                  <div className="text-zinc-500 dark:text-zinc-400">Advanced recipe analytics coming soon for Pro users!</div>
+                </CardContent>
+              </Card>
+            ) : null}
+          </TabsContent>
+          <TabsContent value="trends" className="space-y-8">
+            {account?.isPro ? (
+              <Card className="dark:bg-zinc-800 dark:text-zinc-100">
+                <CardContent className="p-8 text-center">
+                  <TrendingUp className="mx-auto mb-4 h-8 w-8 text-green-600 dark:text-green-400" />
+                  <div className="text-xl font-semibold mb-2">Trends & Insights</div>
+                  <div className="text-zinc-500 dark:text-zinc-400">Trends analytics coming soon for Pro users!</div>
+                </CardContent>
+              </Card>
+            ) : null}
           </TabsContent>
         </Tabs>
       </div>
