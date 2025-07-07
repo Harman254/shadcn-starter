@@ -1,5 +1,5 @@
 'use client';
-import React from 'react';
+import React, { useState } from 'react';
 import { authClient } from '@/lib/auth-client';
 
 // Reusable checkmark icon component
@@ -10,6 +10,7 @@ const CheckIcon = () => (
 );
 
 const CheckoutPage = () => {
+  const [isPending, setIsPending] = useState(false);
   return (
     <div className="max-w-6xl mx-auto p-6">
       <h1 className="text-3xl font-bold mb-8 text-center">Choose Your Plan</h1>
@@ -101,14 +102,20 @@ const CheckoutPage = () => {
               <div className="mt-8">
                 <button
                   onClick={async () => {
-                    await authClient.checkout({
-                      products: ['d6f79514-fa26-4b48-a8f4-da20e3d087c5'],
-                      slug: 'Mealwise-Pro',
-                    });
+                    setIsPending(true);
+                    try {
+                      await authClient.checkout({
+                        products: ['d6f79514-fa26-4b48-a8f4-da20e3d087c5'],
+                        slug: 'Mealwise-Pro',
+                      });
+                    } finally {
+                      setIsPending(false);
+                    }
                   }}
+                  disabled={isPending}
                   className="w-full px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-700 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all duration-200"
                 >
-                  Upgrade Now
+                  {isPending ? 'Processing...' : 'Upgrade Now'}
                 </button>
               </div>
             </div>
