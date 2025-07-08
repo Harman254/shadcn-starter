@@ -24,7 +24,7 @@ export default function CareersPage() {
     {
       icon: <Users className="h-8 w-8 text-zinc-600" />,
       title: "User-First Innovation",
-      description: "Every decision we make starts with our users' needs and experiences in mind.",
+      description: "Every decision we make starts with our users&apos; needs and experiences in mind.",
     },
     {
       icon: <Utensils className="h-8 w-8 text-zinc-600" />,
@@ -125,7 +125,7 @@ export default function CareersPage() {
           <h2 className="text-3xl sm:text-4xl font-bold text-zinc-900 dark:text-zinc-100 mb-8">Why Mealwise?</h2>
           <p className="text-lg text-zinc-600 dark:text-zinc-300 leading-relaxed">
             We believe that everyone deserves access to personalized, intelligent nutrition guidance. Through AI-powered
-            meal planning, smart grocery tools, and intuitive health insights, we're making it easier for people to eat
+            meal planning, smart grocery tools, and intuitive health insights, we&apos;re making it easier for people to eat
             better, feel better, and live healthier lives. Our technology transforms complex nutritional science into
             simple, actionable recommendations that fit seamlessly into busy lifestyles.
           </p>
@@ -213,7 +213,7 @@ export default function CareersPage() {
                   <div className="flex justify-center mb-4">
                     <Heart className="h-6 w-6 text-zinc-400 dark:text-zinc-600" />
                   </div>
-                  <blockquote className="text-zinc-700 dark:text-zinc-200 mb-6 italic">"{testimonial.quote}"</blockquote>
+                  <blockquote className="text-zinc-700 dark:text-zinc-200 mb-6 italic">{testimonial.quote}</blockquote>
                   <div className="text-center">
                     <p className="font-semibold text-zinc-900 dark:text-zinc-100">{testimonial.author}</p>
                     <p className="text-sm text-zinc-600 dark:text-zinc-300">{testimonial.role}</p>
@@ -233,9 +233,9 @@ export default function CareersPage() {
               <Zap className="h-12 w-12 text-zinc-700 dark:text-zinc-200" />
             </div>
           </div>
-          <h2 className="text-3xl sm:text-4xl font-bold text-zinc-900 dark:text-zinc-100 mb-6">Don't See a Role That Fits?</h2>
+          <h2 className="text-3xl sm:text-4xl font-bold text-zinc-900 dark:text-zinc-100 mb-6">Don&apos;t See a Role That Fits?</h2>
           <p className="text-xl text-zinc-600 dark:text-zinc-300 mb-8 max-w-2xl mx-auto">
-            We're always looking for passionate people. Send us your profile anyway.
+            We&apos;re always looking for passionate people. Send us your profile anyway.
           </p>
           <Button
             size="lg"

@@ -51,6 +51,8 @@ export default function AnalyticsDashboard({
   analytics = null, 
   account = null 
 }: AnalyticsDashboardProps) {
+  const [selectedTab, setSelectedTab] = useState("overview")
+
   if (!user?.id) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 flex items-center justify-center">
@@ -137,8 +139,6 @@ export default function AnalyticsDashboard({
       <Activity className="h-4 w-4 text-muted-foreground" />
     )
   }
-
-  const [selectedTab, setSelectedTab] = useState("overview")
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">

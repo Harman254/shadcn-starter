@@ -36,7 +36,7 @@ export default function MealwisePage() {
               Your Personalized Meal Plan — In Seconds
             </h2>
             <p className="text-lg text-gray-600 mb-8 leading-relaxed dark:text-zinc-400">
-              Tell us your goals, diet, and preferences. Our AI (Google Gemini 2.5 Pro) creates a full week's meal plan
+              Tell us your goals, diet, and preferences. Our AI (Google Gemini 2.5 Pro) creates a full week&apos;s meal plan
               with stunning images and personalized recommendations.
             </p>
             <div className="flex flex-wrap gap-3">
@@ -70,7 +70,7 @@ export default function MealwisePage() {
                     <div className="space-y-2">
                       <div className="bg-white p-2 rounded text-xs">
                         <Image
-                          src="/placeholder.svg?height=40&width=60"
+                          src="/image04.webp"
                           alt="Quinoa Bowl"
                           width={60}
                           height={40}
@@ -80,7 +80,7 @@ export default function MealwisePage() {
                       </div>
                       <div className="bg-white p-2 rounded text-xs">
                         <Image
-                          src="/placeholder.svg?height=40&width=60"
+                          src="/image05.webp"
                           alt="Veggie Stir Fry"
                           width={60}
                           height={40}
@@ -188,7 +188,7 @@ export default function MealwisePage() {
               <CardContent className="p-4">
                 <div className="flex gap-4">
                   <Image
-                    src="/placeholder.svg?height=80&width=80"
+                    src="/image05.webp"
                     alt="Salmon Teriyaki"
                     width={80}
                     height={80}
@@ -249,7 +249,7 @@ export default function MealwisePage() {
               </Badge>
               <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6 dark:text-zinc-100">Track Your Eating Habits</h2>
               <p className="text-lg text-gray-600 mb-8 leading-relaxed dark:text-zinc-400">
-                See what meals you eat most, what's working, and where you're improving. Built-in analytics help you
+                See what meals you eat most, what&apos;s working, and where you&apos;re improving. Built-in analytics help you
                 stay consistent and accountable.
               </p>
               <div className="flex flex-wrap gap-3">
@@ -360,7 +360,7 @@ export default function MealwisePage() {
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-3xl md:text-4xl font-bold text-white mb-4 dark:text-zinc-100">Ready to Transform Your Meal Planning?</h2>
           <p className="text-xl text-white/90 mb-8 max-w-2xl mx-auto dark:text-zinc-400">
-            Join thousands of users who've simplified their meal planning with AI-powered recommendations.
+            Join thousands of users who&apos;ve simplified their meal planning with AI-powered recommendations.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href='/meal-plans/new'>
