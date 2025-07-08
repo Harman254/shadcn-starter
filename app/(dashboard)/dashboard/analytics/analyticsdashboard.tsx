@@ -46,11 +46,11 @@ interface AnalyticsDashboardProps {
   account?: UserAccount | null
 }
 
-export default function AnalyticsDashboard({ 
+const  AnalyticsDashboard = ({ 
   user = null, 
   analytics = null, 
   account = null 
-}: AnalyticsDashboardProps) {
+}: AnalyticsDashboardProps) => {
   const [selectedTab, setSelectedTab] = useState("overview")
 
   if (!user?.id) {
@@ -496,3 +496,6 @@ export default function AnalyticsDashboard({
     </div>
   )
 }
+
+
+export default AnalyticsDashboard

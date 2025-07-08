@@ -1,9 +1,10 @@
 import { auth } from "@/lib/auth"
 import { headers } from "next/headers"
 import prisma from "@/lib/prisma"
+
 import AnalyticsDashboard from "./analyticsdashboard"
 
-export default async function AnalyticsPage() {
+const AnalyticsPage = async () => {
   const session = await auth.api.getSession({ headers: await headers() })
   const user = session?.user || null
   const analytics = user
@@ -19,3 +20,5 @@ export default async function AnalyticsPage() {
     </div>
   )
 }
+
+export default AnalyticsPage
