@@ -1,7 +1,9 @@
+'use client'
+import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Tabs, TabsContent } from "@/components/ui/tabs"
 import { Progress } from "@/components/ui/progress"
 import {
   Calendar,
@@ -25,6 +27,7 @@ import {
   BookOpen,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import MenuBar from "./Menubar"
 
 interface AnalyticsData {
     totalMealsCooked: number
@@ -134,6 +137,8 @@ export default function AnalyticsDashboard({
       <Activity className="h-4 w-4 text-muted-foreground" />
     )
   }
+
+  const [selectedTab, setSelectedTab] = useState("overview")
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
@@ -252,30 +257,10 @@ export default function AnalyticsDashboard({
           </div>
         </div>
 
-        <Tabs defaultValue="overview" className="space-y-8">
-          <TabsList className="grid w-full grid-cols-6 h-12 bg-muted p-1 rounded-lg">
-            <TabsTrigger value="overview" className="text-sm font-medium">
-              Overview
-            </TabsTrigger>
-            <TabsTrigger value="achievements" className="text-sm font-medium">
-              Achievements
-            </TabsTrigger>
-            <TabsTrigger value="nutrition" className="text-sm font-medium" disabled={!account?.isPro}>
-              Nutrition {account?.isPro ? null : <span className="ml-1 text-xs text-muted-foreground">Pro</span>}
-            </TabsTrigger>
-            <TabsTrigger value="planning" className="text-sm font-medium" disabled={!account?.isPro}>
-              Planning {account?.isPro ? null : <span className="ml-1 text-xs text-muted-foreground">Pro</span>}
-            </TabsTrigger>
-            <TabsTrigger value="recipes" className="text-sm font-medium" disabled={!account?.isPro}>
-              Recipes {account?.isPro ? null : <span className="ml-1 text-xs text-muted-foreground">Pro</span>}
-            </TabsTrigger>
-            <TabsTrigger value="trends" className="text-sm font-medium" disabled={!account?.isPro}>
-              Trends {account?.isPro ? null : <span className="ml-1 text-xs text-muted-foreground">Pro</span>}
-            </TabsTrigger>
-          </TabsList>
+        <MenuBar selected={selectedTab} onSelect={setSelectedTab} pro={account?.isPro} />
 
-          {/* Overview Tab - for all users */}
-          <TabsContent value="overview" className="space-y-8">
+        {/* Tab Content */}
+        <TabsContent value="overview" className="space-y-8">
             {/* Key Metrics */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <Card className="border-0 shadow-md hover:shadow-lg transition-shadow duration-200">
@@ -419,19 +404,19 @@ export default function AnalyticsDashboard({
               </CardContent>
             </Card>
           </div>
-        </TabsContent>
+        </TabsContent> 
 
-          {/* Achievements Tab - for all users */}
+        {selectedTab === "achievements" && (
           <TabsContent value="achievements" className="space-y-8">
             {(mealBadges.length > 0 || recipeBadges.length > 0) ? (
               <Card className="mb-8">
-            <CardHeader>
+                <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-xl">
                     <Award className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
                     Your Achievements
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
                   <div className="flex flex-wrap gap-3">
                     {mealBadges.map((badge) => (
                       <Badge
@@ -441,7 +426,7 @@ export default function AnalyticsDashboard({
                         <div className="flex items-center gap-2">
                           {badge.icon}
                           {badge.label}
-                    </div>
+                        </div>
                       </Badge>
                     ))}
                     {recipeBadges.map((badge) => (
@@ -452,20 +437,19 @@ export default function AnalyticsDashboard({
                         <div className="flex items-center gap-2">
                           {badge.icon}
                           {badge.label}
-                    </div>
+                        </div>
                       </Badge>
                     ))}
-              </div>
-            </CardContent>
-          </Card>
+                  </div>
+                </CardContent>
+              </Card>
             ) : (
               <div className="text-center text-muted-foreground">No achievements yet. Start cooking to earn badges!</div>
             )}
           </TabsContent>
-
-          {/* Pro-only Tabs with placeholders */}
-          <TabsContent value="nutrition" className="space-y-8">
-            {account?.isPro ? (
+        )}
+          {selectedTab === "nutrition" && account?.isPro && (
+            <TabsContent value="nutrition" className="space-y-8">
               <Card>
                 <CardContent className="p-8 text-center">
                   <Apple className="mx-auto mb-4 h-8 w-8 text-green-600 dark:text-green-400" />
@@ -473,42 +457,41 @@ export default function AnalyticsDashboard({
                   <div className="text-muted-foreground">Advanced nutrition analytics coming soon for Pro users!</div>
                 </CardContent>
               </Card>
-            ) : null}
-          </TabsContent>
-          <TabsContent value="planning" className="space-y-8">
-            {account?.isPro ? (
-            <Card>
+            </TabsContent>
+          )}
+          {selectedTab === "planning" && account?.isPro && (
+            <TabsContent value="planning" className="space-y-8">
+              <Card>
                 <CardContent className="p-8 text-center">
                   <Calendar className="mx-auto mb-4 h-8 w-8 text-blue-600 dark:text-blue-400" />
                   <div className="text-xl font-semibold mb-2">Meal Planning Insights</div>
                   <div className="text-muted-foreground">Advanced planning analytics coming soon for Pro users!</div>
-              </CardContent>
-            </Card>
-            ) : null}
-          </TabsContent>
-          <TabsContent value="recipes" className="space-y-8">
-            {account?.isPro ? (
-            <Card>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          )}
+          {selectedTab === "recipes" && account?.isPro && (
+            <TabsContent value="recipes" className="space-y-8">
+              <Card>
                 <CardContent className="p-8 text-center">
                   <ChefHat className="mx-auto mb-4 h-8 w-8 text-purple-600 dark:text-purple-400" />
                   <div className="text-xl font-semibold mb-2">Recipe Analytics</div>
                   <div className="text-muted-foreground">Advanced recipe analytics coming soon for Pro users!</div>
-              </CardContent>
-            </Card>
-            ) : null}
-          </TabsContent>
-          <TabsContent value="trends" className="space-y-8">
-            {account?.isPro ? (
-            <Card>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          )}
+          {selectedTab === "trends" && account?.isPro && (
+            <TabsContent value="trends" className="space-y-8">
+              <Card>
                 <CardContent className="p-8 text-center">
                   <TrendingUp className="mx-auto mb-4 h-8 w-8 text-green-600 dark:text-green-400" />
                   <div className="text-xl font-semibold mb-2">Trends & Insights</div>
                   <div className="text-muted-foreground">Trends analytics coming soon for Pro users!</div>
-              </CardContent>
-            </Card>
-            ) : null}
-        </TabsContent>
-      </Tabs>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          )}
       </div>
     </div>
   )

@@ -14,6 +14,8 @@ export default async function AnalyticsPage() {
     : null
 
   return (
-    <AnalyticsDashboard user={user} analytics={analytics} account={account} />
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 dark:from-zinc-900 dark:via-zinc-950 dark:to-zinc-900">
+      <AnalyticsDashboard user={user} analytics={analytics} account={account} />
+    </div>
   )
 }

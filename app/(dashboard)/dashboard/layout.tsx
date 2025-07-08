@@ -140,6 +140,8 @@ export default async function DashboardLayout({
         position="bottom-right"
         className="md:mr-4"
       />
+
+      <Footer />
     </div>
   )
 }

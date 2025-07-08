@@ -4,6 +4,7 @@ import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
 import { getAccount, getDBSession } from '@/data';
 import OnboardingPage from './Onboard';
+import Footer from '@/components/footer';
 
 
 const Onboarding =async () => {
@@ -24,7 +25,10 @@ const Onboarding =async () => {
 
 
   return (
+    <>
     <OnboardingPage />
+    <Footer />
+    </>
       
   )
 }

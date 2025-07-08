@@ -217,8 +217,8 @@ const Navbar = () => {
                   <Link href="/blog" className="font-medium" onClick={closeSheet}>
                     Blog
                   </Link>
-                  <Link href="/dashboard/pricing" className="font-medium" onClick={closeSheet}>
-                    Pricing
+                  <Link href="/careers" className="font-medium" onClick={closeSheet}>
+                    Careers 
                   </Link>
                 </div>
 
