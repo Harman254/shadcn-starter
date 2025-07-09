@@ -111,7 +111,17 @@ const sharedTransition = {
 
 const MenuBar: React.FC<MenuBarProps> = ({ selected, onSelect, pro }) => {
   const { theme } = useTheme()
-  const isDarkTheme = theme === "dark"
+  const isDarkTheme = (theme ?? "light") === "dark"
+  const [hovered, setHovered] = React.useState<string | null>(null)
+
+  // Keyboard accessibility handler
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>, isDisabled: boolean, value: string) => {
+    if (isDisabled) return
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault()
+      onSelect(value)
+    }
+  }
 
   return (
     <motion.nav
@@ -129,8 +139,9 @@ const MenuBar: React.FC<MenuBarProps> = ({ selected, onSelect, pro }) => {
       />
       <ul className="flex items-center gap-2 relative z-10">
         {menuItems.map((item) => {
-          const isDisabled = item.pro && !pro
+          const isDisabled = !!(item.pro && !pro)
           const isSelected = selected === item.value
+          const isHovered = hovered === item.value
           return (
             <motion.li key={item.value} className="relative">
               <motion.div
@@ -141,6 +152,11 @@ const MenuBar: React.FC<MenuBarProps> = ({ selected, onSelect, pro }) => {
                 onClick={() => !isDisabled && onSelect(item.value)}
                 tabIndex={isDisabled ? -1 : 0}
                 aria-disabled={isDisabled}
+                onKeyDown={(e) => handleKeyDown(e, isDisabled, item.value)}
+                onMouseEnter={() => setHovered(item.value)}
+                onMouseLeave={() => setHovered(null)}
+                role="button"
+                aria-pressed={isSelected}
               >
                 <motion.div
                   className="absolute inset-0 z-0 pointer-events-none"
@@ -157,7 +173,7 @@ const MenuBar: React.FC<MenuBarProps> = ({ selected, onSelect, pro }) => {
                   transition={sharedTransition}
                   style={{ transformStyle: "preserve-3d", transformOrigin: "center bottom" }}
                 >
-                  <span className={`transition-colors duration-300 group-hover:${item.iconColor} text-foreground`}>
+                  <span className={`transition-colors duration-300 ${isHovered ? item.iconColor : "text-foreground"}`}> 
                     {item.icon}
                   </span>
                   <span>{item.label}</span>
@@ -171,7 +187,7 @@ const MenuBar: React.FC<MenuBarProps> = ({ selected, onSelect, pro }) => {
                   transition={sharedTransition}
                   style={{ transformStyle: "preserve-3d", transformOrigin: "center top", rotateX: 90 }}
                 >
-                  <span className={`transition-colors duration-300 group-hover:${item.iconColor} text-foreground`}>
+                  <span className={`transition-colors duration-300 ${isHovered ? item.iconColor : "text-foreground"}`}>
                     {item.icon}
                   </span>
                   <span>{item.label}</span>
