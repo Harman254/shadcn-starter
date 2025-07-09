@@ -269,156 +269,156 @@ const  AnalyticsDashboard = ({
           </div>
         </div>
 
-        <MenuBar selected={selectedTab} onSelect={setSelectedTab} pro={account?.isPro} />
+        {/* Tabs Wrapper Start */}
+        <Tabs value={selectedTab} onValueChange={setSelectedTab}>
+          <MenuBar selected={selectedTab} onSelect={setSelectedTab} pro={account?.isPro} />
 
-        {/* Tab Content */}
-        <TabsContent value="overview" className="space-y-8">
-            {/* Key Metrics */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <Card className="border-0 shadow-md hover:shadow-lg transition-shadow duration-200">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-                  <CardTitle className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-                    Total Meals
-                </CardTitle>
-                  <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/20 rounded-lg flex items-center justify-center">
-                    <Utensils className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                  </div>
-              </CardHeader>
-              <CardContent>
-                  <div className="text-3xl font-bold text-foreground mb-2">{safeAnalytics.totalMealsCooked}</div>
-                  <div className="flex items-center gap-2 text-sm">
-                    {getChangeIcon(5)}
-                    <span className="text-emerald-600 font-medium">+12% from last month</span>
-                </div>
-              </CardContent>
-            </Card>
-
-              <Card className="border-0 shadow-md hover:shadow-lg transition-shadow duration-200">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-                  <CardTitle className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-                    Recipes Tried
-                </CardTitle>
-                  <div className="w-10 h-10 bg-purple-100 dark:bg-purple-900/20 rounded-lg flex items-center justify-center">
-                    <ChefHat className="h-5 w-5 text-purple-600 dark:text-purple-400" />
-                  </div>
+          <TabsContent value="overview" className="space-y-8">
+              {/* Key Metrics */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <Card className="border-0 shadow-md hover:shadow-lg transition-shadow duration-200">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+                    <CardTitle className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                      Total Meals
+                  </CardTitle>
+                    <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/20 rounded-lg flex items-center justify-center">
+                      <Utensils className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                    </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-bold text-foreground mb-2">{safeAnalytics.totalRecipesTried}</div>
-                  <p className="text-sm text-muted-foreground font-medium">New recipes discovered</p>
-              </CardContent>
-            </Card>
-
-              <Card className="border-0 shadow-md hover:shadow-lg transition-shadow duration-200">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-                  <CardTitle className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-                    Avg Cook Time
-                </CardTitle>
-                  <div className="w-10 h-10 bg-orange-100 dark:bg-orange-900/20 rounded-lg flex items-center justify-center">
-                    <Clock className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+                    <div className="text-3xl font-bold text-foreground mb-2">{safeAnalytics.totalMealsCooked}</div>
+                    <div className="flex items-center gap-2 text-sm">
+                      {getChangeIcon(5)}
+                      <span className="text-emerald-600 font-medium">+12% from last month</span>
                   </div>
+                </CardContent>
+              </Card>
+
+                <Card className="border-0 shadow-md hover:shadow-lg transition-shadow duration-200">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+                    <CardTitle className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                      Recipes Tried
+                  </CardTitle>
+                    <div className="w-10 h-10 bg-purple-100 dark:bg-purple-900/20 rounded-lg flex items-center justify-center">
+                      <ChefHat className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-3xl font-bold text-foreground mb-2">{safeAnalytics.totalRecipesTried}</div>
+                    <p className="text-sm text-muted-foreground font-medium">New recipes discovered</p>
+                </CardContent>
+              </Card>
+
+                <Card className="border-0 shadow-md hover:shadow-lg transition-shadow duration-200">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+                    <CardTitle className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                      Avg Cook Time
+                  </CardTitle>
+                    <div className="w-10 h-10 bg-orange-100 dark:bg-orange-900/20 rounded-lg flex items-center justify-center">
+                      <Clock className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-3xl font-bold text-foreground mb-2">
+                      {safeAnalytics.averageCookTime}
+                      <span className="text-lg text-muted-foreground">min</span>
+                    </div>
+                    <p className="text-sm text-muted-foreground font-medium">Per meal preparation</p>
+                </CardContent>
+              </Card>
+
+                <Card className="border-0 shadow-md hover:shadow-lg transition-shadow duration-200">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+                    <CardTitle className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                      Favorites
+                  </CardTitle>
+                    <div className="w-10 h-10 bg-red-100 dark:bg-red-900/20 rounded-lg flex items-center justify-center">
+                      <Heart className="h-5 w-5 text-red-600 dark:text-red-400" />
+                    </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-bold text-foreground mb-2">
-                    {safeAnalytics.averageCookTime}
-                    <span className="text-lg text-muted-foreground">min</span>
-                  </div>
-                  <p className="text-sm text-muted-foreground font-medium">Per meal preparation</p>
-              </CardContent>
-            </Card>
+                    <div className="text-3xl font-bold text-foreground mb-2">{safeAnalytics.favoriteRecipes}</div>
+                    <p className="text-sm text-muted-foreground font-medium">Recipes you loved</p>
+                </CardContent>
+              </Card>
+            </div>
 
-              <Card className="border-0 shadow-md hover:shadow-lg transition-shadow duration-200">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-                  <CardTitle className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-                    Favorites
-                </CardTitle>
-                  <div className="w-10 h-10 bg-red-100 dark:bg-red-900/20 rounded-lg flex items-center justify-center">
-                    <Heart className="h-5 w-5 text-red-600 dark:text-red-400" />
-                  </div>
-              </CardHeader>
-              <CardContent>
-                  <div className="text-3xl font-bold text-foreground mb-2">{safeAnalytics.favoriteRecipes}</div>
-                  <p className="text-sm text-muted-foreground font-medium">Recipes you loved</p>
-              </CardContent>
-            </Card>
-          </div>
-
-            {/* Progress Section */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card className="border-0 shadow-md">
-            <CardHeader>
-                  <CardTitle className="text-xl font-semibold flex items-center gap-2">
-                    <Target className="h-5 w-5 text-green-600 dark:text-green-400" />
-                    Monthly Goals
-              </CardTitle>
-            </CardHeader>
-                <CardContent className="space-y-6">
-                  <div>
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="text-sm font-medium text-foreground">Meals Cooked</span>
-                      <span className="text-sm font-semibold text-foreground">15/20</span>
-                    </div>
-                    <Progress value={75} className="h-2" />
-                  </div>
-                  <div>
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="text-sm font-medium text-foreground">New Recipes</span>
-                      <span className="text-sm font-semibold text-foreground">3/5</span>
-                    </div>
-                    <Progress value={60} className="h-2" />
-                  </div>
-                  <div>
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="text-sm font-medium text-foreground">Healthy Meals</span>
-                      <span className="text-sm font-semibold text-foreground">12/15</span>
-                    </div>
-                    <Progress value={80} className="h-2" />
-              </div>
-            </CardContent>
-          </Card>
-
-              <Card className="border-0 shadow-md">
+              {/* Progress Section */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <Card className="border-0 shadow-md">
               <CardHeader>
-                  <CardTitle className="text-xl font-semibold flex items-center gap-2">
-                    <Activity className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                    Recent Activity
+                    <CardTitle className="text-xl font-semibold flex items-center gap-2">
+                      <Target className="h-5 w-5 text-green-600 dark:text-green-400" />
+                      Monthly Goals
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                    <div className="flex items-center gap-3 p-3 bg-green-50 dark:bg-green-950/20 rounded-lg">
-                      <div className="w-8 h-8 bg-green-100 dark:bg-green-900/20 rounded-full flex items-center justify-center">
-                        <Utensils className="h-4 w-4 text-green-600 dark:text-green-400" />
-                        </div>
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-foreground">Cooked Chicken Stir Fry</p>
-                        <p className="text-xs text-muted-foreground">2 hours ago</p>
+                  <CardContent className="space-y-6">
+                    <div>
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-sm font-medium text-foreground">Meals Cooked</span>
+                        <span className="text-sm font-semibold text-foreground">15/20</span>
                       </div>
+                      <Progress value={75} className="h-2" />
                     </div>
-                    <div className="flex items-center gap-3 p-3 bg-blue-50 dark:bg-blue-950/20 rounded-lg">
-                      <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900/20 rounded-full flex items-center justify-center">
-                        <BookOpen className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                </div>
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-foreground">Saved Mediterranean Bowl</p>
-                        <p className="text-xs text-muted-foreground">1 day ago</p>
+                    <div>
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-sm font-medium text-foreground">New Recipes</span>
+                        <span className="text-sm font-semibold text-foreground">3/5</span>
                       </div>
+                      <Progress value={60} className="h-2" />
                     </div>
-                    <div className="flex items-center gap-3 p-3 bg-purple-50 dark:bg-purple-950/20 rounded-lg">
-                      <div className="w-8 h-8 bg-purple-100 dark:bg-purple-900/20 rounded-full flex items-center justify-center">
-                        <Heart className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                    <div>
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-sm font-medium text-foreground">Healthy Meals</span>
+                        <span className="text-sm font-semibold text-foreground">12/15</span>
                       </div>
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-foreground">Favorited Pasta Recipe</p>
-                        <p className="text-xs text-muted-foreground">3 days ago</p>
-                      </div>
-                    </div>
+                      <Progress value={80} className="h-2" />
                 </div>
               </CardContent>
             </Card>
-          </div>
-        </TabsContent> 
 
-        {selectedTab === "achievements" && (
+                <Card className="border-0 shadow-md">
+                <CardHeader>
+                    <CardTitle className="text-xl font-semibold flex items-center gap-2">
+                      <Activity className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                      Recent Activity
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                      <div className="flex items-center gap-3 p-3 bg-green-50 dark:bg-green-950/20 rounded-lg">
+                        <div className="w-8 h-8 bg-green-100 dark:bg-green-900/20 rounded-full flex items-center justify-center">
+                          <Utensils className="h-4 w-4 text-green-600 dark:text-green-400" />
+                          </div>
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-foreground">Cooked Chicken Stir Fry</p>
+                          <p className="text-xs text-muted-foreground">2 hours ago</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3 p-3 bg-blue-50 dark:bg-blue-950/20 rounded-lg">
+                        <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900/20 rounded-full flex items-center justify-center">
+                          <BookOpen className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                  </div>
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-foreground">Saved Mediterranean Bowl</p>
+                          <p className="text-xs text-muted-foreground">1 day ago</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3 p-3 bg-purple-50 dark:bg-purple-950/20 rounded-lg">
+                        <div className="w-8 h-8 bg-purple-100 dark:bg-purple-900/20 rounded-full flex items-center justify-center">
+                          <Heart className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-foreground">Favorited Pasta Recipe</p>
+                          <p className="text-xs text-muted-foreground">3 days ago</p>
+                        </div>
+                      </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent> 
+
           <TabsContent value="achievements" className="space-y-8">
             {(mealBadges.length > 0 || recipeBadges.length > 0) ? (
               <Card className="mb-8">
@@ -459,9 +459,9 @@ const  AnalyticsDashboard = ({
               <div className="text-center text-muted-foreground">No achievements yet. Start cooking to earn badges!</div>
             )}
           </TabsContent>
-        )}
-          {selectedTab === "nutrition" && account?.isPro && (
-            <TabsContent value="nutrition" className="space-y-8">
+
+          <TabsContent value="nutrition" className="space-y-8">
+            {account?.isPro ? (
               <Card>
                 <CardContent className="p-8 text-center">
                   <Apple className="mx-auto mb-4 h-8 w-8 text-green-600 dark:text-green-400" />
@@ -469,10 +469,13 @@ const  AnalyticsDashboard = ({
                   <div className="text-muted-foreground">Advanced nutrition analytics coming soon for Pro users!</div>
                 </CardContent>
               </Card>
-            </TabsContent>
-          )}
-          {selectedTab === "planning" && account?.isPro && (
-            <TabsContent value="planning" className="space-y-8">
+            ) : (
+              <div className="text-center text-muted-foreground">Upgrade to Pro to access nutrition analytics.</div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="planning" className="space-y-8">
+            {account?.isPro ? (
               <Card>
                 <CardContent className="p-8 text-center">
                   <Calendar className="mx-auto mb-4 h-8 w-8 text-blue-600 dark:text-blue-400" />
@@ -480,10 +483,13 @@ const  AnalyticsDashboard = ({
                   <div className="text-muted-foreground">Advanced planning analytics coming soon for Pro users!</div>
                 </CardContent>
               </Card>
-            </TabsContent>
-          )}
-          {selectedTab === "recipes" && account?.isPro && (
-            <TabsContent value="recipes" className="space-y-8">
+            ) : (
+              <div className="text-center text-muted-foreground">Upgrade to Pro to access planning analytics.</div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="recipes" className="space-y-8">
+            {account?.isPro ? (
               <Card>
                 <CardContent className="p-8 text-center">
                   <ChefHat className="mx-auto mb-4 h-8 w-8 text-purple-600 dark:text-purple-400" />
@@ -491,10 +497,13 @@ const  AnalyticsDashboard = ({
                   <div className="text-muted-foreground">Advanced recipe analytics coming soon for Pro users!</div>
                 </CardContent>
               </Card>
-            </TabsContent>
-          )}
-          {selectedTab === "trends" && account?.isPro && (
-            <TabsContent value="trends" className="space-y-8">
+            ) : (
+              <div className="text-center text-muted-foreground">Upgrade to Pro to access recipe analytics.</div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="trends" className="space-y-8">
+            {account?.isPro ? (
               <Card>
                 <CardContent className="p-8 text-center">
                   <TrendingUp className="mx-auto mb-4 h-8 w-8 text-green-600 dark:text-green-400" />
@@ -502,8 +511,12 @@ const  AnalyticsDashboard = ({
                   <div className="text-muted-foreground">Trends analytics coming soon for Pro users!</div>
                 </CardContent>
               </Card>
-            </TabsContent>
-          )}
+            ) : (
+              <div className="text-center text-muted-foreground">Upgrade to Pro to access trends analytics.</div>
+            )}
+          </TabsContent>
+        </Tabs>
+        {/* Tabs Wrapper End */}
       </div>
     </div>
   )
