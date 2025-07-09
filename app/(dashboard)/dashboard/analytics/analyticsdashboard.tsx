@@ -47,9 +47,9 @@ interface AnalyticsDashboardProps {
 }
 
 const  AnalyticsDashboard = ({ 
-  user = null, 
-  analytics = null, 
-  account = null 
+  user,
+  analytics,
+  account,
 }: AnalyticsDashboardProps) => {
   const [selectedTab, setSelectedTab] = useState("overview")
 
