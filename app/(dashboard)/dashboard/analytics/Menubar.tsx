@@ -44,14 +44,7 @@ const menuItems: MenuItem[] = [
     iconColor: "text-green-500",
     pro: true,
   },
-  {
-    icon: <Settings className="h-4 w-4 sm:h-5 sm:w-5" />,
-    label: "Planning",
-    value: "planning",
-    gradient: "radial-gradient(circle, rgba(34,197,94,0.15) 0%, rgba(22,163,74,0.06) 50%, rgba(21,128,61,0) 100%)",
-    iconColor: "text-green-500",
-    pro: true,
-  },
+ 
   {
     icon: <User className="h-4 w-4 sm:h-5 sm:w-5" />,
     label: "Recipes",
@@ -60,14 +53,7 @@ const menuItems: MenuItem[] = [
     iconColor: "text-red-500",
     pro: true,
   },
-  {
-    icon: <Bell className="h-4 w-4 sm:h-5 sm:w-5" />,
-    label: "Trends",
-    value: "trends",
-    gradient: "radial-gradient(circle, rgba(59,130,246,0.15) 0%, rgba(37,99,235,0.06) 50%, rgba(29,78,216,0) 100%)",
-    iconColor: "text-blue-500",
-    pro: true,
-  },
+  
 ]
 
 const itemVariants = {
@@ -195,7 +181,7 @@ const MenuBar: React.FC<MenuBarProps> = ({ selected, onSelect, pro }) => {
   }
 
   return (
-    <div className="relative w-full mb-4 sm:mb-6 md:mb-8">
+    <div className="relative  m-4 sm:mb-6 md:mb-8">
       <motion.nav
         className="relative p-1.5 sm:p-2 rounded-xl sm:rounded-2xl bg-gradient-to-b from-background/80 to-background/40 backdrop-blur-lg border border-border/40 shadow-lg"
         initial="initial"
