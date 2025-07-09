@@ -148,7 +148,7 @@ const MenuBar: React.FC<MenuBarProps> = ({ selected, onSelect, pro }) => {
           willChange: 'opacity', // Optimize for opacity changes
         }}
       />
-      <ul className="flex items-center gap-2 relative z-10">
+      <ul className="flex flex-nowrap items-center gap-2 relative z-10 overflow-x-auto w-full scrollbar-hide h-12">
         {menuItems.map((item) => {
           const isDisabled = !!(item.pro && !pro)
           const isSelected = selected === item.value

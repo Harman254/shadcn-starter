@@ -16,10 +16,7 @@ const AnalyticsPage = async () => {
     : null;
 
   return (
-    <>
       <AnalyticsDashboard user={user} analytics={analytics} account={account} />
-      <Footer />
-    </>
   )
 }
 
