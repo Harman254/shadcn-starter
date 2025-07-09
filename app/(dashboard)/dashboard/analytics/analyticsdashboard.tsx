@@ -152,7 +152,7 @@ const AnalyticsDashboard = ({
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
-      <div className="container mx-auto px-4 py-8 max-w-7xl">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 max-w-7xl">
         {/* Pro Banner or Upgrade CTA */}
         {account?.isPro ? (
           <Card className="mb-8 border-0 bg-gradient-to-r from-emerald-500 via-green-500 to-teal-500 text-white shadow-xl">
@@ -204,8 +204,8 @@ const AnalyticsDashboard = ({
                 <Heart className="h-6 w-6 text-green-600 dark:text-green-400" />
                         </div>
               <div>
-                <h3 className="text-lg font-semibold text-green-900 dark:text-green-100">{motivation.title}</h3>
-                <p className="text-green-700 dark:text-green-300">{motivation.message}</p>
+                <h3 className="text-base md:text-lg font-semibold text-green-900 dark:text-green-100">{motivation.title}</h3>
+                <p className="text-base md:text-lg text-green-700 dark:text-green-300 font-medium">{motivation.message}</p>
                       </div>
                 </div>
               </CardContent>
@@ -215,7 +215,7 @@ const AnalyticsDashboard = ({
         {(mealBadges.length > 0 || recipeBadges.length > 0) && (
           <Card className="mb-8">
               <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-xl">
+              <CardTitle className="flex items-center gap-2 text-lg md:text-xl font-semibold">
                 <Award className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
                 Your Achievements
                 </CardTitle>
@@ -225,7 +225,7 @@ const AnalyticsDashboard = ({
                 {mealBadges.map((badge) => (
                   <Badge
                     key={badge.label}
-                    className={`${badge.color} text-white px-4 py-2 text-sm font-medium shadow-md`}
+                    className={`${badge.color} text-white px-4 py-2 text-sm md:text-base font-semibold shadow-md rounded-lg`}
                   >
                     <div className="flex items-center gap-2">
                       {badge.icon}
@@ -236,7 +236,7 @@ const AnalyticsDashboard = ({
                 {recipeBadges.map((badge) => (
                   <Badge
                     key={badge.label}
-                    className={`${badge.color} text-white px-4 py-2 text-sm font-medium shadow-md`}
+                    className={`${badge.color} text-white px-4 py-2 text-sm md:text-base font-semibold shadow-md rounded-lg`}
                   >
                     <div className="flex items-center gap-2">
                       {badge.icon}
@@ -256,13 +256,13 @@ const AnalyticsDashboard = ({
               <BarChart3 className="h-6 w-6 text-white" />
             </div>
             <div>
-              <h1 className="tracking-tighter text-xl">
+              <h1 className="tracking-tighter text-xl md:text-2xl font-bold">
                 <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 via-foreground/90 to-rose-500 font-bold">
                   Mealwise
                 </span>
                 <span className="text-foreground"> Analytics</span>
               </h1>
-              <p className="text-lg text-muted-foreground mt-1">
+              <p className="text-base md:text-lg text-muted-foreground mt-1 font-medium">
                 Insights into your culinary journey and meal planning success
               </p>
             </div>
@@ -275,9 +275,9 @@ const AnalyticsDashboard = ({
 
           <TabsContent value="overview" className="space-y-8">
               {/* Key Metrics */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <Card className="border-0 shadow-md hover:shadow-lg transition-shadow duration-200">
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+                <Card className="border-0 shadow-md hover:shadow-lg transition-shadow duration-200 rounded-xl">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3 p-4 md:p-6">
                     <CardTitle className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
                       Total Meals
                   </CardTitle>
@@ -285,17 +285,17 @@ const AnalyticsDashboard = ({
                       <Utensils className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                     </div>
                 </CardHeader>
-                <CardContent>
-                    <div className="text-3xl font-bold text-foreground mb-2">{safeAnalytics.totalMealsCooked}</div>
-                    <div className="flex items-center gap-2 text-sm">
+                <CardContent className="p-4 md:p-6">
+                    <div className="text-2xl md:text-3xl font-bold text-foreground mb-2">{safeAnalytics.totalMealsCooked}</div>
+                    <div className="flex items-center gap-2 text-sm md:text-base font-medium">
                       {getChangeIcon(5)}
-                      <span className="text-emerald-600 font-medium">+12% from last month</span>
+                      <span className="text-emerald-600 font-semibold">+12% from last month</span>
                   </div>
                 </CardContent>
               </Card>
 
-                <Card className="border-0 shadow-md hover:shadow-lg transition-shadow duration-200">
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+                <Card className="border-0 shadow-md hover:shadow-lg transition-shadow duration-200 rounded-xl">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3 p-4 md:p-6">
                     <CardTitle className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
                       Recipes Tried
                   </CardTitle>
@@ -303,14 +303,14 @@ const AnalyticsDashboard = ({
                       <ChefHat className="h-5 w-5 text-purple-600 dark:text-purple-400" />
                     </div>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="p-4 md:p-6">
                     <div className="text-3xl font-bold text-foreground mb-2">{safeAnalytics.totalRecipesTried}</div>
                     <p className="text-sm text-muted-foreground font-medium">New recipes discovered</p>
                 </CardContent>
               </Card>
 
-                <Card className="border-0 shadow-md hover:shadow-lg transition-shadow duration-200">
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+                <Card className="border-0 shadow-md hover:shadow-lg transition-shadow duration-200 rounded-xl">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3 p-4 md:p-6">
                     <CardTitle className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
                       Avg Cook Time
                   </CardTitle>
@@ -318,7 +318,7 @@ const AnalyticsDashboard = ({
                       <Clock className="h-5 w-5 text-orange-600 dark:text-orange-400" />
                     </div>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="p-4 md:p-6">
                     <div className="text-3xl font-bold text-foreground mb-2">
                       {safeAnalytics.averageCookTime}
                       <span className="text-lg text-muted-foreground">min</span>
@@ -327,8 +327,8 @@ const AnalyticsDashboard = ({
                 </CardContent>
               </Card>
 
-                <Card className="border-0 shadow-md hover:shadow-lg transition-shadow duration-200">
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+                <Card className="border-0 shadow-md hover:shadow-lg transition-shadow duration-200 rounded-xl">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3 p-4 md:p-6">
                     <CardTitle className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
                       Favorites
                   </CardTitle>
@@ -336,7 +336,7 @@ const AnalyticsDashboard = ({
                       <Heart className="h-5 w-5 text-red-600 dark:text-red-400" />
                     </div>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="p-4 md:p-6">
                     <div className="text-3xl font-bold text-foreground mb-2">{safeAnalytics.favoriteRecipes}</div>
                     <p className="text-sm text-muted-foreground font-medium">Recipes you loved</p>
                 </CardContent>
@@ -345,14 +345,14 @@ const AnalyticsDashboard = ({
 
               {/* Progress Section */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <Card className="border-0 shadow-md">
+                <Card className="border-0 shadow-md rounded-xl">
               <CardHeader>
                     <CardTitle className="text-xl font-semibold flex items-center gap-2">
                       <Target className="h-5 w-5 text-green-600 dark:text-green-400" />
                       Monthly Goals
                 </CardTitle>
               </CardHeader>
-                  <CardContent className="space-y-6">
+                  <CardContent className="space-y-6 p-4 md:p-6">
                     <div>
                       <div className="flex justify-between items-center mb-2">
                         <span className="text-sm font-medium text-foreground">Meals Cooked</span>
@@ -377,14 +377,14 @@ const AnalyticsDashboard = ({
               </CardContent>
             </Card>
 
-                <Card className="border-0 shadow-md">
+                <Card className="border-0 shadow-md rounded-xl">
                 <CardHeader>
                     <CardTitle className="text-xl font-semibold flex items-center gap-2">
                       <Activity className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                       Recent Activity
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="p-4 md:p-6">
                   <div className="space-y-4">
                       <div className="flex items-center gap-3 p-3 bg-green-50 dark:bg-green-950/20 rounded-lg">
                         <div className="w-8 h-8 bg-green-100 dark:bg-green-900/20 rounded-full flex items-center justify-center">
@@ -423,7 +423,7 @@ const AnalyticsDashboard = ({
             {(mealBadges.length > 0 || recipeBadges.length > 0) ? (
               <Card className="mb-8">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-xl">
+                  <CardTitle className="flex items-center gap-2 text-lg md:text-xl font-semibold">
                     <Award className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
                     Your Achievements
                   </CardTitle>
@@ -433,7 +433,7 @@ const AnalyticsDashboard = ({
                     {mealBadges.map((badge) => (
                       <Badge
                         key={badge.label}
-                        className={`${badge.color} text-white px-4 py-2 text-sm font-medium shadow-md`}
+                        className={`${badge.color} text-white px-4 py-2 text-sm md:text-base font-semibold shadow-md rounded-lg`}
                       >
                         <div className="flex items-center gap-2">
                           {badge.icon}
@@ -444,7 +444,7 @@ const AnalyticsDashboard = ({
                     {recipeBadges.map((badge) => (
                       <Badge
                         key={badge.label}
-                        className={`${badge.color} text-white px-4 py-2 text-sm font-medium shadow-md`}
+                        className={`${badge.color} text-white px-4 py-2 text-sm md:text-base font-semibold shadow-md rounded-lg`}
                       >
                         <div className="flex items-center gap-2">
                           {badge.icon}
@@ -462,7 +462,7 @@ const AnalyticsDashboard = ({
 
           <TabsContent value="nutrition" className="space-y-8">
             {account?.isPro ? (
-              <Card>
+              <Card className="rounded-xl">
                 <CardContent className="p-8 text-center">
                   <Apple className="mx-auto mb-4 h-8 w-8 text-green-600 dark:text-green-400" />
                   <div className="text-xl font-semibold mb-2">Nutrition Analytics</div>
@@ -476,7 +476,7 @@ const AnalyticsDashboard = ({
 
           <TabsContent value="planning" className="space-y-8">
             {account?.isPro ? (
-              <Card>
+              <Card className="rounded-xl">
                 <CardContent className="p-8 text-center">
                   <Calendar className="mx-auto mb-4 h-8 w-8 text-blue-600 dark:text-blue-400" />
                   <div className="text-xl font-semibold mb-2">Meal Planning Insights</div>
@@ -490,7 +490,7 @@ const AnalyticsDashboard = ({
 
           <TabsContent value="recipes" className="space-y-8">
             {account?.isPro ? (
-              <Card>
+              <Card className="rounded-xl">
                 <CardContent className="p-8 text-center">
                   <ChefHat className="mx-auto mb-4 h-8 w-8 text-purple-600 dark:text-purple-400" />
                   <div className="text-xl font-semibold mb-2">Recipe Analytics</div>
@@ -504,7 +504,7 @@ const AnalyticsDashboard = ({
 
           <TabsContent value="trends" className="space-y-8">
             {account?.isPro ? (
-              <Card>
+              <Card className="rounded-xl">
                 <CardContent className="p-8 text-center">
                   <TrendingUp className="mx-auto mb-4 h-8 w-8 text-green-600 dark:text-green-400" />
                   <div className="text-xl font-semibold mb-2">Trends & Insights</div>
