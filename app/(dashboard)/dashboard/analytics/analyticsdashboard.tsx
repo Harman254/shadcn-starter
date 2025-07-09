@@ -28,6 +28,7 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import MenuBar from "./Menubar"
+import { useRouter } from "next/navigation"
 
 interface AnalyticsData {
     totalMealsCooked: number
@@ -52,6 +53,15 @@ const  AnalyticsDashboard = ({
   account,
 }: AnalyticsDashboardProps) => {
   const [selectedTab, setSelectedTab] = useState("overview")
+  const router = useRouter()
+
+  // Provide default values to prevent runtime errors
+  const safeAnalytics = {
+    totalMealsCooked: analytics?.totalMealsCooked ?? 0,
+    totalRecipesTried: analytics?.totalRecipesTried ?? 0,
+    averageCookTime: analytics?.averageCookTime ?? 0,
+    favoriteRecipes: analytics?.favoriteRecipes ?? 0,
+  }
 
   if (!user?.id) {
     return (
@@ -63,7 +73,7 @@ const  AnalyticsDashboard = ({
             </div>
             <h2 className="text-xl font-semibold text-foreground mb-2">Sign In Required</h2>
             <p className="text-muted-foreground mb-4">Please sign in to view your analytics dashboard.</p>
-            <Button>Sign In</Button>
+            <Button aria-label="Sign In" onClick={() => router.push("/sign-in")}>Sign In</Button>
           </CardContent>
         </Card>
       </div>
@@ -83,7 +93,7 @@ const  AnalyticsDashboard = ({
               No analytics data found yet. Start saving meal plans and cooking recipes to see your personalized insights
               and achievements!
             </p>
-            <Button className="bg-green-600 hover:bg-green-700 text-white">
+            <Button className="bg-green-600 hover:bg-green-700 text-white" aria-label="Create Your First Meal Plan" onClick={() => router.push("/meal-plans/new")}> 
               <Utensils className="mr-2 h-4 w-4" />
               Create Your First Meal Plan
             </Button>
@@ -98,13 +108,13 @@ const  AnalyticsDashboard = ({
     { count: 10, label: "First 10 Meals", icon: <Utensils className="h-4 w-4" />, color: "bg-green-500" },
     { count: 50, label: "Half Century", icon: <Trophy className="h-4 w-4" />, color: "bg-blue-500" },
     { count: 100, label: "Centurion Chef", icon: <Crown className="h-4 w-4" />, color: "bg-yellow-500" },
-  ].filter((b) => analytics.totalMealsCooked >= b.count)
+  ].filter((b) => safeAnalytics.totalMealsCooked >= b.count)
 
   const recipeBadges = [
     { count: 5, label: "Recipe Explorer", icon: <BookOpen className="h-4 w-4" />, color: "bg-purple-500" },
     { count: 20, label: "Culinary Adventurer", icon: <Trophy className="h-4 w-4" />, color: "bg-indigo-500" },
     { count: 50, label: "Master Chef", icon: <ChefHat className="h-4 w-4" />, color: "bg-orange-500" },
-  ].filter((b) => analytics.totalRecipesTried >= b.count)
+  ].filter((b) => safeAnalytics.totalRecipesTried >= b.count)
 
   // Motivational message
   let motivation = {
@@ -112,17 +122,17 @@ const  AnalyticsDashboard = ({
     message: "Every meal you cook is a step toward mastering your culinary journey.",
   }
 
-  if (analytics.totalMealsCooked >= 100) {
+  if (safeAnalytics.totalMealsCooked >= 100) {
     motivation = {
       title: "Meal Master Achieved! 🏆",
       message: "Incredible consistency and dedication to your cooking goals.",
     }
-  } else if (analytics.totalMealsCooked >= 50) {
+  } else if (safeAnalytics.totalMealsCooked >= 50) {
     motivation = {
       title: "Amazing Progress! 🌟",
       message: "50+ meals cooked shows real commitment to your culinary journey.",
     }
-  } else if (analytics.totalMealsCooked >= 10) {
+  } else if (safeAnalytics.totalMealsCooked >= 10) {
     motivation = {
       title: "Great Start! 🚀",
       message: "You're building excellent cooking habits. Keep it up!",
@@ -175,6 +185,8 @@ const  AnalyticsDashboard = ({
                 <Button
                   variant="secondary"
                   className="bg-white text-orange-600 hover:bg-orange-50 font-semibold shadow-md"
+                  aria-label="Upgrade to Pro"
+                  onClick={() => router.push("/upgrade")}
                 >
                   <Crown className="mr-2 h-4 w-4" />
                   Upgrade to Pro
@@ -273,7 +285,7 @@ const  AnalyticsDashboard = ({
                   </div>
               </CardHeader>
               <CardContent>
-                  <div className="text-3xl font-bold text-foreground mb-2">{analytics.totalMealsCooked}</div>
+                  <div className="text-3xl font-bold text-foreground mb-2">{safeAnalytics.totalMealsCooked}</div>
                   <div className="flex items-center gap-2 text-sm">
                     {getChangeIcon(5)}
                     <span className="text-emerald-600 font-medium">+12% from last month</span>
@@ -291,7 +303,7 @@ const  AnalyticsDashboard = ({
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-bold text-foreground mb-2">{analytics.totalRecipesTried}</div>
+                  <div className="text-3xl font-bold text-foreground mb-2">{safeAnalytics.totalRecipesTried}</div>
                   <p className="text-sm text-muted-foreground font-medium">New recipes discovered</p>
               </CardContent>
             </Card>
@@ -307,7 +319,7 @@ const  AnalyticsDashboard = ({
                 </CardHeader>
                 <CardContent>
                   <div className="text-3xl font-bold text-foreground mb-2">
-                    {analytics.averageCookTime}
+                    {safeAnalytics.averageCookTime}
                     <span className="text-lg text-muted-foreground">min</span>
                   </div>
                   <p className="text-sm text-muted-foreground font-medium">Per meal preparation</p>
@@ -324,7 +336,7 @@ const  AnalyticsDashboard = ({
                   </div>
               </CardHeader>
               <CardContent>
-                  <div className="text-3xl font-bold text-foreground mb-2">{analytics.favoriteRecipes}</div>
+                  <div className="text-3xl font-bold text-foreground mb-2">{safeAnalytics.favoriteRecipes}</div>
                   <p className="text-sm text-muted-foreground font-medium">Recipes you loved</p>
               </CardContent>
             </Card>
