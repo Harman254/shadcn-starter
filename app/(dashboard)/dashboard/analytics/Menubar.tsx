@@ -125,17 +125,28 @@ const MenuBar: React.FC<MenuBarProps> = ({ selected, onSelect, pro }) => {
 
   return (
     <motion.nav
-      className="p-2 rounded-2xl bg-gradient-to-b from-background/80 to-background/40 backdrop-blur-lg border border-border/40 shadow-lg relative overflow-hidden mb-8"
+      className="p-2 rounded-2xl bg-gradient-to-b from-background/80 to-background/40 backdrop-blur-lg border border-border/40 shadow-lg relative mb-8"
       initial="initial"
       whileHover="hover"
+      style={{
+        // Prevent layout shifts by fixing dimensions
+        minHeight: '64px', // Fixed height to prevent vertical shifts
+        contain: 'layout style paint', // CSS containment to prevent layout recalculations
+        isolation: 'isolate', // Create stacking context to prevent z-index issues
+      }}
     >
       <motion.div
         className={`absolute -inset-2 bg-gradient-radial from-transparent ${
           isDarkTheme
             ? "blue-400/30 "
             : "blue-400/20 "
-        } to-transparent rounded-3xl z-0 pointer-events-none`}
+        } to-transparent rounded-3xl pointer-events-none`}
         variants={navGlowVariants}
+        style={{
+          // Prevent glow from affecting layout
+          zIndex: 0,
+          willChange: 'opacity', // Optimize for opacity changes
+        }}
       />
       <ul className="flex items-center gap-2 relative z-10">
         {menuItems.map((item) => {
@@ -145,8 +156,14 @@ const MenuBar: React.FC<MenuBarProps> = ({ selected, onSelect, pro }) => {
           return (
             <motion.li key={item.value} className="relative">
               <motion.div
-                className={`block rounded-xl overflow-visible group relative ${isDisabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
-                style={{ perspective: "600px" }}
+                className={`block rounded-xl group relative ${isDisabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+                style={{ 
+                  perspective: "600px",
+                  // Prevent layout shifts from transforms
+                  transformStyle: "preserve-3d",
+                  contain: 'layout style paint',
+                  minWidth: 'fit-content', // Prevent width changes
+                }}
                 whileHover={!isDisabled ? "hover" : undefined}
                 initial="initial"
                 onClick={() => !isDisabled && onSelect(item.value)}
@@ -159,40 +176,55 @@ const MenuBar: React.FC<MenuBarProps> = ({ selected, onSelect, pro }) => {
                 aria-pressed={isSelected}
               >
                 <motion.div
-                  className="absolute inset-0 z-0 pointer-events-none"
+                  className="absolute inset-0 pointer-events-none"
                   variants={glowVariants}
                   style={{
                     background: item.gradient,
                     opacity: 0,
                     borderRadius: "16px",
+                    zIndex: 0,
+                    willChange: 'opacity, transform', // Optimize for these properties
                   }}
                 />
                 <motion.div
-                  className={`flex items-center gap-2 px-4 py-2 relative z-10 bg-transparent rounded-xl transition-colors ${isSelected ? "bg-zinc-200 dark:bg-zinc-800" : ""}`}
+                  className={`flex items-center gap-2 px-4 py-2 relative bg-transparent rounded-xl transition-colors ${isSelected ? "bg-zinc-200 dark:bg-zinc-800" : ""}`}
                   variants={itemVariants}
                   transition={sharedTransition}
-                  style={{ transformStyle: "preserve-3d", transformOrigin: "center bottom" }}
+                  style={{ 
+                    transformStyle: "preserve-3d", 
+                    transformOrigin: "center bottom",
+                    zIndex: 10,
+                    minHeight: '40px', // Fixed height to prevent vertical shifts
+                    willChange: 'transform, opacity',
+                  }}
                 >
                   <span className={`transition-colors duration-300 ${isHovered ? item.iconColor : "text-foreground"}`}> 
                     {item.icon}
                   </span>
-                  <span>{item.label}</span>
+                  <span className="whitespace-nowrap">{item.label}</span>
                   {item.pro && !pro && (
-                    <span className="ml-1 text-xs text-muted-foreground">Pro</span>
+                    <span className="ml-1 text-xs text-muted-foreground whitespace-nowrap">Pro</span>
                   )}
                 </motion.div>
                 <motion.div
-                  className={`flex items-center gap-2 px-4 py-2 absolute inset-0 z-10 bg-transparent rounded-xl transition-colors ${isSelected ? "bg-zinc-200 dark:bg-zinc-800" : ""}`}
+                  className={`flex items-center gap-2 px-4 py-2 absolute inset-0 bg-transparent rounded-xl transition-colors ${isSelected ? "bg-zinc-200 dark:bg-zinc-800" : ""}`}
                   variants={backVariants}
                   transition={sharedTransition}
-                  style={{ transformStyle: "preserve-3d", transformOrigin: "center top", rotateX: 90 }}
+                  style={{ 
+                    transformStyle: "preserve-3d", 
+                    transformOrigin: "center top", 
+                    rotateX: 90,
+                    zIndex: 10,
+                    minHeight: '40px', // Fixed height to prevent vertical shifts
+                    willChange: 'transform, opacity',
+                  }}
                 >
                   <span className={`transition-colors duration-300 ${isHovered ? item.iconColor : "text-foreground"}`}>
                     {item.icon}
                   </span>
-                  <span>{item.label}</span>
+                  <span className="whitespace-nowrap">{item.label}</span>
                   {item.pro && !pro && (
-                    <span className="ml-1 text-xs text-muted-foreground">Pro</span>
+                    <span className="ml-1 text-xs text-muted-foreground whitespace-nowrap">Pro</span>
                   )}
                 </motion.div>
               </motion.div>

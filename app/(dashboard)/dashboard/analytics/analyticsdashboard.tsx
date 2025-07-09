@@ -47,7 +47,7 @@ interface AnalyticsDashboardProps {
   account?: UserAccount | null
 }
 
-const  AnalyticsDashboard = ({ 
+const AnalyticsDashboard = ({ 
   user,
   analytics,
   account,
@@ -521,6 +521,5 @@ const  AnalyticsDashboard = ({
     </div>
   )
 }
-
 
 export default AnalyticsDashboard
