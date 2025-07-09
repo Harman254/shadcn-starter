@@ -3,6 +3,7 @@ import { headers } from "next/headers"
 import prisma from "@/lib/prisma"
 
 import AnalyticsDashboard from "./analyticsdashboard"
+import Footer from "@/components/footer"
 
 const AnalyticsPage = async () => {
   const session = await auth.api.getSession({ headers: await headers() })
@@ -15,9 +16,12 @@ const AnalyticsPage = async () => {
     : null
 
   return (
+    <>
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 dark:from-zinc-900 dark:via-zinc-950 dark:to-zinc-900">
       <AnalyticsDashboard user={user} analytics={analytics} account={account} />
     </div>
+    <Footer />
+    </>
   )
 }
 

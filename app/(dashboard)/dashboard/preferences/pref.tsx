@@ -360,7 +360,7 @@ const Preferences = ({userId}:Props ) => {
   
 
   return (
-    <div className=" bg-background/95 ">
+    <div className="min-h-screen bg-background/95 ">
       {/* Action Bar */}
       <div className="sticky top-0 z-10 bg-background/95 shadow-lg">
         <div className="max-w-7xl mx-auto px-8 py-6">
@@ -371,7 +371,7 @@ const Preferences = ({userId}:Props ) => {
               </div>
             </div>
             
-            <div className="flex items-center justify-center min-h-screen gap-3">
+            <div className="flex items-center justify-center gap-3">
              
               
               {hasChanges && (

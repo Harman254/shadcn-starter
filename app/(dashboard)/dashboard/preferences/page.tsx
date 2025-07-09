@@ -4,6 +4,7 @@ import Preferences from './pref'
 import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
+import Footer from '@/components/footer';
 
 export const metadata: Metadata = {
   title: 'Preferences & Settings | MealWise - Customize Your Meal Planning Experience',
@@ -82,7 +83,10 @@ const PreferencesPage = async () => {
     redirect("/sign-in");
   }
   return (
+    <>
     <Preferences userId={session.user.id}  />
+    <Footer />
+    </>
   )
 }
 

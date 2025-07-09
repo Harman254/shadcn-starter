@@ -1,6 +1,7 @@
 import React from 'react'
 import { Metadata } from 'next'
 import Dashboard from './dashboard'
+import Footer from '@/components/footer'
 
 export const metadata: Metadata = {
   title: 'Dashboard | MealWise - Your Personal Meal Planning Hub',
@@ -73,7 +74,11 @@ export const metadata: Metadata = {
 
 const DashboardPage = () => {
   return (
+    <>
     <Dashboard />
+    <Footer/>
+    </>
+
   )
 }
 
