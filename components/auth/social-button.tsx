@@ -103,19 +103,19 @@ export const SignInButton = ({
       variant="outline"
       size="lg"
       className={cn(
-        "group w-full relative h-12 px-6",
-        "bg-white/80 backdrop-blur-sm dark:bg-gray-800/80",
+        "group w-full relative h-14 px-8",
+        "bg-white/90 backdrop-blur-md dark:bg-gray-900/90",
         providerStyles.container,
         "transition-all duration-300 ease-out",
-        "flex items-center justify-center gap-3",
-        "font-medium text-base",
-        "shadow-sm hover:shadow-lg hover:shadow-black/5",
-        "rounded-xl",
-        "transform hover:scale-[1.02] active:scale-[0.98]",
+        "flex items-center justify-center gap-4",
+        "font-bold text-lg",
+        "shadow-xl hover:shadow-2xl hover:shadow-black/10",
+        "rounded-2xl",
+        "transform hover:scale-[1.03] active:scale-[0.98]",
         "disabled:transform-none disabled:opacity-60 disabled:cursor-not-allowed",
         "border-2",
         // Focus styles
-        "focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500",
+        "focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500",
         // Loading state
         loading && "cursor-not-allowed"
       )}
