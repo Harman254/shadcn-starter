@@ -33,22 +33,8 @@ const menuItems = [
     iconColor: "text-green-500",
     pro: true,
   },
-  {
-    icon: <ChefHat className="h-4 w-4 sm:h-5 sm:w-5" />,
-    label: "Recipes",
-    value: "recipes",
-    gradient: "radial-gradient(circle, rgba(239,68,68,0.15) 0%, rgba(220,38,38,0.06) 50%, rgba(185,28,28,0) 100%)",
-    iconColor: "text-red-500",
-    pro: true,
-  },
-  {
-    icon: <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5" />,
-    label: "Trends",
-    value: "trends",
-    gradient: "radial-gradient(circle, rgba(59,130,246,0.15) 0%, rgba(37,99,235,0.06) 50%, rgba(29,78,216,0) 100%)",
-    iconColor: "text-blue-500",
-    pro: true,
-  },
+ 
+  
 ]
 
 const itemVariants = {

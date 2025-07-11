@@ -4,6 +4,7 @@ import React, { createContext, useContext, useState, ReactNode, useCallback } fr
 import SignIn from "@/components/auth/sign-in";
 import SignUp from "@/components/auth/sign-up";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { usePathname } from "next/navigation";
 
 type AuthModalType = "sign-in" | "sign-up" | null;
 
@@ -27,6 +28,7 @@ export function useAuthModal() {
 
 export function AuthModalProvider({ children }: { children: ReactNode }) {
   const [modalType, setModalType] = useState<AuthModalType>(null);
+  const pathname = usePathname();
 
   const open = useCallback((type: AuthModalType) => {
     setModalType(type);
@@ -49,6 +51,15 @@ export function AuthModalProvider({ children }: { children: ReactNode }) {
       close();
     }
   }, [close]);
+
+  // Close modal if pathname is /forgot-password
+  React.useEffect(() => {
+    if (pathname === "/forgot-password") {
+      close();
+    } else if (pathname === "/sign-in") {
+      open("sign-in");
+    }
+  }, [pathname, close, open]);
 
   const getModalTitle = () => {
     switch (modalType) {
