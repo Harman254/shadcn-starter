@@ -25,14 +25,7 @@ const menuItems = [
     iconColor: "text-green-500",
     pro: true,
   },
-  {
-    icon: <Calendar className="h-4 w-4 sm:h-5 sm:w-5" />,
-    label: "Planning",
-    value: "planning",
-    gradient: "radial-gradient(circle, rgba(34,197,94,0.15) 0%, rgba(22,163,74,0.06) 50%, rgba(21,128,61,0) 100%)",
-    iconColor: "text-green-500",
-    pro: true,
-  },
+
  
   
 ]
