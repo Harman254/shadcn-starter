@@ -25,9 +25,18 @@ import {
 } from "lucide-react"
 import MenuBar from "./Menubar"
 
-// Add prop types for AnalyticsDashboard
+// Update prop types for AnalyticsDashboard to match actual user object
 interface AnalyticsDashboardProps {
-  user: { id?: string } | null;
+  user: {
+    id: string;
+    name: string;
+    email: string;
+    emailVerified: boolean;
+    image?: string | null;
+    createdAt: Date | string;
+    updatedAt: Date | string;
+    // Add any other fields as needed
+  };
   analytics?: {
     totalMealsCooked?: number;
     totalRecipesTried?: number;
