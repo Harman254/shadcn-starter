@@ -85,7 +85,7 @@ export function AuthModalProvider({ children }: { children: ReactNode }) {
       {children}
       <Dialog open={!!modalType} onOpenChange={handleOpenChange}>
         <DialogContent 
-          className="w-full max-w-md sm:max-w-lg p-4 sm:p-8 rounded-2xl shadow-2xl bg-white dark:bg-[#18181b] border border-gray-100 dark:border-gray-800"
+          className="w-full max-w-sm p-0 rounded-xl shadow-lg bg-white dark:bg-[#18181b] border border-gray-100 dark:border-gray-800"
           aria-describedby={undefined}
         >
           <DialogHeader className="sr-only">

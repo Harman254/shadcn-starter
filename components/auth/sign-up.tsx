@@ -102,10 +102,8 @@ const SignUp: React.FC<SignUpProps> = ({ onSwitchToSignIn, onSuccess }) => {
 
     return (
         <>
-            <div className="sticky top-0 z-20 bg-white dark:bg-[#18181b] rounded-b-3xl shadow-lg flex items-center justify-center py-6 mb-4">
-                <LogoIcons.Logo className="h-10 w-auto" />
-            </div>
-            <div className="w-full max-w-md mx-auto bg-white dark:bg-[#18181b] rounded-3xl shadow-2xl p-6 sm:p-10 border border-gray-100 dark:border-gray-800 mt-2 mb-6 transition-all duration-300">
+            
+            <div className="w-full max-w-sm mx-auto bg-white dark:bg-[#18181b] rounded-xl shadow-lg p-4 sm:p-6 border border-gray-100 dark:border-gray-800 mt-1 mb-4 transition-all duration-300">
                 <h2 className="text-2xl sm:text-3xl font-bold mb-2 text-center">Sign Up</h2>
                 <p className="text-base sm:text-lg text-center mb-6 text-gray-500 dark:text-gray-400">Create a new account</p>
                 <Form {...form}>
@@ -123,7 +121,7 @@ const SignUp: React.FC<SignUpProps> = ({ onSwitchToSignIn, onSuccess }) => {
                                         <FormControl>
                                             <div className="relative group">
                                                 <Input
-                                                    className="block w-full h-14 px-5 mb-4 text-lg bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 rounded-2xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition shadow-sm"
+                                                    className="block w-full h-11 px-4 mb-3 text-base bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition shadow-sm"
                                                     disabled={loading}
                                                     type="text"
                                                     placeholder="Enter your full name"
@@ -148,7 +146,7 @@ const SignUp: React.FC<SignUpProps> = ({ onSwitchToSignIn, onSuccess }) => {
                                         <FormControl>
                                             <div className="relative group">
                                                 <Input
-                                                    className="block w-full h-14 px-5 mb-4 text-lg bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 rounded-2xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition shadow-sm"
+                                                    className="block w-full h-11 px-4 mb-3 text-base bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition shadow-sm"
                                                     disabled={loading}
                                                     type="email"
                                                     placeholder="Enter your email address"
@@ -173,7 +171,7 @@ const SignUp: React.FC<SignUpProps> = ({ onSwitchToSignIn, onSuccess }) => {
                                         <FormControl>
                                             <div className="relative group">
                                                 <Input
-                                                    className="block w-full h-14 px-5 pr-12 mb-4 text-lg bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 rounded-2xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition shadow-sm"
+                                                    className="block w-full h-11 px-4 pr-12 mb-3 text-base bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition shadow-sm"
                                                     disabled={loading}
                                                     type={showPassword ? "text" : "password"}
                                                     placeholder="Enter your password"
@@ -207,7 +205,7 @@ const SignUp: React.FC<SignUpProps> = ({ onSwitchToSignIn, onSuccess }) => {
                         <Button
                             disabled={loading}
                             type="submit"
-                            className="w-full h-14 mt-4 text-lg font-bold rounded-2xl bg-gradient-to-r from-indigo-500 to-rose-500 text-white shadow-xl hover:scale-105 transition-all duration-200"
+                            className="w-full h-11 mt-3 text-base font-semibold rounded-lg bg-gradient-to-r from-indigo-500 to-rose-500 text-white shadow-md hover:scale-105 transition-all duration-200"
                         >
                             {loading ? (
                                 <div className="flex items-center justify-center gap-2">
@@ -219,9 +217,9 @@ const SignUp: React.FC<SignUpProps> = ({ onSwitchToSignIn, onSuccess }) => {
                             )}
                         </Button>
 
-                        <div className="relative flex items-center my-8">
+                        <div className="relative flex items-center my-5">
                             <div className="flex-grow border-t border-border"></div>
-                            <span className="mx-4 text-muted-foreground font-semibold text-base">Or continue with</span>
+                            <span className="mx-3 text-muted-foreground font-medium text-sm">Or continue with</span>
                             <div className="flex-grow border-t border-border"></div>
                         </div>
 
@@ -244,10 +242,10 @@ const SignUp: React.FC<SignUpProps> = ({ onSwitchToSignIn, onSuccess }) => {
                             />
                         </div>
 
-                        <div className="text-center mt-8">
-                            <span className="text-base text-gray-500 dark:text-gray-400">Already have an account?</span>
+                        <div className="text-center mt-5">
+                            <span className="text-sm text-gray-500 dark:text-gray-400">Already have an account?</span>
                             <button
-                                className="ml-2 text-indigo-600 dark:text-indigo-400 font-bold underline hover:text-rose-500 transition text-base"
+                                className="ml-2 text-indigo-600 dark:text-indigo-400 font-semibold underline hover:text-rose-500 transition text-sm"
                                 onClick={handleSwitchToSignIn}
                                 type="button"
                             >
