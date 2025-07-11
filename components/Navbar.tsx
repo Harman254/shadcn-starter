@@ -25,7 +25,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { ThemeToggle } from "./theme-toggle";
+import ThemeToggle from "./theme-toggle";
 
 // Client components to handle interactive elements
 import MobileMenuTrigger from "./mobile-menu";
