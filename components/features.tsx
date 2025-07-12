@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '@/lib/utils'
 import { Timer, Zap, ZoomIn, PersonStanding, DollarSign, MessageSquare } from 'lucide-react'
 import { CldImage } from 'next-cloudinary'
+import React from 'react';
 
 const features = [
   {
@@ -63,6 +64,45 @@ const features = [
   },
 ]
 
+const accentPalette = [
+  {
+    border: 'border-cyan-400',
+    bg: 'bg-cyan-100',
+    icon: 'text-cyan-600',
+    badge: 'bg-cyan-500 text-white',
+  },
+  {
+    border: 'border-pink-400',
+    bg: 'bg-pink-100',
+    icon: 'text-pink-600',
+    badge: 'bg-pink-500 text-white',
+  },
+  {
+    border: 'border-amber-400',
+    bg: 'bg-amber-100',
+    icon: 'text-amber-600',
+    badge: 'bg-amber-400 text-white',
+  },
+  {
+    border: 'border-emerald-400',
+    bg: 'bg-emerald-100',
+    icon: 'text-emerald-600',
+    badge: 'bg-emerald-500 text-white',
+  },
+  {
+    border: 'border-purple-400',
+    bg: 'bg-purple-100',
+    icon: 'text-purple-600',
+    badge: 'bg-purple-500 text-white',
+  },
+  {
+    border: 'border-orange-400',
+    bg: 'bg-orange-100',
+    icon: 'text-orange-600',
+    badge: 'bg-orange-500 text-white',
+  },
+];
+
 export default function FeatureSteps() {
   const [currentFeature, setCurrentFeature] = useState(0)
   const [progress, setProgress] = useState(0)
@@ -103,39 +143,44 @@ export default function FeatureSteps() {
 
         <div className="flex flex-col gap-6 md:grid md:grid-cols-2 md:gap-10">
           <div className="order-2 space-y-8 md:order-1">
-            {features.map((feature, index) => (
-              <motion.div
-                key={index}
-                className="flex items-center gap-6 md:gap-8"
-                initial={{ opacity: 0.3, x: -20 }}
-                animate={{
-                  opacity: index === currentFeature ? 1 : 0.3,
-                  x: 0,
-                  scale: index === currentFeature ? 1.05 : 1,
-                }}
-                transition={{ duration: 0.5 }}
-              >
+            {features.map((feature, index) => {
+              const accent = accentPalette[index % accentPalette.length];
+              return (
                 <motion.div
-                  className={cn(
-                    'flex h-12 w-12 items-center justify-center rounded-full border-2 md:h-14 md:w-14',
-                    index === currentFeature
-                      ? 'scale-110 border-primary bg-primary/10 text-primary [box-shadow:0_0_15px_rgba(39,174,96,0.3)]'
-                      : 'border-muted-foreground bg-muted',
-                  )}
+                  key={index}
+                  className="flex items-center gap-6 md:gap-8"
+                  initial={{ opacity: 0.3, x: -20 }}
+                  animate={{
+                    opacity: index === currentFeature ? 1 : 0.3,
+                    x: 0,
+                    scale: index === currentFeature ? 1.05 : 1,
+                  }}
+                  transition={{ duration: 0.5 }}
                 >
-                  {feature.icon}
-                </motion.div>
+                  <motion.div
+                    className={cn(
+                      'flex h-12 w-12 items-center justify-center rounded-full border-2 md:h-14 md:w-14 transition-all duration-300',
+                      accent.border,
+                      accent.bg,
+                      index === currentFeature
+                        ? 'scale-110 shadow-lg'
+                        : 'opacity-80',
+                    )}
+                  >
+                    {React.cloneElement(feature.icon, { className: `h-6 w-6 md:h-7 md:w-7 ${accent.icon}` })}
+                  </motion.div>
 
-                <div className="flex-1">
-                  <h3 className="text-xl font-semibold md:text-2xl">
-                    {feature.title}
-                  </h3>
-                  <p className="text-sm text-muted-foreground md:text-base">
-                    {feature.content}
-                  </p>
-                </div>
-              </motion.div>
-            ))}
+                  <div className="flex-1">
+                    <h3 className="text-xl font-semibold md:text-2xl">
+                      {feature.title}
+                    </h3>
+                    <p className="text-sm text-muted-foreground md:text-base">
+                      {feature.content}
+                    </p>
+                  </div>
+                </motion.div>
+              );
+            })}
           </div>
 
           <div
@@ -168,8 +213,8 @@ export default function FeatureSteps() {
                       />
                       <div className="absolute bottom-0 left-0 right-0 h-2/3 bg-gradient-to-t from-background via-background/50 to-transparent" />
 
-                      <div className="absolute bottom-4 left-4 rounded-lg bg-background/80 p-2 backdrop-blur-sm">
-                        <span className="text-xs font-medium text-primary">
+                      <div className={`absolute bottom-4 left-4 rounded-lg p-2 backdrop-blur-sm shadow-md ${accentPalette[index % accentPalette.length].badge}`}>
+                        <span className="text-xs font-bold tracking-wide">
                           {feature.step}
                         </span>
                       </div>

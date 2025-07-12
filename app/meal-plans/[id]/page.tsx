@@ -140,7 +140,6 @@ const MealPlanDetailPage = async ({ params }: MealPlanDetailPageProps) => {
             <DayMealCard key={day.id} day={day} dayIndex={index} userId={userId || ""} />
           ))}
         </div>
-        <Footer />
       </div>
     // </div>
   );

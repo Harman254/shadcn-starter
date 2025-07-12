@@ -9,46 +9,46 @@ import { Quote } from 'lucide-react';
  
 const defaultTestimonials = [
   {
-    text: 'MVPBlocks has completely changed the way I build UIs. Copy-paste, done. No more design stress.',
-    imageSrc: '/pexels-angela-roma-7480310.jpg',
-    name: 'Arjun Mehta',
-    username: '@arjdev',
-    role: 'Frontend Developer',
+    text: 'Mealwise has made planning meals for my family so easy. I no longer worry about what to cook every day!',
+    imageSrc: '/muslimnun.jpg',
+    name: 'Faith Njeri',
+    username: '@faithfamily',
+    role: 'Mom of 3',
   },
   {
-    text: 'Honestly shocked at how smooth the animations and styling are out of the box. Just works.',
-    imageSrc: '/assets/avatars/avatar-2.webp',
-    name: 'Sara Lin',
-    username: '@sara.codes',
-    role: 'UX Designer',
+    text: 'I save hours every week with Mealwise. The AI-generated plans and local grocery lists are a game changer.',
+    imageSrc: '/roma.jpg',
+    name: 'Brian Otieno',
+    username: '@fitwithbrian',
+    role: 'Fitness Coach',
   },
   {
-    text: 'Our team launched a client site in 2 days using MVPBlocks. Saved so much time.',
-    imageSrc: '/assets/avatars/avatar-3.webp',
-    name: 'Devon Carter',
-    username: '@devninja',
-    role: 'Product Manager',
+    text: 'As a busy student, Mealwise helps me eat better without thinking too hard. It’s like having a personal chef.',
+    imageSrc: '/teacher.jpg',
+    name: 'Linet Auma',
+    username: '@linetstudies',
+    role: 'University Student',
   },
   {
-    text: 'Plugged a few blocks into our existing codebase and everything blended perfectly. Massive W.',
-    imageSrc: '/assets/avatars/avatar-4.webp',
-    name: 'Priya Shah',
-    username: '@priyacodes',
-    role: 'Full Stack Developer',
+    text: 'The location-based grocery list is brilliant. I can generate my plan and get everything I need from nearby stores.',
+    imageSrc: '/fitjack.jpg',
+    name: 'Kevin Mwangi',
+    username: '@techdadkevin',
+    role: 'Software Engineer',
   },
   {
-    text: 'Found a beautiful hero section, dropped it into V0, tweaked copy, and shipped in 15 minutes.',
-    imageSrc: '/assets/avatars/avatar-5.webp',
-    name: 'Leo Martin',
-    username: '@leobuilds',
-    role: 'Startup Founder',
+    text: 'Mealwise Pro is worth it. I love tracking my meals and regenerating plans until I find what fits my week.',
+    imageSrc: '/roma.jpg',
+    name: 'Sarah Wambui',
+    username: '@sarahwellness',
+    role: 'Wellness Blogger',
   },
   {
-    text: 'MVPBlocks helped us prototype multiple landing pages without writing CSS once.',
-    imageSrc: '/assets/avatars/avatar-6.webp',
-    name: 'Chloe Winters',
-    username: '@chloewinters',
-    role: 'UI Designer',
+    text: 'I’ve tried other meal apps, but Mealwise feels local, smart, and easy to use. Highly recommend it.',
+    imageSrc: '/chef.jpg',
+    name: 'Dennis Kipkoech',
+    username: '@dennykitchen',
+    role: 'Home Chef',
   },
 ];
  
@@ -68,8 +68,8 @@ interface TestimonialProps {
  
 const  TestimonialsCarousel = ({
   testimonials = defaultTestimonials,
-  title = 'What our users say',
-  subtitle = 'From intuitive design to powerful features, our components have become essential tools for developers around the world.',
+  title = 'What our early adopters say',
+  subtitle = 'From intuitive design to powerful features, mealwise offers everything you need to stay ahead with your meals.',
   autoplaySpeed = 3000,
   className,
 }: TestimonialProps) => {
@@ -93,6 +93,63 @@ const  TestimonialsCarousel = ({
   }, [emblaApi, autoplaySpeed]);
  
   const allTestimonials = [...testimonials, ...testimonials];
+ 
+  const accentPalette = [
+    {
+      from: 'from-cyan-500',
+      to: 'to-blue-400',
+      icon: 'text-cyan-500',
+      border: 'border-cyan-400',
+      ring: 'ring-cyan-200',
+      name: 'text-cyan-700',
+      username: 'text-cyan-600',
+    },
+    {
+      from: 'from-pink-500',
+      to: 'to-rose-400',
+      icon: 'text-pink-500',
+      border: 'border-pink-400',
+      ring: 'ring-pink-200',
+      name: 'text-pink-700',
+      username: 'text-pink-600',
+    },
+    {
+      from: 'from-amber-400',
+      to: 'to-yellow-300',
+      icon: 'text-amber-400',
+      border: 'border-amber-300',
+      ring: 'ring-amber-200',
+      name: 'text-amber-700',
+      username: 'text-amber-600',
+    },
+    {
+      from: 'from-emerald-400',
+      to: 'to-green-300',
+      icon: 'text-emerald-500',
+      border: 'border-emerald-400',
+      ring: 'ring-emerald-200',
+      name: 'text-emerald-700',
+      username: 'text-emerald-600',
+    },
+    {
+      from: 'from-purple-500',
+      to: 'to-fuchsia-400',
+      icon: 'text-purple-500',
+      border: 'border-purple-400',
+      ring: 'ring-purple-200',
+      name: 'text-purple-700',
+      username: 'text-purple-600',
+    },
+    {
+      from: 'from-orange-400',
+      to: 'to-amber-300',
+      icon: 'text-orange-400',
+      border: 'border-orange-300',
+      ring: 'ring-orange-200',
+      name: 'text-orange-700',
+      username: 'text-orange-600',
+    },
+  ];
  
   return (
     <section
@@ -131,85 +188,88 @@ const  TestimonialsCarousel = ({
         {/* Testimonials carousel */}
         <div className="overflow-hidden" ref={emblaRef}>
           <div className="flex">
-            {allTestimonials.map((testimonial, index) => (
-              <div
-                key={`${testimonial.name}-${index}`}
-                className="flex justify-center px-4"
-              >
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  whileInView={{ opacity: 1, scale: 1 }}
-                  transition={{ duration: 0.5, delay: index * 0.1 }}
-                  viewport={{ once: true }}
-                  className="relative h-full w-fit rounded-2xl border border-border bg-gradient-to-b from-secondary/20 to-card p-6 shadow-md backdrop-blur-sm"
+            {allTestimonials.map((testimonial, index) => {
+              const accent = accentPalette[index % accentPalette.length];
+              return (
+                <div
+                  key={`${testimonial.name}-${index}`}
+                  className="flex justify-center px-4"
                 >
-                  {/* Enhanced decorative gradients */}
-                  <div className="absolute -left-5 -top-5 -z-10 h-40 w-40 rounded-full bg-gradient-to-b from-primary/15 to-card blur-md" />
-                  <div className="absolute -bottom-10 -right-10 -z-10 h-32 w-32 rounded-full bg-gradient-to-t from-primary/10 to-transparent opacity-70 blur-xl" />
- 
                   <motion.div
-                    initial={{ opacity: 0, y: -5 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3, delay: 0.2 + index * 0.05 }}
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    whileInView={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.5, delay: index * 0.1 }}
                     viewport={{ once: true }}
-                    className="mb-4 text-primary"
+                  className={`relative h-full w-fit rounded-2xl border-2 ${accent.border} bg-gradient-to-b ${accent.from} ${accent.to} p-6 shadow-lg backdrop-blur-sm`}
                   >
-                    <div className="relative">
-                      <Quote className="h-10 w-10 -rotate-180" />
-                    </div>
-                  </motion.div>
- 
-                  <motion.p
-                    initial={{ opacity: 0 }}
-                    whileInView={{ opacity: 1 }}
-                    transition={{ duration: 0.5, delay: 0.3 + index * 0.05 }}
-                    viewport={{ once: true }}
-                    className="relative mb-6 text-base leading-relaxed text-foreground/90"
-                  >
-                    <span className="relative">{testimonial.text}</span>
-                  </motion.p>
- 
-                  {/* Enhanced user info with animation */}
-                  <motion.div
-                    initial={{ opacity: 0, y: 5 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.4, delay: 0.4 + index * 0.05 }}
-                    viewport={{ once: true }}
-                    className="mt-auto flex items-center gap-3 border-t border-border/40 pt-2"
-                  >
-                    <Avatar className="h-10 w-10 border border-border ring-2 ring-primary/10 ring-offset-1 ring-offset-background">
-                      <AvatarImage
-                        src={testimonial.imageSrc}
-                        alt={testimonial.name}
-                      />
-                      <AvatarFallback>
-                        {testimonial.name.charAt(0)}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex flex-col">
-                      <h4 className="whitespace-nowrap font-medium text-foreground">
-                        {testimonial.name}
-                      </h4>
-                      <div className="flex items-center gap-2">
-                        <p className="whitespace-nowrap text-sm text-primary/80">
-                          {testimonial.username}
-                        </p>
-                        {testimonial.role && (
-                          <>
-                            <span className="flex-shrink-0 text-muted-foreground">
-                              •
-                            </span>
-                            <p className="whitespace-nowrap text-sm text-muted-foreground">
-                              {testimonial.role}
-                            </p>
-                          </>
-                        )}
+                    {/* Enhanced decorative gradients */}
+                   <div className={`absolute -left-5 -top-5 -z-10 h-40 w-40 rounded-full bg-gradient-to-b ${accent.from} ${accent.to} opacity-30 blur-md`} />
+                   <div className={`absolute -bottom-10 -right-10 -z-10 h-32 w-32 rounded-full bg-gradient-to-t ${accent.from} to-transparent opacity-20 blur-xl`} />
+
+                    <motion.div
+                      initial={{ opacity: 0, y: -5 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3, delay: 0.2 + index * 0.05 }}
+                      viewport={{ once: true }}
+                     className={`mb-4 ${accent.icon}`}
+                    >
+                      <div className="relative">
+                        <Quote className="h-10 w-10 -rotate-180" />
                       </div>
-                    </div>
+                    </motion.div>
+
+                    <motion.p
+                      initial={{ opacity: 0 }}
+                      whileInView={{ opacity: 1 }}
+                      transition={{ duration: 0.5, delay: 0.3 + index * 0.05 }}
+                      viewport={{ once: true }}
+                     className="relative mb-6 text-base leading-relaxed text-white drop-shadow-sm"
+                    >
+                      <span className="relative">{testimonial.text}</span>
+                    </motion.p>
+
+                    {/* Enhanced user info with animation */}
+                    <motion.div
+                      initial={{ opacity: 0, y: 5 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.4, delay: 0.4 + index * 0.05 }}
+                      viewport={{ once: true }}
+                     className={`mt-auto flex items-center gap-3 border-t ${accent.border} pt-2`}
+                    >
+                      <Avatar className={`h-10 w-10 border-2 ${accent.border} ${accent.ring} ring-2 ring-offset-1 ring-offset-background`}>
+                        <AvatarImage
+                          src={testimonial.imageSrc}
+                          alt={testimonial.name}
+                        />
+                        <AvatarFallback>
+                          {testimonial.name.charAt(0)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex flex-col">
+                       <h4 className={`whitespace-nowrap font-bold ${accent.name}`}>
+                          {testimonial.name}
+                        </h4>
+                        <div className="flex items-center gap-2">
+                         <p className={`whitespace-nowrap text-sm font-semibold ${accent.username}`}>
+                            {testimonial.username}
+                          </p>
+                          {testimonial.role && (
+                            <>
+                              <span className="flex-shrink-0 text-white/60">
+                                •
+                              </span>
+                             <p className="whitespace-nowrap text-sm text-white/80 font-medium">
+                               {testimonial.role}
+                             </p>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </motion.div>
                   </motion.div>
-                </motion.div>
-              </div>
-            ))}
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>

@@ -10,6 +10,7 @@ import { Companies } from '@/components/socialproof';
 import VideoPlayer from '@/components/magicui/hero-video-dialog';
 import  Pricing4  from '@/components/prices'
 import TestimonialsCarousel from '@/components/testimonials';
+import Faq2 from '@/components/FAQ';
 
 
 export const metadata: Metadata = {
@@ -106,6 +107,7 @@ export default async function IndexPage() {
     <Pricing4 />
     
     <CTA />
+    <Faq2 />
     <Footer />
     
 
