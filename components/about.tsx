@@ -13,6 +13,13 @@ import {
   Rocket,
   Target,
 } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { Pacifico } from 'next/font/google';
+const pacifico = Pacifico({
+    subsets: ["latin"],
+    weight: ["400"],
+    variable: "--font-pacifico",
+  })
  
 interface AboutUsProps {
   title?: string;
@@ -123,9 +130,13 @@ export default function AboutUs1() {
           transition={{ duration: 0.8, ease: 'easeOut' }}
           className="mx-auto mb-16 max-w-2xl text-center"
         >
-          <h1 className="bg-gradient-to-r from-foreground/80 via-foreground to-foreground/80 bg-clip-text text-4xl font-bold tracking-tight text-transparent sm:text-5xl md:text-6xl">
-            {aboutData.title}
-          </h1>
+          <h1 className='tracking-tighter font-bold text-5xl'>About <span
+                className={cn(
+                  "bg-clip-text tracking-tighter text-5xl text-transparent bg-gradient-to-r from-indigo-500 via-black/90 to-rose-500 dark:from-indigo-300 dark:via-white/90 dark:to-rose-300 ",
+                  pacifico.className,
+                )}
+              >Mealwise
+                </span></h1>
           <p className="mt-6 text-xl text-muted-foreground">
             {aboutData.subtitle}
           </p>

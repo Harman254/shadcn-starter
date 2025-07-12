@@ -4,6 +4,7 @@ import { Facebook, Instagram, Linkedin, Twitter, ArrowUp } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import { Pacifico } from "next/font/google"
+import TocDialog from "./TocDialog";
 
 
 const pacifico = Pacifico({
@@ -72,7 +73,7 @@ export default function Footer() {
               <h3 className="text-lg font-semibold mb-6 text-gray-900 dark:text-white">Company</h3>
               <nav className="space-y-4">
                 {[
-                  { href: "/about", label: "About" },
+                  // { href: "/about", label: "About" },
                   { href: "/careers", label: "Careers" },
                   { href: "/blog", label: "Blog" }
                 ].map(({ href, label }) => (
@@ -91,9 +92,9 @@ export default function Footer() {
               <h3 className="text-lg font-semibold mb-6 text-gray-900 dark:text-white">Product</h3>
               <nav className="space-y-4">
                 {[
-                  { href: "/features", label: "Features" },
-                  { href: "/pricing", label: "Pricing" },
-                  { href: "/integrations", label: "Integrations" }
+                  { href: "/dashboard", label: "Dashboard" },
+                  // { href: "/pricing", label: "Pricing" },
+                  // { href: "/integrations", label: "Integrations" }
                 ].map(({ href, label }) => (
                   <Link
                     key={label}
@@ -111,8 +112,8 @@ export default function Footer() {
               <nav className="space-y-4">
                 {[
                   { href: "/contact", label: "Contact" },
-                  { href: "/help", label: "Help Center" },
-                  { href: "/community", label: "Community" }
+                  // { href: "/help", label: "Help Center" },
+                  // { href: "/community", label: "Community" }
                 ].map(({ href, label }) => (
                   <Link
                     key={label}
@@ -127,21 +128,10 @@ export default function Footer() {
             
             <div>
               <h3 className="text-lg font-semibold mb-6 text-gray-900 dark:text-white">Legal</h3>
-              <nav className="space-y-4">
-                {[
-                  { href: "/privacy", label: "Privacy Policy" },
-                  { href: "/terms", label: "Terms of Service" },
-                  { href: "/licensing", label: "Licensing" }
-                ].map(({ href, label }) => (
-                  <Link
-                    key={label}
-                    href={href}
-                    className="block text-gray-600 dark:text-zinc-300 hover:text-green-600 dark:hover:text-green-400 transition-all duration-300 hover:translate-x-1 text-sm font-medium"
-                  >
-                    {label}
-                  </Link>
-                ))}
-              </nav>
+              
+                <div className="mt-2">
+                  <TocDialog />
+                </div>
             </div>
           </div>
         </div>
