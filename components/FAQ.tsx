@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
-import { MinusIcon, PlusIcon } from 'lucide-react';
+import { Link, MinusIcon, PlusIcon } from 'lucide-react';
  
 interface FaqItem {
   id: string;
@@ -109,8 +109,8 @@ export default function Faq2() {
           </h2>
  
           <p className="max-w-2xl text-center text-pink-500 font-medium">
-            Find answers to common questions about MVPBlocks and how to use our
-            components to build your next project.
+            Find answers to common questions about Mealwise and how to use our
+            AI to extensively plan your Meals
           </p>
         </div>
  
@@ -196,12 +196,12 @@ export default function Faq2() {
           <p className="mb-4 text-cyan-600 font-semibold">
             Can&apos;t find what you&apos;re looking for?
           </p>
-          <a
-            href="#"
+          <Link
+            href="/contact"
             className="inline-flex items-center justify-center rounded-lg border-2 border-pink-500 bg-gradient-to-r from-cyan-500 to-pink-500 px-6 py-3 font-bold text-white transition-all hover:scale-105 shadow-lg"
           >
             Contact Support
-          </a>
+          </Link>
         </motion.div>
       </div>
     </section>
