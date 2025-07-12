@@ -196,12 +196,12 @@ export default function Faq2() {
           <p className="mb-4 text-cyan-600 font-semibold">
             Can&apos;t find what you&apos;re looking for?
           </p>
-          <Link
+          <a
             href="/contact"
             className="inline-flex items-center justify-center rounded-lg border-2 border-pink-500 bg-gradient-to-r from-cyan-500 to-pink-500 px-6 py-3 font-bold text-white transition-all hover:scale-105 shadow-lg"
           >
             Contact Support
-          </Link>
+          </a>
         </motion.div>
       </div>
     </section>

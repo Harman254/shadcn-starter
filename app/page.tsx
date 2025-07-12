@@ -11,6 +11,7 @@ import VideoPlayer from '@/components/magicui/hero-video-dialog';
 import  Pricing4  from '@/components/prices'
 import TestimonialsCarousel from '@/components/testimonials';
 import Faq2 from '@/components/FAQ';
+import AboutUs1 from '@/components/about';
 
 
 export const metadata: Metadata = {
@@ -100,9 +101,11 @@ export default async function IndexPage() {
 <VideoPlayer title="Hero Video" src="https://res.cloudinary.com/dcidanigq/video/upload/v1742111998/samples/dance-2.mp4"
             thumbnail="https://res.cloudinary.com/dcidanigq/image/upload/v1742112004/cld-sample.jpg" />
 
+
 <Companies />
 
     <Feature17 />
+    <AboutUs1 />
     <TestimonialsCarousel />
     <Pricing4 />
     
