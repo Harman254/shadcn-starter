@@ -15,7 +15,13 @@ export default function CTA() {
     <section className="relative bg-white dark:bg-black border-t border-blue-500/30 dark:border-cyan-500/30 overflow-hidden transition-colors duration-300">
       {/* Animated grid background */}
       <div className="absolute inset-0">
-        <div className="absolute inset-0 bg-[linear-gradient(rgba(59,130,246,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(59,130,246,0.05)_1px,transparent_1px)] dark:bg-[linear-gradient(rgba(0,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(0,255,255,0.03)_1px,transparent_1px)] bg-[size:50px_50px] animate-pulse"></div>
+        <div className="absolute inset-0 animate-pulse"
+          style={{
+            backgroundImage: 'linear-gradient(rgba(59,130,246,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(59,130,246,0.05)_1px,transparent_1px)',
+            backgroundSize: '50px 50px',
+          }}
+          data-dark-bg="linear-gradient(rgba(0,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(0,255,255,0.03)_1px,transparent_1px)"
+        ></div>
       </div>
       
       {/* LED border frames - adaptive colors */}
