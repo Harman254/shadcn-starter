@@ -47,12 +47,9 @@ const  Dashboard = () =>{
 
   if (isPending || isFetching) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-      <div className="flex flex-col items-center gap-4">
-        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-green-400 to-green-800 flex items-center justify-center text-primary-foreground shadow-lg">
-          <Loader2 className="w-8 h-8 animate-spin" />
-        </div>
-        <p className="text-lg font-medium text-muted-foreground">Loading...</p>
+      <div className="flex w-full flex-col items-center justify-center gap-4">
+      <div className="flex h-16 w-16 animate-spin items-center justify-center rounded-full border-4 border-transparent border-t-blue-400 text-4xl text-blue-400">
+        <div className="flex h-12 w-12 animate-spin items-center justify-center rounded-full border-4 border-transparent border-t-red-400 text-2xl text-red-400"></div>
       </div>
     </div>
     );
