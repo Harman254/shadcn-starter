@@ -17,6 +17,8 @@ export default function VideoPlayer({ src, thumbnail, title, className = '' }: V
   const [progress, setProgress] = useState(0)
   const [duration, setDuration] = useState(0)
   const [currentTime, setCurrentTime] = useState(0)
+  const [isVideoLoaded, setIsVideoLoaded] = useState(false)
+  const [hasUserInteracted, setHasUserInteracted] = useState(false)
   
   const videoRef = useRef<HTMLVideoElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -25,6 +27,14 @@ export default function VideoPlayer({ src, thumbnail, title, className = '' }: V
   // Provide default values for props
   title = title || "Video"
   thumbnail = thumbnail || ""
+
+  // Load video only when user interacts
+  const loadVideo = () => {
+    if (!hasUserInteracted && videoRef.current) {
+      setHasUserInteracted(true)
+      videoRef.current.load()
+    }
+  }
 
   // Ensure video is in viewport when opened
   const scrollToVideo = () => {
@@ -49,6 +59,7 @@ export default function VideoPlayer({ src, thumbnail, title, className = '' }: V
 
   // Handle video play/pause
   const togglePlay = () => {
+    loadVideo() // Load video on first interaction
     if (videoRef.current) {
       if (isPlaying) {
         videoRef.current.pause()
@@ -126,6 +137,11 @@ export default function VideoPlayer({ src, thumbnail, title, className = '' }: V
     // Video event listeners
     const handleLoadedMetadata = () => {
       setDuration(video.duration)
+      setIsVideoLoaded(true)
+    }
+
+    const handleCanPlay = () => {
+      setIsVideoLoaded(true)
     }
 
     const handleTimeUpdate = () => {
@@ -167,6 +183,7 @@ export default function VideoPlayer({ src, thumbnail, title, className = '' }: V
 
     // Add event listeners
     video.addEventListener('loadedmetadata', handleLoadedMetadata)
+    video.addEventListener('canplay', handleCanPlay)
     video.addEventListener('timeupdate', handleTimeUpdate)
     video.addEventListener('play', handlePlay)
     video.addEventListener('pause', handlePause)
@@ -182,6 +199,7 @@ export default function VideoPlayer({ src, thumbnail, title, className = '' }: V
     // Cleanup
     return () => {
       video.removeEventListener('loadedmetadata', handleLoadedMetadata)
+      video.removeEventListener('canplay', handleCanPlay)
       video.removeEventListener('timeupdate', handleTimeUpdate)
       video.removeEventListener('play', handlePlay)
       video.removeEventListener('pause', handlePause)
@@ -203,21 +221,22 @@ export default function VideoPlayer({ src, thumbnail, title, className = '' }: V
   return (
     <div 
       ref={containerRef}
-      className={`relative bg-black rounded-lg overflow-hidden shadow-2xl group ${className}`}
+      className={`relative bg-black rounded-lg overflow-hidden shadow-2xl group px-4 md:px-8 lg:px-12 ${className}`}
     >
       {/* Video element */}
       <video
         ref={videoRef}
-        src={src}
+        src={hasUserInteracted ? src : undefined}
         poster={thumbnail}
         className="w-full h-full object-cover"
+        preload="none"
         onClick={togglePlay}
         onDoubleClick={toggleFullscreen}
         muted={isMuted}
       />
 
       {/* Play button overlay (when paused) */}
-      {!isPlaying && (
+      {(!isPlaying || !hasUserInteracted) && (
         <div className="absolute inset-0 flex items-center justify-center bg-black/30 backdrop-blur-sm">
           <button
             onClick={togglePlay}
@@ -225,6 +244,13 @@ export default function VideoPlayer({ src, thumbnail, title, className = '' }: V
           >
             <Play className="w-8 h-8 text-white ml-1" />
           </button>
+        </div>
+      )}
+
+      {/* Loading indicator */}
+      {hasUserInteracted && !isVideoLoaded && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div>
         </div>
       )}
 
