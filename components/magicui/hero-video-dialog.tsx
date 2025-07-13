@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useRef, useState, useEffect } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Play, XIcon } from "lucide-react";
 
@@ -76,12 +76,15 @@ export default function HeroVideoDialog({
 }: HeroVideoProps) {
   const [isVideoOpen, setIsVideoOpen] = useState(false);
   const selectedAnimation = animationVariants[animationStyle];
+  const modalRef = useRef<HTMLDivElement>(null);
 
-  // Lock background scroll and scroll to top when modal opens
+  // Lock background scroll and scroll modal into view when open
   useEffect(() => {
     if (isVideoOpen) {
-      window.scrollTo({ top: 0, behavior: "smooth" });
       document.body.style.overflow = "hidden";
+      setTimeout(() => {
+        modalRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 50);
     } else {
       document.body.style.overflow = "";
     }
@@ -92,6 +95,13 @@ export default function HeroVideoDialog({
 
   return (
     <div className={cn("relative", className)}>
+      <div className="w-full flex flex-col items-center pt-8 pb-4 mb-2">
+        <h2 className="text-3xl md:text-4xl font-extrabold text-center bg-gradient-to-r from-primary to-blue-500 bg-clip-text text-transparent drop-shadow-lg mb-2">
+          How it works
+        </h2>
+        <div className="w-16 h-1 rounded-full bg-gradient-to-r from-primary to-blue-500 opacity-70 mb-2" />
+      </div>
+
       <div
         className="group relative cursor-pointer"
         onClick={() => setIsVideoOpen(true)}
@@ -122,6 +132,7 @@ export default function HeroVideoDialog({
       <AnimatePresence>
         {isVideoOpen && (
           <motion.div
+            ref={modalRef}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             onClick={() => setIsVideoOpen(false)}
@@ -136,6 +147,9 @@ export default function HeroVideoDialog({
               <motion.button className="absolute -top-16 right-0 rounded-full bg-neutral-900/50 p-2 text-xl text-white ring-1 backdrop-blur-md dark:bg-neutral-100/50 dark:text-black">
                 <XIcon className="size-5" />
               </motion.button>
+              {/* Modal Title */}
+              <div className="w-full flex flex-col items-center mb-4">
+              </div>
               <div className="relative isolate z-[1] size-full overflow-hidden rounded-2xl border-2 border-white">
                 <iframe
                   src={videoSrc}
