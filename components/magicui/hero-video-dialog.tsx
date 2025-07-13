@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Play, XIcon } from "lucide-react";
 
@@ -76,6 +76,19 @@ export default function HeroVideoDialog({
 }: HeroVideoProps) {
   const [isVideoOpen, setIsVideoOpen] = useState(false);
   const selectedAnimation = animationVariants[animationStyle];
+
+  // Lock background scroll and scroll to top when modal opens
+  useEffect(() => {
+    if (isVideoOpen) {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [isVideoOpen]);
 
   return (
     <div className={cn("relative", className)}>
