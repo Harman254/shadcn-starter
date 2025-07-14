@@ -694,36 +694,35 @@ export async function getMealPlanGenerationCount(userId: string) {
     startOfWeek.setDate(now.getDate() - now.getDay()); // Start of week (Sunday)
     startOfWeek.setHours(0, 0, 0, 0);
 
-    const endOfWeek = new Date(startOfWeek);
-    endOfWeek.setDate(startOfWeek.getDate() + 7);
-
-    // Get or create generation record for this week
-    let generationRecord = await prisma.mealPlanGeneration.findFirst({
-      where: {
-        userId: userId,
-        weekStart: {
-          gte: startOfWeek,
-          lt: endOfWeek
-        }
-      }
+    let generationRecord = await prisma.mealPlanGeneration.findUnique({
+      where: { userId }
     });
 
     if (!generationRecord) {
-      // Create new record for this week
       generationRecord = await prisma.mealPlanGeneration.create({
         data: {
-          userId: userId,
-          weekStart: startOfWeek,
-          generationCount: 0
+          userId,
+          generationCount: 0,
+          lastReset: startOfWeek
         }
       });
+    } else {
+      const lastReset = new Date(generationRecord.lastReset);
+      if (lastReset < startOfWeek) {
+        generationRecord = await prisma.mealPlanGeneration.update({
+          where: { userId },
+          data: {
+            generationCount: 0,
+            lastReset: startOfWeek
+          }
+        });
+      }
     }
 
     return {
       generationCount: generationRecord.generationCount,
       maxGenerations: 3, // Free users get 3 generations per week
-      weekStart: generationRecord.weekStart,
-      weekEnd: endOfWeek
+      weekStart: startOfWeek
     };
   } catch (error) {
     console.error("Error getting meal plan generation count:", error);
@@ -735,47 +734,42 @@ export async function incrementMealPlanGeneration(userId: string) {
   try {
     const now = new Date();
     const startOfWeek = new Date(now);
-    startOfWeek.setDate(now.getDate() - now.getDay()); // Start of week (Sunday)
+    startOfWeek.setDate(now.getDate() - now.getDay());
     startOfWeek.setHours(0, 0, 0, 0);
 
-    const endOfWeek = new Date(startOfWeek);
-    endOfWeek.setDate(startOfWeek.getDate() + 7);
-
-    // Get or create generation record for this week
-    let generationRecord = await prisma.mealPlanGeneration.findFirst({
-      where: {
-        userId: userId,
-        weekStart: {
-          gte: startOfWeek,
-          lt: endOfWeek
-        }
-      }
+    let generationRecord = await prisma.mealPlanGeneration.findUnique({
+      where: { userId }
     });
 
     if (!generationRecord) {
-      // Create new record for this week
       generationRecord = await prisma.mealPlanGeneration.create({
         data: {
-          userId: userId,
-          weekStart: startOfWeek,
-          generationCount: 1
+          userId,
+          generationCount: 1,
+          lastReset: startOfWeek
         }
       });
     } else {
-      // Check if we can increment (safeguard)
-      if (generationRecord.generationCount >= 3) {
-        throw new Error("Generation limit reached");
-      }
-      
-      // Increment existing record
-      generationRecord = await prisma.mealPlanGeneration.update({
-        where: { id: generationRecord.id },
-        data: {
-          generationCount: {
-            increment: 1
+      const lastReset = new Date(generationRecord.lastReset);
+      if (lastReset < startOfWeek) {
+        generationRecord = await prisma.mealPlanGeneration.update({
+          where: { userId },
+          data: {
+            generationCount: 1,
+            lastReset: startOfWeek
           }
+        });
+      } else {
+        if (generationRecord.generationCount >= 3) {
+          throw new Error("Generation limit reached");
         }
-      });
+        generationRecord = await prisma.mealPlanGeneration.update({
+          where: { userId },
+          data: {
+            generationCount: { increment: 1 }
+          }
+        });
+      }
     }
 
     return {
@@ -819,54 +813,57 @@ export async function notifyGenerationLimitReached(userId: string) {
 // Enhanced checkMealPlanGenerationLimit with notifications
 export async function checkMealPlanGenerationLimit(userId: string) {
   try {
-    // Check subscription status first
     const subscription = await getSubscriptionByUserId(userId);
     if (subscription && (subscription.plan === "pro" || subscription.plan === "enterprise")) {
-      // Pro/Enterprise users: unlimited generations
       return {
         canGenerate: true,
         currentCount: 0,
         maxGenerations: Infinity,
         remaining: Infinity,
-        weekStart: null,
-        weekEnd: null
+        weekStart: null
       };
     }
     const now = new Date();
     const startOfWeek = new Date(now);
-    startOfWeek.setDate(now.getDate() - now.getDay()); // Start of week (Sunday)
+    startOfWeek.setDate(now.getDate() - now.getDay());
     startOfWeek.setHours(0, 0, 0, 0);
 
-    const endOfWeek = new Date(startOfWeek);
-    endOfWeek.setDate(startOfWeek.getDate() + 7);
-
-    // Get current generation record for this week
-    const generationRecord = await prisma.mealPlanGeneration.findFirst({
-      where: {
-        userId: userId,
-        weekStart: {
-          gte: startOfWeek,
-          lt: endOfWeek
-        }
-      }
+    let generationRecord = await prisma.mealPlanGeneration.findUnique({
+      where: { userId }
     });
-
-    const currentCount = generationRecord?.generationCount || 0;
-    const maxGenerations = 3; // Free users get 3 generations per week
+    let currentCount = 0;
+    if (!generationRecord) {
+      generationRecord = await prisma.mealPlanGeneration.create({
+        data: {
+          userId,
+          generationCount: 0,
+          lastReset: startOfWeek
+        }
+      });
+    } else {
+      const lastReset = new Date(generationRecord.lastReset);
+      if (lastReset < startOfWeek) {
+        generationRecord = await prisma.mealPlanGeneration.update({
+          where: { userId },
+          data: {
+            generationCount: 0,
+            lastReset: startOfWeek
+          }
+        });
+      }
+      currentCount = generationRecord.generationCount;
+    }
+    const maxGenerations = 3;
     const canGenerate = currentCount < maxGenerations;
-
-    // Send notification if user has reached the limit
     if (!canGenerate) {
       await notifyGenerationLimitReached(userId);
     }
-
     return {
       canGenerate,
       currentCount,
       maxGenerations,
       remaining: Math.max(0, maxGenerations - currentCount),
-      weekStart: startOfWeek,
-      weekEnd: endOfWeek
+      weekStart: startOfWeek
     };
   } catch (error) {
     console.error("Error checking meal plan generation limit:", error);
@@ -877,111 +874,65 @@ export async function checkMealPlanGenerationLimit(userId: string) {
 // Server action for atomic validation and increment
 export async function validateAndIncrementMealPlanGeneration(userId: string) {
   try {
-    // Check subscription status first
     const subscription = await getSubscriptionByUserId(userId);
     if (subscription && (subscription.plan === "pro" || subscription.plan === "enterprise")) {
-      // Pro/Enterprise users: unlimited generations
       return {
         success: true,
-        generationCount: 0, // Not tracked for pro
+        generationCount: 0,
         maxGenerations: Infinity,
         canGenerate: true
       };
     }
     const now = new Date();
     const startOfWeek = new Date(now);
-    startOfWeek.setDate(now.getDate() - now.getDay()); // Start of week (Sunday)
+    startOfWeek.setDate(now.getDate() - now.getDay());
     startOfWeek.setHours(0, 0, 0, 0);
-
-    const endOfWeek = new Date(startOfWeek);
-    endOfWeek.setDate(startOfWeek.getDate() + 7);
-
-    // Use a transaction to ensure atomicity
-    const result = await prisma.$transaction(async (tx) => {
-      // Get or create generation record for this week
-      let generationRecord = await tx.mealPlanGeneration.findFirst({
-        where: {
-          userId: userId,
-          weekStart: {
-            gte: startOfWeek,
-            lt: endOfWeek
-          }
+    let generationRecord = await prisma.mealPlanGeneration.findUnique({
+      where: { userId }
+    });
+    if (!generationRecord) {
+      generationRecord = await prisma.mealPlanGeneration.create({
+        data: {
+          userId,
+          generationCount: 1,
+          lastReset: startOfWeek
         }
       });
-
-      if (!generationRecord) {
-        // Create new record for this week
-        generationRecord = await tx.mealPlanGeneration.create({
+    } else {
+      const lastReset = new Date(generationRecord.lastReset);
+      if (lastReset < startOfWeek) {
+        generationRecord = await prisma.mealPlanGeneration.update({
+          where: { userId },
           data: {
-            userId: userId,
-            weekStart: startOfWeek,
-            generationCount: 1
+            generationCount: 1,
+            lastReset: startOfWeek
           }
         });
       } else {
-        // Check if we can increment
         if (generationRecord.generationCount >= 3) {
-          throw new Error("Generation limit reached");
+          return {
+            success: false,
+            canGenerate: false,
+            error: "Generation limit reached",
+            currentCount: generationRecord.generationCount,
+            maxGenerations: 3
+          };
         }
-        
-        // Ensure count doesn't go negative
-        const newCount = generationRecord.generationCount + 1;
-        if (newCount < 0) {
-          throw new Error("Invalid generation count");
-        }
-        
-        // Increment existing record
-        generationRecord = await tx.mealPlanGeneration.update({
-          where: { id: generationRecord.id },
+        generationRecord = await prisma.mealPlanGeneration.update({
+          where: { userId },
           data: {
-            generationCount: newCount
+            generationCount: { increment: 1 }
           }
         });
       }
-
-      return {
-        success: true,
-        generationCount: generationRecord.generationCount,
-        maxGenerations: 3,
-        canGenerate: true
-      };
-    });
-
-    return result;
-  } catch (error) {
-    if (error instanceof Error && error.message === "Generation limit reached") {
-      // Re-fetch or pass the current state of generations when limit is reached
-      const now = new Date();
-      const startOfWeek = new Date(now);
-      startOfWeek.setDate(now.getDate() - now.getDay()); // Start of week (Sunday)
-      startOfWeek.setHours(0, 0, 0, 0);
-
-      const endOfWeek = new Date(startOfWeek);
-      endOfWeek.setDate(startOfWeek.getDate() + 7);
-
-      // Get current generation record for this week to provide accurate count
-      const generationRecord = await prisma.mealPlanGeneration.findFirst({
-        where: {
-          userId: userId,
-          weekStart: {
-            gte: startOfWeek,
-            lt: endOfWeek
-          }
-        }
-      });
-
-      const currentCount = Math.max(0, generationRecord?.generationCount || 0); // Ensure non-negative
-      const maxGenerations = 3; // Free users get 3 generations per week
-
-      return {
-        success: false,
-        canGenerate: false,
-        error: "Generation limit reached",
-        currentCount,
-        maxGenerations,
-      };
     }
-    
+    return {
+      success: true,
+      generationCount: generationRecord.generationCount,
+      maxGenerations: 3,
+      canGenerate: true
+    };
+  } catch (error) {
     console.error("Error validating and incrementing meal plan generation:", error);
     throw error;
   }
@@ -1154,14 +1105,8 @@ export async function checkAndNotifyGenerationReset(userId: string) {
     endOfWeek.setDate(startOfWeek.getDate() + 7);
 
     // Get current generation record for this week
-    const currentRecord = await prisma.mealPlanGeneration.findFirst({
-      where: {
-        userId: userId,
-        weekStart: {
-          gte: startOfWeek,
-          lt: endOfWeek
-        }
-      }
+    const currentRecord = await prisma.mealPlanGeneration.findUnique({
+      where: { userId }
     });
 
     // Get last week's record to check if there was a reset
@@ -1170,14 +1115,8 @@ export async function checkAndNotifyGenerationReset(userId: string) {
     
     const lastWeekEnd = new Date(startOfWeek);
     
-    const lastWeekRecord = await prisma.mealPlanGeneration.findFirst({
-      where: {
-        userId: userId,
-        weekStart: {
-          gte: lastWeekStart,
-          lt: lastWeekEnd
-        }
-      }
+    const lastWeekRecord = await prisma.mealPlanGeneration.findUnique({
+      where: { userId }
     });
 
     // Check if this is a new week and user had used generations last week
@@ -1261,62 +1200,53 @@ export async function rollbackMealPlanGeneration(userId: string) {
     const startOfWeek = new Date(now);
     startOfWeek.setDate(now.getDate() - now.getDay()); // Start of week (Sunday)
     startOfWeek.setHours(0, 0, 0, 0);
-
-    const endOfWeek = new Date(startOfWeek);
-    endOfWeek.setDate(startOfWeek.getDate() + 7);
-
-    // Use a transaction to ensure atomicity
-    const result = await prisma.$transaction(async (tx) => {
-      // Get current generation record for this week
-      const generationRecord = await tx.mealPlanGeneration.findFirst({
-        where: {
-          userId: userId,
-          weekStart: {
-            gte: startOfWeek,
-            lt: endOfWeek
-          }
-        }
-      });
-
-      if (!generationRecord) {
-        // No record to rollback
-        return {
-          success: true,
-          generationCount: 0,
-          maxGenerations: 3,
-          message: "No generation record found to rollback"
-        };
-      }
-
-      // If already zero, block further decrement and return error
-      if (generationRecord.generationCount === 0) {
-        return {
-          success: false,
-          error: 'No generations remaining',
-          generationCount: 0,
-          maxGenerations: 3
-        };
-      }
-
-      // Decrement the count, ensuring it doesn't go below 0
-      const newCount = Math.max(0, generationRecord.generationCount - 1);
-      
-      const updatedRecord = await tx.mealPlanGeneration.update({
-        where: { id: generationRecord.id },
-        data: {
-          generationCount: newCount
-        }
-      });
-
+    let generationRecord = await prisma.mealPlanGeneration.findUnique({
+      where: { userId }
+    });
+    if (!generationRecord) {
       return {
         success: true,
-        generationCount: updatedRecord.generationCount,
+        generationCount: 0,
         maxGenerations: 3,
-        message: "Generation count rolled back successfully"
+        message: "No generation record found to rollback"
       };
+    }
+    const lastReset = new Date(generationRecord.lastReset);
+    if (lastReset < startOfWeek) {
+      generationRecord = await prisma.mealPlanGeneration.update({
+        where: { userId },
+        data: {
+          generationCount: 0,
+          lastReset: startOfWeek
+        }
+      });
+      return {
+        success: true,
+        generationCount: 0,
+        maxGenerations: 3,
+        message: "Generation count reset for new week"
+      };
+    }
+    if (generationRecord.generationCount === 0) {
+      return {
+        success: false,
+        error: 'No generations remaining',
+        generationCount: 0,
+        maxGenerations: 3
+      };
+    }
+    const updatedRecord = await prisma.mealPlanGeneration.update({
+      where: { userId },
+      data: {
+        generationCount: { decrement: 1 }
+      }
     });
-
-    return result;
+    return {
+      success: true,
+      generationCount: updatedRecord.generationCount,
+      maxGenerations: 3,
+      message: "Generation count rolled back successfully"
+    };
   } catch (error) {
     console.error("Error rolling back meal plan generation:", error);
     throw error;
@@ -1347,20 +1277,18 @@ export async function checkDatabaseHealth() {
 export async function resetMealPlanGenerationCount(userId: string) {
   try {
     const now = new Date();
-    const weekStart = startOfWeek(now, { weekStartsOn: 0 });
-
-    let record = await prisma.mealPlanGeneration.findFirst({
-      where: { userId, weekStart },
-    });
-
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - now.getDay());
+    startOfWeek.setHours(0, 0, 0, 0);
+    let record = await prisma.mealPlanGeneration.findUnique({ where: { userId } });
     if (!record) {
       record = await prisma.mealPlanGeneration.create({
-        data: { userId, weekStart, generationCount: 0 },
+        data: { userId, generationCount: 0, lastReset: startOfWeek },
       });
     } else {
       record = await prisma.mealPlanGeneration.update({
-        where: { id: record.id },
-        data: { generationCount: 0 },
+        where: { userId },
+        data: { generationCount: 0, lastReset: startOfWeek },
       });
     }
     return { success: true, record };
