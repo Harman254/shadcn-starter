@@ -360,9 +360,9 @@ const Preferences = ({userId}:Props ) => {
   
 
   return (
-    <div className="min-h-screen bg-background/95 ">
+    <div className="min-h-screen bg-[#EAEFEF] dark:bg-[#222222] ">
       {/* Action Bar */}
-      <div className="sticky top-0 z-10 bg-background/95 shadow-lg">
+      <div className="sticky top-0 z-10 bg-[#EAEFEF] dark:bg-[#222222] shadow-lg">
         <div className="max-w-7xl mx-auto px-8 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">

@@ -47,7 +47,7 @@ const  Dashboard = () =>{
 
   if (isPending || isFetching) {
     return (
-      <div className="flex min-h-screen w-full flex-col items-center justify-center gap-4">
+      <div className="flex min-h-screen w-full flex-col items-center bg-[#EAEFEF] dark:bg-[#222222] justify-center gap-4">
       <div className="flex h-16 w-16 animate-spin items-center justify-center rounded-full border-4 border-transparent border-t-blue-400 text-4xl text-blue-400">
         <div className="flex h-12 w-12 animate-spin items-center justify-center rounded-full border-4 border-transparent border-t-red-400 text-2xl text-red-400"></div>
       </div>
@@ -56,7 +56,7 @@ const  Dashboard = () =>{
   }
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-[#EAEFEF] dark:bg-[#222222]">
       <div className="max-w-6xl mx-auto px-4 py-12">
         {/* Welcome Section */}
         <div className="text-center mb-12">

@@ -430,26 +430,27 @@ const CreateMealPlan = ({ preferences, isOnboardComplete }: CreateMealPlanProps)
       
       <div
         suppressHydrationWarning
-        className="relative min-h-screen w-full bg-gradient-to-br from-zinc-50 via-white to-zinc-50 dark:from-zinc-950 dark:via-zinc-900 dark:to-zinc-950"
+        // Main background color from palette
+        className="relative min-h-screen w-full bg-[#EAEFEF] dark:bg-[#222222]"
       >
-        {/* Premium Background Effects */}
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-blue-100/20 via-transparent to-transparent dark:from-blue-900/10" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,_var(--tw-gradient-stops))] from-emerald-100/20 via-transparent to-transparent dark:from-emerald-900/10" />
-        <div className="absolute inset-0 bg-gradient-to-t from-white/80 via-transparent to-transparent dark:from-slate-950/80" />
+        {/* Premium Background Effects (subtle, using palette) */}
+        <div className="absolute inset-0bg-[#EAEFEF] dark:bg-[#222222]"/>
+        <div className="absolute inset-0 bg-[#7F8CAA]/10" />
         <div className="relative w-full max-w-6xl mx-auto py-8 lg:py-16 px-4 sm:px-6 lg:px-8 space-y-12">
           <div className="text-center space-y-8">
-            <div className="inline-flex items-center gap-3 bg-gradient-to-r from-blue-50 to-emerald-50 dark:from-blue-950/50 dark:to-emerald-950/50 border border-blue-200/50 dark:border-blue-700/50 text-blue-700 dark:text-blue-300 px-6 py-3 rounded-full text-sm font-semibold shadow-lg shadow-blue-500/10 backdrop-blur-sm">
-              <Utensils className="h-4 w-4" />
+            {/* Info badge using accent color */}
+            <div className="inline-flex items-center gap-3 bg-[#EAEFEF] border border-[#7F8CAA] text-[#333446] px-6 py-3 rounded-full text-sm font-semibold shadow-lg backdrop-blur-sm">
+              <Utensils className="h-4 w-4 text-[#333446]" />
               AI-Powered Nutrition Planning
             </div>
             <div className="space-y-6">
-              <h1 className="text-4xl sm:text-5xl lg:text-7xl font-black tracking-tight text-slate-900 dark:text-slate-50 leading-[0.9]">
+              <h1 className="text-4xl sm:text-5xl lg:text-7xl font-black tracking-tight text-[#333446] leading-[0.9] font-sans">
                 Create Your Perfect
-                <span className="block bg-gradient-to-r from-blue-600 via-emerald-600 to-teal-600 dark:from-blue-400 dark:via-emerald-400 dark:to-teal-400 bg-clip-text text-transparent">
+                <span className="block text-[#7F8CAA]">
                   Meal Plan
                 </span>
               </h1>
-              <p className="text-xl lg:text-2xl text-slate-600 dark:text-slate-300 max-w-4xl mx-auto leading-relaxed font-medium">
+              <p className="text-xl lg:text-2xl text-[#7F8CAA] max-w-4xl mx-auto leading-relaxed font-medium font-sans">
                 Enterprise-grade nutrition planning powered by advanced AI. Get personalized meal plans that align with your lifestyle, preferences, and wellness objectives.
               </p>
             </div>
@@ -614,43 +615,42 @@ const CreateMealPlan = ({ preferences, isOnboardComplete }: CreateMealPlanProps)
               <Separator className="bg-gradient-to-r from-transparent via-slate-200 dark:via-slate-700 to-transparent" />
 
               {/* Enhanced Plan Summary */}
-              <div className="bg-gradient-to-br from-slate-50/90 via-white/90 to-slate-50/90 dark:from-slate-800/60 dark:via-slate-900/60 dark:to-slate-800/60 rounded-2xl p-4 sm:p-6 md:p-8 border border-slate-200/60 dark:border-slate-700/60 shadow-lg shadow-slate-900/5 dark:shadow-slate-900/20">
-                <h3 className="text-lg sm:text-xl font-black text-slate-900 dark:text-slate-50 mb-4 sm:mb-6 flex items-center gap-3 antialiased">
-                  <div className="h-6 w-6 sm:h-8 sm:w-8 rounded-xl bg-gradient-to-br from-emerald-600 to-teal-600 dark:from-emerald-500 dark:to-teal-500 flex items-center justify-center shadow-lg shadow-emerald-500/30">
-                    <CheckCircle2 className="h-3 w-3 sm:h-4 sm:w-4 text-white" />
+              {/* Card background and border from palette */}
+              <div className="bg-[#B8CFCE] rounded-2xl p-4 sm:p-6 md:p-8 border border-[#7F8CAA] shadow-lg">
+                <h3 className="text-lg sm:text-xl font-black text-[#333446] mb-4 sm:mb-6 flex items-center gap-3 antialiased">
+                  <div className="h-6 w-6 sm:h-8 sm:w-8 rounded-xl bg-[#7F8CAA] flex items-center justify-center shadow-lg">
+                    <CheckCircle2 className="h-3 w-3 sm:h-4 sm:w-4 text-[#EAEFEF]" />
                   </div>
                   Plan Summary
                 </h3>
-
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
-                  <div className="text-center p-4 sm:p-6 bg-white/80 dark:bg-slate-800/80 rounded-xl border border-slate-200/60 dark:border-slate-700/60 shadow-sm">
-                    <div className="text-2xl sm:text-3xl font-black text-emerald-600 dark:text-emerald-400 mb-2">{duration}</div>
-                    <div className="text-xs sm:text-sm font-bold text-slate-600 dark:text-slate-300">Days</div>
+                  <div className="text-center p-4 sm:p-6 bg-[#EAEFEF] rounded-xl border border-[#B8CFCE] shadow-sm">
+                    <div className="text-2xl sm:text-3xl font-black text-[#7F8CAA] mb-2">{duration}</div>
+                    <div className="text-xs sm:text-sm font-bold text-[#333446]">Days</div>
                   </div>
-                  <div className="text-center p-4 sm:p-6 bg-white/80 dark:bg-slate-800/80 rounded-xl border border-slate-200/60 dark:border-slate-700/60 shadow-sm">
-                    <div className="text-2xl sm:text-3xl font-black text-emerald-600 dark:text-emerald-400 mb-2">{totalMeals}</div>
-                    <div className="text-xs sm:text-sm font-bold text-slate-600 dark:text-slate-300">Total Meals</div>
+                  <div className="text-center p-4 sm:p-6 bg-[#EAEFEF] rounded-xl border border-[#B8CFCE] shadow-sm">
+                    <div className="text-2xl sm:text-3xl font-black text-[#7F8CAA] mb-2">{totalMeals}</div>
+                    <div className="text-xs sm:text-sm font-bold text-[#333446]">Total Meals</div>
                   </div>
-                  <div className="text-center p-4 sm:p-6 bg-white/80 dark:bg-slate-800/80 rounded-xl border border-slate-200/60 dark:border-slate-700/60 shadow-sm">
-                    <div className="text-2xl sm:text-3xl font-black text-emerald-600 dark:text-emerald-400 mb-2">~{estimatedTime}h</div>
-                    <div className="text-xs sm:text-sm font-bold text-slate-600 dark:text-slate-300">Prep Time</div>
+                  <div className="text-center p-4 sm:p-6 bg-[#EAEFEF] rounded-xl border border-[#B8CFCE] shadow-sm">
+                    <div className="text-2xl sm:text-3xl font-black text-[#7F8CAA] mb-2">~{estimatedTime}h</div>
+                    <div className="text-xs sm:text-sm font-bold text-[#333446]">Prep Time</div>
                   </div>
                 </div>
-                  
-                  {/* Warning for large meal plans */}
-                  {duration >= 14 && (
-                    <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-xl">
-                      <div className="flex items-center gap-3">
-                        <div className="h-5 w-5 sm:h-6 sm:w-6 rounded-full bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center">
-                          <span className="text-xs font-bold text-amber-600 dark:text-amber-400">!</span>
-                        </div>
-                        <p className="text-xs sm:text-sm text-amber-800 dark:text-amber-200">
-                          <strong>Note:</strong> 14-day meal plans contain a lot of data and may take longer to save. Please be patient during the save process.
-                        </p>
+                {/* Warning for large meal plans */}
+                {duration >= 14 && (
+                  <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-[#7F8CAA]/20 border border-[#7F8CAA] rounded-xl">
+                    <div className="flex items-center gap-3">
+                      <div className="h-5 w-5 sm:h-6 sm:w-6 rounded-full bg-[#B8CFCE] flex items-center justify-center">
+                        <span className="text-xs font-bold text-[#333446]">!</span>
                       </div>
+                      <p className="text-xs sm:text-sm text-[#333446]">
+                        <strong>Note:</strong> 14-day meal plans contain a lot of data and may take longer to save. Please be patient during the save process.
+                      </p>
                     </div>
-                  )}
-                </div>
+                  </div>
+                )}
+              </div>
 
                 {/* Generate Button */}
                 <div className="space-y-4 sm:space-y-6">
@@ -658,31 +658,31 @@ const CreateMealPlan = ({ preferences, isOnboardComplete }: CreateMealPlanProps)
                     onClick={generateMealPlan}
                     disabled={loading || imagesLoading || cloudinaryImages.length === 0 }
                     size="lg"
-                    className="w-full h-14 sm:h-16 text-base sm:text-lg font-semibold bg-gradient-to-r from-[#08e605] via-green-600 to-lime-600 hover:from-emerald-700 hover:via-teal-700 hover:to-cyan-700 text-white shadow-xl shadow-emerald-500/25 hover:shadow-emerald-500/40 transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] disabled:transform-none disabled:opacity-50"
+                    className="w-full h-14 sm:h-16 text-base sm:text-lg font-semibold bg-[#7F8CAA] hover:bg-[#333446] text-[#EAEFEF] shadow-xl transition-all duration-300 rounded-lg focus-visible:ring-2 focus-visible:ring-[#B8CFCE] focus-visible:ring-offset-2 disabled:opacity-50"
                   >
                     {imagesLoading ? (
                       <>
-                        <Loader2 className="mr-2 sm:mr-3 h-5 w-5 sm:h-6 sm:w-6 animate-spin" />
+                        <Loader2 className="mr-2 sm:mr-3 h-5 w-5 sm:h-6 sm:w-6 animate-spin text-[#333446]" />
                         Loading Images...
                       </>
                     ) : loading ? (
                       <>
-                        <Loader2 className="mr-2 sm:mr-3 h-5 w-5 sm:h-6 sm:w-6 animate-spin" />
+                        <Loader2 className="mr-2 sm:mr-3 h-5 w-5 sm:h-6 sm:w-6 animate-spin text-[#333446]" />
                         <span className="hidden sm:inline">Generating Your Perfect Plan...</span>
                         <span className="sm:hidden">Generating...</span>
                       </>
                     ) : generated ? (
                       <>
-                        <CheckCircle2 className="mr-2 sm:mr-3 h-5 w-5 sm:h-6 sm:w-6" />
+                        <CheckCircle2 className="mr-2 sm:mr-3 h-5 w-5 sm:h-6 sm:w-6 text-[#EAEFEF]" />
                         <span className="hidden sm:inline">Plan Generated Successfully!</span>
                         <span className="sm:hidden">Generated!</span>
                       </>
                     ) : (
                       <>
-                        <Rocket className="mr-2 sm:mr-3 h-5 w-5 sm:h-6 sm:w-6" />
+                        <Rocket className="mr-2 sm:mr-3 h-5 w-5 sm:h-6 sm:w-6 text-[#EAEFEF]" />
                         <span className="hidden sm:inline">Generate My Meal Plan</span>
                         <span className="sm:hidden">Generate Plan</span>
-                        <ArrowRight className="ml-2 sm:ml-3 h-5 w-5 sm:h-6 sm:w-6 group-hover:translate-x-1 transition-transform" />
+                        <ArrowRight className="ml-2 sm:ml-3 h-5 w-5 sm:h-6 sm:w-6 text-[#EAEFEF] group-hover:translate-x-1 transition-transform" />
                       </>
                     )}
                   </Button>
