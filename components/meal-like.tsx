@@ -88,36 +88,26 @@ const MealLikeButton = ({ initialIsLiked = false, onLikeToggle, mealId }: MealLi
   }
 
   return (
-    <Button
+    <button
       onClick={handleLikeToggle}
-      disabled={isLoading}
+      disabled={isLoading || !isInitialized}
       className={cn(
-        "inline-flex items-center gap-2 px-5 py-2 rounded-full font-semibold text-base shadow transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1DCD9F]",
+        "p-1.5 sm:p-2 rounded-full transition-all hover:scale-110 focus:outline-none focus:ring-2 focus:ring-offset-2",
         isLiked
-          ? "bg-[#1DCD9F] text-white shadow-lg hover:bg-[#169976]"
-          : "bg-white text-red-500 border border-slate-200 hover:bg-slate-100 dark:bg-[#222222] dark:text-red-400 dark:border-slate-700 dark:hover:bg-slate-800",
-        isLoading && "opacity-50 cursor-not-allowed"
+          ? "bg-red-50 dark:bg-red-950 text-red-500 focus:ring-red-500"
+          : "bg-gray-50 dark:bg-gray-800 text-gray-400 hover:text-red-400 focus:ring-gray-500",
+        (isLoading || !isInitialized) && "opacity-50 cursor-not-allowed"
       )}
       aria-label={isLiked ? "Unlike meal" : "Like meal"}
-      tabIndex={0}
+      aria-pressed={isLiked}
       type="button"
     >
-      {isLoading ? (
-        <Loader2 className="h-5 w-5 animate-spin" />
-      ) : (
-        <Heart
-          className={cn(
-            "h-5 w-5 transition-all duration-200",
-            isLiked ? "fill-white" : "fill-none",
-            animate && "scale-125",
-            isLiked ? "stroke-white" : "stroke-red-500"
-          )}
-        />
-      )}
-      <span className="ml-1">
-        {isLiked ? "Liked" : "Like"}
-      </span>
-    </Button>
+      <Heart className={cn(
+        "w-5 h-5",
+        isLiked ? "fill-current" : "",
+        isLoading ? "animate-pulse" : ""
+      )} />
+    </button>
   );
 }
 
