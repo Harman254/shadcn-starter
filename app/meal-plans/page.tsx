@@ -146,30 +146,30 @@ const MealPlans = async () => {
     <>
     <div className="min-h-screen bg-gradient-to-b from-zinc-50 to-zinc-100 dark:from-zinc-900 dark:to-zinc-950">
       {/* Header */}
-      <div className="bg-white/80 dark:bg-zinc-800/80 backdrop-blur-xl border-b border-zinc-200/50 dark:border-zinc-700/50 sticky top-0 z-10">
-        <div className="container max-w-7xl mx-auto px-4 sm:px-6 py-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-gradient-to-br from-violet-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
+      <div className="bg-white/80 dark:bg-zinc-800/80 backdrop-blur-xl border-b border-zinc-200/50 dark:border-zinc-700/50 sticky top-0 z-10 w-full">
+        <div className="container max-w-7xl mx-auto px-2 sm:px-4 py-4 sm:py-6 w-full">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-0 w-full min-w-0">
+            <div className="flex items-center gap-4 min-w-0 w-full sm:w-auto">
+              <div className="w-12 h-12 bg-gradient-to-br from-violet-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg flex-shrink-0">
                 <BookOpen className="w-6 h-6 text-white" />
               </div>
-              <div>
-                <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">
+              <div className="min-w-0">
+                <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 truncate">
                   My Meal Plans
                 </h1>
-                <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                <p className="text-sm text-zinc-600 dark:text-zinc-400 truncate">
                   {mealPlans.length} active plans
                 </p>
               </div>
             </div>
             
-            <div className="flex items-center gap-3">
-              <div className="relative">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full sm:w-auto min-w-0">
+              <div className="relative w-full sm:w-auto">
                 <Search className="w-4 h-4 text-zinc-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
                 <input 
                   type="text" 
                   placeholder="Search plans..." 
-                  className="pl-10 pr-4 py-2 bg-zinc-100 dark:bg-zinc-700 border border-zinc-200 dark:border-zinc-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent w-full max-w-xs"
+                  className="pl-10 pr-4 py-2 bg-zinc-100 dark:bg-zinc-700 border border-zinc-200 dark:border-zinc-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent w-full max-w-full sm:max-w-xs"
                 />
               </div>
               
@@ -188,7 +188,7 @@ const MealPlans = async () => {
               
               <Link
                 href="/meal-plans/new"
-                className="inline-flex items-center gap-2 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white px-4 py-2 rounded-lg font-medium transition-all duration-200 shadow-lg hover:shadow-xl"
+                className="inline-flex items-center gap-2 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white px-4 py-2 rounded-lg font-medium transition-all duration-200 shadow-lg hover:shadow-xl w-full sm:w-auto justify-center"
               >
                 <Plus className="w-4 h-4" />
                 New Plan
@@ -199,9 +199,9 @@ const MealPlans = async () => {
       </div>
 
       {/* Stats Overview */}
-      <div className="container max-w-7xl mx-auto px-4 sm:px-6 py-8">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white dark:bg-zinc-800 rounded-xl p-6 shadow-sm border border-zinc-200/50 dark:border-zinc-700/50">
+      <div className="container max-w-7xl  mx-auto px-2 sm:px-4 py-6 sm:py-8 w-full">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8 w-full">
+          <div className="bg-white dark:bg-[#222222] rounded-xl p-4 sm:p-6 shadow-sm border border-zinc-200/50 dark:border-zinc-700/50 min-w-0">
             <div className="flex items-center justify-between mb-4">
               <div className="w-10 h-10 bg-violet-100 dark:bg-violet-900/30 rounded-lg flex items-center justify-center">
                 <Target className="w-5 h-5 text-violet-600 dark:text-violet-400" />
@@ -218,7 +218,7 @@ const MealPlans = async () => {
             </p>
           </div>
           
-          <div className="bg-white dark:bg-zinc-800 rounded-xl p-6 shadow-sm border border-zinc-200/50 dark:border-zinc-700/50">
+          <div className="bg-white dark:bg-zinc-800 rounded-xl p-4 sm:p-6 shadow-sm border border-zinc-200/50 dark:border-zinc-700/50 min-w-0">
             <div className="flex items-center justify-between mb-4">
               <div className="w-10 h-10 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg flex items-center justify-center">
                 <Clock className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
@@ -235,7 +235,7 @@ const MealPlans = async () => {
             </p>
           </div>
           
-          <div className="bg-white dark:bg-zinc-800 rounded-xl p-6 shadow-sm border border-zinc-200/50 dark:border-zinc-700/50">
+          <div className="bg-white dark:bg-zinc-800 rounded-xl p-4 sm:p-6 shadow-sm border border-zinc-200/50 dark:border-zinc-700/50 min-w-0">
             <div className="flex items-center justify-between mb-4">
               <div className="w-10 h-10 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg flex items-center justify-center">
                 <UtensilsIcon className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
@@ -252,7 +252,7 @@ const MealPlans = async () => {
             </p>
           </div>
           
-          <div className="bg-white dark:bg-zinc-800 rounded-xl p-6 shadow-sm border border-zinc-200/50 dark:border-zinc-700/50">
+          <div className="bg-white dark:bg-zinc-800 rounded-xl p-4 sm:p-6 shadow-sm border border-zinc-200/50 dark:border-zinc-700/50 min-w-0">
             <div className="flex items-center justify-between mb-4">
               <div className="w-10 h-10 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center">
                 <TrendingUp className="w-5 h-5 text-purple-600 dark:text-purple-400" />
@@ -271,7 +271,7 @@ const MealPlans = async () => {
         </div>
 
         {/* Meal Plans Grid */}
-        <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6 w-full">
           {mealPlans.map((mealPlan, index) => (
             <PlanCard key={mealPlan.id} plan={mealPlan} index={index} />
           ))}

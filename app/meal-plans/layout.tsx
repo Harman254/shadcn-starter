@@ -18,6 +18,7 @@ import { UserDropdown } from "@/components/user-dropdown";
 
 import { Pacifico } from "next/font/google"
 import { cn } from "@/lib/utils";
+import Footer from "@/components/footer";
 
 
 const pacifico = Pacifico({
@@ -43,12 +44,12 @@ export default async function MealLayout({
   const meals = await getMealsByUserId(user.id);
 
   return (
-    <div className="grid h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr] bg-[#EAEFEF] dark:bg-[#000000]">
+    <div className="grid h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr] dark:bg-[#000000]">
       {/* Desktop Sidebar */}
-      <div className="hidden border-r border-[#B8CFCE] dark:border-[#1DCD9F] bg-[#B8CFCE] dark:bg-[#222222] md:block">
+      <div className="hidden border-r dark:bg-[#222222] md:block">
         <div className="flex flex-col h-full">
           {/* Desktop Header */}
-          <div className="h-14 flex items-center border-b border-[#1DCD9F] px-4 lg:h-[60px] lg:px-6 shrink-0 bg-[#B8CFCE] dark:bg-[#222222]">
+          <div className="h-14 flex items-center px-4 lg:h-[60px] lg:px-6 shrink-0 dark:bg-[#222222]">
             <Link href="/" className="flex items-center gap-2">
             <span
                 className={cn(
@@ -68,9 +69,8 @@ export default async function MealLayout({
                 <DashboardLinks />
               </div>
             </nav>
-            
             {/* Desktop UserDropdown - Fixed at bottom */}
-            <div className="border-t border-[#1DCD9F] p-3 lg:p-4 bg-[#B8CFCE] dark:bg-[#222222] shrink-0">
+            <div className="dark:bg-[#222222] shrink-0">
               <UserDropdown user={user} />
             </div>
           </div>
@@ -87,15 +87,15 @@ export default async function MealLayout({
               <Button 
                 variant="outline" 
                 size="icon" 
-                className="md:hidden  text-green-500 hover:bg-[#169976] hover:text-[#1DCD9F]"
+                className="md:hidden  text-green-500"
               >
                 <Menu className="size-5" />
                 <span className="sr-only">Toggle navigation menu</span>
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="flex flex-col p-0 w-[280px] sm:w-[320px] bg-[#B8CFCE] dark:bg-[#222222] border-r border-[#1DCD9F]">
+            <SheetContent side="left" className="flex flex-col p-0 w-[280px] sm:w-[320px] dark:bg-[#222222] border-r border-[#1DCD9F]">
               {/* Mobile Sheet Header */}
-              <div className="h-14 flex items-center border-b border-[#1DCD9F] px-4 shrink-0 bg-[#B8CFCE] dark:bg-[#222222]">
+              <div className="h-14 flex items-center px-4 shrink-0 dark:bg-[#222222]">
                 <SheetTitle className="text-left">
                   <Link href="/" className="flex items-center gap-2">
                   <span
@@ -116,9 +116,8 @@ export default async function MealLayout({
                     <DashboardLinks />
                   </div>
                 </nav>
-                
                 {/* Mobile UserDropdown - Fixed at bottom */}
-                <div className="border-t border-[#1DCD9F] p-4 bg-[#B8CFCE] dark:bg-[#222222] shrink-0">
+                <div className="p-4 dark:bg-[#222222] shrink-0">
                   <UserDropdown user={user} />
                 </div>
               </div>
@@ -132,9 +131,10 @@ export default async function MealLayout({
         </header>
 
         {/* Main Content */}
-        <main className="flex-1 overflow-y-auto bg-[#EAEFEF] dark:bg-[#000000]">
-          <div className="h-full">
+        <main className="flex-1 overflow-y-auto bg-[#EAEFEF] dark:bg-[#222222] ">
+          <div className="h-full border-none">
             {children}
+
           </div>
         </main>
       </div>

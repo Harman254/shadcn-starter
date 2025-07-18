@@ -10,6 +10,8 @@ import { useProFeatures, PRO_FEATURES } from "@/hooks/use-pro-features";
 import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
 import { useSession } from "@/lib/auth-client";
+import { useMealSwapStore } from "@/components/meal-swap-store";
+import { cn } from "@/lib/utils";
 
 // Helper function to get the start of the current week (Monday)
 const getWeekStart = () => {
@@ -30,46 +32,26 @@ const getWeekKey = () => {
 
 export const MealActions = ({ onViewRecipe, onSwapMeal }: MealActionsProps) => {
   const [isPending, startTransition] = useTransition();
-  const [swapCount, setSwapCount] = useState(0);
-  const [maxSwaps, setMaxSwaps] = useState(3); // Default for free users
   const { hasFeature, unlockFeature, getFeatureBadge } = useProFeatures();
   const router = useRouter();
   const { data: session } = useSession();
+  const { swapCount, maxSwaps, loading, fetchSwapCount, incrementSwapCount } = useMealSwapStore();
 
-  // Fetch initial swap count from the server
+  // Fetch swap count on mount if not loaded
   useEffect(() => {
-    const fetchSwapCount = async () => {
-      if (!session?.user?.id) return;
-
-      try {
-        const response = await fetch("/api/meal-swaps");
-        const data = await response.json();
-
-        if (response.ok) {
-          setSwapCount(data.swapCount);
-          setMaxSwaps(data.maxSwaps);
-        } else {
-          console.error("Failed to fetch swap count:", data.error);
-          toast.error("Failed to load swap count. Please try again.");
-        }
-      } catch (error) {
-        console.error("Error fetching swap count:", error);
-        toast.error("Error loading swap count. Check your connection.");
-      }
-    };
-    fetchSwapCount();
+    if (session?.user?.id && swapCount === 0 && !loading) {
+      fetchSwapCount();
+    }
   }, [session?.user?.id]);
 
   const handleSwap = async () => {
     const isUnlimitedSwaps = hasFeature("unlimited-meal-plans");
-    
     if (isUnlimitedSwaps) {
       startTransition(() => {
         onSwapMeal();
       });
       return;
     }
-
     if (swapCount >= maxSwaps) {
       toast.error("You've reached your weekly swap limit! Upgrade to Pro for unlimited swaps.", {
         duration: 4000,
@@ -78,7 +60,6 @@ export const MealActions = ({ onViewRecipe, onSwapMeal }: MealActionsProps) => {
       unlockFeature(PRO_FEATURES["unlimited-meal-plans"]);
       return;
     }
-
     startTransition(async () => {
       try {
         const response = await fetch("/api/meal-swaps", {
@@ -88,12 +69,10 @@ export const MealActions = ({ onViewRecipe, onSwapMeal }: MealActionsProps) => {
           },
           body: JSON.stringify({ action: "validate-and-increment" }),
         });
-
         const data = await response.json();
-
         if (response.ok) {
           onSwapMeal();
-          setSwapCount(data.swapCount);
+          incrementSwapCount();
         } else {
           console.error("Failed to swap meal:", data.error);
           if (data.error === "Swap limit reached") {
@@ -132,25 +111,34 @@ export const MealActions = ({ onViewRecipe, onSwapMeal }: MealActionsProps) => {
 
   return (
     <div className="flex flex-col gap-3 lg:min-w-[160px]">
-      <Button className="w-full" onClick={onViewRecipe}>
+      <Button
+        onClick={onViewRecipe}
+        className={cn(
+          "inline-flex items-center gap-2 px-5 py-2 rounded-full font-semibold text-base shadow transition-all duration-200",
+          "bg-[#1DCD9F] text-white shadow-lg hover:bg-[#169976] focus-visible:ring-2 focus-visible:ring-[#1DCD9F] focus-visible:ring-offset-2 disabled:opacity-60 disabled:cursor-not-allowed"
+        )}
+      >
         View Recipe
       </Button>
 
       <div className="space-y-2">
         <Button
           variant="outline"
-          className="w-full flex items-center justify-center"
+          className={cn(
+            "inline-flex items-center gap-2 px-5 py-2 rounded-full font-semibold text-base shadow transition-all duration-200",
+            "border border-[#1DCD9F] text-[#1DCD9F] bg-white hover:bg-[#EAFBF7] dark:bg-[#222222] dark:hover:bg-[#1DCD9F]/10 dark:text-[#1DCD9F] dark:border-[#1DCD9F]"
+          )}
           onClick={handleSwap}
           disabled={isPending || !canSwap}
         >
           {isPending ? (
             <>
-              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              <Loader2 className="h-5 w-5 animate-spin mr-2" />
               Swapping...
             </>
           ) : (
             <>
-              <Zap className="h-4 w-4 mr-2" />
+              <Zap className="h-5 w-5 mr-2" />
               Swap Meal
             </>
           )}

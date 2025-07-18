@@ -268,9 +268,7 @@ const OnboardingPage = () => {
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3 sm:gap-4">
-              <div className="flex items-center justify-center h-10 w-10 sm:h-12 sm:w-12 rounded-xl sm:rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-xl shadow-emerald-500/25">
-                <Rocket className="w-5 h-5 sm:w-6 sm:h-6" />
-              </div>
+              
               
             </div>
             <div className="text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full">
@@ -541,13 +539,12 @@ const OnboardingPage = () => {
                           placeholder="Enter custom cuisine..."
                           value={customCuisine}
                           onChange={(e) => {
-                            // Prevent input containing any digits
-                            const value = e.target.value
-                            if (/\d/.test(value)) {
-                              toast.error("Cuisine name cannot contain numbers")
-                              return
+                            // Allow only letters, spaces, hyphens, and apostrophes
+                            if (/[^a-zA-Z\s'-]/.test(e.target.value)) {
+                              toast.error("Cuisine name can only contain letters, spaces, hyphens, and apostrophes");
+                              return;
                             }
-                            setCustomCuisine(value)
+                            setCustomCuisine(e.target.value);
                           }}
                           onKeyPress={(e) => e.key === 'Enter' && addCustomCuisine()}
                           className="flex-1 px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-xl sm:rounded-2xl bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-500 dark:placeholder-slate-400 focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-base sm:text-lg font-medium"

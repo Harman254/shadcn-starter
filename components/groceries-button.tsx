@@ -75,12 +75,18 @@ export default function GroceryListButton({ mealplanId }: { mealplanId: string }
     <Button 
       onClick={handleGenerateGroceryList}
       disabled={isLoading || !mealplanId}
-      className="inline-flex items-center px-3 sm:px-4 py-1.5 sm:py-2 bg-green-50 dark:bg-green-800/30 text-green-700 dark:text-green-300 text-xs sm:text-sm font-medium rounded-full shadow-sm border border-green-100 dark:border-green-800/50"
+      className={`
+        inline-flex items-center gap-2 px-5 py-2
+        bg-[#1DCD9F] text-white font-semibold rounded-full
+        shadow-lg transition-all duration-200
+        hover:bg-[#169976] hover:shadow-xl
+        focus-visible:ring-2 focus-visible:ring-[#1DCD9F] focus-visible:ring-offset-2
+        disabled:opacity-60 disabled:cursor-not-allowed
+        text-base
+      `}
     >
-      <ShoppingCart className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
-      <span className="whitespace-nowrap">
-        {isLoading ? 'Loading...' : 'Grocery List'}
-      </span>
+      <ShoppingCart className="h-5 w-5 mr-2 text-white" />
+      {isLoading ? 'Loading...' : 'Grocery List'}
     </Button>
   );
 }

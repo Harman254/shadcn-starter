@@ -7,7 +7,7 @@ import { useRef, useState, useEffect } from "react"
 import type { MealPlanCalendarProps } from "./types"
 import CalendarDayCard from "./calendar-day-card"
 
-export const MealPlanCalendar = ({ days }: MealPlanCalendarProps) => {
+export const MealPlanCalendar = ({ days, onDayClick }: MealPlanCalendarProps & { onDayClick?: (dayId: string) => void }) => {
   const scrollRef = useRef<HTMLDivElement>(null)
   const [showLeftArrow, setShowLeftArrow] = useState(false)
   const [showRightArrow, setShowRightArrow] = useState(true)
@@ -161,7 +161,7 @@ export const MealPlanCalendar = ({ days }: MealPlanCalendarProps) => {
                     flexShrink: 0,
                     scrollSnapAlign: 'center'
                   }}
-                  onClick={() => scrollToDay(day.id)}
+                  onClick={() => onDayClick ? onDayClick(day.id) : scrollToDay(day.id)}
                 >
                   <CalendarDayCard day={day} isToday={isToday} />
                 </div>

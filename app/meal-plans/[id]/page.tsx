@@ -9,6 +9,7 @@ import DayMealCard from "./components/day-meal-card";
 import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
 import Footer from '@/components/footer';
+import MealPlanDetailClient from "./components/meal-plan-detail-client";
 
 // Generate metadata for the meal plan detail page
 export async function generateMetadata({ params }: MealPlanDetailPageProps): Promise<Metadata> {
@@ -123,25 +124,12 @@ const MealPlanDetailPage = async ({ params }: MealPlanDetailPageProps) => {
   const avgCaloriesPerDay = Math.round(totalPlanCalories / mealPlan.days.length);
 
   return (
-      <div className="max-w-7xl bg-background/95  mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <MealPlanHeader mealPlan={mealPlan} avgCaloriesPerDay={avgCaloriesPerDay} />
-
-        <MealPlanStatCards
-          duration={mealPlan.duration}
-          mealsPerDay={mealPlan.mealsPerDay}
-          avgCaloriesPerDay={avgCaloriesPerDay}
-          totalPlanCalories={totalPlanCalories}
-        />
-
-        <MealPlanCalendar days={mealPlan.days} />
-
-        <div className="grid gap-6 mt-8">
-          {mealPlan.days.map((day, index) => (
-            <DayMealCard key={day.id} day={day} dayIndex={index} userId={userId || ""} />
-          ))}
-        </div>
-      </div>
-    // </div>
+    <MealPlanDetailClient
+      mealPlan={mealPlan}
+      avgCaloriesPerDay={avgCaloriesPerDay}
+      totalPlanCalories={totalPlanCalories}
+      userId={userId || ""}
+    />
   );
 };
 

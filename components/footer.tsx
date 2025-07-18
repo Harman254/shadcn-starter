@@ -19,11 +19,11 @@ export default function Footer() {
   }
  
   return (
-    <footer className="relative bg-[#EAEFEF] border-t border-[#B8CFCE] dark:bg-[#222222] dark:border-[#1DCD9F] overflow-hidden">
+    <footer className="relative bg-[#EAEFEF]  dark:bg-[#222222] overflow-hidden">
       {/* Subtle background pattern using palette */}
       <div className="absolute inset-0 opacity-[0.04]">
-        <div className="absolute top-0 left-0 w-full h-full bg-[#B8CFCE]/30 dark:bg-[#222222]/30"></div>
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,#1DCD9F_0%,transparent_70%)]"></div>
+        <div className="absolute top-0 left-0 w-full h-full dark:bg-[#222222] "></div>
+        <div className="absolute inset-0 "></div>
       </div>
       {/* Main content */}
       <div className="relative z-10 max-w-7xl mx-auto px-6 py-16">
@@ -32,7 +32,7 @@ export default function Footer() {
           {/* Brand section */}
           <div className="lg:col-span-1">
             <Link href="/" className="inline-block group">
-              <h2 className="text-2xl font-bold tracking-tight mb-4 transition-all duration-300 group-hover:scale-105">
+              <h2 className="text-xl font-bold tracking-tight mb-4 transition-all duration-300 group-hover:scale-105">
                 <span
                   className={cn(
                     // Brand gradient, theme-aware

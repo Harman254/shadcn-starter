@@ -17,11 +17,11 @@ const Onboarding =async () => {
   if (!userId) redirect('/sign-in')
 
 
-  // const checkOnboard = await getAccount(userId)
-  // const isOnboarded = checkOnboard?.isOnboardingComplete
-  // // if (isOnboarded) {
-  // //   redirect('/meal-plans/new')
-  // // }
+  const checkOnboard = await getAccount(userId)
+  const isOnboarded = checkOnboard?.isOnboardingComplete
+  if (isOnboarded) {
+    redirect('/meal-plans/new')
+  }
 
 
   return (

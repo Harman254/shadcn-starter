@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Heart } from "lucide-react"
 import { cn } from "@/lib/utils"
 import toast from "react-hot-toast"
+import { useMealLikeStore } from "./meal-like-store"
 
 interface MealLikeButtonProps {
   initialIsLiked?: boolean;
@@ -13,88 +14,54 @@ interface MealLikeButtonProps {
 }
 
 const MealLikeButton = ({ initialIsLiked = false, onLikeToggle, mealId }: MealLikeButtonProps) => {
-  const [isLiked, setIsLiked] = useState(initialIsLiked)
-  const [isLoading, setIsLoading] = useState(false)
-  const [isInitialized, setIsInitialized] = useState(false)
+  const { likes, toggleLike } = useMealLikeStore();
+  const isLiked = likes[mealId];
+  const [isLoading, setIsLoading] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
 
-  // Fetch initial like status from API
   useEffect(() => {
-    const fetchLikeStatus = async () => {
-      if (!mealId) return;
-      
-      try {
-        setIsLoading(true)
-        const response = await fetch(`/api/meals/${mealId}/like`)
-        if (response.ok) {
-          const data = await response.json()
-          setIsLiked(data.isLiked)
-        } else if (response.status === 401) {
-          // User not authenticated, keep initial state
-          console.log('User not authenticated for like status')
-        } else {
-          console.error('Failed to fetch like status:', response.status)
-        }
-      } catch (error) {
-        console.error('Error fetching like status:', error)
-        // Keep initial state on error
-      } finally {
-        setIsLoading(false)
-        setIsInitialized(true)
-      }
+    // If like status is present in store, consider initialized
+    if (typeof isLiked === 'boolean') {
+      setIsInitialized(true);
     }
-
-    fetchLikeStatus()
-  }, [mealId])
+  }, [isLiked]);
 
   const handleLikeToggle = async () => {
     if (!mealId || isLoading) return;
-    
-    const newLikedState = !isLiked
-    
-    // Optimistic update - update UI immediately
-    setIsLiked(newLikedState)
-    if (onLikeToggle) {
-      onLikeToggle(newLikedState)
-    }
-
+    const newLikedState = !isLiked;
+    // Optimistic update
+    toggleLike(mealId, newLikedState);
+    if (onLikeToggle) onLikeToggle(newLikedState);
+    setIsLoading(true);
     try {
       const response = await fetch(`/api/meals/${mealId}/like`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ isLiked: newLikedState }),
-      })
-
+      });
       if (response.ok) {
-        toast.success(newLikedState ? 'Meal liked!' : 'Meal unliked!')
+        toast.success(newLikedState ? 'Meal liked!' : 'Meal unliked!');
       } else {
         // Revert optimistic update on error
-        setIsLiked(!newLikedState)
-        if (onLikeToggle) {
-          onLikeToggle(!newLikedState)
-        }
-        
+        toggleLike(mealId, !newLikedState);
+        if (onLikeToggle) onLikeToggle(!newLikedState);
         if (response.status === 401) {
-          toast.error('Please sign in to like meals')
+          toast.error('Please sign in to like meals');
         } else {
-          const errorData = await response.json()
-          toast.error(errorData.error || 'Failed to update like status')
+          const errorData = await response.json();
+          toast.error(errorData.error || 'Failed to update like status');
         }
       }
     } catch (error) {
-      // Revert optimistic update on network error
-      setIsLiked(!newLikedState)
-      if (onLikeToggle) {
-        onLikeToggle(!newLikedState)
-      }
-      
-      console.error('Error updating like status:', error)
-      toast.error('Failed to update like status')
+      toggleLike(mealId, !newLikedState);
+      if (onLikeToggle) onLikeToggle(!newLikedState);
+      console.error('Error updating like status:', error);
+      toast.error('Failed to update like status');
+    } finally {
+      setIsLoading(false);
     }
-  }
+  };
 
-  // Don't render until we've fetched the initial state
   if (!isInitialized) {
     return (
       <Button
@@ -106,35 +73,31 @@ const MealLikeButton = ({ initialIsLiked = false, onLikeToggle, mealId }: MealLi
         <Heart className="h-5 w-5 animate-pulse" />
         Like
       </Button>
-    )
+    );
   }
 
   return (
     <Button
-      variant="secondary"
-      size="sm"
       onClick={handleLikeToggle}
       disabled={isLoading}
       className={cn(
-        "rounded-full p-2 transition-colors duration-200",
+        "inline-flex items-center gap-2 px-5 py-2 rounded-full font-semibold text-base shadow transition-all duration-200",
         isLiked
-          ? "text-red-500 hover:bg-red-50 dark:hover:bg-red-950"
-          : "text-slate-400 hover:text-red-500 hover:bg-slate-100 dark:hover:bg-slate-800",
+          ? "bg-[#1DCD9F] text-white shadow-lg hover:bg-[#169976]"
+          : "bg-white text-red-500 border border-slate-200 hover:bg-slate-100 dark:bg-[#222222] dark:text-red-400 dark:border-slate-700 dark:hover:bg-slate-800",
         isLoading && "opacity-50 cursor-not-allowed"
       )}
       aria-label={isLiked ? "Unlike meal" : "Like meal"}
     >
       <Heart
         className={cn(
-          "h-5 w-5 fill-current transition-all duration-200",
-          isLiked ? "fill-red-500" : "fill-none",
-          isLoading && "animate-spin"
+          "h-5 w-5 transition-all duration-200",
+          isLiked ? "fill-white" : "fill-none"
         )}
       />
-
-      {isLiked ? "Liked" : "Like"}  
+      {isLiked ? "Liked" : "Like"}
     </Button>
-  )
+  );
 }
 
 export default MealLikeButton

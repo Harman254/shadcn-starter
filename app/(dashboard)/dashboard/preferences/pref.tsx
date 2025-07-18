@@ -365,11 +365,7 @@ const Preferences = ({userId}:Props ) => {
       <div className="sticky top-0 z-10 bg-[#EAEFEF] dark:bg-[#222222] shadow-lg">
         <div className="max-w-7xl mx-auto px-8 py-6">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="flex items-center justify-center h-12 w-12 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-xl shadow-emerald-500/25">
-                <Rocket className="w-6 h-6" />
-              </div>
-            </div>
+            
             
             <div className="flex items-center justify-center gap-3">
              
@@ -413,7 +409,7 @@ const Preferences = ({userId}:Props ) => {
 
         <div className="grid gap-6 sm:gap-8 md:gap-10 lg:grid-cols-2">
           {/* Dietary Preferences */}
-          <div className="bg-background/95 shadow-2xl rounded-2xl sm:rounded-3xl border  backdrop-blur-sm">
+          <div className="bg-[#EAEFEF]  dark:bg-[#222222] shadow-2xl rounded-2xl sm:rounded-3xl border  backdrop-blur-sm">
             <div className="p-6 sm:p-8 pb-4 sm:pb-6">
               <div className="flex items-center gap-3 sm:gap-4 mb-3 sm:mb-4">
                 <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white shadow-xl shadow-emerald-500/25">
@@ -464,7 +460,7 @@ const Preferences = ({userId}:Props ) => {
           </div>
 
           {/* Goals Card */}
-          <div className="bg-background/95 shadow-lg rounded-xl border border-gray-200 dark:border-gray-700">
+          <div className="bg-[#EAEFEF]  dark:bg-[#222222] shadow-lg rounded-xl border border-gray-200 dark:border-gray-700">
             <div className="p-6 pb-4">
               <div className="flex items-center gap-3 mb-2">
                 <div className="w-10 h-10 rounded-xl bg-green-500 flex items-center justify-center text-white">
@@ -513,7 +509,7 @@ const Preferences = ({userId}:Props ) => {
           </div>
 
           {/* Household Size */}
-          <div className="bg-background/95 shadow-lg rounded-xl border border-gray-200 dark:border-gray-700">
+          <div className="bg-[#EAEFEF]  dark:bg-[#222222] shadow-lg rounded-xl border border-gray-200 dark:border-gray-700">
             <div className="p-6 pb-4">
               <div className="flex items-center gap-3 mb-2">
                 <div className="w-10 h-10 rounded-xl bg-green-500 flex items-center justify-center text-white">
@@ -554,7 +550,7 @@ const Preferences = ({userId}:Props ) => {
           </div>
 
           {/* Cuisine Preferences */}
-          <div className="bg-background/95 shadow-2xl rounded-2xl sm:rounded-3xl border border-slate-200/60  backdrop-blur-sm">
+          <div className="bg-[#EAEFEF]  dark:bg-[#222222] shadow-2xl rounded-2xl sm:rounded-3xl border border-slate-200/60  backdrop-blur-sm">
             <div className="p-6 sm:p-8 pb-4 sm:pb-6">
               <div className="flex items-center gap-3 sm:gap-4 mb-3 sm:mb-4">
                 <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white shadow-xl shadow-emerald-500/25">
@@ -590,13 +586,12 @@ const Preferences = ({userId}:Props ) => {
                       placeholder="Enter custom cuisine..."
                       value={customCuisine}
                       onChange={(e) => {
-                        // Prevent input containing any digits
-                        const value = e.target.value
-                        if (/\d/.test(value)) {
-                          toast.error("Cuisine name cannot contain numbers")
-                          return
+                        // Allow only letters, spaces, hyphens, and apostrophes
+                        if (/[^a-zA-Z\s'-]/.test(e.target.value)) {
+                          toast.error("Cuisine name can only contain letters, spaces, hyphens, and apostrophes");
+                          return;
                         }
-                        setCustomCuisine(value)
+                        setCustomCuisine(e.target.value);
                       }}
                       onKeyPress={(e) => e.key === 'Enter' && addCustomCuisine()}
                       className="flex-1 px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-xl sm:rounded-2xl bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-500 dark:placeholder-slate-400 focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-base sm:text-lg font-medium"

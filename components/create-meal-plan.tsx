@@ -35,6 +35,7 @@ import { useAuthModal } from "@/components/AuthModalProvider"
 import { User } from "better-auth/types"
 import { CldImage } from 'next-cloudinary'
 import SubscriptionModal from "./SubscriptionModal"
+import { cn } from "@/lib/utils"
 
 /* ======================== */
 /*        Interfaces         */
@@ -435,20 +436,23 @@ const CreateMealPlan = ({ preferences, isOnboardComplete }: CreateMealPlanProps)
       >
         {/* Premium Background Effects (subtle, using palette) */}
         <div className="absolute inset-0bg-[#EAEFEF] dark:bg-[#222222]"/>
-        <div className="absolute inset-0 bg-[#7F8CAA]/10" />
+        <div className="absolute inset-0 dark:bg-[#222222]" />
         <div className="relative w-full max-w-6xl mx-auto py-8 lg:py-16 px-4 sm:px-6 lg:px-8 space-y-12">
           <div className="text-center space-y-8">
             {/* Info badge using accent color */}
-            <div className="inline-flex items-center gap-3 bg-[#EAEFEF] border border-[#7F8CAA] text-[#333446] px-6 py-3 rounded-full text-sm font-semibold shadow-lg backdrop-blur-sm">
-              <Utensils className="h-4 w-4 text-[#333446]" />
+            <div className="inline-flex items-center gap-3 px-6 py-3 rounded-full text-sm font-semibold  backdrop-blur-sm
+  bg-gradient-to-r from-indigo-800 via-violet-500 to-violet-400 text-white
+  ring-2 ring-indigo-300/40
+  ">
+              <Utensils className="h-4 w-4 text-white drop-shadow" />
               AI-Powered Nutrition Planning
             </div>
             <div className="space-y-6">
-              <h1 className="text-4xl sm:text-5xl lg:text-7xl font-black tracking-tight text-[#333446] leading-[0.9] font-sans">
+              <h1 className="text-4xl sm:text-5xl lg:text-7xl font-black tracking-tight leading-[0.9] font-sans
+  bg-gradient-to-r from-indigo-600 via-violet-500 to-rose-500 bg-clip-text text-transparent
+  drop-shadow-md dark:drop-shadow-lg">
                 Create Your Perfect
-                <span className="block text-[#7F8CAA]">
-                  Meal Plan
-                </span>
+                <span className="block">Meal Plan</span>
               </h1>
               <p className="text-xl lg:text-2xl text-[#7F8CAA] max-w-4xl mx-auto leading-relaxed font-medium font-sans">
                 Enterprise-grade nutrition planning powered by advanced AI. Get personalized meal plans that align with your lifestyle, preferences, and wellness objectives.
@@ -778,7 +782,7 @@ const CreateMealPlan = ({ preferences, isOnboardComplete }: CreateMealPlanProps)
                       )}
 
                       {/* Action Buttons */}
-                      <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+                      <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
                         {showSaveHint && mealPlan.length > 0 && (
                           <div className="mb-4 flex items-center gap-3 p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 shadow pulse-animate">
                             <Lightbulb className="h-6 w-6 text-emerald-500 animate-bounce" />
@@ -790,41 +794,41 @@ const CreateMealPlan = ({ preferences, isOnboardComplete }: CreateMealPlanProps)
                         <Button
                           onClick={handleSaveMealPlan}
                           disabled={savingMealPlan}
-                          size="lg"
-                          className={`h-10 sm:h-12 px-6 sm:px-8 bg-gradient-to-r from-[#08e605] to-green-600 hover:from-emerald-700 hover:to-teal-700 text-white shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40 transition-all duration-200 font-semibold text-sm sm:text-base ${showSaveHint ? 'animate-pulse' : ''}`}
+                          className={cn(
+                            "w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-2 rounded-full font-semibold text-base shadow transition-all duration-200 whitespace-nowrap",
+                            "bg-[#1DCD9F] text-white shadow-lg hover:bg-[#169976] focus-visible:ring-2 focus-visible:ring-[#1DCD9F] focus-visible:ring-offset-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                          )}
                         >
                           {savingMealPlan ? (
                             <>
-                              <Loader2 className="mr-2 h-4 w-4 sm:h-5 sm:w-5 animate-spin" />
-                              <span className="hidden sm:inline">Saving Plan...</span>
-                              <span className="sm:hidden">Saving...</span>
+                              <Loader2 className="h-5 w-5 animate-spin" />
+                              <span>Saving Plan...</span>
                             </>
                           ) : (
                             <>
-                              <CheckCircle2 className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
-                              Save Plan
+                              <CheckCircle2 className="h-5 w-5" />
+                              <span>Save Plan</span>
                             </>
                           )}
                         </Button>
-
                         <Button
                           onClick={handleRejectPlan}
                           disabled={regenerating}
                           variant="outline"
-                          size="lg"
-                          className="h-10 sm:h-12 px-6 sm:px-8 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all duration-200 font-semibold bg-transparent text-sm sm:text-base"
+                          className={cn(
+                            "w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-2 rounded-full font-semibold text-base shadow transition-all duration-200 whitespace-nowrap",
+                            "border border-[#1DCD9F] text-[#1DCD9F] bg-white hover:bg-[#EAFBF7] dark:bg-[#222222] dark:hover:bg-[#1DCD9F]/10 dark:text-[#1DCD9F] dark:border-[#1DCD9F] disabled:opacity-60 disabled:cursor-not-allowed"
+                          )}
                         >
                           {regenerating ? (
                             <>
-                              <RefreshCcw className="mr-2 h-4 w-4 sm:h-5 sm:w-5 animate-spin" />
-                              <span className="hidden sm:inline">Regenerating...</span>
-                              <span className="sm:hidden">Regenerating...</span>
+                              <RefreshCcw className="h-5 w-5 animate-spin" />
+                              <span>Regenerating...</span>
                             </>
                           ) : (
                             <>
-                              <RefreshCcw className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
-                              <span className="hidden sm:inline">Try Different Plan</span>
-                              <span className="sm:hidden">Try Different</span>
+                              <RefreshCcw className="h-5 w-5" />
+                              <span>Try Different Plan</span>
                             </>
                           )}
                         </Button>
