@@ -795,8 +795,8 @@ const CreateMealPlan = ({ preferences, isOnboardComplete }: CreateMealPlanProps)
                           onClick={handleSaveMealPlan}
                           disabled={savingMealPlan}
                           className={cn(
-                            "w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-2 rounded-full font-semibold text-base shadow transition-all duration-200 whitespace-nowrap",
-                            "bg-[#1DCD9F] text-white shadow-lg hover:bg-[#169976] focus-visible:ring-2 focus-visible:ring-[#1DCD9F] focus-visible:ring-offset-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                            "w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-2 rounded-full font-semibold text-base shadow-lg transition-all duration-200 whitespace-nowrap",
+                            "bg-[#1DCD9F] text-white hover:bg-[#169976] focus-visible:ring-2 focus-visible:ring-[#1DCD9F] focus-visible:ring-offset-2 disabled:opacity-60 disabled:cursor-not-allowed"
                           )}
                         >
                           {savingMealPlan ? (

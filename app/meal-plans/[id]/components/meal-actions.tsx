@@ -114,8 +114,8 @@ export const MealActions = ({ onViewRecipe, onSwapMeal }: MealActionsProps) => {
       <Button
         onClick={onViewRecipe}
         className={cn(
-          "inline-flex items-center gap-2 px-5 py-2 rounded-full font-semibold text-base shadow transition-all duration-200",
-          "bg-[#1DCD9F] text-white shadow-lg hover:bg-[#169976] focus-visible:ring-2 focus-visible:ring-[#1DCD9F] focus-visible:ring-offset-2 disabled:opacity-60 disabled:cursor-not-allowed"
+          "inline-flex items-center gap-2 px-5 py-2 rounded-full font-semibold text-base shadow-lg transition-all duration-200",
+          "bg-[#1DCD9F] text-white hover:bg-[#169976] focus-visible:ring-2 focus-visible:ring-[#1DCD9F] focus-visible:ring-offset-2 disabled:opacity-60 disabled:cursor-not-allowed"
         )}
       >
         View Recipe
