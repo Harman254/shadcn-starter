@@ -14,47 +14,57 @@ interface MealLikeButtonProps {
 }
 
 const MealLikeButton = ({ initialIsLiked = false, onLikeToggle, mealId }: MealLikeButtonProps) => {
-  const { likes, toggleLike } = useMealLikeStore();
-  const isLiked = likes[mealId];
+  const { likes, toggleLike, fetchLikes, loading } = useMealLikeStore();
+  const isLiked = likes[mealId] ?? initialIsLiked;
   const [isLoading, setIsLoading] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
   const [animate, setAnimate] = useState(false);
 
   useEffect(() => {
-    // If like status is present in store, consider initialized
-    if (typeof isLiked === 'boolean') {
-      setIsInitialized(true);
+    // Initialize the store with the meal if not present
+    if (!(mealId in likes)) {
+      // Set initial state in store
+      toggleLike(mealId, initialIsLiked);
+      // Optionally fetch from server
+      fetchLikes([mealId]);
     }
-  }, [isLiked]);
+    setIsInitialized(true);
+  }, [mealId, likes, toggleLike, fetchLikes, initialIsLiked]);
 
   // Trigger pop animation on like toggle
   useEffect(() => {
-    if (isInitialized) {
+    if (isInitialized && mealId in likes) {
       setAnimate(true);
       const timeout = setTimeout(() => setAnimate(false), 250);
       return () => clearTimeout(timeout);
     }
-  }, [isLiked, isInitialized]);
+  }, [isLiked, isInitialized, mealId, likes]);
 
   const handleLikeToggle = async () => {
     if (!mealId || isLoading) return;
+    
     const newLikedState = !isLiked;
+    
     // Optimistic update
     toggleLike(mealId, newLikedState);
     if (onLikeToggle) onLikeToggle(newLikedState);
+    
     setIsLoading(true);
+    
     try {
       const response = await fetch(`/api/meals/${mealId}/like`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ isLiked: newLikedState }),
       });
+      
       if (response.ok) {
         toast.success(newLikedState ? 'Meal liked!' : 'Meal unliked!');
       } else {
         // Revert optimistic update on error
         toggleLike(mealId, !newLikedState);
         if (onLikeToggle) onLikeToggle(!newLikedState);
+        
         if (response.status === 401) {
           toast.error('Please sign in to like meals');
         } else {
@@ -63,6 +73,7 @@ const MealLikeButton = ({ initialIsLiked = false, onLikeToggle, mealId }: MealLi
         }
       }
     } catch (error) {
+      // Revert optimistic update on error
       toggleLike(mealId, !newLikedState);
       if (onLikeToggle) onLikeToggle(!newLikedState);
       console.error('Error updating like status:', error);
@@ -72,7 +83,7 @@ const MealLikeButton = ({ initialIsLiked = false, onLikeToggle, mealId }: MealLi
     }
   };
 
-  if (!isInitialized) {
+  if (!isInitialized || loading) {
     return (
       <Button
         variant="secondary"
@@ -90,23 +101,27 @@ const MealLikeButton = ({ initialIsLiked = false, onLikeToggle, mealId }: MealLi
   return (
     <button
       onClick={handleLikeToggle}
-      disabled={isLoading || !isInitialized}
+      disabled={isLoading}
       className={cn(
         "p-1.5 sm:p-2 rounded-full transition-all hover:scale-110 focus:outline-none focus:ring-2 focus:ring-offset-2",
         isLiked
           ? "bg-red-50 dark:bg-red-950 text-red-500 focus:ring-red-500"
           : "bg-gray-50 dark:bg-gray-800 text-gray-400 hover:text-red-400 focus:ring-gray-500",
-        (isLoading || !isInitialized) && "opacity-50 cursor-not-allowed"
+        isLoading && "opacity-50 cursor-not-allowed",
+        animate && "animate-bounce"
       )}
       aria-label={isLiked ? "Unlike meal" : "Like meal"}
       aria-pressed={isLiked}
       type="button"
     >
-      <Heart className={cn(
-        "w-5 h-5",
-        isLiked ? "fill-current" : "",
-        isLoading ? "animate-pulse" : ""
-      )} />
+      {isLoading ? (
+        <Loader2 className="w-5 h-5 animate-spin" />
+      ) : (
+        <Heart className={cn(
+          "w-5 h-5 transition-all",
+          isLiked ? "fill-current text-red-500" : "text-gray-400"
+        )} />
+      )}
     </button>
   );
 }
