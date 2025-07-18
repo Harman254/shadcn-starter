@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useMemo, useEffect } from "react";
 import { Calendar, Clock, Heart, MessageCircle, ArrowRight, BookOpen, TrendingUp, Search, Filter, Star, Eye, Zap, Users, Award, Sun, Moon } from 'lucide-react';
+import Link from 'next/link';
 
 const categories = ["All", "AI & Technology", "Meal Prep", "Nutrition", "Sustainability", "Psychology", "Budget"];
 
@@ -171,8 +172,7 @@ export default function BlogClient({ posts }: BlogClientProps) {
               </h2>
               <Award className="w-6 h-6 text-yellow-500" />
             </div>
-            
-            <div className="group cursor-pointer">
+            <Link href={`/blog/${featuredPost.slug}`} className="group cursor-pointer block">
               <div className={`rounded-3xl shadow-2xl overflow-hidden hover:shadow-3xl transition-all duration-500 transform hover:-translate-y-2 ${
                 isDark 
                   ? 'bg-gray-800 border border-gray-700 hover:border-gray-600' 
@@ -258,7 +258,7 @@ export default function BlogClient({ posts }: BlogClientProps) {
                   </div>
                 </div>
               </div>
-            </div>
+            </Link>
           </div>
         </section>
       )}
@@ -281,7 +281,7 @@ export default function BlogClient({ posts }: BlogClientProps) {
           
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
             {regularPosts.map((post, index) => (
-              <article key={post.id} className="group cursor-pointer">
+              <Link key={post.id} href={`/blog/${post.slug}`} className="group cursor-pointer block">
                 <div className={`rounded-2xl shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 ${
                   isDark 
                     ? 'bg-gray-800 border border-gray-700 hover:border-gray-600' 
@@ -360,7 +360,7 @@ export default function BlogClient({ posts }: BlogClientProps) {
                     </div>
                   </div>
                 </div>
-              </article>
+              </Link>
             ))}
           </div>
           
