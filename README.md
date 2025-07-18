@@ -50,3 +50,33 @@ Hosted on Vercel
 🧠 Caching and reusability of previous plans
 
 🎨 Dark Mode and responsive UI built on ShadCN template
+
+## Blogging with Markdown
+
+1. Create a directory at the root of your project:
+   ```
+   mkdir -p content/blog
+   ```
+2. Add markdown files (e.g., `first-post.md`) to `content/blog/` with frontmatter like:
+   ```markdown
+   ---
+   id: 1
+   title: "How AI is Revolutionizing Meal Planning for Busy Families"
+   excerpt: "Discover how artificial intelligence is transforming the way we approach meal planning, making it more personalized, efficient, and nutritious than ever before."
+   author: "Sarah Chen"
+   publishDate: "2025-01-15"
+   readTime: "5 min read"
+   category: "AI & Technology"
+   tags:
+     - AI
+     - Family
+     - Efficiency
+   image: "https://images.pexels.com/photos/4259140/pexels-photo-4259140.jpeg?auto=compress&cs=tinysrgb&w=800"
+   featured: true
+   likes: 324
+   comments: 28
+   ---
+
+   Full article content would go here...
+   ```
+3. The blog page will automatically load and display posts from this directory.
