@@ -1,12 +1,12 @@
 import type * as React from "react"
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar"
-import { ChatSidebar } from "./chat-sidebar"
+// import { ChatSidebar } from "./chat-sidebar"
 
 
 const ChatLayout = ({ children }: { children: React.ReactNode }) => {
   return (
     <SidebarProvider>
-      <ChatSidebar />
+      {/* <ChatSidebar /> */}
       <SidebarInset>{children}</SidebarInset>
     </SidebarProvider>
   )

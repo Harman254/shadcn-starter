@@ -203,3 +203,32 @@ model UserAnalytics {
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 }
+
+model ChatSession {
+  id          String       @id @default(cuid())
+  userId      String       // User who owns this chat session
+  chatType    String       // 'context-aware' | 'tool-selection'
+  title       String?      // Optional title for the session
+  messages    ChatMessage[] // One-to-many: each session has many messages
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([userId])
+  @@index([userId, updatedAt]) // Composite index for user's session list queries
+  @@index([userId, chatType, updatedAt]) // Composite index for filtered queries
+  @@map("chat_session")
+}
+
+model ChatMessage {
+  id          String      @id @default(cuid())
+  sessionId   String      // Reference to the chat session
+  session     ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  role        String      // 'user' | 'assistant'
+  content     String      // Message content
+  timestamp   DateTime    @default(now())
+  createdAt   DateTime    @default(now())
+
+  @@index([sessionId])
+  @@index([sessionId, timestamp]) // Composite index for message loading queries
+  @@map("chat_message")
+}

@@ -65,6 +65,30 @@ export interface UserPreference {
 
 
 
+// Tool call structure for assistant messages
+export type ToolCall = {
+  id: string;
+  name: string;
+  arguments: string; // JSON string of tool arguments
+};
+
+export type MessageStatus = 'sending' | 'sent' | 'failed';
+
+export type Message = {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp?: Date;
+  // Message status for user messages (sending, sent, failed)
+  status?: MessageStatus;
+  // Tool call support for assistant messages
+  tool_calls?: ToolCall[]; // Assistant can call tools
+  tool_call_id?: string; // User message can be a tool result
+};
+
+
+
+
 
 
 

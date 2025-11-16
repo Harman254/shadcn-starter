@@ -1,0 +1,109 @@
+'use server';
+
+/**
+ * @fileOverview Implements a context-aware chatbot flow using a sliding window strategy.
+ *
+ * - chat - The main function to initiate and manage the chat flow.
+ * - ContextAwareChatInput - Input type for the chat function, including the user's message.
+ * - ContextAwareChatOutput - Output type for the chat function, providing the chatbot's response.
+ */
+
+import { ai } from "@/ai/instance";
+import { z } from "genkit";
+
+const ContextAwareChatInputSchema = z.object({
+  message: z.string().describe("The user message."),
+  chatHistory: z
+    .array(
+      z.object({
+        role: z.enum(["user", "assistant"]),
+        content: z.string(),
+      })
+    )
+    .optional()
+    .describe("The chat history."),
+});
+export type ContextAwareChatInput = z.infer<typeof ContextAwareChatInputSchema>;
+
+const ContextAwareChatOutputSchema = z.object({
+  response: z.string().describe("The chatbot response."),
+});
+export type ContextAwareChatOutput = z.infer<typeof ContextAwareChatOutputSchema>;
+
+// Use a focused context window for better performance and cost efficiency
+// If conversation is very long, we'll use the most recent messages but prioritize recent context
+const MAX_CONTEXT_MESSAGES = 5; // Using last 5 messages for context awareness
+
+export async function chat(
+  input: ContextAwareChatInput
+): Promise<ContextAwareChatOutput> {
+  return contextAwareChatFlow(input);
+}
+
+const prompt = ai.definePrompt({
+  name: "contextAwareChatPrompt",
+  input: {
+    schema: ContextAwareChatInputSchema,
+  },
+  output: {
+    schema: ContextAwareChatOutputSchema,
+  },
+  prompt: `You are Mealwise, an expert culinary assistant and cooking instructor. Your primary role is to help users with cooking, recipes, and culinary knowledge.
+
+**YOUR CORE RESPONSIBILITIES:**
+1. **Provide detailed cooking instructions** - When users ask how to cook something (e.g., "how to cook lasagna"), give them complete, step-by-step cooking instructions with ingredients, preparation methods, cooking times, and techniques.
+2. **Share recipes** - Provide full recipes including ingredients lists, measurements, and detailed cooking steps.
+3. **Offer culinary advice** - Answer questions about cooking techniques, ingredient substitutions, food safety, and kitchen tips.
+4. **Remember conversation context** - Reference previous messages and maintain context throughout the conversation.
+
+**IMPORTANT RULES:**
+- ALWAYS provide cooking instructions when asked. Never refuse to help with cooking questions.
+- Be detailed and helpful. Include ingredient lists, measurements, cooking times, temperatures, and step-by-step instructions.
+- If a user asks "how to cook [dish]", they want cooking instructions, not meal logging assistance.
+- Only suggest meal logging if the user explicitly mentions they have already eaten something and want to track it.
+
+Chat History (full conversation context):
+{{#each chatHistory}}
+  {{role}}: {{content}}
+{{/each}}
+
+User Message: {{message}}
+
+Remember the full conversation context above when responding. Reference previous messages when relevant. Provide helpful, detailed cooking instructions and recipes when requested.`,
+});
+
+const contextAwareChatFlow = ai.defineFlow(
+  {
+    name: "contextAwareChatFlow",
+    inputSchema: ContextAwareChatInputSchema,
+    outputSchema: ContextAwareChatOutputSchema,
+  },
+  async (input) => {
+    const chatHistory = input.chatHistory || [];
+    
+    // Use full history if it's within limit, otherwise use most recent messages
+    // This ensures context-awareness while staying within token limits
+    const contextHistory = chatHistory.length <= MAX_CONTEXT_MESSAGES
+      ? chatHistory // Use full history if within limit
+      : chatHistory.slice(-MAX_CONTEXT_MESSAGES); // Use most recent messages if too long
+
+    const { output } = await prompt({
+      ...input,
+      chatHistory: contextHistory,
+    });
+
+    // ✅ Defensive fallback to avoid schema errors
+    if (!output || typeof output.response !== "string") {
+      console.warn(
+        "[Mealwise] contextAwareChatPrompt returned invalid output:",
+        output
+      );
+      return {
+        response:
+          "Sorry, I couldn’t generate a response at the moment. Please try again.",
+      };
+    }
+
+    return output;
+  }
+);
