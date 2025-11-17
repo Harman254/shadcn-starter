@@ -7,7 +7,7 @@ import prisma from '@/lib/prisma';
 // Requires authentication
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: Promise<{ sessionId: string }> | { sessionId: string } }
+  { params }: { params: Promise<{ sessionId: string }> }
 ) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
@@ -19,9 +19,8 @@ export async function PATCH(
 
     const userId = session.user.id;
     
-    // Handle both Promise and direct params (Next.js 13+ compatibility)
-    const resolvedParams = params instanceof Promise ? await params : params;
-    const { sessionId } = resolvedParams;
+    // Resolve params Promise (Next.js 15+ requires params to be a Promise)
+    const { sessionId } = await params;
 
     if (!sessionId || typeof sessionId !== 'string' || sessionId.trim().length === 0) {
       return NextResponse.json(
