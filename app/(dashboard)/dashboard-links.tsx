@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { HomeIcon, UserCog, Utensils, Package, Sliders } from "lucide-react";
+import { HomeIcon, UserCog, Utensils, Package, Sliders, MessageSquare } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -11,6 +11,12 @@ const dashboardLinks = [
     name: "Dashboard",
     href: "/dashboard",
     icon: HomeIcon,
+  },
+  {
+    id: 14,
+    name: "Chat",
+    href: "/chat",
+    icon: MessageSquare,
   },
   {
     id: 13,

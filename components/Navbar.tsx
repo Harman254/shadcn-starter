@@ -69,6 +69,11 @@ const Navbar = () => {
       href: "/dashboard",
     },
     {
+      title: "Chat",
+      description: "AI-powered chat assistant",
+      href: "/chat",
+    },
+    {
       title: "Analytics",
       description: "Track Meal Plans, Recipes, and progress",
       href: "/dashboard/analytics",
@@ -124,6 +129,11 @@ const Navbar = () => {
                     ))}
                   </div>
                 </NavigationMenuContent>
+              </NavigationMenuItem>
+              <NavigationMenuItem>
+                <NavigationMenuLink className="px-4 py-2 rounded-md text-[#333446] dark:text-[#1DCD9F] hover:bg-[#EAEFEF] dark:hover:bg-[#1DCD9F]/10 hover:text-[#1DCD9F] dark:hover:text-[#1DCD9F] transition-colors" href="/chat">
+                  Chat
+                </NavigationMenuLink>
               </NavigationMenuItem>
               <NavigationMenuItem>
                 <NavigationMenuLink className="px-4 py-2 rounded-md text-[#333446] dark:text-[#1DCD9F] hover:bg-[#EAEFEF] dark:hover:bg-[#1DCD9F]/10 hover:text-[#1DCD9F] dark:hover:text-[#1DCD9F] transition-colors" href="/products">
@@ -199,6 +209,9 @@ const Navbar = () => {
                   </AccordionItem>
                 </Accordion>
                 <div className="flex flex-col gap-6">
+                  <Link href="/chat" className="font-medium text-[#333446] dark:text-[#1DCD9F] hover:text-[#1DCD9F] dark:hover:text-[#1DCD9F]" onClick={closeSheet}>
+                    Chat
+                  </Link>
                   <Link href="/products" className="font-medium text-[#333446] dark:text-[#1DCD9F] hover:text-[#1DCD9F] dark:hover:text-[#1DCD9F]" onClick={closeSheet}>
                     Products
                   </Link>
