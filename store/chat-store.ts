@@ -42,13 +42,6 @@ const initialState: Pick<ChatStore, 'currentSessionId' | 'sessions'> = {
   sessions: {},
 };
 
-// Cache the server snapshot result to avoid infinite loop warning
-// Zustand requires the result to be cached, not just the function
-const cachedServerSnapshot = initialState;
-
-// getServerSnapshot must return the same cached object reference
-const getServerSnapshot = () => cachedServerSnapshot;
-
 export const useChatStore = create<ChatStore>()(
   persist(
     (set, get) => ({
@@ -388,8 +381,6 @@ export const useChatStore = create<ChatStore>()(
         sessions: state.sessions,
         currentSessionId: state.currentSessionId,
       }),
-      // Fix SSR hydration issue - use cached function to avoid infinite loop
-      getServerSnapshot,
       // Properly serialize/deserialize Date objects for client-side only
       storage: typeof window !== 'undefined' ? {
         getItem: (name) => {
