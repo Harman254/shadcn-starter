@@ -6,6 +6,7 @@ import { getResponse, generateSessionTitle } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
 import { useChatStore } from '@/store/chat-store';
 import { useChatSync } from '@/hooks/use-chat-sync';
+import { useOfflineChat } from '@/hooks/use-offline-chat';
 import { useSession } from '@/lib/auth-client';
 import { useAuthModal } from '@/components/AuthModalProvider';
 import { ChatMessages } from './chat-messages';
@@ -209,6 +210,23 @@ export function ChatPanel({
     isAuthenticated ? finalSessionId : null, 
     chatType
   );
+
+  // Offline chat queue integration
+  const { queueMessage, hasPendingMessages, getPendingCount } = useOfflineChat({
+    sessionId: finalSessionId,
+    chatType,
+    onMessageQueued: (messageId) => {
+      logger.log('[ChatPanel] Message queued for offline sync:', messageId);
+      toast({
+        title: 'Message queued',
+        description: 'Your message will be sent when you\'re back online.',
+        variant: 'default',
+      });
+    },
+    onMessageSynced: (messageId) => {
+      logger.log('[ChatPanel] Queued message synced:', messageId);
+    },
+  });
   
   // Save messages to database when they change
   // Use a ref to track the last saved message count to avoid unnecessary saves
@@ -306,6 +324,15 @@ export function ChatPanel({
         variant: 'destructive',
       });
       return;
+    }
+
+    // Check if offline - queue message if so
+    if (!navigator.onLine) {
+      const messageId = queueMessage(value.trim());
+      if (messageId) {
+        // Message queued successfully
+        return;
+      }
     }
 
     // Ensure finalSessionId matches currentSessionId in store
