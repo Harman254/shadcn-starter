@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import type { Message } from '@/types';
 import { getResponse, generateSessionTitle } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
@@ -42,6 +43,7 @@ export function ChatPanel({
 }) {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const router = useRouter();
 
   // Zustand store - use selectors for reactive updates
   const currentSessionId = useChatStore((state) => state.currentSessionId);
@@ -430,6 +432,56 @@ export function ChatPanel({
       };
       
       logger.debug('[ChatPanel] ✅ Assistant message added - should be visible on LEFT');
+      
+      // Check if meal plan was saved and redirect if needed
+      // Look for the marker in the message content
+      const mealPlanSavedMatch = assistantMessage.content.match(/\[MEAL_PLAN_SAVED:([^\]]+)\]/);
+      if (mealPlanSavedMatch) {
+        const mealPlanId = mealPlanSavedMatch[1];
+        if (process.env.NODE_ENV === 'development') {
+          logger.log('[ChatPanel] 🍽️ Meal plan saved, redirecting to meal plans page:', mealPlanId);
+        }
+        
+        // Clean up the marker from the message content (remove it from display)
+        assistantMessage.content = assistantMessage.content.replace(/\[MEAL_PLAN_SAVED:[^\]]+\]/g, '').trim();
+        
+        // Show toast notification
+        toast({
+          title: 'Meal Plan Saved!',
+          description: 'Redirecting to your meal plans...',
+          duration: 2000,
+        });
+        
+        // Redirect after a short delay to allow user to see the success message
+        setTimeout(() => {
+          router.push('/meal-plans');
+        }, 1500);
+      } else {
+        // Fallback: Check for keywords indicating meal plan was saved
+        // This handles cases where AI might paraphrase the message
+        const hasMealPlanKeywords = 
+          assistantMessage.content.toLowerCase().includes('meal plan') &&
+          (assistantMessage.content.toLowerCase().includes('saved') ||
+           assistantMessage.content.toLowerCase().includes('successfully'));
+        
+        if (hasMealPlanKeywords && assistantMessage.content.toLowerCase().includes('/meal-plans')) {
+          if (process.env.NODE_ENV === 'development') {
+            logger.log('[ChatPanel] 🍽️ Detected meal plan save keywords, redirecting to meal plans page');
+          }
+          
+          // Show toast notification
+          toast({
+            title: 'Meal Plan Saved!',
+            description: 'Redirecting to your meal plans...',
+            duration: 2000,
+          });
+          
+          // Redirect after a short delay
+          setTimeout(() => {
+            router.push('/meal-plans');
+          }, 1500);
+        }
+      }
       
       // Add assistant message - will appear on the LEFT side (assistant messages are left-aligned)
       addMessage(finalSessionId, assistantMessage);

@@ -448,6 +448,16 @@ export function ChatHistory({ chatType, onSessionSelect }: ChatHistoryProps) {
         return;
       }
       
+      // Handle 404 - session doesn't exist in database yet (normal for new sessions)
+      if (response.status === 404) {
+        if (process.env.NODE_ENV === 'development') {
+          console.log('[ChatHistory] Session not in database yet (new session):', sessionId);
+        }
+        // Use local messages from store - this is expected for new sessions
+        // Session will be saved to DB after AI generates title
+        return; // Continue with local session data
+      }
+      
       if (response.ok) {
         const { messages: dbMessages } = await response.json();
         
