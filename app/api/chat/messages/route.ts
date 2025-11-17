@@ -198,11 +198,11 @@ export async function GET(request: NextRequest) {
     const messages = allMessages
       .reverse()
       .map((m) => ({
-        id: m.id,
-        role: m.role as 'user' | 'assistant',
-        content: m.content,
-        timestamp: m.timestamp,
-      }));
+      id: m.id,
+      role: m.role as 'user' | 'assistant',
+      content: m.content,
+      timestamp: m.timestamp,
+    }));
 
     return NextResponse.json({ 
       messages,

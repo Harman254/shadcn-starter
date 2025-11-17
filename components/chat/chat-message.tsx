@@ -235,34 +235,34 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading }: Cha
           "max-w-[85%] sm:max-w-[80%] md:max-w-[75%]",
           // Assistant: avatar left, content left
           // User: avatar right, content right (reverse order)
-          isAssistant ? "flex-row" : "flex-row-reverse"
-        )}>
-          <Avatar
+        isAssistant ? "flex-row" : "flex-row-reverse"
+      )}>
+        <Avatar
+          className={cn(
+            "h-8 w-8 sm:h-9 sm:w-9 md:h-10 md:w-10 shrink-0 transition-transform hover:scale-105",
+          )}
+        >
+          <AvatarFallback
             className={cn(
-              "h-8 w-8 sm:h-9 sm:w-9 md:h-10 md:w-10 shrink-0 transition-transform hover:scale-105",
+              "transition-all text-xs font-semibold",
+              isAssistant
+                ? "bg-primary text-primary-foreground"
+                : "bg-muted text-muted-foreground",
             )}
           >
-            <AvatarFallback
-              className={cn(
-                "transition-all text-xs font-semibold",
-                isAssistant
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-muted text-muted-foreground",
-              )}
-            >
-              {isAssistant ? (
-                <Icons.moon className="h-4 w-4 sm:h-5 sm:w-5" />
-              ) : (
-                <User className="h-4 w-4 sm:h-5 sm:w-5" />
-              )}
-            </AvatarFallback>
-          </Avatar>
+            {isAssistant ? (
+              <Icons.moon className="h-4 w-4 sm:h-5 sm:w-5" />
+            ) : (
+              <User className="h-4 w-4 sm:h-5 sm:w-5" />
+            )}
+          </AvatarFallback>
+        </Avatar>
 
-          <div className={cn(
-            "flex-1 min-w-0",
+        <div className={cn(
+          "flex-1 min-w-0",
             // User messages: align content to right
-            !isAssistant && "flex flex-col items-end"
-          )}>
+          !isAssistant && "flex flex-col items-end"
+        )}>
           <div className="relative group/message">
             {isAssistant ? (
               <div className={cn(
@@ -449,15 +449,15 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading }: Cha
                     "shadow-sm backdrop-blur-sm",
                     "transition-all hover:shadow-md"
                   )}>
-                    <p
-                      className={cn(
+                  <p
+                    className={cn(
                         "text-[15px] sm:text-base leading-[1.75] whitespace-pre-wrap break-words",
                         "text-foreground tracking-normal",
                         "font-sans font-normal antialiased"
-                      )}
-                    >
-                      {message.content}
-                    </p>
+                    )}
+                  >
+                    {message.content}
+                  </p>
                   </div>
                 )}
             {message && (
@@ -498,16 +498,16 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading }: Cha
                 )}
               </div>
             )}
-            {isMounted && message?.timestamp && formattedTime && (
-              <span className={cn(
+          {isMounted && message?.timestamp && formattedTime && (
+            <span className={cn(
                 "text-xs text-muted-foreground/60"
-              )}>
-                {formattedTime}
-              </span>
-            )}
-          </div>
-          </div>
+            )}>
+              {formattedTime}
+            </span>
+          )}
         </div>
+      </div>
+    </div>
       </div>
     </article>
   )

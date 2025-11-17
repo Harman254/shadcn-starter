@@ -82,9 +82,9 @@ const SessionItem = memo(function SessionItem({
 
           {/* Preview text - only show if there are messages */}
           {messageCount > 0 && (
-            <p className="text-xs text-muted-foreground line-clamp-2 mb-2 leading-relaxed">
-              {preview}
-            </p>
+          <p className="text-xs text-muted-foreground line-clamp-2 mb-2 leading-relaxed">
+            {preview}
+          </p>
           )}
 
           {/* Metadata row */}
@@ -99,15 +99,15 @@ const SessionItem = memo(function SessionItem({
 
             {/* Last updated time - only show if there are messages */}
             {messageCount > 0 && (
-              <div className="flex items-center gap-1">
-                <Clock className="h-3 w-3" />
-                <span>
-                  {isMounted 
-                    ? formatDistanceToNow(session.updatedAt, { addSuffix: true })
-                    : 'Recently'
-                  }
-                </span>
-              </div>
+            <div className="flex items-center gap-1">
+              <Clock className="h-3 w-3" />
+              <span>
+                {isMounted 
+                  ? formatDistanceToNow(session.updatedAt, { addSuffix: true })
+                  : 'Recently'
+                }
+              </span>
+            </div>
             )}
 
             {/* Recent indicator */}
@@ -186,7 +186,7 @@ export function ChatHistory({ chatType, onSessionSelect }: ChatHistoryProps) {
 
   // Track if we've loaded sessions initially
   const hasLoadedRef = useRef(false);
-  
+
   // Load sessions from database on mount and when chatType changes
   // CRITICAL: Don't run when currentSessionId changes - that means user selected a session
   useEffect(() => {
@@ -256,14 +256,14 @@ export function ChatHistory({ chatType, onSessionSelect }: ChatHistoryProps) {
             // Double-check currentSessionId is still null
             const finalState = useChatStore.getState();
             if (!finalState.currentSessionId) {
-              const matchingSession = dbSessions.find(
-                (s: any) => s.chatType === chatType
-              );
-              if (matchingSession) {
-                setCurrentSession(matchingSession.id);
+            const matchingSession = dbSessions.find(
+              (s: any) => s.chatType === chatType
+            );
+            if (matchingSession) {
+              setCurrentSession(matchingSession.id);
                 hasLoadedRef.current = true;
-                return; // Found matching session, done
-              }
+              return; // Found matching session, done
+            }
             }
           }
           
@@ -563,8 +563,8 @@ export function ChatHistory({ chatType, onSessionSelect }: ChatHistoryProps) {
                   console.log('[ChatHistory] No local messages, loading all from database');
                 }
                 // Add all messages
-                addMessages(sessionId, formattedMessages);
-                
+          addMessages(sessionId, formattedMessages);
+          
                 // Verify messages were added
                 const verifyState = useChatStore.getState();
                 const verifySession = verifyState.sessions[sessionId];

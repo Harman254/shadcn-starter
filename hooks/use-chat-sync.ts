@@ -104,7 +104,7 @@ export function useChatSync(sessionId: string | null, chatType: 'context-aware' 
     if (loadedSessionRef.current === sessionId && hasLocalMessages) {
       logger.debug('[useChatSync] Skipping load - already loaded and has local messages');
       return;
-    }
+      }
     
     // IMPORTANT: If this sessionId doesn't match the current session, don't load
     // This prevents interfering with session selection - let handleSessionSelect handle it
@@ -189,14 +189,14 @@ export function useChatSync(sessionId: string | null, chatType: 'context-aware' 
                       finalSession.id === sessionId && 
                       finalSession.messages.length === 0 &&
                       loadedSessionRef.current === sessionId) {
-                    // If no local messages and DB has messages, load all from DB
-                    const formattedMessages = messages.map((m: any) => ({
-                      id: m.id,
-                      role: m.role,
-                      content: m.content,
-                      timestamp: m.timestamp ? new Date(m.timestamp) : new Date(),
-                    }));
-                    // Sort by timestamp to ensure correct order
+                // If no local messages and DB has messages, load all from DB
+                const formattedMessages = messages.map((m: any) => ({
+                  id: m.id,
+                  role: m.role,
+                  content: m.content,
+                  timestamp: m.timestamp ? new Date(m.timestamp) : new Date(),
+                }));
+                // Sort by timestamp to ensure correct order
                     formattedMessages.sort((a: Message, b: Message) => {
                       const timeA = a.timestamp instanceof Date 
                         ? a.timestamp.getTime() 
@@ -208,10 +208,10 @@ export function useChatSync(sessionId: string | null, chatType: 'context-aware' 
                         : b.timestamp 
                           ? new Date(b.timestamp).getTime() 
                           : 0;
-                      return timeA - timeB;
-                    });
-                    clearSession(sessionId);
-                    addMessages(sessionId, formattedMessages);
+                  return timeA - timeB;
+                });
+                clearSession(sessionId);
+                addMessages(sessionId, formattedMessages);
                   } else {
                     if (process.env.NODE_ENV === 'development') {
                       console.log('[useChatSync] Skipping clearSession - session state changed or has messages now');

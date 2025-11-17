@@ -73,7 +73,7 @@ export function ChatInput({ onSubmit, isLoading, disabled = false }: ChatInputPr
   return (
     <div className="w-full bg-background border-t border-border/50">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 md:px-8 py-4 sm:py-5">
-        <form onSubmit={handleSubmit} className="relative">
+              <form onSubmit={handleSubmit} className="relative">
           <div className={cn(
             "relative flex items-end gap-3",
             "bg-background border border-border rounded-2xl",
@@ -82,15 +82,15 @@ export function ChatInput({ onSubmit, isLoading, disabled = false }: ChatInputPr
             "px-4 py-3 sm:px-5 sm:py-4"
           )}>
             {/* Textarea */}
-            <textarea
-              ref={textareaRef}
-              value={value}
-              onChange={(e) => setValue(e.target.value)}
-              onKeyDown={handleKeyDown}
-              onFocus={() => setIsFocused(true)}
-              onBlur={() => setIsFocused(false)}
+                  <textarea
+                    ref={textareaRef}
+                    value={value}
+                    onChange={(e) => setValue(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    onFocus={() => setIsFocused(true)}
+                    onBlur={() => setIsFocused(false)}
               placeholder={disabled ? "Sign in to start chatting..." : "Message"}
-              rows={1}
+                    rows={1}
               className={cn(
                 "flex-1 resize-none bg-transparent border-none",
                 "text-foreground text-[15px] sm:text-base",
@@ -99,11 +99,11 @@ export function ChatInput({ onSubmit, isLoading, disabled = false }: ChatInputPr
                 "w-full font-sans antialiased",
                 "min-h-[24px] max-h-[200px]"
               )}
-              disabled={isLoading || disabled}
+                    disabled={isLoading || disabled}
               aria-label={disabled ? "Sign in to start chatting" : "Chat message input"}
               aria-describedby={disabled ? "auth-required" : undefined}
               aria-required="false"
-              onClick={disabled ? () => onSubmit('') : undefined}
+                    onClick={disabled ? () => onSubmit('') : undefined}
               maxLength={4000}
             />
             {disabled && (
@@ -113,18 +113,18 @@ export function ChatInput({ onSubmit, isLoading, disabled = false }: ChatInputPr
             )}
 
             {/* Send Button */}
-            <button
-              type="submit"
-              disabled={isLoading || !value.trim() || disabled}
-              className={cn(
+                    <button
+                      type="submit"
+                      disabled={isLoading || !value.trim() || disabled}
+                      className={cn(
                 "shrink-0 h-8 w-8 sm:h-9 sm:w-9 rounded-lg",
                 "flex items-center justify-center",
                 "transition-all duration-200",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
-                isLoading || !value.trim() || disabled
+                        isLoading || !value.trim() || disabled
                   ? "bg-muted text-muted-foreground cursor-not-allowed opacity-50"
-                  : "bg-primary text-primary-foreground hover:bg-primary/90 active:scale-95"
-              )}
+                          : "bg-primary text-primary-foreground hover:bg-primary/90 active:scale-95"
+                      )}
               aria-label={disabled ? "Sign in to chat" : isLoading ? "Sending message" : "Send message"}
               aria-disabled={isLoading || !value.trim() || disabled}
             >
@@ -135,9 +135,9 @@ export function ChatInput({ onSubmit, isLoading, disabled = false }: ChatInputPr
                   className="h-4 w-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full"
                 />
               ) : (
-                <Send className="h-4 w-4 sm:h-5 sm:w-5" />
+                      <Send className="h-4 w-4 sm:h-5 sm:w-5" />
               )}
-            </button>
+                    </button>
           </div>
 
           {/* Helper text - only show when not focused and empty */}

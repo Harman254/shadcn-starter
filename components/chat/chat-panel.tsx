@@ -613,20 +613,20 @@ export function ChatPanel({
             />
           </div>
         )}
-        {/* Messages area - takes remaining space and scrolls */}
+      {/* Messages area - takes remaining space and scrolls */}
         <div className="flex-1 min-h-0 overflow-hidden relative" aria-live="polite" aria-atomic="false">
-          {hasMessages ? (
-            <ChatMessages messages={messages} isLoading={isLoading} />
-          ) : (
-            <EmptyScreen onExampleClick={handleSubmit} requireAuth={false} />
-          )}
-        </div>
-        
-        {/* Fixed input at bottom */}
-        <div className="shrink-0 border-t border-border/50 bg-background" role="region" aria-label="Message input">
-          <ChatInput onSubmit={handleSubmit} isLoading={isLoading} disabled={false} />
-        </div>
+        {hasMessages ? (
+          <ChatMessages messages={messages} isLoading={isLoading} />
+        ) : (
+          <EmptyScreen onExampleClick={handleSubmit} requireAuth={false} />
+        )}
       </div>
+      
+      {/* Fixed input at bottom */}
+        <div className="shrink-0 border-t border-border/50 bg-background" role="region" aria-label="Message input">
+        <ChatInput onSubmit={handleSubmit} isLoading={isLoading} disabled={false} />
+      </div>
+    </div>
     </ChatErrorBoundary>
   );
 }
