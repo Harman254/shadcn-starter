@@ -42,6 +42,23 @@ function formatTimestamp(date?: Date): string {
 }
 
 export const ChatMessage = memo(function ChatMessage({ message, isLoading }: ChatMessageProps) {
+  // All hooks must be called at the top level, before any conditional returns
+  const [copied, setCopied] = useState(false)
+  const [formattedTime, setFormattedTime] = useState('')
+  const [isMounted, setIsMounted] = useState(false)
+  const { toast } = useToast()
+  const { theme, systemTheme } = useTheme()
+  const currentTheme = theme === 'system' ? systemTheme : theme
+  const isDark = currentTheme === 'dark'
+
+  // Only format timestamp on client to avoid hydration mismatch
+  useEffect(() => {
+    setIsMounted(true)
+    if (message?.timestamp) {
+      setFormattedTime(formatTimestamp(message.timestamp))
+    }
+  }, [message?.timestamp])
+
   // Handle loading state with engaging animation
   if (isLoading) {
     return (
@@ -176,21 +193,6 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading }: Cha
 
   const role = message.role
   const isAssistant = role === "assistant"
-  const [copied, setCopied] = useState(false)
-  const [formattedTime, setFormattedTime] = useState('')
-  const [isMounted, setIsMounted] = useState(false)
-  const { toast } = useToast()
-  const { theme, systemTheme } = useTheme()
-  const currentTheme = theme === 'system' ? systemTheme : theme
-  const isDark = currentTheme === 'dark'
-
-  // Only format timestamp on client to avoid hydration mismatch
-  useEffect(() => {
-    setIsMounted(true)
-    if (message?.timestamp) {
-      setFormattedTime(formatTimestamp(message.timestamp))
-    }
-  }, [message?.timestamp])
 
   const handleCopy = async () => {
     if (!message?.content) return

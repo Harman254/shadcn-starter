@@ -38,7 +38,7 @@ export function ConnectionStatus() {
       aria-live="polite"
     >
       <WifiOff className="h-4 w-4" />
-      <span>You're offline. Messages will sync when you're back online.</span>
+      <span>You are offline. Messages will sync when you are back online.</span>
     </div>
   );
 }

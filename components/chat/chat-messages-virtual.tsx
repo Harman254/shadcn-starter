@@ -31,9 +31,10 @@ export const ChatMessagesVirtual = memo(function ChatMessagesVirtual({
   // Use virtual scrolling only if we have many messages AND library is available
   const useVirtual = messages.length >= VIRTUAL_SCROLL_THRESHOLD && useVirtualizer !== null;
 
-  // Virtualizer for large message lists
-  const virtualizer = useVirtual && useVirtualizer ? useVirtualizer({
-    count: messages.length + (isLoading ? 1 : 0),
+  // Always call useVirtualizer if available (hooks must be called unconditionally)
+  // Pass count: 0 when we don't want to use virtual scrolling to avoid rendering
+  const virtualizer = useVirtualizer ? useVirtualizer({
+    count: useVirtual ? messages.length + (isLoading ? 1 : 0) : 0,
     getScrollElement: () => parentRef.current,
     estimateSize: () => 100, // Estimated height per message (will be adjusted)
     overscan: 5, // Render 5 extra items above/below viewport
@@ -104,7 +105,7 @@ export const ChatMessagesVirtual = memo(function ChatMessagesVirtual({
           }}
         >
           <div className="w-full" role="list">
-            {virtualItems.map((virtualItem) => {
+            {virtualItems.map((virtualItem: any) => {
               const index = virtualItem.index;
               const message = messages[index];
               
