@@ -39,17 +39,21 @@ const GenerateMealPlanInputSchema = z.object({
     .int()
     .min(1)
     .max(30)
-    .describe("Number of days for the meal plan (1-30 days)."),
+    .optional()
+    .default(7)
+    .describe("Number of days for the meal plan (1-30 days). Defaults to 7 if not specified."),
   mealsPerDay: z
     .number()
     .int()
     .min(1)
     .max(5)
-    .describe("Number of meals per day (1-5 meals)."),
+    .optional()
+    .default(3)
+    .describe("Number of meals per day (1-5 meals). Defaults to 3 if not specified."),
   title: z
     .string()
     .optional()
-    .describe("Optional title for the meal plan. If not provided, a title will be generated."),
+    .describe("Optional title for the meal plan. If not provided, a title will be auto-generated based on duration and mealsPerDay."),
 });
 
 const GenerateMealPlanOutputSchema = z.object({
@@ -87,7 +91,7 @@ const generateMealPlan = ai.defineTool(
   {
     name: "generate_meal_plan",
     description:
-      "Generates a personalized meal plan based on user preferences. Use this when the user asks to create, generate, or plan meals. The meal plan will be tailored to their dietary preferences, goals, household size, and cuisine preferences.",
+      "Generates a personalized meal plan using the user's stored preferences (dietary preference, goals, household size, cuisine preferences). Use this when the user asks to create, generate, or plan meals. DO NOT ask follow-up questions - the tool automatically uses their saved preferences from their account. Only requires duration and mealsPerDay parameters.",
     inputSchema: GenerateMealPlanInputSchema,
     outputSchema: GenerateMealPlanOutputSchema,
   },
@@ -129,10 +133,14 @@ const generateMealPlan = ai.defineTool(
         cuisinePreferences: pref.cuisinePreferences,
       }));
 
+      // Use defaults if not provided
+      const duration = input.duration ?? 7;
+      const mealsPerDay = input.mealsPerDay ?? 3;
+
       // Generate the meal plan
       const result = await generatePersonalizedMealPlan({
-        duration: input.duration,
-        mealsPerDay: input.mealsPerDay,
+        duration,
+        mealsPerDay,
         preferences,
         randomSeed: Math.floor(Math.random() * 1000),
       });
@@ -147,13 +155,13 @@ const generateMealPlan = ai.defineTool(
       // Generate title if not provided
       const title =
         input.title ||
-        `${input.duration}-Day Meal Plan (${input.mealsPerDay} meals/day)`;
+        `${duration}-Day Meal Plan (${mealsPerDay} meals/day)`;
 
       // Transform to match the save API format
       const mealPlanData = {
         title,
-        duration: input.duration,
-        mealsPerDay: input.mealsPerDay,
+        duration,
+        mealsPerDay,
         days: result.mealPlan.map((day) => ({
           day: day.day,
           meals: day.meals.map((meal) => ({
@@ -175,10 +183,16 @@ const generateMealPlan = ai.defineTool(
         });
       }
 
+      // Include preferences in the message so AI knows what was used (but keep it concise)
+      const firstPreference = preferences[0];
+      const preferencesSummary = firstPreference 
+        ? `${firstPreference.dietaryPreference} diet, ${firstPreference.goal} goal, ${firstPreference.householdSize} person household, ${firstPreference.cuisinePreferences.slice(0, 3).join(', ')}${firstPreference.cuisinePreferences.length > 3 ? '...' : ''} cuisines`
+        : 'your saved preferences';
+
       return {
         success: true,
         mealPlan: mealPlanData,
-        message: `Successfully generated a ${input.duration}-day meal plan with ${input.mealsPerDay} meals per day! The meal plan is ready to be saved.`,
+        message: `Successfully generated a ${duration}-day meal plan with ${mealsPerDay} meals per day tailored to ${preferencesSummary}. The meal plan is ready to be saved.`,
       };
     } catch (error) {
       console.error("[generateMealPlan] Error:", error);
@@ -318,17 +332,23 @@ const answerQuestionPrompt = ai.definePrompt({
   prompt: `You are Mealwise, a helpful kitchen assistant. Your primary roles are:
 1. **Provide cooking instructions and recipes** - When users ask how to cook something (e.g., "how to cook lasagna"), provide detailed, step-by-step cooking instructions with ingredients, measurements, and cooking methods.
 2. **Offer culinary advice** - Answer questions about cooking techniques, ingredients, food safety, and kitchen tips.
-3. **Generate meal plans** - Use the generate_meal_plan tool when users ask to create, generate, or plan meals. The tool will create a personalized meal plan based on their preferences.
+3. **Generate meal plans** - Use the generate_meal_plan tool when users ask to create, generate, or plan meals. The tool automatically uses their stored preferences (dietary preference, goals, household size, cuisine preferences) - DO NOT ask follow-up questions about these. The tool only needs duration and mealsPerDay.
 4. **Save meal plans** - Use the save_meal_plan tool when users want to save a generated meal plan to their account. Always save meal plans after generating them unless the user explicitly says not to.
 5. **Track meals** - Only use the logMeal tool when the user explicitly states they have ALREADY EATEN a meal and want to track/log it.
+
+**CRITICAL RULES FOR MEAL PLAN GENERATION:**
+- NEVER ask follow-up questions about dietary preferences, goals, household size, or cuisine preferences
+- The generate_meal_plan tool automatically retrieves and uses the user's stored preferences from their account
+- If the user doesn't specify duration or mealsPerDay, use defaults: 7 days and 3 meals per day
+- Simply call the tool with duration and mealsPerDay - the tool handles everything else automatically
+- If the tool returns an error about missing preferences, inform the user they need to set up preferences first
 
 **IMPORTANT RULES:**
 - ALWAYS provide cooking instructions when asked. Never refuse to help with cooking questions.
 - If a user asks "how to cook [dish]" or "recipe for [dish]", they want cooking instructions, NOT meal logging.
-- When users ask to create/generate/plan meals, use generate_meal_plan tool. After generating, automatically save it using save_meal_plan unless the user says not to.
+- When users ask to create/generate/plan meals, immediately use generate_meal_plan tool with duration and mealsPerDay (or defaults). DO NOT ask about their preferences - the tool uses stored preferences automatically.
 - Only use the logMeal tool when the user says they have eaten something (e.g., "I ate lasagna for dinner" or "I just had pizza").
 - Be detailed and helpful with cooking instructions - include ingredients, measurements, cooking times, temperatures, and step-by-step methods.
-- For meal plan generation, default to 7 days and 3 meals per day if not specified by the user.
 
 Question: {{{question}}}`,
 });
