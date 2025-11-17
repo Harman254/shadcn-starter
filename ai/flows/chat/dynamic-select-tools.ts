@@ -92,6 +92,9 @@ const generateMealPlan = ai.defineTool(
     outputSchema: GenerateMealPlanOutputSchema,
   },
   async (input) => {
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[generateMealPlan] Tool called with input:', { duration: input.duration, mealsPerDay: input.mealsPerDay, title: input.title });
+    }
     try {
       // Get user session
       const session = await auth.api.getSession({
@@ -164,6 +167,14 @@ const generateMealPlan = ai.defineTool(
         })),
       };
 
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[generateMealPlan] ✅ Successfully generated meal plan:', {
+          title: mealPlanData.title,
+          days: mealPlanData.days.length,
+          totalMeals: mealPlanData.days.reduce((sum, day) => sum + day.meals.length, 0),
+        });
+      }
+
       return {
         success: true,
         mealPlan: mealPlanData,
@@ -219,6 +230,15 @@ const saveMealPlan = ai.defineTool(
     outputSchema: SaveMealPlanOutputSchema,
   },
   async (input) => {
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[saveMealPlan] Tool called with input:', {
+        title: input.title,
+        duration: input.duration,
+        mealsPerDay: input.mealsPerDay,
+        daysCount: input.days.length,
+        totalMeals: input.days.reduce((sum, day) => sum + day.meals.length, 0),
+      });
+    }
     try {
       // Get user session
       const session = await auth.api.getSession({
@@ -243,6 +263,14 @@ const saveMealPlan = ai.defineTool(
 
       // Call the save action directly
       const result = await saveMealPlanAction(saveData);
+
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[saveMealPlan] Save result:', {
+          success: result.success,
+          mealPlanId: result.mealPlan?.id,
+          error: result.error,
+        });
+      }
 
       if (result.success && result.mealPlan) {
         return {
@@ -312,7 +340,22 @@ const answerQuestionFlow = ai.defineFlow(
     outputSchema: AnswerQuestionOutputSchema,
   },
   async (input) => {
+    // Log tool availability for debugging
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[answerQuestionFlow] Tools available:', ['logMeal', 'generateMealPlan', 'saveMealPlan']);
+      console.log('[answerQuestionFlow] Processing question:', input.question);
+    }
+
     const { output } = await answerQuestionPrompt(input);
+
+    // Log the output for debugging (especially tool calls)
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[answerQuestionFlow] Received output:', {
+        hasAnswer: !!output?.answer,
+        answerLength: output?.answer?.length || 0,
+        answerPreview: output?.answer?.substring(0, 100) || 'N/A',
+      });
+    }
 
     // ✅ Defensive fix
     if (!output || typeof output.answer !== "string") {
