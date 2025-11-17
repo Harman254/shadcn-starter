@@ -197,9 +197,17 @@ export function useChatSync(sessionId: string | null, chatType: 'context-aware' 
                       timestamp: m.timestamp ? new Date(m.timestamp) : new Date(),
                     }));
                     // Sort by timestamp to ensure correct order
-                    formattedMessages.sort((a, b) => {
-                      const timeA = a.timestamp instanceof Date ? a.timestamp.getTime() : new Date(a.timestamp).getTime();
-                      const timeB = b.timestamp instanceof Date ? b.timestamp.getTime() : new Date(b.timestamp).getTime();
+                    formattedMessages.sort((a: Message, b: Message) => {
+                      const timeA = a.timestamp instanceof Date 
+                        ? a.timestamp.getTime() 
+                        : a.timestamp 
+                          ? new Date(a.timestamp).getTime() 
+                          : 0;
+                      const timeB = b.timestamp instanceof Date 
+                        ? b.timestamp.getTime() 
+                        : b.timestamp 
+                          ? new Date(b.timestamp).getTime() 
+                          : 0;
                       return timeA - timeB;
                     });
                     clearSession(sessionId);
