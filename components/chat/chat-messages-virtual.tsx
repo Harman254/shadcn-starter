@@ -21,6 +21,76 @@ interface ChatMessagesVirtualProps {
 // Threshold for when to use virtual scrolling (100+ messages)
 const VIRTUAL_SCROLL_THRESHOLD = 100;
 
+// Component that uses virtual scrolling (only rendered when library is available)
+function VirtualizedMessages({ 
+  messages, 
+  isLoading,
+  parentRef 
+}: { 
+  messages: Message[]; 
+  isLoading: boolean;
+  parentRef: React.RefObject<HTMLDivElement | null>;
+}) {
+  // This hook is always called - no conditional logic
+  const virtualizer = useVirtualizer({
+    count: messages.length + (isLoading ? 1 : 0),
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => 100,
+    overscan: 5,
+  });
+
+  const virtualItems = virtualizer.getVirtualItems();
+
+  return (
+    <div
+      style={{
+        height: `${virtualizer.getTotalSize()}px`,
+        width: '100%',
+        position: 'relative',
+      }}
+    >
+      <div className="w-full" role="list">
+        {virtualItems.map((virtualItem: any) => {
+          const index = virtualItem.index;
+          const message = messages[index];
+          
+          if (!message) return null;
+
+          return (
+            <div
+              key={message.id}
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: '100%',
+                transform: `translateY(${virtualItem.start}px)`,
+              }}
+              role="listitem"
+            >
+              <ChatMessage message={message} />
+            </div>
+          );
+        })}
+        {isLoading && (
+          <div 
+            style={{
+              position: 'absolute',
+              top: `${virtualizer.getTotalSize()}px`,
+              left: 0,
+              width: '100%',
+            }}
+            role="status" 
+            aria-label="AI is typing"
+          >
+            <ChatMessage isLoading />
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export const ChatMessagesVirtual = memo(function ChatMessagesVirtual({ 
   messages, 
   isLoading 
@@ -30,15 +100,6 @@ export const ChatMessagesVirtual = memo(function ChatMessagesVirtual({
 
   // Use virtual scrolling only if we have many messages AND library is available
   const useVirtual = messages.length >= VIRTUAL_SCROLL_THRESHOLD && useVirtualizer !== null;
-
-  // Always call useVirtualizer if available (hooks must be called unconditionally)
-  // Pass count: 0 when we don't want to use virtual scrolling to avoid rendering
-  const virtualizer = useVirtualizer ? useVirtualizer({
-    count: useVirtual ? messages.length + (isLoading ? 1 : 0) : 0,
-    getScrollElement: () => parentRef.current,
-    estimateSize: () => 100, // Estimated height per message (will be adjusted)
-    overscan: 5, // Render 5 extra items above/below viewport
-  }) : null;
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -51,12 +112,10 @@ export const ChatMessagesVirtual = memo(function ChatMessagesVirtual({
 
     if (isNearBottom || scrollToBottomRef.current) {
       requestAnimationFrame(() => {
-        if (useVirtual && virtualizer) {
-          // Scroll to last item in virtual list
-          virtualizer.scrollToIndex(messages.length - 1, {
-            align: 'end',
-            behavior: 'smooth',
-          });
+        if (useVirtual && useVirtualizer) {
+          // For virtual scrolling, we'll handle this in the VirtualizedMessages component
+          // For now, just scroll normally
+          viewport.scrollTop = viewport.scrollHeight;
         } else {
           // Regular scroll to bottom
           viewport.scrollTop = viewport.scrollHeight;
@@ -64,7 +123,7 @@ export const ChatMessagesVirtual = memo(function ChatMessagesVirtual({
         scrollToBottomRef.current = false;
       });
     }
-  }, [messages.length, isLoading, useVirtual, virtualizer]);
+  }, [messages.length, isLoading, useVirtual]);
 
   // Mark that we should scroll to bottom when new message arrives
   useEffect(() => {
@@ -86,9 +145,7 @@ export const ChatMessagesVirtual = memo(function ChatMessagesVirtual({
   }
 
   // Use virtual scrolling for large lists
-  if (useVirtual && virtualizer) {
-    const virtualItems = virtualizer.getVirtualItems();
-
+  if (useVirtual && useVirtualizer) {
     return (
       <div 
         className="h-full w-full overflow-auto" 
@@ -97,52 +154,11 @@ export const ChatMessagesVirtual = memo(function ChatMessagesVirtual({
         aria-live="polite" 
         aria-label="Chat messages"
       >
-        <div
-          style={{
-            height: `${virtualizer.getTotalSize()}px`,
-            width: '100%',
-            position: 'relative',
-          }}
-        >
-          <div className="w-full" role="list">
-            {virtualItems.map((virtualItem: any) => {
-              const index = virtualItem.index;
-              const message = messages[index];
-              
-              if (!message) return null;
-
-              return (
-                <div
-                  key={message.id}
-                  style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    width: '100%',
-                    transform: `translateY(${virtualItem.start}px)`,
-                  }}
-                  role="listitem"
-                >
-                  <ChatMessage message={message} />
-                </div>
-              );
-            })}
-            {isLoading && (
-              <div 
-                style={{
-                  position: 'absolute',
-                  top: `${virtualizer.getTotalSize()}px`,
-                  left: 0,
-                  width: '100%',
-                }}
-                role="status" 
-                aria-label="AI is typing"
-              >
-                <ChatMessage isLoading />
-              </div>
-            )}
-          </div>
-        </div>
+        <VirtualizedMessages 
+          messages={messages} 
+          isLoading={isLoading}
+          parentRef={parentRef}
+        />
       </div>
     );
   }
