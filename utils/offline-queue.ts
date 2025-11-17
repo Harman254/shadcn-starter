@@ -22,8 +22,21 @@ export class OfflineQueue {
   private queue: QueuedMessage[] = [];
   private syncCallback: ((message: QueuedMessage) => Promise<void>) | null = null;
   private isOnline: boolean = true;
+  private initialized: boolean = false;
 
   constructor() {
+    // Only initialize on client side
+    if (typeof window !== 'undefined') {
+      this.initialize();
+    }
+  }
+
+  /**
+   * Initialize the queue (client-side only)
+   */
+  private initialize(): void {
+    if (this.initialized) return;
+    this.initialized = true;
     this.loadQueue();
     this.setupOnlineListener();
   }
@@ -39,6 +52,10 @@ export class OfflineQueue {
    * Add a message to the queue
    */
   enqueue(sessionId: string, content: string): string {
+    // Ensure initialized on client side
+    if (typeof window !== 'undefined' && !this.initialized) {
+      this.initialize();
+    }
     const message: QueuedMessage = {
       id: `offline-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`,
       sessionId,
@@ -114,7 +131,7 @@ export class OfflineQueue {
    * Sync all pending messages
    */
   async syncAll(): Promise<void> {
-    if (!this.isOnline || !this.syncCallback) return;
+    if (typeof window === 'undefined' || !this.isOnline || !this.syncCallback) return;
 
     const pendingMessages = this.queue.filter((msg) => msg.status === 'pending');
     
@@ -145,6 +162,10 @@ export class OfflineQueue {
    * Setup online/offline event listeners
    */
   private setupOnlineListener(): void {
+    if (typeof window === 'undefined' || typeof navigator === 'undefined') {
+      return;
+    }
+
     this.isOnline = navigator.onLine;
 
     const handleOnline = () => {
@@ -164,6 +185,10 @@ export class OfflineQueue {
    * Load queue from localStorage
    */
   private loadQueue(): void {
+    if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
+      return;
+    }
+
     try {
       const stored = localStorage.getItem(QUEUE_STORAGE_KEY);
       if (stored) {
@@ -183,6 +208,10 @@ export class OfflineQueue {
    * Save queue to localStorage
    */
   private saveQueue(): void {
+    if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
+      return;
+    }
+
     try {
       localStorage.setItem(QUEUE_STORAGE_KEY, JSON.stringify(this.queue));
     } catch (error) {

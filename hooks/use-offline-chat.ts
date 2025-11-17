@@ -81,8 +81,8 @@ export function useOfflineChat({
 
     offlineQueue.setSyncCallback(syncMessage);
 
-    // Sync any pending messages when hook is initialized
-    if (navigator.onLine) {
+    // Sync any pending messages when hook is initialized (client-side only)
+    if (typeof window !== 'undefined' && typeof navigator !== 'undefined' && navigator.onLine) {
       offlineQueue.syncAll();
     }
   }, [sessionId, chatType, addMessage, updateMessageStatus, getCurrentSession, onMessageSynced]);
