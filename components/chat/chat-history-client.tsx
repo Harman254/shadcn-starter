@@ -98,7 +98,7 @@ const SessionItem = memo(function SessionItem({
                   "text-muted-foreground hover:text-destructive",
                   "hover:bg-destructive/10 active:bg-destructive/20",
                   "rounded-md border border-border/50 hover:border-destructive/50",
-                  "bg-background/50 hover:bg-destructive/5",
+                  "bg-background/50",
                   isDeleting && "opacity-50 cursor-not-allowed"
                 )}
                 onClick={(e) => e.stopPropagation()}
