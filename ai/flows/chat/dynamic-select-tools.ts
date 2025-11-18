@@ -4,10 +4,14 @@ import { ai } from "@/ai/instance";
 import { z } from "genkit";
 import { generatePersonalizedMealPlan } from "@/ai/flows/generate-meal-plan";
 import { generateMealPlanTitle } from "@/ai/flows/generateMealPlanTitle";
+import { ai as aiInstance } from "@/ai/instance";
+import type { GenerateGroceryListInput } from "@/ai/flows/generate-grocery-list";
+import { generateGroceryListFlow } from "@/ai/flows/generate-grocery-list";
 import { fetchOnboardingData } from "@/data";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { saveMealPlanAction } from "@/actions/save-meal-plan";
+import { getLocationDataWithCaching } from "@/lib/location";
 
 const LogMealInputSchema = z.object({
   meal_description: z
@@ -471,6 +475,161 @@ export const saveMealPlan = ai.defineTool(
         message: `Failed to save meal plan: ${error instanceof Error ? error.message : "Unknown error"}`,
       };
     }
+  }
+);
+
+// Generate Grocery List Tool
+const GenerateGroceryListInputSchema = z.object({
+  mealPlan: z.object({
+    title: z.string().optional().describe("Title of the meal plan."),
+    duration: z.number().describe("Duration in days."),
+    mealsPerDay: z.number().describe("Number of meals per day."),
+    days: z.array(
+      z.object({
+        day: z.number().describe("Day number (1-based)."),
+        meals: z.array(
+          z.object({
+            name: z.string().describe("Name of the meal."),
+            description: z.string().optional().describe("Description of the meal."),
+            ingredients: z.array(z.string()).describe("List of ingredients."),
+            instructions: z.string().optional().describe("Cooking instructions."),
+          })
+        ).describe("Meals for this day."),
+      })
+    ).describe("Days in the meal plan."),
+  }).describe("The meal plan to generate a grocery list for. Can be from a recently generated meal plan in the conversation."),
+});
+
+const GenerateGroceryListOutputSchema = z.object({
+  success: z.boolean().describe("Whether the grocery list was generated successfully."),
+  groceryList: z.array(
+    z.object({
+      id: z.string().describe("Unique ID for the item."),
+      item: z.string().describe("Name of the grocery item."),
+      quantity: z.string().describe("Quantity needed."),
+      category: z.string().describe("Category (e.g., Produce, Dairy, Meat)."),
+      estimatedPrice: z.string().describe("Estimated price with currency symbol."),
+      suggestedLocation: z.string().describe("Suggested local store."),
+    })
+  ).optional().describe("The generated grocery list with price estimates."),
+  locationInfo: z.object({
+    currencySymbol: z.string().describe("Currency symbol."),
+    localStores: z.array(z.string()).describe("List of local stores."),
+  }).optional().describe("Location-specific information."),
+  message: z.string().describe("A message describing the result."),
+});
+
+// Core grocery list generation logic - can be called directly or via tool
+export async function generateGroceryListCore(input: {
+  mealPlan: {
+    title?: string;
+    duration: number;
+    mealsPerDay: number;
+    days: Array<{
+      day: number;
+      meals: Array<{
+        name: string;
+        description?: string;
+        ingredients: string[];
+        instructions?: string;
+      }>;
+    }>;
+  };
+}): Promise<{
+  success: boolean;
+  groceryList?: any;
+  locationInfo?: any;
+  message: string;
+}> {
+  try {
+    // Get user session
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    });
+
+    if (!session?.user?.id) {
+      return {
+        success: false,
+        message: "You must be logged in to generate a grocery list. Please sign in first.",
+      };
+    }
+
+    const userId = session.user.id;
+
+    // Get user location
+    const locationData = await getLocationDataWithCaching(userId, session.session.id);
+    
+    // Convert meal plan to simplified format for grocery list generation
+    const simplifiedMeals = input.mealPlan.days.flatMap(day => 
+      day.meals.map(meal => ({
+        name: meal.name,
+        ingredients: meal.ingredients
+      }))
+    );
+
+    const groceryListInput: GenerateGroceryListInput = {
+      meals: simplifiedMeals,
+      userLocation: {
+        country: locationData.country || 'USA',
+        city: locationData.city || 'San Francisco',
+        currencySymbol: locationData.currencySymbol || '$',
+      },
+    };
+
+    const result = await generateGroceryListFlow(groceryListInput);
+
+    if (!result?.groceryList || !Array.isArray(result.groceryList)) {
+      return {
+        success: false,
+        message: "Failed to generate grocery list. Please try again.",
+      };
+    }
+
+    // Calculate total estimated cost
+    const totalCost = result.groceryList.reduce((sum: number, item: any) => {
+      const priceStr = item.estimatedPrice.replace(/[^\d.]/g, '');
+      const price = parseFloat(priceStr) || 0;
+      return sum + price;
+    }, 0);
+    const currencySymbol = result.locationInfo?.currencySymbol || '$';
+
+    // Create UI metadata for displaying the grocery list
+    const uiMetadata = {
+      groceryList: {
+        items: result.groceryList,
+        locationInfo: result.locationInfo,
+        totalEstimatedCost: `${currencySymbol}${totalCost.toFixed(2)}`,
+      },
+    };
+
+    // Encode UI metadata as base64
+    const uiMetadataEncoded = Buffer.from(JSON.stringify(uiMetadata)).toString('base64');
+
+    return {
+      success: true,
+      groceryList: result.groceryList,
+      locationInfo: result.locationInfo,
+      message: `✅ Generated grocery list for your ${input.mealPlan.duration}-day meal plan! Found ${result.groceryList.length} items with estimated total cost of ${currencySymbol}${totalCost.toFixed(2)}. [UI_METADATA:${uiMetadataEncoded}]`,
+    };
+  } catch (error) {
+    console.error("[generateGroceryList] Error:", error);
+    return {
+      success: false,
+      message: `Failed to generate grocery list: ${error instanceof Error ? error.message : "Unknown error"}`,
+    };
+  }
+}
+
+export const generateGroceryList = ai.defineTool(
+  {
+    name: "generate_grocery_list",
+    description:
+      "Generates a grocery list with price estimates for a meal plan. Use this when user asks for a grocery list, shopping list, or ingredients list for their meal plan. Requires the meal plan data (can be from a recently generated meal plan in the conversation).",
+    inputSchema: GenerateGroceryListInputSchema,
+    outputSchema: GenerateGroceryListOutputSchema,
+  },
+  async (input) => {
+    return await generateGroceryListCore(input);
   }
 );
 

@@ -10,13 +10,13 @@
 
 import { ai } from "@/ai/instance";
 import { z } from "genkit";
-import { generateMealPlan, saveMealPlan, generateMealPlanCore } from "./dynamic-select-tools";
+import { generateMealPlan, saveMealPlan, generateMealPlanCore, generateGroceryList, generateGroceryListCore } from "./dynamic-select-tools";
 
 // Helper to extract duration and mealsPerDay from user message or chat history
 // Prioritizes explicit user requests over defaults
 function extractMealPlanParams(message: string, chatHistory?: Array<{ role: string; content: string }>): { duration: number; mealsPerDay: number } {
-  // If message is short (like "do it"), check chat history for parameters
-  const isShortMessage = message.trim().length < 20 && /^(do it|yes|ok|sure|go|generate)$/i.test(message.trim());
+  // If message is short (like "do it", "yes", "ok"), check chat history for parameters
+  const isShortMessage = message.trim().length < 20 && /^(do it|yes|yeah|yep|yup|ok|okay|sure|alright|go|generate|create|plan)$/i.test(message.trim());
   
   // Search in reverse order (most recent first) to find the latest meal plan request
   const searchText = isShortMessage && chatHistory 
@@ -126,27 +126,71 @@ const prompt = ai.definePrompt({
   output: {
     schema: ContextAwareChatOutputSchema,
   },
-  tools: [generateMealPlan, saveMealPlan],
+  tools: [generateMealPlan, saveMealPlan, generateGroceryList],
   prompt: `You are Mealwise, a meal planning and nutrition assistant. Focus on meal plans, recipes, nutrition, and health.
 
-**TOOLS:**
-- generate_meal_plan(duration, mealsPerDay) - Generate meal plans. Default: 1 day, 3 meals/day. Use user's numbers if specified.
-- save_meal_plan(title, duration, mealsPerDay, days) - Save meal plans
+**CRITICAL: YOU MUST USE TOOLS - DO NOT JUST RESPOND WITH TEXT**
 
-**RULES:**
-- For meal plan requests → CALL generate_meal_plan() immediately. Use user's numbers (e.g., "2 days, 4 meals" = duration:2, mealsPerDay:4). Defaults only if no numbers.
-- For cooking/nutrition questions → Provide recipes, ingredients, steps, health tips.
-- Keep responses concise and focused on meals/nutrition.
+**TOOLS:**
+1. generate_meal_plan(duration, mealsPerDay) - Generates meal plans. Default: duration=1, mealsPerDay=3. Use user's numbers if specified.
+2. save_meal_plan(title, duration, mealsPerDay, days) - Saves meal plans
+3. generate_grocery_list(mealPlan) - Generates a grocery list with price estimates for a meal plan. Requires meal plan data from conversation.
+
+**CRITICAL: USER REQUESTS ALWAYS OVERRIDE DEFAULTS - YOU MUST CALL THE TOOL, NOT JUST SAY YOU WILL**
+
+**MEAL PLAN GENERATION:**
+- When user says "generate/create/plan meals", "yes", "do it", "ok", "sure", "get me a meal plan", or mentions days/meals → YOU MUST IMMEDIATELY CALL generate_meal_plan() function.
+- **NEVER say "I will generate" or "I can generate" - YOU MUST ACTUALLY CALL THE FUNCTION RIGHT NOW.**
+- Extract duration from user message or chat history (e.g., "1 day" = duration: 1, "2 days" = duration: 2, "one day" = duration: 1). If user specifies a number, USE THAT NUMBER.
+- Extract mealsPerDay from user message or chat history (e.g., "4 meals" = mealsPerDay: 4, "four meals" = mealsPerDay: 4). If user specifies a number, USE THAT NUMBER.
+- **ONLY use defaults (1 day, 3 meals/day) if user does NOT specify any numbers.**
+- Examples:
+  - User says "one day meal plan with 4 meals" → IMMEDIATELY CALL generate_meal_plan({duration: 1, mealsPerDay: 4})
+  - User says "yes" or "do it" (after mentioning meal plan) → CALL generate_meal_plan() with parameters from conversation history
+  - User says "get me a 2 day plan" → IMMEDIATELY CALL generate_meal_plan({duration: 2, mealsPerDay: 3})
+  - User says "I need a meal plan" (no numbers) → IMMEDIATELY CALL generate_meal_plan({duration: 1, mealsPerDay: 3})
+- **FORBIDDEN RESPONSES:** "I will generate", "I can generate", "Let me generate" - THESE ARE WRONG. CALL THE FUNCTION INSTEAD.
+- After generating a meal plan, inform the user they can save it and naturally suggest: "Would you like me to create a grocery list with price estimates for this meal plan?"
+
+**GROCERY LIST GENERATION:**
+- When user asks for "grocery list", "shopping list", "ingredients list", "what do I need to buy", or "what ingredients" → CALL generate_grocery_list() immediately.
+- Extract meal plan data from the conversation history (look for recently generated meal plan in assistant messages).
+- If a meal plan was just generated in this conversation, use that meal plan data for the grocery list.
+- Examples:
+  - User says "create a grocery list" or "what do I need to buy" → CALL generate_grocery_list() with meal plan from conversation
+  - User says "yes" to grocery list suggestion → CALL generate_grocery_list() with meal plan from conversation
+  - User says "shopping list" or "ingredients" → CALL generate_grocery_list() with meal plan from conversation
+- The grocery list will include price estimates and local store suggestions based on user's location.
+
+**COOKING/NUTRITION QUESTIONS:**
+- Provide detailed instructions with ingredients, steps, cooking times, nutrition info.
+- Focus on meal-related topics: recipes, ingredients, cooking methods, dietary advice, health benefits.
 
 {{#if preferencesSummary}}
-**PREFERENCES:** {{preferencesSummary}}
+**USER PREFERENCES:** {{preferencesSummary}}
 {{/if}}
 
-**HISTORY:**
+**CONVERSATION:**
 {{#each chatHistory}}{{role}}: {{content}}
 {{/each}}
 
-**USER:** {{message}}`,
+**USER:** {{message}}
+
+**REMEMBER:**
+- User's explicit requests (like "1 day", "4 meals") ALWAYS override defaults
+- If user says "one day meal plan with 4 meals" → duration=1, mealsPerDay=4
+- If user says "I need a meal plan" (no numbers) → duration=1, mealsPerDay=3
+- If user says "yes", "ok", "do it" after meal plan discussion → CALL generate_meal_plan() with params from history
+- After generating a meal plan, naturally guide conversation: "Would you like me to create a grocery list with price estimates?"
+- When user asks for grocery list → Extract meal plan from conversation history and CALL generate_grocery_list()
+- Preferences are for dietary restrictions/goals, NOT for duration/mealsPerDay
+
+**CONVERSATION FLOW:**
+1. User requests meal plan → CALL generate_meal_plan()
+2. After meal plan generated → Suggest grocery list: "Would you like me to create a grocery list with price estimates?"
+3. User requests grocery list → CALL generate_grocery_list() with meal plan from conversation
+
+If user wants a meal plan, CALL generate_meal_plan() immediately. If user wants a grocery list, CALL generate_grocery_list() with meal plan from conversation. Otherwise provide cooking/nutrition help.`,
 });
 
 const contextAwareChatFlow = ai.defineFlow(
@@ -255,16 +299,98 @@ const contextAwareChatFlow = ai.defineFlow(
           // Check if response suggests tool should have been called
           const responseText = output?.response?.toLowerCase() || '';
           const suggestsMealPlan = /generate|creating|planning|meal.*plan|will generate/i.test(responseText);
+          
           // Check for meal plan requests - be more aggressive in detection
-          const isMealPlanRequest = /generate|create|plan|need.*meal.*plan|do it|get me|give me.*meal/i.test(input.message) ||
-                                   /one day|two day|1 day|2 day|3 day|4 day|5 day|6 day|7 day/i.test(input.message);
+          // Include short affirmative responses that might be responding to meal plan questions
+          const currentMessageLower = input.message.toLowerCase().trim();
+          const isShortAffirmative = /^(yes|yeah|yep|yup|ok|okay|sure|alright|go|do it|generate|create|plan)$/i.test(currentMessageLower);
+          
+          const isMealPlanRequest = 
+            /generate|create|plan|need.*meal.*plan|get me|give me.*meal/i.test(input.message) ||
+            /one day|two day|1 day|2 day|3 day|4 day|5 day|6 day|7 day/i.test(input.message) ||
+            (isShortAffirmative && chatHistory.length > 0); // Short affirmative + history = likely meal plan response
           
           // Also check chat history for meal plan context
-          const hasMealPlanContext = chatHistory.some(msg => 
-            /meal.*plan|generate|create.*plan/i.test(msg.content.toLowerCase())
+          // Check if assistant recently asked about generating a meal plan
+          const hasMealPlanContext = chatHistory.some(msg => {
+            const content = msg.content.toLowerCase();
+            return /meal.*plan|generate.*meal|create.*meal|plan.*meal|would you like.*meal/i.test(content);
+          });
+          
+          // Check if user previously mentioned wanting a meal plan
+          const userWantsMealPlan = chatHistory.some(msg => 
+            msg.role === 'user' && /meal.*plan|generate|create.*plan|need.*plan/i.test(msg.content.toLowerCase())
           );
           
-          if ((isMealPlanRequest || hasMealPlanContext) && !hasToolCalls) {
+          // Check for grocery list requests
+          const isGroceryListRequest = 
+            /grocery.*list|shopping.*list|ingredients.*list|what.*do.*i.*need.*to.*buy|what.*ingredients/i.test(input.message) ||
+            (isShortAffirmative && chatHistory.some(msg => 
+              msg.role === 'assistant' && /grocery.*list|shopping.*list|price.*estimate/i.test(msg.content.toLowerCase())
+            ));
+          
+          // Check if there's a meal plan in the conversation history (for grocery list generation)
+          const hasMealPlanInHistory = chatHistory.some(msg => {
+            if (msg.role === 'assistant') {
+              // Check if message contains UI_METADATA with meal plan
+              return /\[UI_METADATA:.*mealPlan|meal.*plan.*generated|generated.*meal.*plan/i.test(msg.content);
+            }
+            return false;
+          });
+          
+          if (isGroceryListRequest && hasMealPlanInHistory && !hasToolCalls) {
+            console.warn('[contextAwareChatFlow] ⚠️ WARNING: User requested grocery list but tool was NOT called!');
+            console.warn('[contextAwareChatFlow] 🔧 FALLBACK: Attempting to extract meal plan from conversation...');
+            
+            // Try to extract meal plan from conversation history
+            // Look for the most recent meal plan in assistant messages
+            let mealPlanData = null;
+            for (let i = chatHistory.length - 1; i >= 0; i--) {
+              const msg = chatHistory[i];
+              if (msg.role === 'assistant' && msg.content.includes('[UI_METADATA:')) {
+                try {
+                  const match = msg.content.match(/\[UI_METADATA:([A-Za-z0-9+/=]+)\]/);
+                  if (match) {
+                    const decoded = Buffer.from(match[1], 'base64').toString('utf-8');
+                    const uiMetadata = JSON.parse(decoded);
+                    if (uiMetadata.mealPlan) {
+                      mealPlanData = uiMetadata.mealPlan;
+                      break;
+                    }
+                  }
+                } catch (e) {
+                  // Continue searching
+                }
+              }
+            }
+            
+            if (mealPlanData) {
+              try {
+                const toolResult = await generateGroceryListCore({ mealPlan: mealPlanData });
+                
+                if (toolResult.success && toolResult.groceryList) {
+                  return {
+                    response: toolResult.message,
+                  };
+                } else {
+                  return {
+                    response: toolResult.message || 'Failed to generate grocery list. Please try again.',
+                  };
+                }
+              } catch (toolError) {
+                console.error('[contextAwareChatFlow] Error in fallback grocery list call:', toolError);
+                return {
+                  response: 'I encountered an error generating your grocery list. Please try again or contact support.',
+                };
+              }
+            } else {
+              return {
+                response: 'I need a meal plan to generate a grocery list. Please generate a meal plan first, then I can create a shopping list with price estimates.',
+              };
+            }
+          }
+          
+          if ((isMealPlanRequest || hasMealPlanContext || (isShortAffirmative && userWantsMealPlan)) && !hasToolCalls) {
             console.warn('[contextAwareChatFlow] ⚠️ WARNING: User requested meal plan but tool was NOT called!');
             console.warn('[contextAwareChatFlow] Response was:', output?.response);
             console.warn('[contextAwareChatFlow] 🔧 FALLBACK: Manually calling generateMealPlan tool...');
@@ -319,10 +445,21 @@ const contextAwareChatFlow = ai.defineFlow(
       }
       
       // Check if this was a meal plan request - if so, try fallback
-      const isMealPlanRequest = /generate|create|plan|need.*meal.*plan|do it|get me|give me.*meal/i.test(input.message) ||
-                                /one day|two day|1 day|2 day|3 day|4 day|5 day|6 day|7 day/i.test(input.message);
+      const currentMessageLower = input.message.toLowerCase().trim();
+      const isShortAffirmative = /^(yes|yeah|yep|yup|ok|okay|sure|alright|go|do it|generate|create|plan)$/i.test(currentMessageLower);
       
-      if (isMealPlanRequest) {
+      const isMealPlanRequest = 
+        /generate|create|plan|need.*meal.*plan|get me|give me.*meal/i.test(input.message) ||
+        /one day|two day|1 day|2 day|3 day|4 day|5 day|6 day|7 day/i.test(input.message) ||
+        (isShortAffirmative && chatHistory.length > 0); // Short affirmative + history = likely meal plan response
+      
+      // Also check if there's meal plan context in history
+      const hasMealPlanContext = chatHistory.some(msg => {
+        const content = msg.content.toLowerCase();
+        return /meal.*plan|generate.*meal|create.*meal|plan.*meal|would you like.*meal/i.test(content);
+      });
+      
+      if (isMealPlanRequest || hasMealPlanContext) {
         try {
           console.warn('[contextAwareChatFlow] 🔧 Error occurred, trying fallback meal plan generation...');
           // Use chat history to extract params if current message is short

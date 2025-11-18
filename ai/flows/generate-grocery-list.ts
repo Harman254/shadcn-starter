@@ -100,7 +100,7 @@ const groceryListPrompt = ai.definePrompt({
 /*        FLOW DEFINITION     */
 /* ========================== */
 
-const generateGroceryListFlow = ai.defineFlow(
+export const generateGroceryListFlow = ai.defineFlow(
   {
     name: 'generateGroceryListFlow',
     inputSchema: GenerateGroceryListInputSchema,
