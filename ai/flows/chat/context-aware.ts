@@ -143,17 +143,20 @@ const prompt = ai.definePrompt({
 **CRITICAL: USER REQUESTS ALWAYS OVERRIDE DEFAULTS - YOU MUST CALL THE TOOL, NOT JUST SAY YOU WILL**
 
 **MEAL PLAN GENERATION:**
-- When user says "generate/create/plan meals", "yes", "do it", "ok", "sure", "get me a meal plan", or mentions days/meals → YOU MUST IMMEDIATELY CALL generate_meal_plan() function.
-- **NEVER say "I will generate" or "I can generate" - YOU MUST ACTUALLY CALL THE FUNCTION RIGHT NOW.**
+- When user says "generate/create/plan meals", "meal plan", "one day meal plan", "include [dish]", mentions days/meals, OR responds "yes"/"ok"/"do it" to meal plan questions → YOU MUST IMMEDIATELY CALL generate_meal_plan() function.
+- **CRITICAL: Even if user mentions specific dishes (e.g., "include ugali and fish"), you MUST STILL CALL generate_meal_plan() - the tool will generate a meal plan that can include those dishes.**
+- **NEVER say "I will generate", "I can generate", "ok", or "sure" without calling the function - YOU MUST ACTUALLY CALL THE FUNCTION RIGHT NOW.**
 - Extract duration from user message or chat history (e.g., "1 day" = duration: 1, "2 days" = duration: 2, "one day" = duration: 1). If user specifies a number, USE THAT NUMBER.
 - Extract mealsPerDay from user message or chat history (e.g., "4 meals" = mealsPerDay: 4, "four meals" = mealsPerDay: 4). If user specifies a number, USE THAT NUMBER.
 - **ONLY use defaults (1 day, 3 meals/day) if user does NOT specify any numbers.**
 - Examples:
+  - User says "one day meal plan" → IMMEDIATELY CALL generate_meal_plan({duration: 1, mealsPerDay: 3})
+  - User says "generate a meal plan with ugali and fish" → IMMEDIATELY CALL generate_meal_plan({duration: 1, mealsPerDay: 3}) - the tool will include those dishes
   - User says "one day meal plan with 4 meals" → IMMEDIATELY CALL generate_meal_plan({duration: 1, mealsPerDay: 4})
-  - User says "yes" or "do it" (after mentioning meal plan) → CALL generate_meal_plan() with parameters from conversation history
+  - User says "yes" or "ok" or "do it" (after mentioning meal plan) → CALL generate_meal_plan() with parameters from conversation history
   - User says "get me a 2 day plan" → IMMEDIATELY CALL generate_meal_plan({duration: 2, mealsPerDay: 3})
   - User says "I need a meal plan" (no numbers) → IMMEDIATELY CALL generate_meal_plan({duration: 1, mealsPerDay: 3})
-- **FORBIDDEN RESPONSES:** "I will generate", "I can generate", "Let me generate" - THESE ARE WRONG. CALL THE FUNCTION INSTEAD.
+- **FORBIDDEN RESPONSES:** "I will generate", "I can generate", "Let me generate", "ok" (without calling tool), "sure" (without calling tool) - THESE ARE WRONG. CALL THE FUNCTION INSTEAD.
 - After generating a meal plan, inform the user they can save it and naturally suggest: "Would you like me to create a grocery list with price estimates for this meal plan?"
 
 **GROCERY LIST GENERATION:**
@@ -191,11 +194,13 @@ const prompt = ai.definePrompt({
 **REMEMBER:**
 - User's explicit requests (like "1 day", "4 meals") ALWAYS override defaults
 - If user says "one day meal plan with 4 meals" → duration=1, mealsPerDay=4
+- If user says "one day meal plan include ugali and fish" → CALL generate_meal_plan({duration: 1, mealsPerDay: 3}) - tool handles dishes
 - If user says "I need a meal plan" (no numbers) → duration=1, mealsPerDay=3
-- If user says "yes", "ok", "do it" after meal plan discussion → CALL generate_meal_plan() with params from history
+- If user says "yes", "ok", "do it" after meal plan discussion → CALL generate_meal_plan() with params from history (NEVER just say "ok")
 - After generating a meal plan, naturally guide conversation: "Would you like me to create a grocery list with price estimates?"
 - When user asks for grocery list → Extract meal plan from conversation history and CALL generate_grocery_list()
 - Preferences are for dietary restrictions/goals, NOT for duration/mealsPerDay
+- **NEVER respond with just "ok" or "sure" when user requests meal plan - YOU MUST CALL THE TOOL**
 
 **CONVERSATION FLOW:**
 1. User requests meal plan → CALL generate_meal_plan()
@@ -358,15 +363,24 @@ const contextAwareChatFlow = ai.defineFlow(
           const responseText = output?.response?.toLowerCase() || '';
           const suggestsMealPlan = /generate|creating|planning|meal.*plan|will generate/i.test(responseText);
           
+          // Check if AI just said "ok" or "sure" without calling tool - this is a problem
+          const justAcknowledged = /^(ok|okay|sure|alright|got it|will do)$/i.test(responseText.trim());
+          
           // Check for meal plan requests - be more aggressive in detection
           // Include short affirmative responses that might be responding to meal plan questions
           const currentMessageLower = input.message.toLowerCase().trim();
           const isShortAffirmative = /^(yes|yeah|yep|yup|ok|okay|sure|alright|go|do it|generate|create|plan)$/i.test(currentMessageLower);
           
           const isMealPlanRequest = 
-            /generate|create|plan|need.*meal.*plan|get me|give me.*meal/i.test(input.message) ||
+            /generate|create|plan|need.*meal.*plan|get me|give me.*meal|meal.*plan/i.test(input.message) ||
             /one day|two day|1 day|2 day|3 day|4 day|5 day|6 day|7 day/i.test(input.message) ||
-            (isShortAffirmative && chatHistory.length > 0); // Short affirmative + history = likely meal plan response
+            /meal.*plan.*include|include.*meal.*plan|meal.*plan.*with/i.test(input.message) || // "meal plan with ugali"
+            (isShortAffirmative && chatHistory.some(msg => /meal.*plan|generate.*plan|create.*plan/i.test(msg.content.toLowerCase()))); // Short affirmative + meal plan context
+          
+          // If AI just said "ok" and user requested meal plan, definitely trigger fallback
+          if (justAcknowledged && isMealPlanRequest) {
+            console.warn('[contextAwareChatFlow] ⚠️ AI just acknowledged without calling tool!');
+          }
           
           // Also check chat history for meal plan context
           // Check if assistant recently asked about generating a meal plan
@@ -448,9 +462,10 @@ const contextAwareChatFlow = ai.defineFlow(
             }
           }
           
-          if ((isMealPlanRequest || hasMealPlanContext || (isShortAffirmative && userWantsMealPlan)) && !hasToolCalls) {
+          if ((isMealPlanRequest || hasMealPlanContext || (isShortAffirmative && userWantsMealPlan) || (justAcknowledged && isMealPlanRequest)) && !hasToolCalls) {
             console.warn('[contextAwareChatFlow] ⚠️ WARNING: User requested meal plan but tool was NOT called!');
             console.warn('[contextAwareChatFlow] Response was:', output?.response);
+            console.warn('[contextAwareChatFlow] User message was:', input.message);
             console.warn('[contextAwareChatFlow] 🔧 FALLBACK: Manually calling generateMealPlan tool...');
             
             // Fallback: Manually call the tool core function if model didn't
