@@ -87,7 +87,22 @@ export const metadata: Metadata = {
   },
 }
 
+import { redirect } from 'next/navigation';
+import { auth } from '@/lib/auth';
+import { headers } from 'next/headers';
+
 export default async function IndexPage() {
+  // Check if user is authenticated
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  // If user is logged in, redirect to chat page (default page)
+  if (session?.user?.id) {
+    redirect('/chat');
+  }
+
+  // If not authenticated, show landing page
   const image = {
     src: "/image01.jpg",
     alt: "Hero section demo image showing interface components",

@@ -20,6 +20,7 @@ import { Button } from '@/components/ui/button';
 import { Trash2 } from 'lucide-react';
 import { logger } from '@/utils/logger';
 import { fetchWithRetry } from '@/utils/api-retry';
+import { motion } from 'framer-motion';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -680,34 +681,58 @@ export function ChatPanel({
 
   return (
     <ChatErrorBoundary>
-      <div className="flex flex-col h-full w-full bg-background" role="main" aria-label="Chat interface">
+      <div 
+        className="flex flex-col h-full w-full bg-transparent relative" 
+        role="main" 
+        aria-label="Chat interface"
+      >
         <ConnectionStatus />
+        
         {/* Search bar - only show when there are messages */}
-        {hasMessages && messages.length > 0 && (
-          <div className="shrink-0 border-b border-border/50 bg-background p-2">
+        {/* Commented out to keep interface clean */}
+        {/* {hasMessages && messages.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.2 }}
+            className="shrink-0 border-b border-border/50 bg-background/80 dark:bg-background/70 backdrop-blur-sm p-2 sm:p-3"
+          >
             <MessageSearch 
               messages={messages} 
               onSelectMessage={(messageId: string) => {
-                // Scroll to message is handled by MessageSearch component
                 logger.debug('[ChatPanel] Selected message:', messageId);
               }}
             />
+          </motion.div>
+        )} */}
+        
+        {/* Messages area - takes remaining space and scrolls */}
+        <div 
+          className="flex-1 min-h-0 overflow-hidden relative" 
+          aria-live="polite" 
+          aria-atomic="false"
+        >
+          {hasMessages ? (
+            <ChatMessages messages={messages} isLoading={isLoading} />
+          ) : (
+            <EmptyScreen onExampleClick={handleSubmit} requireAuth={false} />
+          )}
+        </div>
+        
+        {/* Fixed input at bottom with gradient fade */}
+        <div 
+          className="relative shrink-0"
+          role="region" 
+          aria-label="Message input"
+        >
+          {/* Gradient fade effect above input */}
+          <div className="absolute top-0 left-0 right-0 h-8 bg-gradient-to-b from-transparent to-background/80 dark:to-background/70 pointer-events-none z-10" />
+          
+          <div className="relative z-20 border-t border-border/50 bg-background/95 dark:bg-background/90 backdrop-blur-xl">
+            <ChatInput onSubmit={handleSubmit} isLoading={isLoading} disabled={false} />
           </div>
-        )}
-      {/* Messages area - takes remaining space and scrolls */}
-        <div className="flex-1 min-h-0 overflow-hidden relative" aria-live="polite" aria-atomic="false">
-        {hasMessages ? (
-          <ChatMessages messages={messages} isLoading={isLoading} />
-        ) : (
-          <EmptyScreen onExampleClick={handleSubmit} requireAuth={false} />
-        )}
+        </div>
       </div>
-      
-      {/* Fixed input at bottom */}
-        <div className="shrink-0 border-t border-border/50 bg-background" role="region" aria-label="Message input">
-        <ChatInput onSubmit={handleSubmit} isLoading={isLoading} disabled={false} />
-      </div>
-    </div>
     </ChatErrorBoundary>
   );
 }

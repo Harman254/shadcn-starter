@@ -4,6 +4,12 @@ import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
 import { UserPreference } from '@/types';
 import { getOrGeneratePreferencesSummary } from '@/lib/utils/preferences-cache';
+import { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'Chat | Mealwise',
+  description: 'Chat with your AI kitchen assistant for personalized meal planning, recipes, and cooking tips.',
+};
 
 export default async function ChatPage() {
   // Fetch user preferences for context

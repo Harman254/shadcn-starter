@@ -162,13 +162,14 @@ const prompt = ai.definePrompt({
 
 **GROCERY LIST GENERATION:**
 - When user asks for "grocery list", "shopping list", "ingredients list", "what do I need to buy", or "what ingredients" → CALL generate_grocery_list() immediately.
-- **CRITICAL: Do NOT call generate_meal_plan() when user asks for a grocery list - they want a shopping list, not a new meal plan.**
-- Extract meal plan data from the conversation history (look for recently generated meal plan in assistant messages).
-- If a meal plan was just generated in this conversation, use that meal plan data for the grocery list.
+- **CRITICAL: The generate_grocery_list tool ONLY generates grocery lists - it does NOT generate meal plans.**
+- **FORBIDDEN: NEVER call generate_meal_plan() when user asks for a grocery list. The grocery list tool uses EXISTING meal plans from conversation history.**
+- Extract meal plan data from the conversation history (look for recently generated meal plan in assistant messages with UI_METADATA).
+- If no meal plan exists in conversation, tell user: "I need a meal plan to generate a grocery list. Please generate a meal plan first."
 - Examples:
-  - User says "create a grocery list" or "what do I need to buy" → CALL generate_grocery_list() with meal plan from conversation (NOT generate_meal_plan)
-  - User says "yes" to grocery list suggestion → CALL generate_grocery_list() with meal plan from conversation (NOT generate_meal_plan)
-  - User says "shopping list" or "ingredients" → CALL generate_grocery_list() with meal plan from conversation (NOT generate_meal_plan)
+  - User says "create a grocery list" → CALL generate_grocery_list() with meal plan from conversation (NEVER call generate_meal_plan)
+  - User says "yes" to grocery list suggestion → CALL generate_grocery_list() with meal plan from conversation (NEVER call generate_meal_plan)
+  - User says "shopping list" → CALL generate_grocery_list() with meal plan from conversation (NEVER call generate_meal_plan)
 - The grocery list will include price estimates and local store suggestions based on user's location.
 
 **COOKING/NUTRITION QUESTIONS:**

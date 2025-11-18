@@ -20,7 +20,7 @@ const Onboarding =async () => {
   const checkOnboard = await getAccount(userId)
   const isOnboarded = checkOnboard?.isOnboardingComplete
   if (isOnboarded) {
-    redirect('/meal-plans/new')
+    redirect('/chat') // Redirect to chat page after onboarding
   }
 
 

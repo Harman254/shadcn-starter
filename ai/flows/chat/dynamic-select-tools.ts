@@ -624,11 +624,13 @@ export const generateGroceryList = ai.defineTool(
   {
     name: "generate_grocery_list",
     description:
-      "Generates a grocery list with price estimates for a meal plan. Use this when user asks for a grocery list, shopping list, or ingredients list for their meal plan. Requires the meal plan data (can be from a recently generated meal plan in the conversation).",
+      "CRITICAL: This tool ONLY generates grocery lists - it does NOT generate meal plans. Use this when user asks for a grocery list, shopping list, or ingredients list. Extract the meal plan data from the conversation history (look for a recently generated meal plan in assistant messages). DO NOT call generate_meal_plan() - only use existing meal plans from the conversation. If no meal plan exists in conversation, inform the user they need to generate a meal plan first.",
     inputSchema: GenerateGroceryListInputSchema,
     outputSchema: GenerateGroceryListOutputSchema,
   },
   async (input) => {
+    // Log to confirm grocery list tool is being called (not meal plan)
+    console.log('[generateGroceryList] 🛒 GROCERY LIST TOOL CALLED - NOT meal plan generation');
     return await generateGroceryListCore(input);
   }
 );

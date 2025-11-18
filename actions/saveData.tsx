@@ -61,9 +61,9 @@ export async function saveOnboardingData(formData: {
 
 
   revalidatePath('/preferences'); 
-  revalidatePath('/meal-plans/new'); // Revalidate the preferences page to reflect the new data
-  // Revalidate the preferences page to reflect the new data
-  redirect('/meal-plans/new'); // Redirect to the new meal plan page after saving data
+  revalidatePath('/chat'); // Revalidate the chat page to reflect the new data
+  // Revalidate the chat page to reflect the new data
+  redirect('/chat'); // Redirect to chat page after saving onboarding data
   
   
   // Revalidate the onboarding page to reflect the new data

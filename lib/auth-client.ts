@@ -6,7 +6,7 @@ import {
 export const authClient = createAuthClient({
     
     baseURL: process.env.NEXT_PUBLIC_APP_URL,
-    redirectURL: '/',
+    redirectURL: '/chat', // Redirect to chat page after login
     plugins: [polarClient(),]
 })
 

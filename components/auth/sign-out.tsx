@@ -15,7 +15,7 @@ const SignOut = () => {
       await signOut({
         fetchOptions: {
           onSuccess: () => {
-            router.push("/meal-plans/new")
+            router.push("/") // Redirect to landing page after sign out
           },
           onError: () => {
             setIsLoading(false)

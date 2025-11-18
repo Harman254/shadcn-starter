@@ -217,111 +217,98 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading }: Cha
   }
 
   return (
-    <article
-      id={message ? `message-${message.id}` : undefined}
-      className={cn(
-        "w-full py-3 sm:py-4 md:py-5",
-        isAssistant ? "bg-muted/20" : "bg-background",
-        "animate-in fade-in slide-in-from-bottom-2 duration-300"
-      )}
-      role="article"
-      aria-label={isAssistant ? "AI assistant message" : "Your message"}
-      data-message-id={message?.id}
-    >
-      <div className={cn(
-        "max-w-4xl mx-auto px-4 sm:px-6 md:px-8",
-        // Container alignment: assistant messages align left, user messages align right
-        isAssistant ? "flex justify-start" : "flex justify-end"
-      )}>
+    <>
+      {/* Regular message content - with max-width constraints */}
+      <article
+        id={message ? `message-${message.id}` : undefined}
+        className={cn(
+          "w-full py-3 sm:py-4 md:py-5",
+          isAssistant ? "bg-muted/20" : "bg-background",
+          "animate-in fade-in slide-in-from-bottom-2 duration-300",
+          // Hide regular message container if tool call results are present
+          (isAssistant && (message?.ui?.mealPlan || message?.ui?.groceryList)) && "hidden"
+        )}
+        role="article"
+        aria-label={isAssistant ? "AI assistant message" : "Your message"}
+        data-message-id={message?.id}
+      >
         <div className={cn(
-          "flex items-start gap-3 sm:gap-4",
-          // Max width for message bubble
-          "max-w-[85%] sm:max-w-[80%] md:max-w-[75%]",
-          // Assistant: avatar left, content left
-          // User: avatar right, content right (reverse order)
-        isAssistant ? "flex-row" : "flex-row-reverse"
-      )}>
-        <Avatar
-          className={cn(
-            "h-8 w-8 sm:h-9 sm:w-9 md:h-10 md:w-10 shrink-0 transition-transform hover:scale-105",
-          )}
-        >
-          <AvatarFallback
-            className={cn(
-              "transition-all text-xs font-semibold",
-              isAssistant
-                ? "bg-primary text-primary-foreground"
-                : "bg-muted text-muted-foreground",
-            )}
-          >
-            {isAssistant ? (
-              <Icons.moon className="h-4 w-4 sm:h-5 sm:w-5" />
-            ) : (
-              <User className="h-4 w-4 sm:h-5 sm:w-5" />
-            )}
-          </AvatarFallback>
-        </Avatar>
-
-        <div className={cn(
-          "flex-1 min-w-0",
-            // User messages: align content to right
-          !isAssistant && "flex flex-col items-end"
+          "max-w-4xl mx-auto px-4 sm:px-6 md:px-8",
+          isAssistant ? "flex justify-start" : "flex justify-end"
         )}>
-          <div className="relative group/message">
-            {isAssistant ? (
-              <div className={cn(
+          <div className={cn(
+            "flex items-start gap-3 sm:gap-4",
+            "max-w-[85%] sm:max-w-[80%] md:max-w-[75%]",
+            isAssistant ? "flex-row" : "flex-row-reverse"
+          )}>
+            <Avatar
+              className={cn(
+                "h-8 w-8 sm:h-9 sm:w-9 md:h-10 md:w-10 shrink-0 transition-transform hover:scale-105",
+              )}
+            >
+              <AvatarFallback
+                className={cn(
+                  "transition-all text-xs font-semibold",
+                  isAssistant
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted text-muted-foreground",
+                )}
+              >
+                {isAssistant ? (
+                  <Icons.moon className="h-4 w-4 sm:h-5 sm:w-5" />
+                ) : (
+                  <User className="h-4 w-4 sm:h-5 sm:w-5" />
+                )}
+              </AvatarFallback>
+            </Avatar>
+
+            <div className={cn(
+              "flex-1 min-w-0",
+              !isAssistant && "flex flex-col items-end"
+            )}>
+              <div className="relative group/message">
+                {isAssistant ? (
+                  <div className={cn(
                     "prose prose-sm sm:prose-base lg:prose-lg max-w-none",
-                    // Premium typography settings
                     "font-sans antialiased",
-                    // Headings - premium styling
                     "prose-headings:text-foreground prose-headings:font-bold prose-headings:tracking-tight",
                     "prose-h1:text-2xl sm:prose-h1:text-3xl prose-h1:font-extrabold prose-h1:mt-8 prose-h1:mb-6 prose-h1:leading-tight",
                     "prose-h2:text-xl sm:prose-h2:text-2xl prose-h2:font-bold prose-h2:mt-7 prose-h2:mb-5 prose-h2:leading-tight",
                     "prose-h3:text-lg sm:prose-h3:text-xl prose-h3:font-semibold prose-h3:mt-6 prose-h3:mb-4 prose-h3:leading-snug",
                     "prose-h4:text-base sm:prose-h4:text-lg prose-h4:font-semibold prose-h4:mt-5 prose-h4:mb-3",
-                    // Paragraphs - premium readability
                     "prose-p:text-foreground prose-p:leading-[1.75] prose-p:my-5",
                     "prose-p:text-[15px] sm:prose-p:text-base prose-p:tracking-normal",
                     "prose-p:font-normal prose-p:antialiased",
-                    // Strong and emphasis
                     "prose-strong:text-foreground prose-strong:font-bold prose-strong:tracking-tight",
                     "prose-em:text-foreground prose-em:italic",
-                    // Code - premium styling
                     "prose-code:text-foreground prose-code:bg-muted/90 prose-code:px-1.5 prose-code:py-0.5",
                     "prose-code:rounded-md prose-code:text-[13px] sm:prose-code:text-sm",
                     "prose-code:font-mono prose-code:font-medium prose-code:tracking-tight",
                     "prose-code:before:content-[''] prose-code:after:content-['']",
-                    // Code blocks - premium styling
                     "prose-pre:bg-muted/60 prose-pre:border prose-pre:border-border/60",
                     "prose-pre:rounded-xl prose-pre:p-5 sm:prose-pre:p-6",
                     "prose-pre:overflow-x-auto prose-pre:my-6",
                     "prose-pre:shadow-sm prose-pre:backdrop-blur-sm",
                     "prose-pre:font-mono prose-pre:text-[13px] sm:prose-pre:text-sm",
                     "prose-pre:leading-relaxed",
-                    // Lists - premium spacing
                     "prose-ul:text-foreground prose-ol:text-foreground",
                     "prose-ul:my-5 prose-ol:my-5",
                     "prose-ul:space-y-2 prose-ol:space-y-2",
                     "prose-li:text-foreground prose-li:my-2.5",
                     "prose-li:text-[15px] sm:prose-li:text-base prose-li:leading-relaxed",
                     "prose-li:marker:text-muted-foreground",
-                    // Links - premium hover effects
                     "prose-a:text-primary prose-a:font-medium prose-a:no-underline",
                     "hover:prose-a:underline hover:prose-a:decoration-2 hover:prose-a:underline-offset-2",
                     "prose-a:transition-all prose-a:duration-200",
-                    // Blockquotes - premium styling
                     "prose-blockquote:text-muted-foreground prose-blockquote:font-medium",
                     "prose-blockquote:border-l-4 prose-blockquote:border-primary/40",
                     "prose-blockquote:pl-5 prose-blockquote:pr-4 prose-blockquote:py-2",
                     "prose-blockquote:my-6 prose-blockquote:bg-muted/30 prose-blockquote:rounded-r-lg",
                     "prose-blockquote:italic prose-blockquote:leading-relaxed",
-                    // Horizontal rules
                     "prose-hr:border-border/60 prose-hr:my-8 prose-hr:border-t-2",
-                    // Tables - premium styling
                     "prose-table:text-sm prose-table:w-full prose-table:my-6",
                     "prose-th:font-semibold prose-th:text-foreground prose-th:bg-muted/50",
                     "prose-td:border-t prose-td:border-border/50",
-                    // General prose improvements
                     "prose-img:rounded-lg prose-img:shadow-md prose-img:my-6",
                     "dark:prose-invert dark:prose-pre:bg-muted/40"
                   )}>
@@ -453,59 +440,95 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading }: Cha
                     "shadow-sm backdrop-blur-sm",
                     "transition-all hover:shadow-md"
                   )}>
-                  <p
-                    className={cn(
+                    <p
+                      className={cn(
                         "text-[15px] sm:text-base leading-[1.75] whitespace-pre-wrap break-words",
                         "text-foreground tracking-normal",
                         "font-sans font-normal antialiased"
-                    )}
-                  >
-                    {message.content}
-                  </p>
+                      )}
+                    >
+                      {message.content}
+                    </p>
                   </div>
                 )}
-            {message && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className={cn(
-                  "absolute opacity-0 group-hover/message:opacity-100 transition-opacity h-8 w-8 rounded-md",
-                  "text-muted-foreground hover:text-foreground hover:bg-muted/50",
-                  isAssistant ? "-top-2 right-0" : "-top-2 left-0"
+                {message && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className={cn(
+                      "absolute opacity-0 group-hover/message:opacity-100 transition-opacity h-8 w-8 rounded-md",
+                      "text-muted-foreground hover:text-foreground hover:bg-muted/50",
+                      isAssistant ? "-top-2 right-0" : "-top-2 left-0"
+                    )}
+                    onClick={handleCopy}
+                    aria-label="Copy message"
+                  >
+                    {copied ? (
+                      <Check className="h-4 w-4" />
+                    ) : (
+                      <Copy className="h-4 w-4" />
+                    )}
+                  </Button>
                 )}
-                onClick={handleCopy}
-                aria-label="Copy message"
-              >
-                {copied ? (
-                  <Check className="h-4 w-4" />
-                ) : (
-                  <Copy className="h-4 w-4" />
-                )}
-              </Button>
-            )}
+              </div>
+            </div>
           </div>
           
-          {/* Meal Plan Display - show meal plan if present in UI metadata */}
-          {isAssistant && message?.ui?.mealPlan && (
+          <div className={cn(
+            "flex items-center gap-2 mt-2",
+            !isAssistant && "justify-end"
+          )}>
+            {!isAssistant && message?.status && (
+              <div className="flex items-center gap-1">
+                {message.status === 'sending' && (
+                  <Clock className="h-3 w-3 text-muted-foreground/60 animate-pulse" aria-label="Sending" />
+                )}
+                {message.status === 'sent' && (
+                  <Check className="h-3 w-3 text-primary" aria-label="Sent" />
+                )}
+                {message.status === 'failed' && (
+                  <AlertCircle className="h-3 w-3 text-destructive" aria-label="Failed to send" />
+                )}
+              </div>
+            )}
+            {isMounted && message?.timestamp && formattedTime && (
+              <span className={cn("text-xs text-muted-foreground/60")}>
+                {formattedTime}
+              </span>
+            )}
+          </div>
+        </div>
+      </article>
+
+      {/* Tool call results (meal plan/grocery list) - Full width immersive display - BREAKS OUT OF CONTAINER */}
+      {isAssistant && (message?.ui?.mealPlan || message?.ui?.groceryList) && (
+        <div className={cn(
+          "w-full",
+          "relative -mx-0 sm:-mx-3 md:-mx-4 lg:-mx-6", // Negative margins to break out of container
+          "px-0 sm:px-3 md:px-4 lg:px-6", // Restore padding for content
+          "my-4 sm:my-6" // Vertical spacing
+        )}>
+          {/* Meal Plan Display - Full width immersive */}
+          {message?.ui?.mealPlan && (
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3 }}
               className={cn(
-                "mt-4 w-full",
+                "w-full",
                 "animate-in fade-in slide-in-from-bottom-2 duration-300"
               )}
             >
               <div className={cn(
-                "relative overflow-hidden",
+                "relative overflow-hidden w-full",
                 "bg-gradient-to-br from-card via-card to-primary/5",
-                "border border-border/50 rounded-2xl",
+                "border-y border-border/50 sm:border-x sm:border-border/50 sm:rounded-2xl", // Edge-to-edge on mobile, rounded on larger screens
                 "shadow-lg shadow-primary/5",
                 "backdrop-blur-sm"
               )}>
                 {/* Header with gradient accent */}
                 <div className={cn(
-                  "relative px-5 py-4 sm:px-6 sm:py-5",
+                  "relative px-4 sm:px-5 md:px-6 py-4 sm:py-5",
                   "bg-gradient-to-r from-primary/10 via-primary/5 to-transparent",
                   "border-b border-border/50"
                 )}>
@@ -541,7 +564,7 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading }: Cha
                 </div>
 
                 {/* Meal Plan Content */}
-                <div className="p-5 sm:p-6">
+                <div className="p-4 sm:p-5 md:p-6">
                   <div className="space-y-5">
                     {message.ui.mealPlan.days.map((day, dayIndex) => (
                       <motion.div
@@ -652,7 +675,8 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading }: Cha
           {/* UI Action Buttons - rendered for assistant messages with UI metadata */}
           {isAssistant && message?.ui?.actions && message.ui.actions.length > 0 && (
             <div className={cn(
-              "flex flex-wrap items-center gap-2 mt-3",
+              "flex flex-wrap items-center gap-2 mt-3 sm:mt-4",
+              "px-4 sm:px-5 md:px-6", // Match meal plan padding
               "animate-in fade-in slide-in-from-bottom-2 duration-300"
             )}>
               {message.ui.actions.map((action, index) => (
@@ -738,36 +762,8 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading }: Cha
               ))}
             </div>
           )}
-          
-          <div className={cn(
-            "flex items-center gap-2 mt-2",
-            !isAssistant && "justify-end"
-          )}>
-            {/* Message status indicator - only for user messages */}
-            {!isAssistant && message?.status && (
-              <div className="flex items-center gap-1">
-                {message.status === 'sending' && (
-                  <Clock className="h-3 w-3 text-muted-foreground/60 animate-pulse" aria-label="Sending" />
-                )}
-                {message.status === 'sent' && (
-                  <Check className="h-3 w-3 text-primary" aria-label="Sent" />
-                )}
-                {message.status === 'failed' && (
-                  <AlertCircle className="h-3 w-3 text-destructive" aria-label="Failed to send" />
-                )}
-              </div>
-            )}
-          {isMounted && message?.timestamp && formattedTime && (
-            <span className={cn(
-                "text-xs text-muted-foreground/60"
-            )}>
-              {formattedTime}
-            </span>
-          )}
         </div>
-      </div>
-    </div>
-      </div>
-    </article>
+      )}
+    </>
   )
 });

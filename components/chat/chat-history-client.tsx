@@ -84,8 +84,8 @@ const SessionItem = memo(function SessionItem({
           </p>
         </div>
         
-        {/* Delete button - always visible with good contrast */}
-        <div className="shrink-0 w-7 h-7 flex items-center justify-center">
+        {/* Delete button - always visible, especially on mobile */}
+        <div className="shrink-0 w-9 h-9 sm:w-8 sm:h-8 flex items-center justify-center">
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button
@@ -93,12 +93,13 @@ const SessionItem = memo(function SessionItem({
                 size="icon"
                 disabled={isDeleting}
                 className={cn(
-                  "h-7 w-7 transition-all duration-200",
-                  "opacity-70 hover:opacity-100",
-                  "text-muted-foreground hover:text-destructive",
-                  "hover:bg-destructive/10 active:bg-destructive/20",
-                  "rounded-md border border-border/50 hover:border-destructive/50",
-                  "bg-background/50",
+                  "h-9 w-9 sm:h-8 sm:w-8 transition-all duration-200",
+                  "opacity-100", // Always fully visible on all devices
+                  "text-destructive hover:text-destructive",
+                  "hover:bg-destructive/15 active:bg-destructive/25",
+                  "rounded-lg border-2 border-destructive/40 hover:border-destructive/60",
+                  "bg-destructive/10 hover:bg-destructive/15", // More visible background
+                  "shadow-sm hover:shadow-md",
                   isDeleting && "opacity-50 cursor-not-allowed"
                 )}
                 onClick={(e) => e.stopPropagation()}
@@ -106,9 +107,9 @@ const SessionItem = memo(function SessionItem({
                 title="Delete conversation"
               >
                 {isDeleting ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  <Loader2 className="h-4 w-4 sm:h-3.5 sm:w-3.5 animate-spin" />
                 ) : (
-                  <Trash2 className="h-3.5 w-3.5" />
+                  <Trash2 className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
                 )}
               </Button>
             </AlertDialogTrigger>
