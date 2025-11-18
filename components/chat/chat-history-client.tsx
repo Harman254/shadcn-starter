@@ -84,7 +84,7 @@ const SessionItem = memo(function SessionItem({
           </p>
         </div>
         
-        {/* Delete button - slightly visible, fully visible on hover */}
+        {/* Delete button - always visible with good contrast */}
         <div className="shrink-0 w-7 h-7 flex items-center justify-center">
           <AlertDialog>
             <AlertDialogTrigger asChild>
@@ -94,14 +94,16 @@ const SessionItem = memo(function SessionItem({
                 disabled={isDeleting}
                 className={cn(
                   "h-7 w-7 transition-all duration-200",
-                  "opacity-30 group-hover:opacity-100",
-                  "text-destructive/70 hover:text-destructive",
+                  "opacity-70 hover:opacity-100",
+                  "text-muted-foreground hover:text-destructive",
                   "hover:bg-destructive/10 active:bg-destructive/20",
-                  "rounded-md border border-destructive/20 group-hover:border-destructive/40",
+                  "rounded-md border border-border/50 hover:border-destructive/50",
+                  "bg-background/50 hover:bg-destructive/5",
                   isDeleting && "opacity-50 cursor-not-allowed"
                 )}
                 onClick={(e) => e.stopPropagation()}
                 aria-label="Delete conversation"
+                title="Delete conversation"
               >
                 {isDeleting ? (
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />

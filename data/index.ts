@@ -11,12 +11,33 @@ import { revalidatePath } from "next/cache";
 
 
 export async function fetchOnboardingData(userid: string): Promise<UserPreference[]> {
-const data = await prisma.onboardingData.findMany({
-  where: {
-    userId: userid,
+  try {
+    const data = await prisma.onboardingData.findMany({
+      where: {
+        userId: userid,
+      }
+    });
+    
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[fetchOnboardingData] Fetched data:', {
+        userId: userid,
+        count: data.length,
+        hasData: data.length > 0,
+      });
+    }
+    
+    return data;
+  } catch (error) {
+    console.error('[fetchOnboardingData] Error:', error);
+    if (process.env.NODE_ENV === 'development' && error instanceof Error) {
+      console.error('[fetchOnboardingData] Error details:', {
+        message: error.message,
+        stack: error.stack,
+      });
+    }
+    // Return empty array on error instead of throwing
+    return [];
   }
-});
-return data;
 }
 export const getMealsByUserId = async (userId: string) => {
   const meals = await prisma.meal.findMany({

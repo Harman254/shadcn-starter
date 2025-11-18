@@ -59,6 +59,8 @@ export interface UserPreference {
   goal: string;
   householdSize: number;
   cuisinePreferences: string[];
+  preferencesSummary?: string | null; // Cached AI-generated summary
+  preferencesHash?: string | null; // Hash to detect preference changes
 
   // Add other user preferences here
 }
@@ -96,6 +98,21 @@ export type Message = {
   // UI metadata for rendering buttons/actions
   ui?: {
     actions?: MessageUIAction[];
+    mealPlan?: {
+      title: string;
+      duration: number;
+      mealsPerDay: number;
+      days: Array<{
+        day: number;
+        meals: Array<{
+          name: string;
+          description: string;
+          ingredients: string[];
+          instructions: string;
+          imageUrl?: string;
+        }>;
+      }>;
+    };
   };
 };
 

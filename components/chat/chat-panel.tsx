@@ -20,7 +20,6 @@ import { Button } from '@/components/ui/button';
 import { Trash2 } from 'lucide-react';
 import { logger } from '@/utils/logger';
 import { fetchWithRetry } from '@/utils/api-retry';
-import { formatPreferencesForAI, type FormattedUserPreference } from '@/lib/utils/preferences';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -39,10 +38,10 @@ const EMPTY_SORTED_MESSAGES: Message[] = [];
 
 export function ChatPanel({
   chatType,
-  userPreferences,
+  preferencesSummary = '',
 }: {
   chatType: 'context-aware' | 'tool-selection';
-  userPreferences?: FormattedUserPreference[];
+  preferencesSummary?: string;
 }) {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
@@ -428,8 +427,8 @@ export function ChatPanel({
     try {
       logger.debug('[ChatPanel] Getting AI response for', updatedMessages.length, 'messages');
       
-      // Preferences are already formatted, just pass them through
-      const response = await getResponse(chatType, updatedMessages, userPreferences);
+      // Pass the summarized preferences (one sentence) to reduce token usage
+      const response = await getResponse(chatType, updatedMessages, preferencesSummary);
       const assistantMessage: Message = {
         ...response,
         timestamp: new Date(),
@@ -613,7 +612,7 @@ export function ChatPanel({
     } finally {
       setIsLoading(false);
     }
-  }, [isLoading, chatType, toast, finalSessionId, currentSessionId, addMessage, clearSession, saveToDatabase, isAuthenticated, openAuthModal, setCurrentSession, getCurrentSession, updateSessionTitle]);
+  }, [isLoading, chatType, toast, finalSessionId, currentSessionId, addMessage, clearSession, saveToDatabase, isAuthenticated, openAuthModal, setCurrentSession, getCurrentSession, updateSessionTitle, preferencesSummary]);
 
   const handleClearChat = useCallback(async () => {
     if (!finalSessionId) return;

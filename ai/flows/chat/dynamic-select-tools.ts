@@ -3,6 +3,7 @@
 import { ai } from "@/ai/instance";
 import { z } from "genkit";
 import { generatePersonalizedMealPlan } from "@/ai/flows/generate-meal-plan";
+import { generateMealPlanTitle } from "@/ai/flows/generateMealPlanTitle";
 import { fetchOnboardingData } from "@/data";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
@@ -40,8 +41,8 @@ const GenerateMealPlanInputSchema = z.object({
     .min(1)
     .max(30)
     .optional()
-    .default(7)
-    .describe("Number of days for the meal plan (1-30 days). Defaults to 7 if not specified."),
+    .default(1)
+    .describe("Number of days (1-30). REQUIRED: Use the EXACT number user specifies. Only default to 1 if user doesn't mention any number."),
   mealsPerDay: z
     .number()
     .int()
@@ -49,7 +50,7 @@ const GenerateMealPlanInputSchema = z.object({
     .max(5)
     .optional()
     .default(3)
-    .describe("Number of meals per day (1-5 meals). Defaults to 3 if not specified."),
+    .describe("Meals per day (1-5). REQUIRED: Use the EXACT number user specifies. Only default to 3 if user doesn't mention any number."),
   title: z
     .string()
     .optional()
@@ -87,18 +88,28 @@ const GenerateMealPlanOutputSchema = z.object({
   message: z.string().describe("A message describing the result."),
 });
 
-export const generateMealPlan = ai.defineTool(
-  {
-    name: "generate_meal_plan",
-    description:
-      "Generates a personalized meal plan using the user's stored preferences (dietary preference, goals, household size, cuisine preferences). Use this when the user asks to create, generate, or plan meals. DO NOT ask follow-up questions - the tool automatically uses their saved preferences from their account. Only requires duration and mealsPerDay parameters.",
-    inputSchema: GenerateMealPlanInputSchema,
-    outputSchema: GenerateMealPlanOutputSchema,
-  },
-  async (input) => {
+// Core meal plan generation logic - can be called directly or via tool
+async function generateMealPlanCore(input: {
+  duration?: number;
+  mealsPerDay?: number;
+  title?: string;
+}): Promise<{
+  success: boolean;
+  mealPlan?: any;
+  message: string;
+}> {
+    // Log immediately when tool is invoked
+    console.log('[generateMealPlan] 🔧 TOOL CALLED! Input received:', { 
+      duration: input.duration, 
+      mealsPerDay: input.mealsPerDay, 
+      title: input.title,
+      timestamp: new Date().toISOString(),
+    });
+    
     if (process.env.NODE_ENV === 'development') {
-      console.log('[generateMealPlan] Tool called with input:', { duration: input.duration, mealsPerDay: input.mealsPerDay, title: input.title });
+      console.log('[generateMealPlan] Full input object:', JSON.stringify(input, null, 2));
     }
+    
     try {
       // Get user session
       const session = await auth.api.getSession({
@@ -133,8 +144,8 @@ export const generateMealPlan = ai.defineTool(
         cuisinePreferences: pref.cuisinePreferences,
       }));
 
-      // Use defaults if not provided
-      const duration = input.duration ?? 7;
+      // Use defaults if not provided (1 day default to save tokens - only extend if user explicitly requests)
+      const duration = input.duration ?? 1;
       const mealsPerDay = input.mealsPerDay ?? 3;
 
       // Generate the meal plan
@@ -152,15 +163,9 @@ export const generateMealPlan = ai.defineTool(
         };
       }
 
-      // Generate title if not provided
-      const title =
-        input.title ||
-        `${duration}-Day Meal Plan (${mealsPerDay} meals/day)`;
-
-      // Transform to match the save API format
+      // Transform to match the save API format first
       // Note: generatePersonalizedMealPlan doesn't return imageUrl, so we set it to undefined
       const mealPlanData = {
-        title,
         duration,
         mealsPerDay,
         days: result.mealPlan.map((day) => ({
@@ -179,11 +184,47 @@ export const generateMealPlan = ai.defineTool(
         })),
       };
 
+      // Generate AI-powered title if not provided
+      let title = input.title;
+      if (!title) {
+        try {
+          // Convert meal plan to SimplifiedMealPlan format for title generation
+          const simplifiedMealPlan = mealPlanData.days.map((day) => ({
+            day: day.day,
+            meals: day.meals.map((meal) => ({
+              name: meal.name,
+              ingredients: meal.ingredients,
+              instructions: meal.instructions,
+            })),
+          }));
+          
+          const titleResult = await generateMealPlanTitle(simplifiedMealPlan);
+          title = titleResult.title;
+          
+          if (process.env.NODE_ENV === 'development') {
+            console.log('[generateMealPlanCore] ✅ Generated AI title:', title);
+          }
+        } catch (titleError) {
+          console.error('[generateMealPlanCore] Error generating title:', titleError);
+          // Fallback to simple template if AI title generation fails
+          title = `${duration}-Day Meal Plan (${mealsPerDay} meals/day)`;
+          if (process.env.NODE_ENV === 'development') {
+            console.log('[generateMealPlanCore] Using fallback title:', title);
+          }
+        }
+      }
+
+      // Add title to mealPlanData
+      const mealPlanDataWithTitle = {
+        ...mealPlanData,
+        title,
+      };
+
       if (process.env.NODE_ENV === 'development') {
         console.log('[generateMealPlan] ✅ Successfully generated meal plan:', {
-          title: mealPlanData.title,
-          days: mealPlanData.days.length,
-          totalMeals: mealPlanData.days.reduce((sum, day) => sum + day.meals.length, 0),
+          title: mealPlanDataWithTitle.title,
+          days: mealPlanDataWithTitle.days.length,
+          totalMeals: mealPlanDataWithTitle.days.reduce((sum: number, day: any) => sum + day.meals.length, 0),
         });
       }
 
@@ -193,10 +234,28 @@ export const generateMealPlan = ai.defineTool(
         ? `${firstPreference.dietaryPreference} diet, ${firstPreference.goal} goal, ${firstPreference.householdSize} person household, ${firstPreference.cuisinePreferences.slice(0, 3).join(', ')}${firstPreference.cuisinePreferences.length > 3 ? '...' : ''} cuisines`
         : 'your saved preferences';
 
+      const totalMeals = mealPlanDataWithTitle.days.reduce((sum: number, day: any) => sum + day.meals.length, 0);
+      
+      // Create UI metadata for save button and meal plan display
+      // Encode meal plan data as base64 so it can be passed to save tool and displayed
+      const uiMetadata = {
+        actions: [
+          {
+            label: 'Save Meal Plan',
+            action: 'save' as const,
+            data: mealPlanDataWithTitle, // Include full meal plan data with title for saving
+          },
+        ],
+        mealPlan: mealPlanDataWithTitle, // Include meal plan with title for display in chat
+      };
+      
+      // Encode UI metadata as base64 (same pattern as saveMealPlan tool)
+      const uiMetadataEncoded = Buffer.from(JSON.stringify(uiMetadata)).toString('base64');
+      
       return {
         success: true,
-        mealPlan: mealPlanData,
-        message: `Successfully generated a ${duration}-day meal plan with ${mealsPerDay} meals per day tailored to ${preferencesSummary}. The meal plan is ready to be saved.`,
+        mealPlan: mealPlanDataWithTitle,
+        message: `✅ Generated ${duration}-day meal plan (${mealsPerDay} meals/day) for ${preferencesSummary}. Includes ${mealPlanDataWithTitle.days.length} days with ${totalMeals} total meals. [UI_METADATA:${uiMetadataEncoded}]`,
       };
     } catch (error) {
       console.error("[generateMealPlan] Error:", error);
@@ -205,12 +264,41 @@ export const generateMealPlan = ai.defineTool(
         message: `Failed to generate meal plan: ${error instanceof Error ? error.message : "Unknown error"}`,
       };
     }
+}
+
+// Export the core function for direct calls
+export { generateMealPlanCore };
+
+// Tool wrapper that uses the core function
+export const generateMealPlan = ai.defineTool(
+  {
+    name: "generate_meal_plan",
+    description:
+      "MANDATORY: Call this function when user asks to generate, create, or plan meals. Do NOT respond with text - you MUST call this function. CRITICAL: Always use the EXACT duration and mealsPerDay the user specifies in their message. Only use defaults (duration: 1, mealsPerDay: 3) if user does NOT mention any numbers. User's explicit requests ALWAYS override defaults. Automatically uses user's saved preferences for dietary restrictions, goals, etc.",
+    inputSchema: GenerateMealPlanInputSchema,
+    outputSchema: GenerateMealPlanOutputSchema,
+  },
+  async (input) => {
+    // Log immediately when tool is invoked
+    console.log('[generateMealPlan] 🔧 TOOL CALLED! Input received:', { 
+      duration: input.duration, 
+      mealsPerDay: input.mealsPerDay, 
+      title: input.title,
+      timestamp: new Date().toISOString(),
+    });
+    
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[generateMealPlan] Full input object:', JSON.stringify(input, null, 2));
+    }
+    
+    // Call the core function
+    return await generateMealPlanCore(input);
   }
 );
 
 // Save Meal Plan Tool
 const SaveMealPlanInputSchema = z.object({
-  title: z.string().describe("Title of the meal plan."),
+  title: z.string().optional().describe("Title of the meal plan. If not provided, will be auto-generated as '{duration}-Day Meal Plan ({mealsPerDay} meals/day)'."),
   duration: z.number().describe("Duration in days."),
   mealsPerDay: z.number().describe("Number of meals per day."),
   days: z
@@ -252,7 +340,7 @@ export const saveMealPlan = ai.defineTool(
   {
     name: "save_meal_plan",
     description:
-      "Saves a meal plan to the user's account. Use this after generating a meal plan or when the user explicitly asks to save a meal plan. The meal plan must be in the correct format with title, duration, mealsPerDay, and days array.",
+      "Saves a meal plan to user's account. Call after generating a meal plan or when user asks to save. Requires: duration, mealsPerDay, days array. Title is optional and will be auto-generated if not provided.",
     inputSchema: SaveMealPlanInputSchema,
     outputSchema: SaveMealPlanOutputSchema,
   },
@@ -279,9 +367,39 @@ export const saveMealPlan = ai.defineTool(
         };
       }
 
+      // Ensure title is always present - generate AI title if missing
+      let title = input.title;
+      if (!title) {
+        try {
+          // Convert meal plan to SimplifiedMealPlan format for title generation
+          const simplifiedMealPlan = input.days.map((day) => ({
+            day: day.day,
+            meals: day.meals.map((meal) => ({
+              name: meal.name,
+              ingredients: meal.ingredients,
+              instructions: meal.instructions,
+            })),
+          }));
+          
+          const titleResult = await generateMealPlanTitle(simplifiedMealPlan);
+          title = titleResult.title;
+          
+          if (process.env.NODE_ENV === 'development') {
+            console.log('[saveMealPlan] ✅ Generated AI title:', title);
+          }
+        } catch (titleError) {
+          console.error('[saveMealPlan] Error generating title:', titleError);
+          // Fallback to simple template if AI title generation fails
+          title = `${input.duration}-Day Meal Plan (${input.mealsPerDay} meals/day)`;
+          if (process.env.NODE_ENV === 'development') {
+            console.log('[saveMealPlan] Using fallback title:', title);
+          }
+        }
+      }
+      
       // Prepare data in the format expected by the save action
       const saveData = {
-        title: input.title,
+        title: title,
         duration: input.duration,
         mealsPerDay: input.mealsPerDay,
         days: input.days,
@@ -323,7 +441,7 @@ export const saveMealPlan = ai.defineTool(
         return {
           success: true,
           mealPlanId: result.mealPlan.id,
-          message: `Meal plan "${input.title}" has been saved successfully! You can view it in your meal plans. [MEAL_PLAN_SAVED:${result.mealPlan.id}][UI_METADATA:${uiMetadataEncoded}]`,
+          message: `Meal plan "${title}" has been saved successfully! You can view it in your meal plans. [MEAL_PLAN_SAVED:${result.mealPlan.id}][UI_METADATA:${uiMetadataEncoded}]`,
           // Include UI metadata for rendering a button
           ui: uiMetadata,
         };

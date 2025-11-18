@@ -16,6 +16,8 @@ model OnboardingData {
   goal               String
   householdSize      Int
   cuisinePreferences String[]
+  preferencesSummary String?  // Cached AI-generated summary of preferences
+  preferencesHash    String?  // Hash of preferences to detect changes
 }
 
 

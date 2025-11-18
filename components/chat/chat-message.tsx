@@ -1,6 +1,6 @@
 "use client"
 
-import { User, Loader2, Copy, Check, Clock, AlertCircle } from "lucide-react"
+import { User, Loader2, Copy, Check, Clock, AlertCircle, Calendar, UtensilsCrossed, ChefHat, Star } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { Message } from "@/types"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
@@ -15,6 +15,7 @@ import { oneDark, oneLight } from "react-syntax-highlighter/dist/esm/styles/pris
 import { useTheme } from "next-themes"
 import { motion } from "framer-motion"
 import { useRouter } from "next/navigation"
+import { saveMealPlanAction } from "@/actions/save-meal-plan"
 
 interface ChatMessageProps {
   message?: Message
@@ -47,6 +48,7 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading }: Cha
   const [copied, setCopied] = useState(false)
   const [formattedTime, setFormattedTime] = useState('')
   const [isMounted, setIsMounted] = useState(false)
+  const [savingMealPlan, setSavingMealPlan] = useState(false)
   const { toast } = useToast()
   const { theme, systemTheme } = useTheme()
   const router = useRouter()
@@ -483,6 +485,170 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading }: Cha
             )}
           </div>
           
+          {/* Meal Plan Display - show meal plan if present in UI metadata */}
+          {isAssistant && message?.ui?.mealPlan && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+              className={cn(
+                "mt-4 w-full",
+                "animate-in fade-in slide-in-from-bottom-2 duration-300"
+              )}
+            >
+              <div className={cn(
+                "relative overflow-hidden",
+                "bg-gradient-to-br from-card via-card to-primary/5",
+                "border border-border/50 rounded-2xl",
+                "shadow-lg shadow-primary/5",
+                "backdrop-blur-sm"
+              )}>
+                {/* Header with gradient accent */}
+                <div className={cn(
+                  "relative px-5 py-4 sm:px-6 sm:py-5",
+                  "bg-gradient-to-r from-primary/10 via-primary/5 to-transparent",
+                  "border-b border-border/50"
+                )}>
+                  <div className="flex items-center gap-3">
+                    <div className={cn(
+                      "p-2 rounded-xl",
+                      "bg-gradient-to-br from-primary to-primary/80",
+                      "text-primary-foreground",
+                      "shadow-md shadow-primary/20"
+                    )}>
+                      <ChefHat className="h-5 w-5" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-bold text-lg sm:text-xl text-foreground leading-tight">
+                        {message.ui.mealPlan.title}
+                      </h3>
+                      <div className="flex items-center gap-4 mt-1.5 text-xs sm:text-sm text-muted-foreground">
+                        <div className="flex items-center gap-1.5">
+                          <Calendar className="h-3.5 w-3.5" />
+                          <span>{message.ui.mealPlan.duration} {message.ui.mealPlan.duration === 1 ? 'day' : 'days'}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <UtensilsCrossed className="h-3.5 w-3.5" />
+                          <span>{message.ui.mealPlan.mealsPerDay} meals/day</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <Star className="h-3.5 w-3.5" />
+                          <span>{message.ui.mealPlan.days.reduce((sum, day) => sum + day.meals.length, 0)} total meals</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Meal Plan Content */}
+                <div className="p-5 sm:p-6">
+                  <div className="space-y-5">
+                    {message.ui.mealPlan.days.map((day, dayIndex) => (
+                      <motion.div
+                        key={dayIndex}
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ duration: 0.2, delay: dayIndex * 0.05 }}
+                        className={cn(
+                          "relative",
+                          dayIndex < (message.ui?.mealPlan?.days.length ?? 0) - 1 && "pb-5 border-b border-border/30"
+                        )}
+                      >
+                        {/* Day Header */}
+                        <div className="flex items-center gap-2 mb-4">
+                          <div className={cn(
+                            "flex items-center justify-center",
+                            "w-8 h-8 rounded-lg",
+                            "bg-primary/10 text-primary",
+                            "font-bold text-sm",
+                            "border border-primary/20"
+                          )}>
+                            {day.day}
+                          </div>
+                          <h4 className="font-semibold text-base text-foreground">
+                            Day {day.day}
+                          </h4>
+                        </div>
+
+                        {/* Meals Grid */}
+                        <div className="grid gap-3 sm:gap-4">
+                          {day.meals.map((meal, mealIndex) => (
+                            <motion.div
+                              key={mealIndex}
+                              initial={{ opacity: 0, scale: 0.98 }}
+                              animate={{ opacity: 1, scale: 1 }}
+                              transition={{ duration: 0.2, delay: (dayIndex * 0.05) + (mealIndex * 0.03) }}
+                              className={cn(
+                                "group relative",
+                                "p-4 rounded-xl",
+                                "bg-muted/30 hover:bg-muted/40",
+                                "border border-border/30 hover:border-primary/30",
+                                "transition-all duration-200",
+                                "hover:shadow-md hover:shadow-primary/5"
+                              )}
+                            >
+                              {/* Meal Name */}
+                              <div className="flex items-start gap-3">
+                                <div className={cn(
+                                  "mt-0.5 shrink-0",
+                                  "w-2 h-2 rounded-full",
+                                  "bg-primary/60 group-hover:bg-primary",
+                                  "transition-colors duration-200"
+                                )} />
+                                <div className="flex-1 min-w-0">
+                                  <h5 className="font-semibold text-sm sm:text-base text-foreground mb-1.5">
+                                    {meal.name}
+                                  </h5>
+                                  
+                                  {/* Description */}
+                                  {meal.description && (
+                                    <p className="text-xs sm:text-sm text-muted-foreground mb-2.5 leading-relaxed">
+                                      {meal.description}
+                                    </p>
+                                  )}
+                                  
+                                  {/* Ingredients */}
+                                  {meal.ingredients && meal.ingredients.length > 0 && (
+                                    <div className="mt-2.5 pt-2.5 border-t border-border/20">
+                                      <div className="flex flex-wrap items-center gap-1.5">
+                                        <span className="text-xs font-medium text-muted-foreground/80">Ingredients:</span>
+                                        <div className="flex flex-wrap gap-1.5">
+                                          {meal.ingredients.slice(0, 4).map((ingredient, ingIndex) => (
+                                            <span
+                                              key={ingIndex}
+                                              className={cn(
+                                                "inline-flex items-center",
+                                                "px-2 py-0.5 rounded-md",
+                                                "text-xs font-medium",
+                                                "bg-primary/10 text-primary",
+                                                "border border-primary/20"
+                                              )}
+                                            >
+                                              {ingredient}
+                                            </span>
+                                          ))}
+                                          {meal.ingredients.length > 4 && (
+                                            <span className="text-xs text-muted-foreground font-medium">
+                                              +{meal.ingredients.length - 4} more
+                                            </span>
+                                          )}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </motion.div>
+                          ))}
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+          
           {/* UI Action Buttons - rendered for assistant messages with UI metadata */}
           {isAssistant && message?.ui?.actions && message.ui.actions.length > 0 && (
             <div className={cn(
@@ -498,9 +664,58 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading }: Cha
                     "text-sm font-medium",
                     "transition-all hover:scale-105"
                   )}
-                  onClick={() => {
+                  onClick={async () => {
                     if (action.action === 'navigate' && action.url) {
                       router.push(action.url);
+                    } else if (action.action === 'save' && action.data) {
+                      // Handle save meal plan action
+                      setSavingMealPlan(true);
+                      try {
+                      // Title should already be in action.data from generateMealPlan
+                      // But ensure it exists as fallback
+                      const title = action.data.title || `${action.data.duration}-Day Meal Plan (${action.data.mealsPerDay} meals/day)`;
+                      
+                      const saveData = {
+                        title: title,
+                        duration: action.data.duration,
+                        mealsPerDay: action.data.mealsPerDay,
+                        days: action.data.days,
+                        createdAt: new Date().toISOString(),
+                      };
+                        
+                        const result = await saveMealPlanAction(saveData);
+                        
+                        if (result.success && result.mealPlan) {
+                          toast({
+                            title: 'Meal Plan Saved!',
+                            description: `"${action.data.title}" has been saved successfully.`,
+                            duration: 3000,
+                          });
+                          
+                          // Update the button to show success and navigate
+                          setTimeout(() => {
+                            router.push(`/meal-plans/${result.mealPlan.id}`);
+                          }, 1000);
+                        } else {
+                          const errorMessage = 'error' in result ? result.error : 'Could not save meal plan. Please try again.';
+                          toast({
+                            title: 'Failed to Save',
+                            description: errorMessage,
+                            variant: 'destructive',
+                            duration: 4000,
+                          });
+                        }
+                      } catch (error) {
+                        console.error('[ChatMessage] Error saving meal plan:', error);
+                        toast({
+                          title: 'Error',
+                          description: 'Failed to save meal plan. Please try again.',
+                          variant: 'destructive',
+                          duration: 4000,
+                        });
+                      } finally {
+                        setSavingMealPlan(false);
+                      }
                     } else if (action.onClick) {
                       // Handle custom actions if needed
                       toast({
@@ -509,8 +724,16 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading }: Cha
                       });
                     }
                   }}
+                  disabled={savingMealPlan}
                 >
-                  {action.label}
+                  {savingMealPlan && action.action === 'save' ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    action.label
+                  )}
                 </Button>
               ))}
             </div>

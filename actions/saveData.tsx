@@ -33,6 +33,9 @@ export async function saveOnboardingData(formData: {
       goal,
       householdSize,
       cuisinePreferences,
+      // Clear cached summary when preferences change - will be regenerated on next chat load
+      preferencesSummary: null,
+      preferencesHash: null,
     },
     create: {
       userId,
@@ -40,6 +43,9 @@ export async function saveOnboardingData(formData: {
       goal,
       householdSize,
       cuisinePreferences,
+      // No summary yet - will be generated on first chat load
+      preferencesSummary: null,
+      preferencesHash: null,
     },
   });
 

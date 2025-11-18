@@ -14,7 +14,6 @@ import {
 } from '@/ai/flows/chat/generate-chat-title';
 import type { Message } from '@/types';
 import { randomUUID } from 'crypto';
-import type { FormattedUserPreference } from '@/lib/utils/preferences';
 
 /**
  * Handles chat responses for both context-aware and tool-selection chat types.
@@ -24,7 +23,7 @@ import type { FormattedUserPreference } from '@/lib/utils/preferences';
 export async function getResponse(
   chatType: 'context-aware' | 'tool-selection',
   messages: Message[],
-  userPreferences?: FormattedUserPreference[]
+  preferencesSummary?: string
 ): Promise<Message> {
   // 🧩 Ensure the last message exists and is from the user
   const lastMessage = messages[messages.length - 1];
@@ -36,22 +35,51 @@ export async function getResponse(
     let responseContent = '';
 
     if (chatType === 'context-aware') {
-      // 🧠 Context-aware chat — uses FULL message history for complete context
-      // Pass all previous messages (excluding the current user message) as chat history
-      const chatHistory = messages.slice(0, -1).map((m) => ({
+      // 🧠 Context-aware chat — uses message history for context
+      // Limit to last 10 messages to avoid token limits (the flow will further limit to 5)
+      const allHistory = messages.slice(0, -1).map((m) => ({
         role: m.role as 'user' | 'assistant',
         content: m.content,
       }));
       
+      // Limit chat history early to prevent passing too much data
+      // Reduced from 10 to 5 messages to reduce token usage
+      const MAX_HISTORY = 5;
+      const chatHistory = allHistory.length > MAX_HISTORY 
+        ? allHistory.slice(-MAX_HISTORY) 
+        : allHistory;
+      
+      // Limit message content length to prevent token overflow
+      // The context-aware flow will further limit this, but we limit here too for safety
+      const MAX_CURRENT_MESSAGE_CHARS = 700;
+      const limitedMessage = lastMessage.content.length > MAX_CURRENT_MESSAGE_CHARS 
+        ? lastMessage.content.substring(0, MAX_CURRENT_MESSAGE_CHARS) + '...' 
+        : lastMessage.content;
+      
+      // 🎯 Only include preferences summary on the very first message (when conversation is new)
+      // After that, the AI will remember preferences from the initial context
+      // This reduces token usage by not repeating preferences on every message
+      // chatHistory.length === 0 means this is the first message in the conversation
+      const isFirstMessage = chatHistory.length === 0;
+      const shouldIncludePreferences = isFirstMessage && preferencesSummary;
+      
       // Log context for debugging (only in development)
       if (process.env.NODE_ENV === 'development') {
-        console.log(`[Context-Aware] Passing ${chatHistory.length} messages as context`);
+        const totalChars = chatHistory.reduce((sum, m) => sum + m.content.length, 0) + limitedMessage.length + (shouldIncludePreferences ? preferencesSummary.length : 0);
+        console.log(`[Context-Aware] Passing ${chatHistory.length} messages (${totalChars} chars) as context`);
+        if (shouldIncludePreferences) {
+          console.log(`[Context-Aware] Including preferences summary (first message): "${preferencesSummary}"`);
+        } else if (preferencesSummary && !isFirstMessage) {
+          console.log(`[Context-Aware] Skipping preferences summary (conversation ongoing, AI remembers from context)`);
+        } else {
+          console.log(`[Context-Aware] No user preferences provided`);
+        }
       }
       
       const input: ContextAwareChatInput = {
-        message: lastMessage.content,
-        chatHistory: chatHistory, // Full conversation history for context-awareness
-        userPreferences: userPreferences, // User preferences for personalized context
+        message: limitedMessage,
+        chatHistory: chatHistory, // Limited conversation history for context-awareness
+        preferencesSummary: shouldIncludePreferences ? preferencesSummary : undefined, // Only include on first message
       };
 
       const result = await contextAwareChat(input);
@@ -81,8 +109,19 @@ export async function getResponse(
       content: responseContent,
     };
   } catch (error) {
-    // 🔍 Log the error for debugging
+    // 🔍 Log the error for debugging with more details
     console.error(`Error in getResponse (${chatType}):`, error);
+    
+    // Log error details in development
+    if (process.env.NODE_ENV === 'development') {
+      if (error instanceof Error) {
+        console.error('Error message:', error.message);
+        console.error('Error stack:', error.stack);
+      }
+      if (error && typeof error === 'object' && 'cause' in error) {
+        console.error('Error cause:', error.cause);
+      }
+    }
 
     // ✅ Graceful fallback message to the user
     return {

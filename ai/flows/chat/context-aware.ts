@@ -10,15 +10,75 @@
 
 import { ai } from "@/ai/instance";
 import { z } from "genkit";
-import { generateMealPlan, saveMealPlan } from "./dynamic-select-tools";
+import { generateMealPlan, saveMealPlan, generateMealPlanCore } from "./dynamic-select-tools";
 
-// Shared type for user preferences in AI context
-const UserPreferenceSchema = z.object({
-  dietaryPreference: z.string(),
-  goal: z.string(),
-  householdSize: z.number(),
-  cuisinePreferences: z.array(z.string()),
-});
+// Helper to extract duration and mealsPerDay from user message or chat history
+// Prioritizes explicit user requests over defaults
+function extractMealPlanParams(message: string, chatHistory?: Array<{ role: string; content: string }>): { duration: number; mealsPerDay: number } {
+  // If message is short (like "do it"), check chat history for parameters
+  const isShortMessage = message.trim().length < 20 && /^(do it|yes|ok|sure|go|generate)$/i.test(message.trim());
+  
+  // Search in reverse order (most recent first) to find the latest meal plan request
+  const searchText = isShortMessage && chatHistory 
+    ? [...chatHistory].reverse().map(m => m.content).join(' ') + ' ' + message
+    : message;
+  // Extract duration - look for numbers followed by "day" or "days"
+  // Also handle written numbers like "one", "two", etc.
+  const durationPatterns = [
+    /(\d+)\s*(?:day|days?)/i,  // "1 day", "2 days"
+    /(?:one|1)\s*(?:day|days?)/i,  // "one day"
+    /(?:two|2)\s*(?:day|days?)/i,  // "two days"
+    /(?:three|3)\s*(?:day|days?)/i, // "three days"
+    /(?:four|4)\s*(?:day|days?)/i, // "four days"
+    /(?:five|5)\s*(?:day|days?)/i, // "five days"
+    /(?:six|6)\s*(?:day|days?)/i,  // "six days"
+    /(?:seven|7)\s*(?:day|days?)/i, // "seven days"
+  ];
+  
+  let duration = 1; // Default is 1 day to save tokens - only extend if user explicitly requests
+  for (const pattern of durationPatterns) {
+    const match = searchText.match(pattern);
+    if (match) {
+      const num = match[1] ? parseInt(match[1], 10) : 
+                  pattern.source.includes('one') ? 1 :
+                  pattern.source.includes('two') ? 2 :
+                  pattern.source.includes('three') ? 3 :
+                  pattern.source.includes('four') ? 4 :
+                  pattern.source.includes('five') ? 5 :
+                  pattern.source.includes('six') ? 6 :
+                  pattern.source.includes('seven') ? 7 : 7;
+      duration = num;
+      break;
+    }
+  }
+  
+  // Extract mealsPerDay - look for numbers followed by "meal" or "meals"
+  const mealsPatterns = [
+    /(\d+)\s*(?:meal|meals?)\s*(?:per\s*day|a\s*day|daily)?/i,  // "4 meals", "4 meals per day"
+    /(?:one|1)\s*(?:meal|meals?)/i,  // "one meal"
+    /(?:two|2)\s*(?:meal|meals?)/i,  // "two meals"
+    /(?:three|3)\s*(?:meal|meals?)/i, // "three meals"
+    /(?:four|4)\s*(?:meal|meals?)/i, // "four meals"
+    /(?:five|5)\s*(?:meal|meals?)/i, // "five meals"
+  ];
+  
+  let mealsPerDay = 3; // Default (keep at 3)
+  for (const pattern of mealsPatterns) {
+    const match = searchText.match(pattern);
+    if (match) {
+      const num = match[1] ? parseInt(match[1], 10) : 
+                  pattern.source.includes('one') ? 1 :
+                  pattern.source.includes('two') ? 2 :
+                  pattern.source.includes('three') ? 3 :
+                  pattern.source.includes('four') ? 4 :
+                  pattern.source.includes('five') ? 5 : 3;
+      mealsPerDay = num;
+      break;
+    }
+  }
+  
+  return { duration, mealsPerDay };
+}
 
 const ContextAwareChatInputSchema = z.object({
   message: z.string().describe("The user message."),
@@ -31,10 +91,10 @@ const ContextAwareChatInputSchema = z.object({
     )
     .optional()
     .describe("The chat history."),
-  userPreferences: z
-    .array(UserPreferenceSchema)
+  preferencesSummary: z
+    .string()
     .optional()
-    .describe("User's dietary preferences for personalized meal planning context."),
+    .describe("A one-sentence summary of the user's dietary preferences for personalized meal planning context."),
 });
 export type ContextAwareChatInput = z.infer<typeof ContextAwareChatInputSchema>;
 
@@ -44,8 +104,13 @@ const ContextAwareChatOutputSchema = z.object({
 export type ContextAwareChatOutput = z.infer<typeof ContextAwareChatOutputSchema>;
 
 // Use a focused context window for better performance and cost efficiency
-// If conversation is very long, we'll use the most recent messages but prioritize recent context
-const MAX_CONTEXT_MESSAGES = 5; // Using last 5 messages for context awareness
+// Reduced from 5 to 3 messages to significantly reduce token usage
+const MAX_CONTEXT_MESSAGES = 3; // Using last 3 messages for context awareness
+
+// Character limits to prevent token overflow
+const MAX_CHARS_PER_MESSAGE = 500; // Max chars per history message
+const MAX_CHARS_CURRENT_MESSAGE = 700; // Max chars for current user message
+const MAX_TOTAL_CONTEXT_CHARS = 2000; // Max total chars for all context (3 messages + current)
 
 export async function chat(
   input: ContextAwareChatInput
@@ -62,50 +127,49 @@ const prompt = ai.definePrompt({
     schema: ContextAwareChatOutputSchema,
   },
   tools: [generateMealPlan, saveMealPlan],
-  prompt: `You are Mealwise, an expert culinary assistant and cooking instructor. Your primary role is to help users with cooking, recipes, and culinary knowledge.
+  prompt: `You are Mealwise, a culinary assistant.
 
-**YOUR CORE RESPONSIBILITIES:**
-1. **Provide detailed cooking instructions** - When users ask how to cook something (e.g., "how to cook lasagna"), give them complete, step-by-step cooking instructions with ingredients, preparation methods, cooking times, and techniques.
-2. **Share recipes** - Provide full recipes including ingredients lists, measurements, and detailed cooking steps.
-3. **Offer culinary advice** - Answer questions about cooking techniques, ingredient substitutions, food safety, and kitchen tips.
-4. **Remember conversation context** - Reference previous messages and maintain context throughout the conversation.
-5. **Generate meal plans** - Use the generate_meal_plan tool when users ask to create, generate, or plan meals. The tool automatically uses their stored preferences (dietary preference, goals, household size, cuisine preferences) - DO NOT ask follow-up questions about these. The tool only needs duration and mealsPerDay.
-6. **Save meal plans** - Use the save_meal_plan tool when users want to save a generated meal plan to their account. Always save meal plans after generating them unless the user explicitly says not to.
+**CRITICAL: YOU MUST USE TOOLS - DO NOT JUST RESPOND WITH TEXT**
 
-**CRITICAL RULES FOR MEAL PLAN GENERATION:**
-- NEVER ask follow-up questions about dietary preferences, goals, household size, or cuisine preferences
-- The generate_meal_plan tool automatically retrieves and uses the user's stored preferences from their account
-- If the user doesn't specify duration or mealsPerDay, use defaults: 7 days and 3 meals per day
-- Simply call the tool with duration and mealsPerDay - the tool handles everything else automatically
-- If the tool returns an error about missing preferences, inform the user they need to set up preferences first
+**TOOLS:**
+1. generate_meal_plan(duration, mealsPerDay) - Generates meal plans. REQUIRED params: duration (number, default 7), mealsPerDay (number, default 3)
+2. save_meal_plan(title, duration, mealsPerDay, days) - Saves meal plans
 
-**IMPORTANT RULES:**
-- ALWAYS provide cooking instructions when asked. Never refuse to help with cooking questions.
-- Be detailed and helpful. Include ingredient lists, measurements, cooking times, temperatures, and step-by-step instructions.
-- If a user asks "how to cook [dish]", they want cooking instructions, not meal logging assistance.
-- Only suggest meal logging if the user explicitly mentions they have already eaten something and want to track it.
-- When users ask to create/generate/plan meals, immediately use generate_meal_plan tool with duration and mealsPerDay (or defaults). DO NOT ask about their preferences - the tool uses stored preferences automatically.
+**CRITICAL: USER REQUESTS ALWAYS OVERRIDE DEFAULTS - YOU MUST CALL THE TOOL, NOT JUST SAY YOU WILL**
+- When user says "generate/create/plan meals", "do it", "get me a meal plan", or mentions days/meals → YOU MUST IMMEDIATELY CALL generate_meal_plan() function.
+- **NEVER say "I will generate" or "I can generate" - YOU MUST ACTUALLY CALL THE FUNCTION RIGHT NOW.**
+- **ALWAYS prioritize user's explicit requests over defaults or preferences.**
+- Extract duration from user message (e.g., "1 day" = duration: 1, "2 days" = duration: 2, "one day" = duration: 1). If user specifies a number, USE THAT NUMBER.
+- Extract mealsPerDay from user message (e.g., "4 meals" = mealsPerDay: 4, "four meals" = mealsPerDay: 4). If user specifies a number, USE THAT NUMBER.
+- **ONLY use defaults (1 day, 3 meals/day) if user does NOT specify any numbers.**
+- Examples:
+  - User says "one day meal plan with 4 meals" → IMMEDIATELY CALL generate_meal_plan({duration: 1, mealsPerDay: 4})
+  - User says "do it" (after mentioning meal plan) → CALL generate_meal_plan() with parameters from conversation
+  - User says "get me a 2 day plan" → IMMEDIATELY CALL generate_meal_plan({duration: 2, mealsPerDay: 3})
+  - User says "I need a meal plan" (no numbers) → IMMEDIATELY CALL generate_meal_plan({duration: 1, mealsPerDay: 3})
+- **FORBIDDEN RESPONSES:** "I will generate", "I can generate", "Let me generate" - THESE ARE WRONG. CALL THE FUNCTION INSTEAD.
+- After generating a meal plan, inform the user they can save it using the "Save Meal Plan" button that appears below your message.
 
-{{#if userPreferences}}
-**USER PREFERENCES (for personalized meal planning context):**
-{{#each userPreferences}}
-- Dietary Preference: {{dietaryPreference}}
-- Goal: {{goal}}
-- Household Size: {{householdSize}} people
-- Cuisine Preferences: {{cuisinePreferences}}
-{{/each}}
+**COOKING QUESTIONS:**
+- Provide detailed instructions with ingredients, steps, cooking times.
 
-Use these preferences to provide personalized meal suggestions and recommendations. When suggesting meals or recipes, consider their dietary preferences and goals.
+{{#if preferencesSummary}}
+**USER PREFERENCES:** {{preferencesSummary}}
 {{/if}}
 
-Chat History (full conversation context):
-{{#each chatHistory}}
-  {{role}}: {{content}}
+**CONVERSATION:**
+{{#each chatHistory}}{{role}}: {{content}}
 {{/each}}
 
-User Message: {{message}}
+**USER:** {{message}}
 
-Remember the full conversation context above when responding. Reference previous messages when relevant. Provide helpful, detailed cooking instructions and recipes when requested. If user preferences are provided, use them to personalize your suggestions.`,
+**REMEMBER:**
+- User's explicit requests (like "1 day", "4 meals") ALWAYS override defaults
+- If user says "one day meal plan with 4 meals" → duration=1, mealsPerDay=4
+- If user says "I need a meal plan" (no numbers) → duration=1, mealsPerDay=3
+- Preferences are for dietary restrictions/goals, NOT for duration/mealsPerDay
+
+If user wants a meal plan, CALL generate_meal_plan() function immediately with the EXACT parameters user specified. Otherwise provide cooking help.`,
 });
 
 const contextAwareChatFlow = ai.defineFlow(
@@ -115,20 +179,144 @@ const contextAwareChatFlow = ai.defineFlow(
     outputSchema: ContextAwareChatOutputSchema,
   },
   async (input) => {
+    try {
     const chatHistory = input.chatHistory || [];
-    const userPreferences = input.userPreferences || [];
+      const preferencesSummary = input.preferencesSummary || '';
     
-    // Use full history if it's within limit, otherwise use most recent messages
-    // This ensures context-awareness while staying within token limits
-    const contextHistory = chatHistory.length <= MAX_CONTEXT_MESSAGES
-      ? chatHistory // Use full history if within limit
-      : chatHistory.slice(-MAX_CONTEXT_MESSAGES); // Use most recent messages if too long
+      // Use full history if it's within limit, otherwise use most recent messages
+      // This ensures context-awareness while staying within token limits
+      const contextHistory = chatHistory.length <= MAX_CONTEXT_MESSAGES
+        ? chatHistory // Use full history if within limit
+        : chatHistory.slice(-MAX_CONTEXT_MESSAGES); // Use most recent messages if too long
 
-    const { output } = await prompt({
-      ...input,
-      chatHistory: contextHistory,
-      userPreferences: userPreferences,
-    });
+      // Limit individual message content length to prevent token overflow
+      const limitedHistory = contextHistory.map(msg => ({
+        role: msg.role,
+        content: msg.content.length > MAX_CHARS_PER_MESSAGE 
+          ? msg.content.substring(0, MAX_CHARS_PER_MESSAGE) + '...' 
+          : msg.content,
+      }));
+
+      // Limit current message length
+      const limitedCurrentMessage = input.message.length > MAX_CHARS_CURRENT_MESSAGE
+        ? input.message.substring(0, MAX_CHARS_CURRENT_MESSAGE) + '...'
+        : input.message;
+
+      // Calculate total context size
+      const totalContextChars = limitedHistory.reduce((sum, m) => sum + m.content.length, 0) 
+        + limitedCurrentMessage.length 
+        + (preferencesSummary?.length || 0);
+
+      // If total context exceeds limit, intelligently truncate oldest messages first
+      let finalHistory = limitedHistory;
+      if (totalContextChars > MAX_TOTAL_CONTEXT_CHARS) {
+        const excessChars = totalContextChars - MAX_TOTAL_CONTEXT_CHARS;
+        // Truncate from oldest messages first, preserving most recent context
+        finalHistory = limitedHistory.map((msg, index) => {
+          if (index === limitedHistory.length - 1) {
+            // Keep the most recent message mostly intact
+            return msg;
+          }
+          // Truncate older messages more aggressively
+          const targetLength = Math.max(100, msg.content.length - Math.floor(excessChars / (limitedHistory.length - 1)));
+          return {
+            ...msg,
+            content: msg.content.length > targetLength 
+              ? msg.content.substring(0, targetLength) + '...' 
+              : msg.content,
+          };
+        });
+      }
+
+      // Preferences summary is only passed on first message (handled in app/actions.ts)
+      // So if it's provided here, it means it's a new conversation
+      const finalTotalChars = finalHistory.reduce((sum, m) => sum + m.content.length, 0) 
+        + limitedCurrentMessage.length 
+        + (preferencesSummary?.length || 0);
+      
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`[contextAwareChatFlow] Processing ${finalHistory.length} messages, ${finalTotalChars} total chars (limit: ${MAX_TOTAL_CONTEXT_CHARS})`);
+        if (finalTotalChars > MAX_TOTAL_CONTEXT_CHARS) {
+          console.warn(`[contextAwareChatFlow] ⚠️ Context exceeded limit, truncated to ${finalTotalChars} chars`);
+        }
+        if (preferencesSummary) {
+          console.log(`[contextAwareChatFlow] Preferences summary included (new conversation): "${preferencesSummary}"`);
+        }
+      }
+
+      const result = await prompt({
+        message: limitedCurrentMessage,
+        chatHistory: finalHistory,
+        preferencesSummary: preferencesSummary || undefined, // Only set if provided (new conversation)
+      });
+
+      // Extract output and check for tool calls
+      const { output } = result;
+      const fullResult = result as any;
+      
+      // Check if tool was actually called
+      const hasToolCalls = !!(fullResult?.calls?.length || fullResult?.steps?.length);
+      
+      // Log tool calls and response for debugging
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[contextAwareChatFlow] Response summary:', {
+          hasOutput: !!output,
+          responseLength: output?.response?.length || 0,
+          responsePreview: output?.response?.substring(0, 150) || 'N/A',
+          hasToolCalls,
+          toolCallCount: fullResult?.calls?.length || fullResult?.steps?.length || 0,
+          fullResultKeys: Object.keys(fullResult || {}),
+        });
+        
+        if (hasToolCalls) {
+          console.log('[contextAwareChatFlow] ✅ Tool calls detected:', {
+            calls: fullResult?.calls || [],
+            steps: fullResult?.steps || [],
+          });
+        } else {
+          // Check if response suggests tool should have been called
+          const responseText = output?.response?.toLowerCase() || '';
+          const suggestsMealPlan = /generate|creating|planning|meal.*plan|will generate/i.test(responseText);
+          // Check for meal plan requests - be more aggressive in detection
+          const isMealPlanRequest = /generate|create|plan|need.*meal.*plan|do it|get me|give me.*meal/i.test(input.message) ||
+                                   /one day|two day|1 day|2 day|3 day|4 day|5 day|6 day|7 day/i.test(input.message);
+          
+          // Also check chat history for meal plan context
+          const hasMealPlanContext = chatHistory.some(msg => 
+            /meal.*plan|generate|create.*plan/i.test(msg.content.toLowerCase())
+          );
+          
+          if ((isMealPlanRequest || hasMealPlanContext) && !hasToolCalls) {
+            console.warn('[contextAwareChatFlow] ⚠️ WARNING: User requested meal plan but tool was NOT called!');
+            console.warn('[contextAwareChatFlow] Response was:', output?.response);
+            console.warn('[contextAwareChatFlow] 🔧 FALLBACK: Manually calling generateMealPlan tool...');
+            
+            // Fallback: Manually call the tool core function if model didn't
+            try {
+              // Use chat history to extract params if current message is short
+              const params = extractMealPlanParams(input.message, chatHistory);
+              const toolResult = await generateMealPlanCore(params);
+              
+              if (toolResult.success && toolResult.mealPlan) {
+                // Return the tool result message which includes UI metadata
+                // The UI metadata will be extracted by chat-panel.tsx
+                return {
+                  response: toolResult.message,
+                };
+              } else {
+                return {
+                  response: toolResult.message || 'Failed to generate meal plan. Please try again.',
+                };
+              }
+            } catch (toolError) {
+              console.error('[contextAwareChatFlow] Error in fallback tool call:', toolError);
+              return {
+                response: 'I encountered an error generating your meal plan. Please try again or contact support.',
+              };
+            }
+          }
+        }
+      }
 
     // ✅ Defensive fallback to avoid schema errors
     if (!output || typeof output.response !== "string") {
@@ -138,10 +326,51 @@ const contextAwareChatFlow = ai.defineFlow(
       );
       return {
         response:
-          "Sorry, I couldn’t generate a response at the moment. Please try again.",
+            "Sorry, I couldn't generate a response at the moment. Please try again.",
       };
     }
 
     return output;
+    } catch (error) {
+      console.error("[contextAwareChatFlow] Error:", error);
+      if (process.env.NODE_ENV === 'development') {
+        if (error instanceof Error) {
+          console.error('Error message:', error.message);
+          console.error('Error stack:', error.stack);
+        }
+      }
+      
+      // Check if this was a meal plan request - if so, try fallback
+      const isMealPlanRequest = /generate|create|plan|need.*meal.*plan|do it|get me|give me.*meal/i.test(input.message) ||
+                                /one day|two day|1 day|2 day|3 day|4 day|5 day|6 day|7 day/i.test(input.message);
+      
+      if (isMealPlanRequest) {
+        try {
+          console.warn('[contextAwareChatFlow] 🔧 Error occurred, trying fallback meal plan generation...');
+          // Use chat history to extract params if current message is short
+          const params = extractMealPlanParams(input.message, chatHistory);
+          const toolResult = await generateMealPlanCore(params);
+          
+          if (toolResult.success && toolResult.mealPlan) {
+            return {
+              response: toolResult.message,
+            };
+          } else {
+            return {
+              response: toolResult.message || 'Failed to generate meal plan. Please try again.',
+            };
+          }
+        } catch (fallbackError) {
+          console.error('[contextAwareChatFlow] Fallback also failed:', fallbackError);
+          return {
+            response: "I encountered an error generating your meal plan. Please try again with a shorter message or contact support.",
+          };
+        }
+      }
+      
+      return {
+        response: "Sorry, I encountered an error. Please try again with a shorter message.",
+      };
+    }
   }
 );
