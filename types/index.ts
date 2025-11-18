@@ -113,6 +113,21 @@ export type Message = {
         }>;
       }>;
     };
+    groceryList?: {
+      items?: Array<{
+        id: string;
+        item: string;
+        quantity: string;
+        category: string;
+        estimatedPrice: string;
+        suggestedLocation?: string;
+      }>;
+      locationInfo?: {
+        currencySymbol: string;
+        localStores?: string[];
+      };
+      totalEstimatedCost?: string;
+    };
   };
 };
 

@@ -67,7 +67,7 @@ export function ChatInput({ onSubmit, isLoading, disabled = false }: ChatInputPr
   return (
     <div className="w-full">
       <div className="max-w-4xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-3 sm:py-4 md:py-5">
-        <form onSubmit={handleSubmit} className="relative">
+              <form onSubmit={handleSubmit} className="relative">
           <motion.div
             className={cn(
               "relative flex items-end gap-2 sm:gap-3",
@@ -85,7 +85,7 @@ export function ChatInput({ onSubmit, isLoading, disabled = false }: ChatInputPr
             transition={{ duration: 0.2 }}
           >
             {/* Decorative gradient on focus */}
-            <div className={cn(
+          <div className={cn(
               "absolute inset-0 rounded-2xl sm:rounded-3xl",
               "bg-gradient-to-r from-primary/5 via-transparent to-secondary/5",
               "opacity-0 transition-opacity duration-300",
@@ -93,15 +93,15 @@ export function ChatInput({ onSubmit, isLoading, disabled = false }: ChatInputPr
             )} />
 
             {/* Textarea */}
-            <textarea
-              ref={textareaRef}
-              value={value}
-              onChange={(e) => setValue(e.target.value)}
-              onKeyDown={handleKeyDown}
-              onFocus={() => setIsFocused(true)}
-              onBlur={() => setIsFocused(false)}
+                  <textarea
+                    ref={textareaRef}
+                    value={value}
+                    onChange={(e) => setValue(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    onFocus={() => setIsFocused(true)}
+                    onBlur={() => setIsFocused(false)}
               placeholder={disabled ? "Sign in to start chatting..." : "Type your message..."}
-              rows={1}
+                    rows={1}
               className={cn(
                 "relative z-10 flex-1 resize-none bg-transparent border-none",
                 "text-foreground text-[15px] sm:text-base",
@@ -111,11 +111,11 @@ export function ChatInput({ onSubmit, isLoading, disabled = false }: ChatInputPr
                 "min-h-[24px] max-h-[200px]",
                 "scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent"
               )}
-              disabled={isLoading || disabled}
+                    disabled={isLoading || disabled}
               aria-label={disabled ? "Sign in to start chatting" : "Chat message input"}
               aria-describedby={disabled ? "auth-required" : undefined}
               aria-required="false"
-              onClick={disabled ? () => onSubmit('') : undefined}
+                    onClick={disabled ? () => onSubmit('') : undefined}
               maxLength={4000}
             />
             
@@ -127,9 +127,9 @@ export function ChatInput({ onSubmit, isLoading, disabled = false }: ChatInputPr
 
             {/* Send Button */}
             <motion.button
-              type="submit"
+                      type="submit"
               disabled={isLoading || !hasValue || disabled}
-              className={cn(
+                      className={cn(
                 "relative z-10 shrink-0",
                 "h-8 w-8 sm:h-9 sm:w-9 md:h-10 md:w-10",
                 "rounded-xl sm:rounded-2xl",
@@ -139,23 +139,23 @@ export function ChatInput({ onSubmit, isLoading, disabled = false }: ChatInputPr
                 isLoading || !hasValue || disabled
                   ? "bg-muted/50 text-muted-foreground cursor-not-allowed"
                   : "bg-primary text-primary-foreground hover:bg-primary/90 active:scale-95 shadow-md shadow-primary/20"
-              )}
+                      )}
               whileHover={!isLoading && hasValue && !disabled ? { scale: 1.05 } : {}}
               whileTap={!isLoading && hasValue && !disabled ? { scale: 0.95 } : {}}
               aria-label={disabled ? "Sign in to chat" : isLoading ? "Sending message" : "Send message"}
               aria-disabled={isLoading || !hasValue || disabled}
             >
               <AnimatePresence mode="wait">
-                {isLoading ? (
-                  <motion.div
+              {isLoading ? (
+                <motion.div
                     key="loading"
                     initial={{ opacity: 0, rotate: -180 }}
                     animate={{ opacity: 1, rotate: 0 }}
                     exit={{ opacity: 0, rotate: 180 }}
                     transition={{ duration: 0.2 }}
                     className="h-4 w-4 sm:h-5 sm:w-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin"
-                  />
-                ) : (
+                />
+              ) : (
                   <motion.div
                     key="send"
                     initial={{ opacity: 0, scale: 0.8 }}
@@ -163,16 +163,16 @@ export function ChatInput({ onSubmit, isLoading, disabled = false }: ChatInputPr
                     exit={{ opacity: 0, scale: 0.8 }}
                     transition={{ duration: 0.15 }}
                   >
-                    <Send className="h-4 w-4 sm:h-5 sm:w-5" />
+                      <Send className="h-4 w-4 sm:h-5 sm:w-5" />
                   </motion.div>
-                )}
+              )}
               </AnimatePresence>
             </motion.button>
           </motion.div>
 
           {/* Helper text - only show when not focused and empty */}
           <AnimatePresence>
-            {!isFocused && !value && !disabled && (
+          {!isFocused && !value && !disabled && (
               <motion.p
                 initial={{ opacity: 0, y: -5 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -190,7 +190,7 @@ export function ChatInput({ onSubmit, isLoading, disabled = false }: ChatInputPr
                 </kbd>
                 <span className="hidden sm:inline">for new line</span>
               </motion.p>
-            )}
+          )}
           </AnimatePresence>
         </form>
       </div>

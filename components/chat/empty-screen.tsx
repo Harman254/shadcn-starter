@@ -152,8 +152,8 @@ export function EmptyScreen({ onExampleClick, requireAuth = false }: EmptyScreen
             <Wand2 className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
           </motion.div>
           
-          <h2
-            id="empty-title"
+          <h2 
+            id="empty-title" 
             className={cn(
               "text-3xl sm:text-4xl md:text-5xl lg:text-6xl",
               "font-bold text-foreground mb-3 sm:mb-4",
@@ -184,8 +184,8 @@ export function EmptyScreen({ onExampleClick, requireAuth = false }: EmptyScreen
                 whileHover={{ scale: 1.02, y: -2 }}
                 whileTap={{ scale: 0.98 }}
               >
-                <Button
-                  variant="outline"
+            <Button
+              variant="outline"
                   className={cn(
                     "h-auto w-full p-4 sm:p-5",
                     "text-left justify-start",
@@ -199,9 +199,9 @@ export function EmptyScreen({ onExampleClick, requireAuth = false }: EmptyScreen
                     "shadow-sm hover:shadow-md",
                     "relative overflow-hidden"
                   )}
-                  onClick={() => onExampleClick(example.message)}
-                  aria-label={`Start conversation: ${example.message}`}
-                >
+              onClick={() => onExampleClick(example.message)}
+              aria-label={`Start conversation: ${example.message}`}
+            >
                   {/* Gradient background */}
                   <div className={cn(
                     "absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300",
@@ -219,17 +219,17 @@ export function EmptyScreen({ onExampleClick, requireAuth = false }: EmptyScreen
                     )}>
                       <Icon className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
                     </div>
-                    <div className="flex-1 min-w-0">
+              <div className="flex-1 min-w-0">
                       <p className="font-semibold text-sm sm:text-base mb-1.5 group-hover:text-foreground text-foreground transition-colors">
                         {example.heading}
                       </p>
-                      <p className="font-normal text-muted-foreground text-xs sm:text-sm line-clamp-2 leading-relaxed">
-                        {example.message}
-                      </p>
-                    </div>
+                <p className="font-normal text-muted-foreground text-xs sm:text-sm line-clamp-2 leading-relaxed">
+                  {example.message}
+                </p>
+              </div>
                     <ArrowRight className="h-4 w-4 text-muted-foreground ml-2 shrink-0 group-hover:text-primary group-hover:translate-x-1 transition-all duration-300" aria-hidden="true" />
                   </div>
-                </Button>
+            </Button>
               </motion.div>
             );
           })}
