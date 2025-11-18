@@ -108,9 +108,10 @@ export type ContextAwareChatOutput = z.infer<typeof ContextAwareChatOutputSchema
 const MAX_CONTEXT_MESSAGES = 3; // Using last 3 messages for context awareness
 
 // Character limits to prevent token overflow
-const MAX_CHARS_PER_MESSAGE = 500; // Max chars per history message
-const MAX_CHARS_CURRENT_MESSAGE = 700; // Max chars for current user message
-const MAX_TOTAL_CONTEXT_CHARS = 2000; // Max total chars for all context (3 messages + current)
+// Increased limits to handle longer messages better - only truncate when really necessary
+const MAX_CHARS_PER_MESSAGE = 1000; // Max chars per history message (increased from 500)
+const MAX_CHARS_CURRENT_MESSAGE = 1500; // Max chars for current user message (increased from 700)
+const MAX_TOTAL_CONTEXT_CHARS = 4000; // Max total chars for all context (3 messages + current) (increased from 2000)
 
 export async function chat(
   input: ContextAwareChatInput
@@ -161,12 +162,13 @@ const prompt = ai.definePrompt({
 
 **GROCERY LIST GENERATION:**
 - When user asks for "grocery list", "shopping list", "ingredients list", "what do I need to buy", or "what ingredients" → CALL generate_grocery_list() immediately.
+- **CRITICAL: Do NOT call generate_meal_plan() when user asks for a grocery list - they want a shopping list, not a new meal plan.**
 - Extract meal plan data from the conversation history (look for recently generated meal plan in assistant messages).
 - If a meal plan was just generated in this conversation, use that meal plan data for the grocery list.
 - Examples:
-  - User says "create a grocery list" or "what do I need to buy" → CALL generate_grocery_list() with meal plan from conversation
-  - User says "yes" to grocery list suggestion → CALL generate_grocery_list() with meal plan from conversation
-  - User says "shopping list" or "ingredients" → CALL generate_grocery_list() with meal plan from conversation
+  - User says "create a grocery list" or "what do I need to buy" → CALL generate_grocery_list() with meal plan from conversation (NOT generate_meal_plan)
+  - User says "yes" to grocery list suggestion → CALL generate_grocery_list() with meal plan from conversation (NOT generate_meal_plan)
+  - User says "shopping list" or "ingredients" → CALL generate_grocery_list() with meal plan from conversation (NOT generate_meal_plan)
 - The grocery list will include price estimates and local store suggestions based on user's location.
 
 **COOKING/NUTRITION QUESTIONS:**
@@ -210,7 +212,8 @@ const prompt = ai.definePrompt({
 **IMPORTANT:**
 - If user asks about cooking, recipes, or specific dishes → Provide detailed cooking help (this is a core function, not optional).
 - If user wants a meal plan → CALL generate_meal_plan() immediately.
-- If user wants a grocery list → CALL generate_grocery_list() with meal plan from conversation.
+- If user wants a grocery list → CALL generate_grocery_list() with meal plan from conversation (NOT generate_meal_plan).
+- **CRITICAL: Grocery list requests are DIFFERENT from meal plan requests - do NOT confuse them.**
 - You are a meal and nutrition assistant - cooking questions are just as important as meal planning.`,
 });
 
@@ -394,11 +397,12 @@ const contextAwareChatFlow = ai.defineFlow(
             msg.role === 'user' && /meal.*plan|generate|create.*plan|need.*plan/i.test(msg.content.toLowerCase())
           );
           
-          // Check for grocery list requests
+          // Check for grocery list requests - MUST check this BEFORE meal plan requests
+          // Use more specific patterns to avoid confusion with meal plan requests
           const isGroceryListRequest = 
-            /grocery.*list|shopping.*list|ingredients.*list|what.*do.*i.*need.*to.*buy|what.*ingredients/i.test(input.message) ||
+            /grocery.*list|shopping.*list|ingredients.*list|what.*do.*i.*need.*to.*buy|what.*ingredients|buy.*for.*meal.*plan|shopping.*for.*meal/i.test(input.message) ||
             (isShortAffirmative && chatHistory.some(msg => 
-              msg.role === 'assistant' && /grocery.*list|shopping.*list|price.*estimate/i.test(msg.content.toLowerCase())
+              msg.role === 'assistant' && /grocery.*list|shopping.*list|price.*estimate|create.*grocery/i.test(msg.content.toLowerCase())
             ));
           
           // Check if there's a meal plan in the conversation history (for grocery list generation)
@@ -410,7 +414,9 @@ const contextAwareChatFlow = ai.defineFlow(
             return false;
           });
           
-          if (isGroceryListRequest && hasMealPlanInHistory && !hasToolCalls) {
+          // CRITICAL: Handle grocery list requests FIRST, before meal plan fallback
+          // This prevents grocery list requests from triggering meal plan generation
+          if (isGroceryListRequest && !hasToolCalls) {
             console.warn('[contextAwareChatFlow] ⚠️ WARNING: User requested grocery list but tool was NOT called!');
             console.warn('[contextAwareChatFlow] 🔧 FALLBACK: Attempting to extract meal plan from conversation...');
             
@@ -462,10 +468,13 @@ const contextAwareChatFlow = ai.defineFlow(
             }
           }
           
-          if ((isMealPlanRequest || hasMealPlanContext || (isShortAffirmative && userWantsMealPlan) || (justAcknowledged && isMealPlanRequest)) && !hasToolCalls) {
+          // Only trigger meal plan fallback if it's NOT a grocery list request
+          // This prevents grocery list requests from incorrectly triggering meal plan generation
+          if (!isGroceryListRequest && (isMealPlanRequest || hasMealPlanContext || (isShortAffirmative && userWantsMealPlan) || (justAcknowledged && isMealPlanRequest)) && !hasToolCalls) {
             console.warn('[contextAwareChatFlow] ⚠️ WARNING: User requested meal plan but tool was NOT called!');
             console.warn('[contextAwareChatFlow] Response was:', output?.response);
             console.warn('[contextAwareChatFlow] User message was:', input.message);
+            console.warn('[contextAwareChatFlow] Is grocery list request?', isGroceryListRequest);
             console.warn('[contextAwareChatFlow] 🔧 FALLBACK: Manually calling generateMealPlan tool...');
             
             // Fallback: Manually call the tool core function if model didn't
