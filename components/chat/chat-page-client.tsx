@@ -55,29 +55,7 @@ export function ChatPageClient() {
                     </div>
                   </SheetContent>
                 </Sheet>
-                
-                <div className="relative shrink-0">
-                  <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl bg-gradient-primary flex items-center justify-center shadow-medium">
-                    <Leaf className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
-                  </div>
-                  <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 sm:w-3.5 sm:h-3.5 bg-primary rounded-full border-2 border-white animate-pulse-soft" />
-                </div>
-                <div className="min-w-0">
-                  <h1 className="text-base sm:text-lg font-bold text-foreground truncate">Mealwise AI</h1>
-                  <p className="text-[10px] sm:text-xs text-muted-foreground truncate">Your nutrition companion</p>
-                </div>
               </div>
-              
-              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-auto shrink-0">
-                <TabsList className="bg-muted/80 backdrop-blur-sm p-1 h-9 sm:h-10 rounded-lg sm:rounded-xl border border-border/30">
-                  <TabsTrigger 
-                    value="meal-log" 
-                    className="text-xs sm:text-sm px-3 sm:px-4 rounded-md sm:rounded-lg data-[state=active]:bg-card data-[state=active]:shadow-soft data-[state=active]:text-primary transition-all"
-                  >
-                    Track Meals
-                  </TabsTrigger>
-                </TabsList>
-              </Tabs>
             </div>
           </div>
 
