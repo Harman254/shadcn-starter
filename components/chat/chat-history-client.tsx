@@ -98,7 +98,7 @@ const SessionItem = memo(function SessionItem({
                   "text-destructive hover:text-destructive",
                   "hover:bg-destructive/15 active:bg-destructive/25",
                   "rounded-lg border-2 border-destructive/40 hover:border-destructive/60",
-                  "bg-destructive/10 hover:bg-destructive/15", // More visible background
+                  "bg-destructive/10", // More visible background
                   "shadow-sm hover:shadow-md",
                   isDeleting && "opacity-50 cursor-not-allowed"
                 )}

@@ -44,7 +44,7 @@ export function ChatPageClient({ preferences = [], preferencesSummary = '' }: Ch
       </div>
 
       <div className={cn(
-        "relative z-10 w-full h-full",
+        "relative z-10 w-full",
         "max-w-[1800px]",
         "h-[100vh] sm:h-[calc(100vh-24px)] md:h-[calc(100vh-32px)] lg:h-[calc(100vh-48px)]",
         "flex flex-col lg:flex-row gap-0 sm:gap-3 md:gap-4 lg:gap-6"
