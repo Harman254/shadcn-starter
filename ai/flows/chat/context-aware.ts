@@ -178,10 +178,11 @@ const contextAwareChatFlow = ai.defineFlow(
     inputSchema: ContextAwareChatInputSchema,
     outputSchema: ContextAwareChatOutputSchema,
   },
-  async (input) => {
-    try {
-    const chatHistory = input.chatHistory || [];
-      const preferencesSummary = input.preferencesSummary || '';
+      async (input) => {
+        const chatHistory = input.chatHistory || [];
+        const preferencesSummary = input.preferencesSummary || '';
+        
+        try {
     
       // Use full history if it's within limit, otherwise use most recent messages
       // This ensures context-awareness while staying within token limits
