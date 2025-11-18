@@ -127,9 +127,13 @@ const prompt = ai.definePrompt({
     schema: ContextAwareChatOutputSchema,
   },
   tools: [generateMealPlan, saveMealPlan, generateGroceryList],
-  prompt: `You are Mealwise, a meal planning and nutrition assistant. Focus on meal plans, recipes, nutrition, and health.
+  prompt: `You are Mealwise, a meal planning and nutrition assistant. You help with:
+1. **Meal Planning** - Generate personalized meal plans (use tools)
+2. **Cooking & Recipes** - Provide detailed cooking instructions, recipes, and cooking advice (respond directly)
+3. **Nutrition & Health** - Answer questions about ingredients, nutrition, dietary advice
+4. **Grocery Lists** - Generate shopping lists with price estimates (use tools)
 
-**CRITICAL: YOU MUST USE TOOLS - DO NOT JUST RESPOND WITH TEXT**
+**CRITICAL: YOU MUST USE TOOLS FOR MEAL PLANS - BUT PROVIDE DIRECT ANSWERS FOR COOKING QUESTIONS**
 
 **TOOLS:**
 1. generate_meal_plan(duration, mealsPerDay) - Generates meal plans. Default: duration=1, mealsPerDay=3. Use user's numbers if specified.
@@ -163,8 +167,16 @@ const prompt = ai.definePrompt({
 - The grocery list will include price estimates and local store suggestions based on user's location.
 
 **COOKING/NUTRITION QUESTIONS:**
-- Provide detailed instructions with ingredients, steps, cooking times, nutrition info.
-- Focus on meal-related topics: recipes, ingredients, cooking methods, dietary advice, health benefits.
+- When users ask about specific dishes, recipes, ingredients, or cooking methods → **PROVIDE DETAILED COOKING INSTRUCTIONS DIRECTLY** (do NOT say you only do meal planning).
+- Examples of questions you MUST answer:
+  - "how to cook ugali and fish" → Provide step-by-step recipe for both dishes
+  - "recipe for pasta" → Provide detailed pasta recipe
+  - "what is ugali" → Explain what ugali is and how to make it
+  - "how to prepare [dish]" → Provide cooking instructions
+  - Any cooking, recipe, or ingredient question → Answer directly with helpful details
+- Include: ingredients, measurements, step-by-step instructions, cooking times, temperatures, tips, cultural context.
+- Answer questions about: traditional dishes, cooking techniques, ingredient substitutions, nutrition facts, meal preparation.
+- **NEVER refuse cooking questions** - providing cooking help is a core function, not optional.
 
 {{#if preferencesSummary}}
 **USER PREFERENCES:** {{preferencesSummary}}
@@ -190,7 +202,11 @@ const prompt = ai.definePrompt({
 2. After meal plan generated → Suggest grocery list: "Would you like me to create a grocery list with price estimates?"
 3. User requests grocery list → CALL generate_grocery_list() with meal plan from conversation
 
-If user wants a meal plan, CALL generate_meal_plan() immediately. If user wants a grocery list, CALL generate_grocery_list() with meal plan from conversation. Otherwise provide cooking/nutrition help.`,
+**IMPORTANT:**
+- If user asks about cooking, recipes, or specific dishes → Provide detailed cooking help (this is a core function, not optional).
+- If user wants a meal plan → CALL generate_meal_plan() immediately.
+- If user wants a grocery list → CALL generate_grocery_list() with meal plan from conversation.
+- You are a meal and nutrition assistant - cooking questions are just as important as meal planning.`,
 });
 
 const contextAwareChatFlow = ai.defineFlow(
@@ -199,17 +215,17 @@ const contextAwareChatFlow = ai.defineFlow(
     inputSchema: ContextAwareChatInputSchema,
     outputSchema: ContextAwareChatOutputSchema,
   },
-      async (input) => {
-        const chatHistory = input.chatHistory || [];
+  async (input) => {
+    const chatHistory = input.chatHistory || [];
         const preferencesSummary = input.preferencesSummary || '';
         
         try {
     
-      // Use full history if it's within limit, otherwise use most recent messages
-      // This ensures context-awareness while staying within token limits
-      const contextHistory = chatHistory.length <= MAX_CONTEXT_MESSAGES
-        ? chatHistory // Use full history if within limit
-        : chatHistory.slice(-MAX_CONTEXT_MESSAGES); // Use most recent messages if too long
+    // Use full history if it's within limit, otherwise use most recent messages
+    // This ensures context-awareness while staying within token limits
+    const contextHistory = chatHistory.length <= MAX_CONTEXT_MESSAGES
+      ? chatHistory // Use full history if within limit
+      : chatHistory.slice(-MAX_CONTEXT_MESSAGES); // Use most recent messages if too long
 
       // Limit individual message content length to prevent token overflow
       const limitedHistory = contextHistory.map(msg => ({
@@ -295,6 +311,48 @@ const contextAwareChatFlow = ai.defineFlow(
             calls: fullResult?.calls || [],
             steps: fullResult?.steps || [],
           });
+          
+          // Extract UI metadata from tool call results if present
+          // When tools are called, the result might contain UI_METADATA that needs to be preserved
+          if (output && output.response) {
+            const toolResults = fullResult?.calls || fullResult?.steps || [];
+            for (const toolCall of toolResults) {
+              // Check different possible structures for tool result
+              const toolResult = toolCall?.result || toolCall?.output || toolCall;
+              
+              // Check if result has a message property
+              if (toolResult?.message && typeof toolResult.message === 'string') {
+                const toolMessage = toolResult.message;
+                const uiMetadataMatch = toolMessage.match(/\[UI_METADATA:([A-Za-z0-9+/=]+)\]/);
+                if (uiMetadataMatch) {
+                  // If tool result has UI_METADATA, ensure it's in the final response
+                  if (!output.response.includes('[UI_METADATA:')) {
+                    // Append UI_METADATA to response if not already present
+                    output.response = output.response + ' ' + uiMetadataMatch[0];
+                    if (process.env.NODE_ENV === 'development') {
+                      console.log('[contextAwareChatFlow] ✅ Preserved UI_METADATA from tool result');
+                    }
+                  }
+                }
+              }
+              
+              // Also check if the result itself is a string with UI_METADATA
+              if (typeof toolResult === 'string') {
+                const uiMetadataMatch = toolResult.match(/\[UI_METADATA:([A-Za-z0-9+/=]+)\]/);
+                if (uiMetadataMatch && !output.response.includes('[UI_METADATA:')) {
+                  output.response = output.response + ' ' + uiMetadataMatch[0];
+                  if (process.env.NODE_ENV === 'development') {
+                    console.log('[contextAwareChatFlow] ✅ Preserved UI_METADATA from tool result (string)');
+                  }
+                }
+              }
+            }
+            
+            // Log tool results structure for debugging
+            if (process.env.NODE_ENV === 'development' && toolResults.length > 0) {
+              console.log('[contextAwareChatFlow] Tool results structure:', JSON.stringify(toolResults, null, 2));
+            }
+          }
         } else {
           // Check if response suggests tool should have been called
           const responseText = output?.response?.toLowerCase() || '';
@@ -432,6 +490,44 @@ const contextAwareChatFlow = ai.defineFlow(
         response:
             "Sorry, I couldn't generate a response at the moment. Please try again.",
       };
+    }
+
+    // Final check: If we had tool calls but UI_METADATA is missing from response,
+    // try to extract it from tool results one more time
+    const hasToolCallsFinal = !!(fullResult?.calls?.length || fullResult?.steps?.length);
+    if (hasToolCallsFinal && !output.response.includes('[UI_METADATA:')) {
+      const toolResults = fullResult?.calls || fullResult?.steps || [];
+      for (const toolCall of toolResults) {
+        // Try multiple possible structures
+        const possibleResults = [
+          toolCall?.result,
+          toolCall?.output,
+          toolCall?.response,
+          toolCall,
+        ].filter(Boolean);
+        
+        for (const toolResult of possibleResults) {
+          let searchText = '';
+          if (typeof toolResult === 'string') {
+            searchText = toolResult;
+          } else if (toolResult?.message && typeof toolResult.message === 'string') {
+            searchText = toolResult.message;
+          } else if (toolResult?.content && typeof toolResult.content === 'string') {
+            searchText = toolResult.content;
+          }
+          
+          if (searchText) {
+            const uiMetadataMatch = searchText.match(/\[UI_METADATA:([A-Za-z0-9+/=]+)\]/);
+            if (uiMetadataMatch) {
+              output.response = output.response + ' ' + uiMetadataMatch[0];
+              if (process.env.NODE_ENV === 'development') {
+                console.log('[contextAwareChatFlow] ✅ Restored UI_METADATA from tool result');
+              }
+              break;
+            }
+          }
+        }
+      }
     }
 
     return output;
