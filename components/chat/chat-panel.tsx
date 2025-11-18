@@ -20,6 +20,7 @@ import { Button } from '@/components/ui/button';
 import { Trash2 } from 'lucide-react';
 import { logger } from '@/utils/logger';
 import { fetchWithRetry } from '@/utils/api-retry';
+import { formatPreferencesForAI, type FormattedUserPreference } from '@/lib/utils/preferences';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -38,8 +39,10 @@ const EMPTY_SORTED_MESSAGES: Message[] = [];
 
 export function ChatPanel({
   chatType,
+  userPreferences,
 }: {
   chatType: 'context-aware' | 'tool-selection';
+  userPreferences?: FormattedUserPreference[];
 }) {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
@@ -425,7 +428,8 @@ export function ChatPanel({
     try {
       logger.debug('[ChatPanel] Getting AI response for', updatedMessages.length, 'messages');
       
-      const response = await getResponse(chatType, updatedMessages);
+      // Preferences are already formatted, just pass them through
+      const response = await getResponse(chatType, updatedMessages, userPreferences);
       const assistantMessage: Message = {
         ...response,
         timestamp: new Date(),
@@ -433,43 +437,42 @@ export function ChatPanel({
       
       logger.debug('[ChatPanel] ✅ Assistant message added - should be visible on LEFT');
       
+      // Extract UI metadata from message content (if present)
+      // Use a more robust pattern that handles base64-encoded JSON
+      const uiMetadataMatch = assistantMessage.content.match(/\[UI_METADATA:([A-Za-z0-9+/=]+)\]/);
+      if (uiMetadataMatch) {
+        try {
+          // Decode from base64 and parse JSON (browser-compatible)
+          const base64String = uiMetadataMatch[1];
+          const decoded = atob(base64String); // Browser's built-in base64 decode
+          const uiMetadata = JSON.parse(decoded);
+          assistantMessage.ui = uiMetadata;
+          // Remove the marker from the message content (don't show it to user)
+          assistantMessage.content = assistantMessage.content.replace(/\[UI_METADATA:[A-Za-z0-9+/=]+\]/g, '').trim();
+          if (process.env.NODE_ENV === 'development') {
+            logger.log('[ChatPanel] 🎨 Extracted UI metadata:', uiMetadata);
+          }
+        } catch (error) {
+          logger.warn('[ChatPanel] Failed to parse UI metadata:', error);
+          // Remove the invalid marker anyway
+          assistantMessage.content = assistantMessage.content.replace(/\[UI_METADATA:[A-Za-z0-9+/=]+\]/g, '').trim();
+        }
+      }
+      
       // Check if meal plan was saved and redirect if needed
       // Look for the marker in the message content
       const mealPlanSavedMatch = assistantMessage.content.match(/\[MEAL_PLAN_SAVED:([^\]]+)\]/);
       if (mealPlanSavedMatch) {
         const mealPlanId = mealPlanSavedMatch[1];
         if (process.env.NODE_ENV === 'development') {
-          logger.log('[ChatPanel] 🍽️ Meal plan saved, redirecting to meal plans page:', mealPlanId);
+          logger.log('[ChatPanel] 🍽️ Meal plan saved:', mealPlanId);
         }
         
         // Clean up the marker from the message content (remove it from display)
         assistantMessage.content = assistantMessage.content.replace(/\[MEAL_PLAN_SAVED:[^\]]+\]/g, '').trim();
         
-        // Show toast notification
-        toast({
-          title: 'Meal Plan Saved!',
-          description: 'Redirecting to your meal plans...',
-          duration: 2000,
-        });
-        
-        // Redirect after a short delay to allow user to see the success message
-        setTimeout(() => {
-          router.push('/meal-plans');
-        }, 1500);
-      } else {
-        // Fallback: Check for keywords indicating meal plan was saved
-        // This handles cases where AI might paraphrase the message
-        const hasMealPlanKeywords = 
-          assistantMessage.content.toLowerCase().includes('meal plan') &&
-          (assistantMessage.content.toLowerCase().includes('saved') ||
-           assistantMessage.content.toLowerCase().includes('successfully'));
-        
-        if (hasMealPlanKeywords && assistantMessage.content.toLowerCase().includes('/meal-plans')) {
-          if (process.env.NODE_ENV === 'development') {
-            logger.log('[ChatPanel] 🍽️ Detected meal plan save keywords, redirecting to meal plans page');
-          }
-          
-          // Show toast notification
+        // Show toast notification (but don't auto-redirect if UI buttons are present)
+        if (!assistantMessage.ui?.actions) {
           toast({
             title: 'Meal Plan Saved!',
             description: 'Redirecting to your meal plans...',
@@ -480,6 +483,33 @@ export function ChatPanel({
           setTimeout(() => {
             router.push('/meal-plans');
           }, 1500);
+        } else {
+          // If UI buttons are present, just show a toast
+          toast({
+            title: 'Meal Plan Saved!',
+            description: 'Your meal plan has been saved successfully.',
+            duration: 3000,
+          });
+        }
+      } else {
+        // Fallback: Check for keywords indicating meal plan was saved
+        // This handles cases where AI might paraphrase the message
+        const hasMealPlanKeywords = 
+          assistantMessage.content.toLowerCase().includes('meal plan') &&
+          (assistantMessage.content.toLowerCase().includes('saved') ||
+           assistantMessage.content.toLowerCase().includes('successfully'));
+        
+        if (hasMealPlanKeywords && assistantMessage.content.toLowerCase().includes('/meal-plans')) {
+          if (process.env.NODE_ENV === 'development') {
+            logger.log('[ChatPanel] 🍽️ Detected meal plan save keywords');
+          }
+          
+          // Show toast notification
+          toast({
+            title: 'Meal Plan Saved!',
+            description: 'Your meal plan has been saved successfully.',
+            duration: 3000,
+          });
         }
       }
       

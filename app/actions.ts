@@ -14,6 +14,7 @@ import {
 } from '@/ai/flows/chat/generate-chat-title';
 import type { Message } from '@/types';
 import { randomUUID } from 'crypto';
+import type { FormattedUserPreference } from '@/lib/utils/preferences';
 
 /**
  * Handles chat responses for both context-aware and tool-selection chat types.
@@ -22,7 +23,8 @@ import { randomUUID } from 'crypto';
  */
 export async function getResponse(
   chatType: 'context-aware' | 'tool-selection',
-  messages: Message[]
+  messages: Message[],
+  userPreferences?: FormattedUserPreference[]
 ): Promise<Message> {
   // 🧩 Ensure the last message exists and is from the user
   const lastMessage = messages[messages.length - 1];
@@ -49,6 +51,7 @@ export async function getResponse(
       const input: ContextAwareChatInput = {
         message: lastMessage.content,
         chatHistory: chatHistory, // Full conversation history for context-awareness
+        userPreferences: userPreferences, // User preferences for personalized context
       };
 
       const result = await contextAwareChat(input);

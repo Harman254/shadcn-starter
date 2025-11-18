@@ -74,6 +74,15 @@ export type ToolCall = {
 
 export type MessageStatus = 'sending' | 'sent' | 'failed';
 
+// UI action button metadata
+export type MessageUIAction = {
+  label: string;
+  action: 'navigate' | 'save' | 'view';
+  url?: string; // For navigate action
+  onClick?: string; // For custom actions (e.g., 'saveMealPlan')
+  data?: Record<string, any>; // Additional data for the action
+};
+
 export type Message = {
   id: string;
   role: 'user' | 'assistant';
@@ -84,6 +93,10 @@ export type Message = {
   // Tool call support for assistant messages
   tool_calls?: ToolCall[]; // Assistant can call tools
   tool_call_id?: string; // User message can be a tool result
+  // UI metadata for rendering buttons/actions
+  ui?: {
+    actions?: MessageUIAction[];
+  };
 };
 
 

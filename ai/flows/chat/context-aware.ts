@@ -10,6 +10,15 @@
 
 import { ai } from "@/ai/instance";
 import { z } from "genkit";
+import { generateMealPlan, saveMealPlan } from "./dynamic-select-tools";
+
+// Shared type for user preferences in AI context
+const UserPreferenceSchema = z.object({
+  dietaryPreference: z.string(),
+  goal: z.string(),
+  householdSize: z.number(),
+  cuisinePreferences: z.array(z.string()),
+});
 
 const ContextAwareChatInputSchema = z.object({
   message: z.string().describe("The user message."),
@@ -22,6 +31,10 @@ const ContextAwareChatInputSchema = z.object({
     )
     .optional()
     .describe("The chat history."),
+  userPreferences: z
+    .array(UserPreferenceSchema)
+    .optional()
+    .describe("User's dietary preferences for personalized meal planning context."),
 });
 export type ContextAwareChatInput = z.infer<typeof ContextAwareChatInputSchema>;
 
@@ -48,6 +61,7 @@ const prompt = ai.definePrompt({
   output: {
     schema: ContextAwareChatOutputSchema,
   },
+  tools: [generateMealPlan, saveMealPlan],
   prompt: `You are Mealwise, an expert culinary assistant and cooking instructor. Your primary role is to help users with cooking, recipes, and culinary knowledge.
 
 **YOUR CORE RESPONSIBILITIES:**
@@ -55,12 +69,34 @@ const prompt = ai.definePrompt({
 2. **Share recipes** - Provide full recipes including ingredients lists, measurements, and detailed cooking steps.
 3. **Offer culinary advice** - Answer questions about cooking techniques, ingredient substitutions, food safety, and kitchen tips.
 4. **Remember conversation context** - Reference previous messages and maintain context throughout the conversation.
+5. **Generate meal plans** - Use the generate_meal_plan tool when users ask to create, generate, or plan meals. The tool automatically uses their stored preferences (dietary preference, goals, household size, cuisine preferences) - DO NOT ask follow-up questions about these. The tool only needs duration and mealsPerDay.
+6. **Save meal plans** - Use the save_meal_plan tool when users want to save a generated meal plan to their account. Always save meal plans after generating them unless the user explicitly says not to.
+
+**CRITICAL RULES FOR MEAL PLAN GENERATION:**
+- NEVER ask follow-up questions about dietary preferences, goals, household size, or cuisine preferences
+- The generate_meal_plan tool automatically retrieves and uses the user's stored preferences from their account
+- If the user doesn't specify duration or mealsPerDay, use defaults: 7 days and 3 meals per day
+- Simply call the tool with duration and mealsPerDay - the tool handles everything else automatically
+- If the tool returns an error about missing preferences, inform the user they need to set up preferences first
 
 **IMPORTANT RULES:**
 - ALWAYS provide cooking instructions when asked. Never refuse to help with cooking questions.
 - Be detailed and helpful. Include ingredient lists, measurements, cooking times, temperatures, and step-by-step instructions.
 - If a user asks "how to cook [dish]", they want cooking instructions, not meal logging assistance.
 - Only suggest meal logging if the user explicitly mentions they have already eaten something and want to track it.
+- When users ask to create/generate/plan meals, immediately use generate_meal_plan tool with duration and mealsPerDay (or defaults). DO NOT ask about their preferences - the tool uses stored preferences automatically.
+
+{{#if userPreferences}}
+**USER PREFERENCES (for personalized meal planning context):**
+{{#each userPreferences}}
+- Dietary Preference: {{dietaryPreference}}
+- Goal: {{goal}}
+- Household Size: {{householdSize}} people
+- Cuisine Preferences: {{cuisinePreferences}}
+{{/each}}
+
+Use these preferences to provide personalized meal suggestions and recommendations. When suggesting meals or recipes, consider their dietary preferences and goals.
+{{/if}}
 
 Chat History (full conversation context):
 {{#each chatHistory}}
@@ -69,7 +105,7 @@ Chat History (full conversation context):
 
 User Message: {{message}}
 
-Remember the full conversation context above when responding. Reference previous messages when relevant. Provide helpful, detailed cooking instructions and recipes when requested.`,
+Remember the full conversation context above when responding. Reference previous messages when relevant. Provide helpful, detailed cooking instructions and recipes when requested. If user preferences are provided, use them to personalize your suggestions.`,
 });
 
 const contextAwareChatFlow = ai.defineFlow(
@@ -80,6 +116,7 @@ const contextAwareChatFlow = ai.defineFlow(
   },
   async (input) => {
     const chatHistory = input.chatHistory || [];
+    const userPreferences = input.userPreferences || [];
     
     // Use full history if it's within limit, otherwise use most recent messages
     // This ensures context-awareness while staying within token limits
@@ -90,6 +127,7 @@ const contextAwareChatFlow = ai.defineFlow(
     const { output } = await prompt({
       ...input,
       chatHistory: contextHistory,
+      userPreferences: userPreferences,
     });
 
     // ✅ Defensive fallback to avoid schema errors

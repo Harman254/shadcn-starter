@@ -87,7 +87,7 @@ const GenerateMealPlanOutputSchema = z.object({
   message: z.string().describe("A message describing the result."),
 });
 
-const generateMealPlan = ai.defineTool(
+export const generateMealPlan = ai.defineTool(
   {
     name: "generate_meal_plan",
     description:
@@ -237,9 +237,18 @@ const SaveMealPlanOutputSchema = z.object({
   success: z.boolean().describe("Whether the meal plan was saved successfully."),
   mealPlanId: z.string().optional().describe("ID of the saved meal plan."),
   message: z.string().describe("A message describing the result."),
+  ui: z.object({
+    actions: z.array(z.object({
+      label: z.string(),
+      action: z.enum(['navigate', 'save', 'view']),
+      url: z.string().optional(),
+      onClick: z.string().optional(),
+      data: z.record(z.any()).optional(),
+    })),
+  }).optional().describe("UI metadata for rendering buttons/actions in the chat."),
 });
 
-const saveMealPlan = ai.defineTool(
+export const saveMealPlan = ai.defineTool(
   {
     name: "save_meal_plan",
     description:
@@ -292,10 +301,31 @@ const saveMealPlan = ai.defineTool(
           });
         }
 
+        // Create UI metadata for buttons
+        const uiMetadata = {
+          actions: [
+            {
+              label: 'View Meal Plan',
+              action: 'navigate' as const,
+              url: `/meal-plans/${result.mealPlan.id}`,
+            },
+            {
+              label: 'View All Meal Plans',
+              action: 'navigate' as const,
+              url: '/meal-plans',
+            },
+          ],
+        };
+
+        // Encode UI metadata as base64 to avoid issues with special characters in JSON
+        const uiMetadataEncoded = Buffer.from(JSON.stringify(uiMetadata)).toString('base64');
+        
         return {
           success: true,
           mealPlanId: result.mealPlan.id,
-          message: `Meal plan "${input.title}" has been saved successfully! You can view it in your meal plans at /meal-plans. [MEAL_PLAN_SAVED:${result.mealPlan.id}]`,
+          message: `Meal plan "${input.title}" has been saved successfully! You can view it in your meal plans. [MEAL_PLAN_SAVED:${result.mealPlan.id}][UI_METADATA:${uiMetadataEncoded}]`,
+          // Include UI metadata for rendering a button
+          ui: uiMetadata,
         };
       }
 

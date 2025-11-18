@@ -8,10 +8,23 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card } from '@/components/ui/card';
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
+import { useMemo } from 'react';
+import { UserPreference } from '@/types';
+import { formatPreferencesForAI, type FormattedUserPreference } from '@/lib/utils/preferences';
 
-export function ChatPageClient() {
+interface ChatPageClientProps {
+  preferences?: UserPreference[];
+}
+
+export function ChatPageClient({ preferences = [] }: ChatPageClientProps) {
   const [activeTab, setActiveTab] = useState('meal-log');
   const [historyOpen, setHistoryOpen] = useState(false);
+
+  // Memoize formatted preferences to avoid re-computation on every render
+  const formattedPreferences = useMemo<FormattedUserPreference[] | undefined>(
+    () => formatPreferencesForAI(preferences),
+    [preferences]
+  );
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-secondary/5 flex items-center justify-center p-2 sm:p-4 font-[Inter]">
@@ -62,7 +75,7 @@ export function ChatPageClient() {
           {/* Chat Panel Integration */}
           <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0 overflow-hidden w-full">
             <TabsContent value="meal-log" className="flex-1 m-0 flex flex-col min-h-0 overflow-hidden w-full h-full">
-              <ChatPanel chatType="context-aware" />
+              <ChatPanel chatType="context-aware" userPreferences={formattedPreferences} />
             </TabsContent>
           </Tabs>
         </div>

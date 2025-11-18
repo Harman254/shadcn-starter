@@ -14,6 +14,7 @@ import { Prism as SyntaxHighlighter } from "react-syntax-highlighter"
 import { oneDark, oneLight } from "react-syntax-highlighter/dist/esm/styles/prism"
 import { useTheme } from "next-themes"
 import { motion } from "framer-motion"
+import { useRouter } from "next/navigation"
 
 interface ChatMessageProps {
   message?: Message
@@ -48,6 +49,7 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading }: Cha
   const [isMounted, setIsMounted] = useState(false)
   const { toast } = useToast()
   const { theme, systemTheme } = useTheme()
+  const router = useRouter()
   const currentTheme = theme === 'system' ? systemTheme : theme
   const isDark = currentTheme === 'dark'
 
@@ -480,6 +482,40 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading }: Cha
               </Button>
             )}
           </div>
+          
+          {/* UI Action Buttons - rendered for assistant messages with UI metadata */}
+          {isAssistant && message?.ui?.actions && message.ui.actions.length > 0 && (
+            <div className={cn(
+              "flex flex-wrap items-center gap-2 mt-3",
+              "animate-in fade-in slide-in-from-bottom-2 duration-300"
+            )}>
+              {message.ui.actions.map((action, index) => (
+                <Button
+                  key={index}
+                  variant={action.action === 'navigate' ? 'default' : 'outline'}
+                  size="sm"
+                  className={cn(
+                    "text-sm font-medium",
+                    "transition-all hover:scale-105"
+                  )}
+                  onClick={() => {
+                    if (action.action === 'navigate' && action.url) {
+                      router.push(action.url);
+                    } else if (action.onClick) {
+                      // Handle custom actions if needed
+                      toast({
+                        title: 'Action triggered',
+                        description: `Executing ${action.onClick}`,
+                      });
+                    }
+                  }}
+                >
+                  {action.label}
+                </Button>
+              ))}
+            </div>
+          )}
+          
           <div className={cn(
             "flex items-center gap-2 mt-2",
             !isAssistant && "justify-end"
