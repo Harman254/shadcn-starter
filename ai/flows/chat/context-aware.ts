@@ -104,14 +104,14 @@ const ContextAwareChatOutputSchema = z.object({
 export type ContextAwareChatOutput = z.infer<typeof ContextAwareChatOutputSchema>;
 
 // Use a focused context window for better performance and cost efficiency
-// Reduced from 5 to 3 messages to significantly reduce token usage
-const MAX_CONTEXT_MESSAGES = 3; // Using last 3 messages for context awareness
+// Balanced to provide good context while managing token usage
+const MAX_CONTEXT_MESSAGES = 5; // Using last 5 messages for context awareness (increased from 3 for better conversation flow)
 
 // Character limits to prevent token overflow
 // Increased limits to handle longer messages better - only truncate when really necessary
 const MAX_CHARS_PER_MESSAGE = 1000; // Max chars per history message (increased from 500)
 const MAX_CHARS_CURRENT_MESSAGE = 1500; // Max chars for current user message (increased from 700)
-const MAX_TOTAL_CONTEXT_CHARS = 4000; // Max total chars for all context (3 messages + current) (increased from 2000)
+const MAX_TOTAL_CONTEXT_CHARS = 6000; // Max total chars for all context (5 messages + current) (increased from 4000 to accommodate more messages)
 
 export async function chat(
   input: ContextAwareChatInput
@@ -161,15 +161,24 @@ const prompt = ai.definePrompt({
 - After generating a meal plan, inform the user they can save it and naturally suggest: "Would you like me to create a grocery list with price estimates for this meal plan?"
 
 **GROCERY LIST GENERATION:**
-- When user asks for "grocery list", "shopping list", "ingredients list", "what do I need to buy", or "what ingredients" → CALL generate_grocery_list() immediately.
+- **MANDATORY: When user asks for ANY of these → CALL generate_grocery_list() IMMEDIATELY:**
+  - "grocery list", "shopping list", "ingredients list"
+  - "grocery list for meal plan", "shopping list for meals", "grocery list for this meal plan"
+  - "what do I need to buy", "what ingredients do I need", "what to buy"
+  - "create grocery list", "generate grocery list", "make a grocery list", "get grocery list"
+  - "list for meal plan", "ingredients for meal plan", "shopping for meal plan"
+  - User says "yes" or "ok" after you suggest creating a grocery list
 - **CRITICAL: The generate_grocery_list tool ONLY generates grocery lists - it does NOT generate meal plans.**
 - **FORBIDDEN: NEVER call generate_meal_plan() when user asks for a grocery list. The grocery list tool uses EXISTING meal plans from conversation history.**
+- **NEVER say "I will create", "I can create", "ok", or "sure" without calling the function - YOU MUST ACTUALLY CALL generate_grocery_list() RIGHT NOW.**
 - Extract meal plan data from the conversation history (look for recently generated meal plan in assistant messages with UI_METADATA).
 - If no meal plan exists in conversation, tell user: "I need a meal plan to generate a grocery list. Please generate a meal plan first."
 - Examples:
-  - User says "create a grocery list" → CALL generate_grocery_list() with meal plan from conversation (NEVER call generate_meal_plan)
-  - User says "yes" to grocery list suggestion → CALL generate_grocery_list() with meal plan from conversation (NEVER call generate_meal_plan)
-  - User says "shopping list" → CALL generate_grocery_list() with meal plan from conversation (NEVER call generate_meal_plan)
+  - User says "create a grocery list" → IMMEDIATELY CALL generate_grocery_list() with meal plan from conversation (NEVER call generate_meal_plan)
+  - User says "grocery list for this meal plan" → IMMEDIATELY CALL generate_grocery_list() with meal plan from conversation
+  - User says "shopping list for meals" → IMMEDIATELY CALL generate_grocery_list() with meal plan from conversation
+  - User says "yes" to grocery list suggestion → IMMEDIATELY CALL generate_grocery_list() with meal plan from conversation (NEVER call generate_meal_plan)
+  - User says "what do I need to buy" → IMMEDIATELY CALL generate_grocery_list() with meal plan from conversation
 - The grocery list will include price estimates and local store suggestions based on user's location.
 
 **COOKING/NUTRITION QUESTIONS:**
@@ -215,7 +224,24 @@ const prompt = ai.definePrompt({
 - If user wants a meal plan → CALL generate_meal_plan() immediately.
 - If user wants a grocery list → CALL generate_grocery_list() with meal plan from conversation (NOT generate_meal_plan).
 - **CRITICAL: Grocery list requests are DIFFERENT from meal plan requests - do NOT confuse them.**
-- You are a meal and nutrition assistant - cooking questions are just as important as meal planning.`,
+- You are a meal and nutrition assistant - cooking questions are just as important as meal planning.
+
+**ZERO-DEAD-END EXPERIENCE - ALWAYS GUIDE USERS:**
+- **EVERY response should guide users to the next step** - never leave them wondering what to do next.
+- After generating a meal plan, ALWAYS suggest: "Would you like me to save this meal plan or create a grocery list with price estimates?"
+- After providing a recipe, suggest: "Would you like me to add this to a meal plan, or show you variations of this recipe?"
+- After answering a cooking question, suggest: "Would you like me to create a meal plan that includes this dish, or show you similar recipes?"
+- After generating a grocery list, suggest: "Would you like me to suggest cheaper alternatives or healthier options?"
+- Use friendly, conversational language: "Would you like...", "Should I...", "Want me to...", "Need it...", "How about..."
+- Examples of good guidance:
+  - "Would you like to save this meal plan?"
+  - "Should I add snacks to this plan?"
+  - "Want a grocery list for these meals?"
+  - "Need it cheaper? I can suggest budget-friendly alternatives."
+  - "Want it healthier? I can swap some ingredients."
+  - "Would you like me to create a 15-minute version of this meal?"
+  - "How about exploring some Kenyan dishes?"
+- **NEVER end a response without offering a helpful next step** - always give users something to do or ask about.`,
 });
 
 const contextAwareChatFlow = ai.defineFlow(
@@ -400,10 +426,11 @@ const contextAwareChatFlow = ai.defineFlow(
           
           // Check for grocery list requests - MUST check this BEFORE meal plan requests
           // Use more specific patterns to avoid confusion with meal plan requests
+          // Enhanced patterns to catch: "grocery list for meal plan", "shopping list for meals", etc.
           const isGroceryListRequest = 
-            /grocery.*list|shopping.*list|ingredients.*list|what.*do.*i.*need.*to.*buy|what.*ingredients|buy.*for.*meal.*plan|shopping.*for.*meal/i.test(input.message) ||
+            /grocery.*list|shopping.*list|ingredients.*list|what.*do.*i.*need.*to.*buy|what.*ingredients|buy.*for.*meal|shopping.*for.*meal|grocery.*for.*meal|list.*for.*meal|ingredients.*for.*meal|what.*to.*buy.*for|need.*to.*buy|create.*grocery|generate.*grocery|make.*grocery|get.*grocery/i.test(input.message) ||
             (isShortAffirmative && chatHistory.some(msg => 
-              msg.role === 'assistant' && /grocery.*list|shopping.*list|price.*estimate|create.*grocery/i.test(msg.content.toLowerCase())
+              msg.role === 'assistant' && /grocery.*list|shopping.*list|price.*estimate|create.*grocery|generate.*grocery/i.test(msg.content.toLowerCase())
             ));
           
           // Check if there's a meal plan in the conversation history (for grocery list generation)

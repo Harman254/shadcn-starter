@@ -713,7 +713,7 @@ export function ChatPanel({
           aria-atomic="false"
         >
           {hasMessages ? (
-            <ChatMessages messages={messages} isLoading={isLoading} />
+            <ChatMessages messages={messages} isLoading={isLoading} onActionClick={handleSubmit} />
           ) : (
             <EmptyScreen onExampleClick={handleSubmit} requireAuth={false} />
           )}

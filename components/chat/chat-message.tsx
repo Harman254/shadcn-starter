@@ -1,6 +1,6 @@
 "use client"
 
-import { User, Loader2, Copy, Check, Clock, AlertCircle, Calendar, UtensilsCrossed, ChefHat, Star } from "lucide-react"
+import { User, Loader2, Copy, Check, Clock, AlertCircle, Calendar, UtensilsCrossed, ChefHat, Star, ShoppingCart, MapPin, Tag, DollarSign } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { Message } from "@/types"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
@@ -16,10 +16,12 @@ import { useTheme } from "next-themes"
 import { motion } from "framer-motion"
 import { useRouter } from "next/navigation"
 import { saveMealPlanAction } from "@/actions/save-meal-plan"
+import { QuickActions } from "./quick-actions"
 
 interface ChatMessageProps {
   message?: Message
   isLoading?: boolean
+  onActionClick?: (message: string) => void
 }
 
 function formatTimestamp(date?: Date): string {
@@ -43,7 +45,7 @@ function formatTimestamp(date?: Date): string {
   return messageDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
 }
 
-export const ChatMessage = memo(function ChatMessage({ message, isLoading }: ChatMessageProps) {
+export const ChatMessage = memo(function ChatMessage({ message, isLoading, onActionClick }: ChatMessageProps) {
   // All hooks must be called at the top level, before any conditional returns
   const [copied, setCopied] = useState(false)
   const [formattedTime, setFormattedTime] = useState('')
@@ -497,6 +499,16 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading }: Cha
               </span>
             )}
           </div>
+          
+          {/* Quick Actions - Show after assistant messages to guide users */}
+          {isAssistant && onActionClick && !message?.ui?.mealPlan && !message?.ui?.groceryList && (
+            <div className="mt-3 px-4 sm:px-6 md:px-8">
+              <QuickActions 
+                onActionClick={onActionClick}
+                context="general"
+              />
+            </div>
+          )}
         </div>
       </article>
 
@@ -670,6 +682,187 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading }: Cha
                 </div>
               </div>
             </motion.div>
+          )}
+          
+          {/* Grocery List Display - Full width immersive */}
+          {message?.ui?.groceryList && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+              className={cn(
+                "w-full",
+                "animate-in fade-in slide-in-from-bottom-2 duration-300"
+              )}
+            >
+              <div className={cn(
+                "relative overflow-hidden w-full",
+                "bg-gradient-to-br from-card via-card to-secondary/5",
+                "border-y border-border/50 sm:border-x sm:border-border/50 sm:rounded-2xl",
+                "shadow-lg shadow-secondary/5",
+                "backdrop-blur-sm"
+              )}>
+                {/* Header with gradient accent */}
+                <div className={cn(
+                  "relative px-4 sm:px-5 md:px-6 py-4 sm:py-5",
+                  "bg-gradient-to-r from-secondary/10 via-secondary/5 to-transparent",
+                  "border-b border-border/50"
+                )}>
+                  <div className="flex items-center gap-3">
+                    <div className={cn(
+                      "p-2 rounded-xl",
+                      "bg-gradient-to-br from-secondary to-secondary/80",
+                      "text-secondary-foreground",
+                      "shadow-md shadow-secondary/20"
+                    )}>
+                      <ShoppingCart className="h-5 w-5" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-bold text-lg sm:text-xl text-foreground leading-tight">
+                        Grocery List
+                      </h3>
+                      {message.ui.groceryList.totalEstimatedCost && (
+                        <div className="flex items-center gap-4 mt-1.5 text-xs sm:text-sm text-muted-foreground">
+                          <div className="flex items-center gap-1.5">
+                            <DollarSign className="h-3.5 w-3.5" />
+                            <span className="font-semibold text-foreground">
+                              Total: {message.ui.groceryList.totalEstimatedCost}
+                            </span>
+                          </div>
+                          {message.ui.groceryList.locationInfo?.localStores && message.ui.groceryList.locationInfo.localStores.length > 0 && (
+                            <div className="flex items-center gap-1.5">
+                              <MapPin className="h-3.5 w-3.5" />
+                              <span>{message.ui.groceryList.locationInfo.localStores[0]}</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Grocery List Content */}
+                {message.ui.groceryList.items && message.ui.groceryList.items.length > 0 && (
+                  <div className="p-4 sm:p-5 md:px-6 md:py-5">
+                    {/* Group items by category */}
+                    {(() => {
+                      const itemsByCategory = message.ui.groceryList.items.reduce((acc: Record<string, typeof message.ui.groceryList.items>, item: any) => {
+                        const category = item.category || 'Other';
+                        if (!acc[category]) acc[category] = [];
+                        acc[category].push(item);
+                        return acc;
+                      }, {});
+
+                      return Object.entries(itemsByCategory).map(([category, items], categoryIndex) => (
+                        <motion.div
+                          key={category}
+                          initial={{ opacity: 0, x: -10 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ duration: 0.2, delay: categoryIndex * 0.05 }}
+                          className={cn(
+                            "relative",
+                            categoryIndex < Object.keys(itemsByCategory).length - 1 && "mb-6 pb-6 border-b border-border/30"
+                          )}
+                        >
+                          {/* Category Header */}
+                          <div className="flex items-center gap-2 mb-4">
+                            <div className={cn(
+                              "flex items-center justify-center",
+                              "px-3 py-1 rounded-lg",
+                              "bg-secondary/10 text-secondary",
+                              "font-semibold text-sm",
+                              "border border-secondary/20"
+                            )}>
+                              <Tag className="h-3.5 w-3.5 mr-1.5" />
+                              {category}
+                            </div>
+                            <span className="text-xs text-muted-foreground">
+                              {items.length} {items.length === 1 ? 'item' : 'items'}
+                            </span>
+                          </div>
+
+                          {/* Items Grid */}
+                          <div className="grid gap-2.5 sm:gap-3">
+                            {items.map((item: any, itemIndex: number) => (
+                              <motion.div
+                                key={item.id || itemIndex}
+                                initial={{ opacity: 0, scale: 0.98 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                transition={{ duration: 0.2, delay: (categoryIndex * 0.05) + (itemIndex * 0.02) }}
+                                className={cn(
+                                  "group relative",
+                                  "p-3 sm:p-4 rounded-xl",
+                                  "bg-muted/30 hover:bg-muted/40",
+                                  "border border-border/30 hover:border-secondary/30",
+                                  "transition-all duration-200",
+                                  "hover:shadow-md hover:shadow-secondary/5"
+                                )}
+                              >
+                                <div className="flex items-start justify-between gap-3">
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-start gap-2.5">
+                                      <div className={cn(
+                                        "mt-0.5 shrink-0",
+                                        "w-2 h-2 rounded-full",
+                                        "bg-secondary/60 group-hover:bg-secondary",
+                                        "transition-colors duration-200"
+                                      )} />
+                                      <div className="flex-1 min-w-0">
+                                        <h5 className="font-semibold text-sm sm:text-base text-foreground mb-1">
+                                          {item.item}
+                                        </h5>
+                                        {item.quantity && (
+                                          <p className="text-xs sm:text-sm text-muted-foreground">
+                                            Quantity: {item.quantity}
+                                          </p>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <div className="flex flex-col items-end gap-1 shrink-0">
+                                    {item.estimatedPrice && (
+                                      <span className="font-semibold text-sm sm:text-base text-foreground">
+                                        {item.estimatedPrice}
+                                      </span>
+                                    )}
+                                    {item.suggestedLocation && (
+                                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                        <MapPin className="h-3 w-3" />
+                                        <span className="truncate max-w-[120px]">{item.suggestedLocation}</span>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              </motion.div>
+                            ))}
+                          </div>
+                        </motion.div>
+                      ));
+                    })()}
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          )}
+          
+          {/* Quick Actions for meal plans */}
+          {isAssistant && message?.ui?.mealPlan && onActionClick && (
+            <div className="px-4 sm:px-5 md:px-6 pb-4">
+              <QuickActions 
+                onActionClick={onActionClick}
+                context="meal-plan"
+              />
+            </div>
+          )}
+          
+          {/* Quick Actions for grocery lists */}
+          {isAssistant && message?.ui?.groceryList && onActionClick && (
+            <div className="px-4 sm:px-5 md:px-6 pb-4">
+              <QuickActions 
+                onActionClick={onActionClick}
+                context="grocery-list"
+              />
+            </div>
           )}
           
           {/* UI Action Buttons - rendered for assistant messages with UI metadata */}

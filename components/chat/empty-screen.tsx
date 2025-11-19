@@ -12,20 +12,20 @@ interface EmptyScreenProps {
 
 const exampleMessages = [
   {
-    heading: 'Generate Meal Plan',
-    message: 'Create a 3-day meal plan for me',
+    heading: 'Quick Meal Plan',
+    message: 'Generate a quick 1-day meal plan',
     icon: ChefHat,
     gradient: 'from-orange-500/10 to-red-500/10',
   },
   {
-    heading: 'Get Recipe Help',
-    message: 'How do I make a classic lasagna?',
+    heading: 'Kenyan Dishes',
+    message: 'Show me some Kenyan dishes',
     icon: BookOpen,
     gradient: 'from-blue-500/10 to-purple-500/10',
   },
   {
-    heading: 'Cooking Tips',
-    message: 'What\'s a healthy breakfast idea?',
+    heading: '15-Minute Meals',
+    message: 'Show me 15-minute meal ideas',
     icon: UtensilsCrossed,
     gradient: 'from-green-500/10 to-emerald-500/10',
   },
@@ -161,10 +161,10 @@ export function EmptyScreen({ onExampleClick, requireAuth = false }: EmptyScreen
               "bg-gradient-to-r from-foreground via-foreground to-foreground/70 bg-clip-text"
             )}
           >
-            How can I help you today?
+            Welcome! 👋
           </h2>
-          <p className="text-muted-foreground text-sm sm:text-base md:text-lg mt-2">
-            Ask me anything about cooking, meal planning, or nutrition
+          <p className="text-muted-foreground text-base sm:text-lg md:text-xl mt-2 max-w-2xl mx-auto leading-relaxed">
+            I'm your AI kitchen assistant. I can help you plan meals, find recipes, create grocery lists, and answer cooking questions. What would you like to do?
           </p>
         </motion.div>
 

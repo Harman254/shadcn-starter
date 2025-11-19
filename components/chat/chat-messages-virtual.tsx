@@ -16,6 +16,7 @@ try {
 interface ChatMessagesVirtualProps {
   messages: Message[];
   isLoading: boolean;
+  onActionClick?: (message: string) => void;
 }
 
 // Threshold for when to use virtual scrolling (100+ messages)
@@ -25,11 +26,13 @@ const VIRTUAL_SCROLL_THRESHOLD = 100;
 function VirtualizedMessages({ 
   messages, 
   isLoading,
-  parentRef 
+  parentRef,
+  onActionClick
 }: { 
   messages: Message[]; 
   isLoading: boolean;
   parentRef: React.RefObject<HTMLDivElement | null>;
+  onActionClick?: (message: string) => void;
 }) {
   // This hook is always called - no conditional logic
   const virtualizer = useVirtualizer({
@@ -68,7 +71,7 @@ function VirtualizedMessages({
               }}
               role="listitem"
             >
-              <ChatMessage message={message} />
+              <ChatMessage message={message} onActionClick={onActionClick} />
             </div>
           );
         })}
@@ -93,7 +96,8 @@ function VirtualizedMessages({
 
 export const ChatMessagesVirtual = memo(function ChatMessagesVirtual({ 
   messages, 
-  isLoading 
+  isLoading,
+  onActionClick
 }: ChatMessagesVirtualProps) {
   const parentRef = useRef<HTMLDivElement>(null);
   const scrollToBottomRef = useRef<boolean>(false);
@@ -158,6 +162,7 @@ export const ChatMessagesVirtual = memo(function ChatMessagesVirtual({
           messages={messages} 
           isLoading={isLoading}
           parentRef={parentRef}
+          onActionClick={onActionClick}
         />
       </div>
     );
@@ -176,7 +181,7 @@ export const ChatMessagesVirtual = memo(function ChatMessagesVirtual({
         {messages.map((message) => {
           return (
             <div key={message.id} role="listitem">
-              <ChatMessage message={message} />
+              <ChatMessage message={message} onActionClick={onActionClick} />
             </div>
           );
         })}
