@@ -115,10 +115,9 @@ const SessionItem = memo(function SessionItem({
                   "transition-all duration-200",
                   "opacity-100", // Always fully visible
                   "text-destructive hover:text-destructive",
-                  "hover:bg-destructive/20 active:bg-destructive/30",
+                  "bg-destructive/15 hover:bg-destructive/20 active:bg-destructive/30", // Combined background states
                   "rounded-lg sm:rounded-md",
                   "border-2 border-destructive/50 hover:border-destructive/70",
-                  "bg-destructive/15 hover:bg-destructive/20", // More visible background
                   "shadow-sm hover:shadow-md hover:shadow-destructive/10",
                   "ring-1 ring-destructive/20 hover:ring-destructive/30",
                   isDeleting && "opacity-60 cursor-not-allowed"
