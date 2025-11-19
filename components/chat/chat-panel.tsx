@@ -16,6 +16,7 @@ import { EmptyScreen } from './empty-screen';
 import { ChatErrorBoundary } from './chat-error-boundary';
 import { ConnectionStatus } from './connection-status';
 import { MessageSearch } from './message-search';
+import { ToolProgress, type ExecutionProgressData } from './tool-progress';
 import { Button } from '@/components/ui/button';
 import { Trash2 } from 'lucide-react';
 import { logger } from '@/utils/logger';
@@ -45,6 +46,7 @@ export function ChatPanel({
   preferencesSummary?: string;
 }) {
   const [isLoading, setIsLoading] = useState(false);
+  const [toolProgress, setToolProgress] = useState<ExecutionProgressData | null>(null);
   const { toast } = useToast();
   const router = useRouter();
 
@@ -440,8 +442,99 @@ export function ChatPanel({
     try {
       logger.debug('[ChatPanel] Getting AI response for', updatedMessages.length, 'messages');
       
+      // Detect if this is a tool-calling request (meal plan, grocery list, etc.)
+      const isToolRequest = /meal.*plan|grocery.*list|generate|create.*plan|shopping.*list/i.test(value.trim());
+      
+      // Initialize progress tracking if this is a tool request
+      if (isToolRequest) {
+        // Estimate number of tools that might be called
+        let estimatedTools = 1; // Default to 1 tool
+        if (/grocery.*list|shopping.*list/i.test(value.trim()) && updatedMessages.some(m => m.ui?.mealPlan)) {
+          estimatedTools = 1; // Just grocery list
+        } else if (/meal.*plan/i.test(value.trim())) {
+          estimatedTools = 1; // Just meal plan (grocery list would be separate)
+          if (/nutrition|calories|protein/i.test(value.trim())) {
+            estimatedTools = 2; // Meal plan + nutrition
+          }
+          if (/grocery|shopping|price/i.test(value.trim())) {
+            estimatedTools = 2; // Meal plan + grocery list
+          }
+        }
+        
+        // Initialize progress state with estimated progress
+        const progressData: ExecutionProgressData = {
+          totalTools: estimatedTools,
+          completedTools: 0,
+          failedTools: 0,
+          skippedTools: 0,
+          currentPhase: 1,
+          totalPhases: 1,
+          overallProgress: 0,
+          tools: new Map(),
+          startedAt: new Date(),
+        };
+        
+        // Add estimated tool entries
+        if (/grocery.*list|shopping.*list/i.test(value.trim())) {
+          progressData.tools.set('grocery-list', {
+            toolId: 'grocery-list',
+            toolName: 'Generate Grocery List',
+            status: 'running',
+            progress: 0,
+            message: 'Generating grocery list...',
+          });
+        } else if (/meal.*plan/i.test(value.trim())) {
+          progressData.tools.set('meal-plan', {
+            toolId: 'meal-plan',
+            toolName: 'Generate Meal Plan',
+            status: 'running',
+            progress: 0,
+            message: 'Generating meal plan...',
+          });
+        }
+        
+        setToolProgress(progressData);
+        
+        // Simulate progress updates (basic version - Phase 2 will add real-time server updates)
+        const progressInterval = setInterval(() => {
+          setToolProgress((prev) => {
+            if (!prev) return null;
+            
+            const updated = { ...prev };
+            const elapsed = Date.now() - prev.startedAt.getTime();
+            const estimatedTime = 10000; // 10 seconds estimated
+            const progress = Math.min(90, Math.floor((elapsed / estimatedTime) * 100));
+            
+            updated.overallProgress = progress;
+            updated.tools = new Map(updated.tools);
+            
+            // Update tool progress
+            for (const [key, tool] of updated.tools.entries()) {
+              updated.tools.set(key, {
+                ...tool,
+                progress: Math.min(90, progress),
+              });
+            }
+            
+            return updated;
+          });
+        }, 500);
+        
+        // Clean up interval when component unmounts or loading completes
+        const cleanup = () => clearInterval(progressInterval);
+        // Store cleanup function to call in finally block
+        (window as any).__progressCleanup = cleanup;
+      }
+      
       // Pass the summarized preferences (one sentence) to reduce token usage
       const response = await getResponse(chatType, updatedMessages, preferencesSummary);
+      
+      // Clear progress and interval when response is received
+      if ((window as any).__progressCleanup) {
+        (window as any).__progressCleanup();
+        delete (window as any).__progressCleanup;
+      }
+      setToolProgress(null);
       const assistantMessage: Message = {
         ...response,
         timestamp: new Date(),
@@ -636,6 +729,14 @@ export function ChatPanel({
       }
     } catch (error) {
       logger.error('[ChatPanel] Error getting response:', error);
+      
+      // Clear progress and interval on error
+      if ((window as any).__progressCleanup) {
+        (window as any).__progressCleanup();
+        delete (window as any).__progressCleanup;
+      }
+      setToolProgress(null);
+      
       toast({
         title: 'An error occurred',
         description: 'Failed to get a response from the chatbot. Please try again.',
@@ -650,8 +751,14 @@ export function ChatPanel({
       }
     } finally {
       setIsLoading(false);
+      // Clear progress and interval when loading completes
+      if ((window as any).__progressCleanup) {
+        (window as any).__progressCleanup();
+        delete (window as any).__progressCleanup;
+      }
+      setToolProgress(null);
     }
-  }, [isLoading, chatType, toast, finalSessionId, currentSessionId, addMessage, clearSession, saveToDatabase, isAuthenticated, openAuthModal, setCurrentSession, getCurrentSession, updateSessionTitle, preferencesSummary]);
+  }, [isLoading, chatType, toast, finalSessionId, currentSessionId, addMessage, clearSession, saveToDatabase, isAuthenticated, openAuthModal, setCurrentSession, getCurrentSession, updateSessionTitle, preferencesSummary, toolProgress]);
 
   const handleClearChat = useCallback(async () => {
     if (!finalSessionId) return;
@@ -751,7 +858,24 @@ export function ChatPanel({
           aria-atomic="false"
         >
         {hasMessages ? (
+          <>
             <ChatMessages messages={messages} isLoading={isLoading} onActionClick={handleSubmit} />
+            {/* Progress tracking UI - shown during tool execution */}
+            {toolProgress && isLoading && (
+              <div className="absolute bottom-4 left-0 right-0 z-10 px-4 sm:px-6 md:px-8">
+                <div className="max-w-4xl mx-auto">
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 20 }}
+                    className="bg-card/95 backdrop-blur-sm border border-border/50 rounded-xl shadow-lg p-4"
+                  >
+                    <ToolProgress progress={toolProgress} compact={true} showIndividualTools={toolProgress.totalTools > 1} />
+                  </motion.div>
+                </div>
+              </div>
+            )}
+          </>
         ) : (
           <EmptyScreen onExampleClick={handleSubmit} requireAuth={false} />
         )}

@@ -29,9 +29,26 @@ export default async function ChatLayout({
 }: {
   children: ReactNode;
 }) {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
+  let session;
+  try {
+    session = await auth.api.getSession({
+      headers: await headers(),
+    });
+  } catch (error) {
+    // Handle database connection errors gracefully
+    console.error('[ChatLayout] Error fetching session:', error);
+    if (process.env.NODE_ENV === 'development') {
+      if (error instanceof Error) {
+        console.error('[ChatLayout] Session error details:', {
+          message: error.message,
+          stack: error.stack,
+        });
+      }
+    }
+    // If database is unavailable, redirect to home
+    // This prevents the app from crashing
+    redirect("/");
+  }
 
   if (!session) {
     redirect("/");

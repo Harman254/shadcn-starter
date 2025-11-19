@@ -2,12 +2,30 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
 import prisma from '@/lib/prisma';
+import { rateLimit as checkRateLimit } from '@/lib/rate-limit';
 
 // GET - Fetch all chat sessions for the current user
 // Requires authentication
 export async function GET(request: NextRequest) {
+  // Apply rate limiting (10 requests per minute per user)
+  const rateLimitResponse = checkRateLimit(request, {
+    maxRequests: 10,
+    windowMs: 60 * 1000, // 1 minute
+  });
+  
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
   try {
-    const session = await auth.api.getSession({ headers: await headers() });
+    let session;
+    try {
+      session = await auth.api.getSession({ headers: await headers() });
+    } catch (sessionError) {
+      // Handle database connection errors when fetching session
+      console.error('[GET /api/chat/sessions] Error fetching session:', sessionError);
+      // Return empty array instead of error - allows frontend to work offline
+      return NextResponse.json({ sessions: [] });
+    }
     
     // Require authentication
     if (!session?.user?.id) {
@@ -30,21 +48,31 @@ export async function GET(request: NextRequest) {
     const take = limit ? Math.min(parseInt(limit, 10), 100) : undefined; // Max 100 per page
     const skip = offset ? parseInt(offset, 10) : undefined;
 
-    const chatSessions = await prisma.chatSession.findMany({
-      where,
-      include: {
-        messages: {
-          orderBy: { timestamp: 'desc' },
-          take: 1, // Only get the last message for preview
+    let chatSessions;
+    let total;
+    
+    try {
+      chatSessions = await prisma.chatSession.findMany({
+        where,
+        include: {
+          messages: {
+            orderBy: { timestamp: 'desc' },
+            take: 1, // Only get the last message for preview
+          },
         },
-      },
-      orderBy: { updatedAt: 'desc' },
-      take,
-      skip,
-    });
+        orderBy: { updatedAt: 'desc' },
+        take,
+        skip,
+      });
 
-    // Get total count for pagination
-    const total = await prisma.chatSession.count({ where });
+      // Get total count for pagination
+      total = await prisma.chatSession.count({ where });
+    } catch (dbError) {
+      // Handle database connection errors gracefully
+      console.error('[GET /api/chat/sessions] Database error:', dbError);
+      // Return empty array instead of error - allows frontend to work offline
+      return NextResponse.json({ sessions: [] });
+    }
 
     // Transform to match our ChatSession type
     const sessions = chatSessions.map((s) => ({
@@ -70,17 +98,24 @@ export async function GET(request: NextRequest) {
       } : undefined,
     });
   } catch (error) {
-    console.error('Error fetching chat sessions:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch chat sessions' },
-      { status: 500 }
-    );
+    console.error('[GET /api/chat/sessions] Unexpected error:', error);
+    // Return empty array instead of error - allows frontend to work offline
+    return NextResponse.json({ sessions: [] });
   }
 }
 
 // POST - Create a new chat session
 // Requires authentication
 export async function POST(request: NextRequest) {
+  // Apply rate limiting (5 requests per minute per user - more restrictive for create)
+  const rateLimitResponse = checkRateLimit(request, {
+    maxRequests: 5,
+    windowMs: 60 * 1000, // 1 minute
+  });
+  
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
   try {
     const session = await auth.api.getSession({ headers: await headers() });
     
@@ -214,6 +249,16 @@ export async function POST(request: NextRequest) {
 // Ideally, DELETE should be in [sessionId]/route.ts, but keeping it here for now
 // Requires authentication
 export async function DELETE(request: NextRequest) {
+  // Apply rate limiting (10 requests per minute per user)
+  const rateLimitResponse = checkRateLimit(request, {
+    maxRequests: 10,
+    windowMs: 60 * 1000, // 1 minute
+  });
+  
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
+  
   try {
     const session = await auth.api.getSession({ headers: await headers() });
     

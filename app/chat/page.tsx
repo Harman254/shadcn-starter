@@ -17,9 +17,26 @@ export default async function ChatPage() {
   let preferencesSummary = '';
   
   try {
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
+    let session;
+    try {
+      session = await auth.api.getSession({
+        headers: await headers(),
+      });
+    } catch (sessionError) {
+      // Handle database connection errors when fetching session
+      console.error('[ChatPage] Error fetching session:', sessionError);
+      if (process.env.NODE_ENV === 'development') {
+        if (sessionError instanceof Error) {
+          console.error('[ChatPage] Session error details:', {
+            message: sessionError.message,
+            stack: sessionError.stack,
+          });
+        }
+        console.warn('[ChatPage] Continuing without session - chat will still function');
+      }
+      // Continue without session - chat can work without preferences
+      session = null;
+    }
     
     if (session?.user?.id) {
       try {

@@ -305,6 +305,24 @@ export function useChatSync(sessionId: string | null, chatType: 'context-aware' 
             }
             return;
           }
+          
+          if (response.status === 404) {
+            // Route not found or session not found - this might be a temporary issue
+            // Don't throw error, just log and continue (messages are stored locally)
+            if (process.env.NODE_ENV === 'development') {
+              console.warn(`[useChatSync] ⚠️ Route or session not found (404). Messages stored locally.`);
+            }
+            return;
+          }
+          
+          if (response.status === 503) {
+            // Database connection failed - messages stored locally
+            if (process.env.NODE_ENV === 'development') {
+              console.warn(`[useChatSync] ⚠️ Database unavailable (503). Messages stored locally.`);
+            }
+            return;
+          }
+          
           throw new Error(result.error || `Failed to save messages: ${response.status}`);
         }
         

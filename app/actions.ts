@@ -37,10 +37,42 @@ export async function getResponse(
     if (chatType === 'context-aware') {
       // 🧠 Context-aware chat — uses message history for context
       // Limit to last 10 messages to avoid token limits (the flow will further limit to 5)
-      const allHistory = messages.slice(0, -1).map((m) => ({
-        role: m.role as 'user' | 'assistant',
-        content: m.content,
-      }));
+      // CRITICAL: Re-embed UI metadata (meal plans, grocery lists) back into content
+      // so the AI flow can extract them for grocery list generation
+      const allHistory = messages.slice(0, -1).map((m) => {
+        let content = m.content;
+        
+        // If message has UI metadata (meal plan or grocery list), re-embed it as [UI_METADATA:]
+        // This ensures meal plans are available for grocery list generation
+        if (m.ui) {
+          const uiMetadata: any = {};
+          
+          if (m.ui.mealPlan) {
+            uiMetadata.mealPlan = m.ui.mealPlan;
+          }
+          
+          if (m.ui.groceryList) {
+            uiMetadata.groceryList = m.ui.groceryList;
+          }
+          
+          // Only embed if we have actual metadata to embed
+          if (Object.keys(uiMetadata).length > 0) {
+            // Encode as base64 (browser-compatible)
+            const jsonString = JSON.stringify(uiMetadata);
+            const base64String = Buffer.from(jsonString).toString('base64');
+            
+            // Append [UI_METADATA:] to content if not already present
+            if (!content.includes('[UI_METADATA:')) {
+              content = content + ' [UI_METADATA:' + base64String + ']';
+            }
+          }
+        }
+        
+        return {
+          role: m.role as 'user' | 'assistant',
+          content,
+        };
+      });
       
       // Limit chat history early to prevent passing too much data
       // Reduced from 10 to 5 messages to reduce token usage
