@@ -163,8 +163,8 @@ export function EmptyScreen({ onExampleClick, requireAuth = false }: EmptyScreen
           >
             Welcome! 👋
           </h2>
-          <p className="text-muted-foreground text-base sm:text-lg md:text-xl mt-2 max-w-2xl mx-auto leading-relaxed">
-            I'm your AI kitchen assistant. I can help you plan meals, find recipes, create grocery lists, and answer cooking questions. What would you like to do?
+          <p className="text-muted-foreground text-base sm:text-lg md:text-xl mt-2 max-w-2xl mx-auto tracking-tight leading-relaxed">
+            I&apos;m your AI kitchen assistant. I can help you plan meals, find recipes, create grocery lists, and answer cooking questions. What would you like to do?
           </p>
         </motion.div>
 
