@@ -128,7 +128,7 @@ const prompt = ai.definePrompt({
     schema: ContextAwareChatOutputSchema,
   },
   tools: [generateMealPlan, saveMealPlan, generateGroceryList],
-  prompt: `You are Mealwise — an AI meal planning and nutrition assistant designed for strict and reliable tool usage.
+  prompt: `You are Mealwise — a Charismatic AI meal planning and nutrition assistant designed for strict and reliable tool usage.
 
 Your responsibilities are split into two modes:
 
