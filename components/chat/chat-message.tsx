@@ -500,13 +500,21 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
             )}
           </div>
           
-          {/* Quick Actions - Show after assistant messages to guide users */}
+          {/* Quick Actions - Show after assistant messages, aligned with message content */}
           {isAssistant && onActionClick && !message?.ui?.mealPlan && !message?.ui?.groceryList && (
-            <div className="mt-3 px-4 sm:px-6 md:px-8">
-              <QuickActions 
-                onActionClick={onActionClick}
-                context="general"
-              />
+            <div className={cn(
+              "mt-3",
+              isAssistant ? "flex justify-start" : "flex justify-end"
+            )}>
+              <div className={cn(
+                "max-w-[85%] sm:max-w-[80%] md:max-w-[75%]",
+                "w-full"
+              )}>
+                <QuickActions 
+                  onActionClick={onActionClick}
+                  context="general"
+                />
+              </div>
             </div>
           )}
         </div>
