@@ -130,10 +130,10 @@ export const nutritionAnalysisTool: ToolDefinition = {
     return {
       dailyNutrition,
       totalNutrition: {
-        calories: dailyNutrition.reduce((sum, d) => sum + d.calories, 0),
-        protein: dailyNutrition.reduce((sum, d) => sum + d.protein, 0),
-        carbs: dailyNutrition.reduce((sum, d) => sum + d.carbs, 0),
-        fat: dailyNutrition.reduce((sum, d) => sum + d.fat, 0),
+        calories: dailyNutrition.reduce((sum: number, d: { calories: number }) => sum + d.calories, 0),
+        protein: dailyNutrition.reduce((sum: number, d: { protein: number }) => sum + d.protein, 0),
+        carbs: dailyNutrition.reduce((sum: number, d: { carbs: number }) => sum + d.carbs, 0),
+        fat: dailyNutrition.reduce((sum: number, d: { fat: number }) => sum + d.fat, 0),
       },
       itemNutrition: nutritionData,
     };
@@ -218,7 +218,8 @@ export const groceryPricingTool: ToolDefinition = {
   cacheKey(input: any, context: OrchestrationContext): string {
     const mealPlanId = context.previousResults?.generateMealPlan?.mealPlan?.id || 'unknown';
     const location = context.locationData?.city || 'unknown';
-    return CacheManager.generateKey('pricing', { mealPlanId, location });
+    const cache = getCacheManager();
+    return cache.generateKey('pricing', { mealPlanId, location });
   },
 };
 
