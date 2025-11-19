@@ -286,7 +286,7 @@ export const generateMealPlan = ai.defineTool(
   {
     name: "generate_meal_plan",
         description:
-          "MANDATORY: Call this function when user asks to generate, create, or plan meals. Do NOT respond with text - you MUST call this function. CRITICAL: Always use the EXACT duration and mealsPerDay the user specifies. Only use defaults (duration: 1, mealsPerDay: 3) if user does NOT mention numbers. IMPORTANT: Pass the last 3-5 chat messages as chatMessages parameter so the meal plan prioritizes what the user actually wants right now over saved preferences.",
+          "MANDATORY: Call this function IMMEDIATELY when user asks to generate, create, or plan meals. Do NOT say 'Okay, I will' or 'I will create' - just call this function. NO TEXT BEFORE THE TOOL CALL. CRITICAL: Always use the EXACT duration and mealsPerDay the user specifies. Only use defaults (duration: 1, mealsPerDay: 3) if user does NOT mention numbers. IMPORTANT: Pass the last 3-5 chat messages as chatMessages parameter so the meal plan prioritizes what the user actually wants right now over saved preferences.",
     inputSchema: GenerateMealPlanInputSchema,
     outputSchema: GenerateMealPlanOutputSchema,
   },
