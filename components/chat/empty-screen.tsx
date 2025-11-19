@@ -133,7 +133,11 @@ export function EmptyScreen({ onExampleClick, requireAuth = false }: EmptyScreen
       variants={containerVariants}
       initial="hidden"
       animate="visible"
-      className="h-full flex items-center justify-center overflow-auto"
+      className={cn(
+        "h-full flex items-center justify-center",
+        "overflow-y-auto overflow-x-hidden",
+        "overflow-scroll-smooth" // Smooth scrolling on mobile
+      )}
       role="region"
       aria-labelledby="empty-title"
     >
@@ -171,7 +175,7 @@ export function EmptyScreen({ onExampleClick, requireAuth = false }: EmptyScreen
         {/* Example Messages */}
         <motion.div
           variants={containerVariants}
-          className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4"
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 w-full max-w-5xl mx-auto"
           role="group"
           aria-label="Example conversation starters"
         >
@@ -187,7 +191,8 @@ export function EmptyScreen({ onExampleClick, requireAuth = false }: EmptyScreen
             <Button
               variant="outline"
                   className={cn(
-                    "h-auto w-full p-4 sm:p-5",
+                    "h-auto w-full p-4 sm:p-5 md:p-6",
+                    "min-h-[100px] sm:min-h-[110px]", // Ensure adequate touch target size
                     "text-left justify-start",
                     "bg-card/50 dark:bg-card/30",
                     "border-border/60",
@@ -197,7 +202,8 @@ export function EmptyScreen({ onExampleClick, requireAuth = false }: EmptyScreen
                     "group focus-visible:ring-2 focus-visible:ring-primary",
                     "rounded-xl sm:rounded-2xl",
                     "shadow-sm hover:shadow-md",
-                    "relative overflow-hidden"
+                    "relative overflow-hidden",
+                    "active:scale-[0.98]" // Better mobile tap feedback
                   )}
               onClick={() => onExampleClick(example.message)}
               aria-label={`Start conversation: ${example.message}`}

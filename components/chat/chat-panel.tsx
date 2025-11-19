@@ -485,16 +485,16 @@ export function ChatPanel({
         
         // Show toast notification (but don't auto-redirect if UI buttons are present)
         if (!assistantMessage.ui?.actions) {
-          toast({
-            title: 'Meal Plan Saved!',
-            description: 'Redirecting to your meal plans...',
-            duration: 2000,
-          });
-          
+        toast({
+          title: 'Meal Plan Saved!',
+          description: 'Redirecting to your meal plans...',
+          duration: 2000,
+        });
+        
           // Redirect after a short delay
-          setTimeout(() => {
-            router.push('/meal-plans');
-          }, 1500);
+        setTimeout(() => {
+          router.push('/meal-plans');
+        }, 1500);
         } else {
           // If UI buttons are present, just show a toast
           toast({
@@ -718,19 +718,19 @@ export function ChatPanel({
           </motion.div>
         )} */}
         
-        {/* Messages area - takes remaining space and scrolls */}
+      {/* Messages area - takes remaining space and scrolls */}
         <div 
           className="flex-1 min-h-0 overflow-hidden relative" 
           aria-live="polite" 
           aria-atomic="false"
         >
-          {hasMessages ? (
+        {hasMessages ? (
             <ChatMessages messages={messages} isLoading={isLoading} onActionClick={handleSubmit} />
-          ) : (
-            <EmptyScreen onExampleClick={handleSubmit} requireAuth={false} />
-          )}
-        </div>
-        
+        ) : (
+          <EmptyScreen onExampleClick={handleSubmit} requireAuth={false} />
+        )}
+      </div>
+      
         {/* Fixed input at bottom with gradient fade */}
         <div 
           className="relative shrink-0"
@@ -741,10 +741,10 @@ export function ChatPanel({
           <div className="absolute top-0 left-0 right-0 h-8 bg-gradient-to-b from-transparent to-background/80 dark:to-background/70 pointer-events-none z-10" />
           
           <div className="relative z-20 border-t border-border/50 bg-background/95 dark:bg-background/90 backdrop-blur-xl">
-            <ChatInput onSubmit={handleSubmit} isLoading={isLoading} disabled={false} />
+        <ChatInput onSubmit={handleSubmit} isLoading={isLoading} disabled={false} />
           </div>
-        </div>
       </div>
+    </div>
     </ChatErrorBoundary>
   );
 }

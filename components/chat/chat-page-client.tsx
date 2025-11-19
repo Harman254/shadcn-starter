@@ -46,7 +46,7 @@ export function ChatPageClient({ preferences = [], preferencesSummary = '' }: Ch
       <div className={cn(
         "relative z-10 w-full",
         "max-w-[1800px]",
-        "h-[100vh] sm:h-[calc(100vh-24px)] md:h-[calc(100vh-32px)] lg:h-[calc(100vh-48px)]",
+        "h-[100dvh] sm:h-[calc(100dvh-24px)] md:h-[calc(100dvh-32px)] lg:h-[calc(100dvh-48px)]",
         "flex flex-col lg:flex-row gap-0 sm:gap-3 md:gap-4 lg:gap-6"
       )}>
         {/* Left Sidebar - Chat History (Desktop) */}
@@ -70,10 +70,10 @@ export function ChatPageClient({ preferences = [], preferencesSummary = '' }: Ch
             "overflow-hidden",
             "transition-all duration-300"
           )}>
-            <ChatHistoryClient 
-              chatType={activeTab === 'meal-log' ? 'context-aware' : 'context-aware'} 
-            />
-          </Card>
+          <ChatHistoryClient 
+            chatType={activeTab === 'meal-log' ? 'context-aware' : 'context-aware'} 
+          />
+        </Card>
         </motion.div>
 
         {/* Main Chat Area */}
@@ -98,21 +98,22 @@ export function ChatPageClient({ preferences = [], preferencesSummary = '' }: Ch
           {/* Header */}
           <div className={cn(
             "relative z-10",
-            "px-3 sm:px-4 md:px-6 lg:px-8",
-            "py-3 sm:py-4",
+            "px-4 sm:px-5 md:px-6 lg:px-8",
+            "py-3.5 sm:py-4",
             "border-b border-border/50",
             "bg-background/80 dark:bg-background/70",
             "backdrop-blur-sm",
             "shrink-0",
-            "flex items-center justify-between"
+            "flex items-center justify-between",
+            "safe-area-top" // Support for notched devices
           )}>
             <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
-              {/* Mobile Menu Button & Drawer */}
-              <Sheet open={historyOpen} onOpenChange={setHistoryOpen}>
-                <SheetTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
+                {/* Mobile Menu Button & Drawer */}
+                <Sheet open={historyOpen} onOpenChange={setHistoryOpen}>
+                  <SheetTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
                     className={cn(
                       "lg:hidden shrink-0",
                       "h-9 w-9 sm:h-10 sm:w-10",
@@ -122,10 +123,10 @@ export function ChatPageClient({ preferences = [], preferencesSummary = '' }: Ch
                       "hover:scale-105 active:scale-95"
                     )}
                     aria-label="Open chat history"
-                  >
-                    <Menu className="h-5 w-5" />
-                  </Button>
-                </SheetTrigger>
+                    >
+                      <Menu className="h-5 w-5" />
+                    </Button>
+                  </SheetTrigger>
                 <SheetContent 
                   side="left" 
                   className={cn(
@@ -135,18 +136,18 @@ export function ChatPageClient({ preferences = [], preferencesSummary = '' }: Ch
                     "border-r border-border/60"
                   )}
                 >
-                  <SheetHeader className="sr-only">
-                    <SheetTitle>Chat History</SheetTitle>
-                    <SheetDescription>View and manage your conversation history</SheetDescription>
-                  </SheetHeader>
-                  <div className="h-full flex flex-col">
-                    <ChatHistoryClient 
-                      chatType={activeTab === 'meal-log' ? 'context-aware' : 'context-aware'}
+                    <SheetHeader className="sr-only">
+                      <SheetTitle>Chat History</SheetTitle>
+                      <SheetDescription>View and manage your conversation history</SheetDescription>
+                    </SheetHeader>
+                    <div className="h-full flex flex-col">
+                      <ChatHistoryClient 
+                        chatType={activeTab === 'meal-log' ? 'context-aware' : 'context-aware'}
                       onSessionSelect={() => setHistoryOpen(false)}
-                    />
-                  </div>
-                </SheetContent>
-              </Sheet>
+                      />
+                    </div>
+                  </SheetContent>
+                </Sheet>
 
               {/* Title */}
               <div className="flex items-center gap-2 min-w-0">

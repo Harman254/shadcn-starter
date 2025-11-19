@@ -65,8 +65,8 @@ export function ChatInput({ onSubmit, isLoading, disabled = false }: ChatInputPr
   const hasValue = value.trim().length > 0
 
   return (
-    <div className="w-full">
-      <div className="max-w-4xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-3 sm:py-4 md:py-5">
+    <div className="w-full safe-area-bottom"> {/* Support for notched devices */}
+      <div className="max-w-4xl mx-auto px-4 sm:px-5 md:px-6 lg:px-8 py-3.5 sm:py-4 md:py-5">
               <form onSubmit={handleSubmit} className="relative">
           <motion.div
             className={cn(
@@ -104,12 +104,13 @@ export function ChatInput({ onSubmit, isLoading, disabled = false }: ChatInputPr
                     rows={1}
               className={cn(
                 "relative z-10 flex-1 resize-none bg-transparent border-none",
-                "text-foreground text-[15px] sm:text-base",
+                "text-foreground text-base sm:text-[15px] md:text-base", // Larger base size for mobile readability
                 "leading-[1.6] placeholder:text-muted-foreground/50",
                 "focus:ring-0 focus:outline-none focus-visible:ring-0",
                 "w-full font-sans antialiased",
-                "min-h-[24px] max-h-[200px]",
-                "scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent"
+                "min-h-[28px] max-h-[200px]", // Slightly larger min-height for mobile
+                "scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent",
+                "-webkit-text-size-adjust-none" // Prevent iOS text size adjustment
               )}
                     disabled={isLoading || disabled}
               aria-label={disabled ? "Sign in to start chatting" : "Chat message input"}
@@ -125,13 +126,14 @@ export function ChatInput({ onSubmit, isLoading, disabled = false }: ChatInputPr
               </span>
             )}
 
-            {/* Send Button */}
+            {/* Send Button - minimum 44x44px touch target for mobile */}
             <motion.button
                       type="submit"
               disabled={isLoading || !hasValue || disabled}
                       className={cn(
                 "relative z-10 shrink-0",
-                "h-8 w-8 sm:h-9 sm:w-9 md:h-10 md:w-10",
+                "min-h-[44px] min-w-[44px]", // Minimum touch target size
+                "h-10 w-10 sm:h-11 sm:w-11 md:h-12 md:w-12",
                 "rounded-xl sm:rounded-2xl",
                 "flex items-center justify-center",
                 "transition-all duration-200",

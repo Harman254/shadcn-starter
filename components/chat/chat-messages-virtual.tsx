@@ -3,6 +3,7 @@
 import { useEffect, useRef, memo } from 'react';
 import type { Message } from '@/types';
 import { ChatMessage } from './chat-message';
+import { cn } from '@/lib/utils';
 
 // Dynamically import virtual scrolling - gracefully degrades if not installed
 let useVirtualizer: any = null;
@@ -152,7 +153,10 @@ export const ChatMessagesVirtual = memo(function ChatMessagesVirtual({
   if (useVirtual && useVirtualizer) {
     return (
       <div 
-        className="h-full w-full overflow-auto" 
+        className={cn(
+          "h-full w-full overflow-y-auto overflow-x-hidden",
+          "overflow-scroll-smooth" // Smooth scrolling on mobile
+        )}
         ref={parentRef}
         role="log" 
         aria-live="polite" 
@@ -171,7 +175,11 @@ export const ChatMessagesVirtual = memo(function ChatMessagesVirtual({
   // Regular rendering for smaller lists
   return (
     <div 
-      className="h-full w-full overflow-auto" 
+      className={cn(
+        "h-full w-full overflow-y-auto overflow-x-hidden",
+        "scrollbar-thin scrollbar-thumb-primary/20 scrollbar-track-transparent",
+        "overflow-scroll-smooth" // Smooth scrolling on mobile
+      )}
       ref={parentRef}
       role="log" 
       aria-live="polite" 

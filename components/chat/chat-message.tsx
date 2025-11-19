@@ -221,56 +221,56 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
   return (
     <>
       {/* Regular message content - with max-width constraints */}
-      <article
-        id={message ? `message-${message.id}` : undefined}
-        className={cn(
-          "w-full py-3 sm:py-4 md:py-5",
-          isAssistant ? "bg-muted/20" : "bg-background",
+    <article
+      id={message ? `message-${message.id}` : undefined}
+      className={cn(
+        "w-full py-3 sm:py-4 md:py-5",
+        isAssistant ? "bg-muted/20" : "bg-background",
           "animate-in fade-in slide-in-from-bottom-2 duration-300",
           // Hide regular message container if tool call results are present
           (isAssistant && (message?.ui?.mealPlan || message?.ui?.groceryList)) && "hidden"
-        )}
-        role="article"
-        aria-label={isAssistant ? "AI assistant message" : "Your message"}
-        data-message-id={message?.id}
-      >
+      )}
+      role="article"
+      aria-label={isAssistant ? "AI assistant message" : "Your message"}
+      data-message-id={message?.id}
+    >
+      <div className={cn(
+        "max-w-4xl mx-auto px-4 sm:px-5 md:px-6 lg:px-8",
+        isAssistant ? "flex justify-start" : "flex justify-end"
+      )}>
         <div className={cn(
-          "max-w-4xl mx-auto px-4 sm:px-6 md:px-8",
-          isAssistant ? "flex justify-start" : "flex justify-end"
-        )}>
-          <div className={cn(
-            "flex items-start gap-3 sm:gap-4",
-            "max-w-[85%] sm:max-w-[80%] md:max-w-[75%]",
-            isAssistant ? "flex-row" : "flex-row-reverse"
-          )}>
-            <Avatar
-              className={cn(
-                "h-8 w-8 sm:h-9 sm:w-9 md:h-10 md:w-10 shrink-0 transition-transform hover:scale-105",
-              )}
-            >
-              <AvatarFallback
-                className={cn(
-                  "transition-all text-xs font-semibold",
-                  isAssistant
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted text-muted-foreground",
-                )}
-              >
-                {isAssistant ? (
-                  <Icons.moon className="h-4 w-4 sm:h-5 sm:w-5" />
-                ) : (
-                  <User className="h-4 w-4 sm:h-5 sm:w-5" />
-                )}
-              </AvatarFallback>
-            </Avatar>
+          "flex items-start gap-3 sm:gap-4",
+          "max-w-[85%] sm:max-w-[80%] md:max-w-[75%]",
+        isAssistant ? "flex-row" : "flex-row-reverse"
+      )}>
+        <Avatar
+          className={cn(
+            "h-8 w-8 sm:h-9 sm:w-9 md:h-10 md:w-10 shrink-0 transition-transform hover:scale-105",
+          )}
+        >
+          <AvatarFallback
+            className={cn(
+              "transition-all text-xs font-semibold",
+              isAssistant
+                ? "bg-primary text-primary-foreground"
+                : "bg-muted text-muted-foreground",
+            )}
+          >
+            {isAssistant ? (
+              <Icons.moon className="h-4 w-4 sm:h-5 sm:w-5" />
+            ) : (
+              <User className="h-4 w-4 sm:h-5 sm:w-5" />
+            )}
+          </AvatarFallback>
+        </Avatar>
 
-            <div className={cn(
-              "flex-1 min-w-0",
-              !isAssistant && "flex flex-col items-end"
-            )}>
-              <div className="relative group/message">
-                {isAssistant ? (
-                  <div className={cn(
+        <div className={cn(
+          "flex-1 min-w-0",
+          !isAssistant && "flex flex-col items-end"
+        )}>
+          <div className="relative group/message">
+            {isAssistant ? (
+              <div className={cn(
                     "prose prose-sm sm:prose-base lg:prose-lg max-w-none",
                     "font-sans antialiased",
                     "prose-headings:text-foreground prose-headings:font-bold prose-headings:tracking-tight",
@@ -442,37 +442,37 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
                     "shadow-sm backdrop-blur-sm",
                     "transition-all hover:shadow-md"
                   )}>
-                    <p
-                      className={cn(
+                  <p
+                    className={cn(
                         "text-[15px] sm:text-base leading-[1.75] whitespace-pre-wrap break-words",
                         "text-foreground tracking-normal",
                         "font-sans font-normal antialiased"
-                      )}
-                    >
-                      {message.content}
-                    </p>
+                    )}
+                  >
+                    {message.content}
+                  </p>
                   </div>
                 )}
-                {message && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className={cn(
-                      "absolute opacity-0 group-hover/message:opacity-100 transition-opacity h-8 w-8 rounded-md",
-                      "text-muted-foreground hover:text-foreground hover:bg-muted/50",
-                      isAssistant ? "-top-2 right-0" : "-top-2 left-0"
-                    )}
-                    onClick={handleCopy}
-                    aria-label="Copy message"
-                  >
-                    {copied ? (
-                      <Check className="h-4 w-4" />
-                    ) : (
-                      <Copy className="h-4 w-4" />
-                    )}
-                  </Button>
+            {message && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className={cn(
+                  "absolute opacity-0 group-hover/message:opacity-100 transition-opacity h-8 w-8 rounded-md",
+                  "text-muted-foreground hover:text-foreground hover:bg-muted/50",
+                  isAssistant ? "-top-2 right-0" : "-top-2 left-0"
                 )}
-              </div>
+                onClick={handleCopy}
+                aria-label="Copy message"
+              >
+                {copied ? (
+                  <Check className="h-4 w-4" />
+                ) : (
+                  <Copy className="h-4 w-4" />
+                )}
+              </Button>
+            )}
+          </div>
             </div>
           </div>
           
@@ -493,10 +493,10 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
                 )}
               </div>
             )}
-            {isMounted && message?.timestamp && formattedTime && (
+          {isMounted && message?.timestamp && formattedTime && (
               <span className={cn("text-xs text-muted-foreground/60")}>
-                {formattedTime}
-              </span>
+              {formattedTime}
+            </span>
             )}
           </div>
           
@@ -524,9 +524,10 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
       {isAssistant && (message?.ui?.mealPlan || message?.ui?.groceryList) && (
         <div className={cn(
           "w-full",
-          "relative -mx-0 sm:-mx-3 md:-mx-4 lg:-mx-6", // Negative margins to break out of container
+          "relative -mx-0", // No negative margins on mobile to prevent horizontal scroll
+          "sm:-mx-3 md:-mx-4 lg:-mx-6", // Negative margins on larger screens
           "px-0 sm:px-3 md:px-4 lg:px-6", // Restore padding for content
-          "my-4 sm:my-6" // Vertical spacing
+          "my-3 sm:my-4 md:my-6" // Vertical spacing
         )}>
           {/* Meal Plan Display - Full width immersive */}
           {message?.ui?.mealPlan && (
@@ -860,9 +861,9 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
                                             <span>{item.quantity}</span>
                                           </div>
                                         )}
-                                      </div>
-                                    </div>
-                                  </div>
+      </div>
+    </div>
+      </div>
                                   <div className="flex flex-col items-end gap-2 shrink-0">
                                     {item.estimatedPrice && (
                                       <div className={cn(
