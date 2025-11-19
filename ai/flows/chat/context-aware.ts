@@ -145,8 +145,15 @@ These modes MUST NEVER mix.
 You MUST call \`generate_meal_plan\` when the user does ANY of the following:
 - Asks for a meal plan ("meal plan", "plan meals", "create a plan", "one-day plan", "2 day plan")
 - Uses action words ("generate", "create", "make", "do it")
+- **CRITICAL: Responds "yes", "ok", "sure", "yeah", "yep", or similar after YOU asked about creating a meal plan (e.g., "Would you like me to create a meal plan...")**
 - Responds "yes", "ok", "sure", or similar after discussing a meal plan
 - Mentions number of days or meals (e.g., "4 meals", "one day", "seven days")
+
+**When user says "yes" or "ok" after you ask "Would you like me to create a meal plan...":**
+- IMMEDIATELY call \`generate_meal_plan\` with the dishes mentioned in the conversation
+- Extract duration and mealsPerDay from conversation history if mentioned
+- Default to duration=1, mealsPerDay=3 if not specified
+- DO NOT ask again - just call the tool
 
 **Rules:**
 - Extract **duration** from the user message or conversation history (default = 1).
@@ -227,11 +234,17 @@ Your cooking instructions must include:
    - Provide cooking instructions (CHAT MODE)
    - Then guide: "Would you like me to create a meal plan that includes ugali and omena? After that, I can generate a grocery list with price estimates."
 
-2. **User asks for meal plan**:
+2. **User responds "yes" or "ok" to your meal plan question**:
+   - IMMEDIATELY call \`generate_meal_plan\` (TOOL MODE - tool call only)
+   - Extract dishes mentioned in conversation (e.g., "ugali and omena")
+   - Use default duration=1, mealsPerDay=3 unless user specified otherwise
+   - DO NOT ask again - just call the tool
+
+3. **User asks for meal plan directly**:
    - Call \`generate_meal_plan\` (TOOL MODE - tool call only)
    - After tool result, suggest: "Would you like to save this meal plan?" or "Would you like a grocery list with price estimates?"
 
-3. **User asks for grocery list**:
+4. **User asks for grocery list**:
    - If meal plan exists → Call \`generate_grocery_list\` (TOOL MODE)
    - If no meal plan → Guide: "I need a meal plan first. Would you like me to create one that includes [dish from conversation]?"
 
@@ -461,6 +474,12 @@ const contextAwareChatFlow = ai.defineFlow(
             return /meal.*plan|generate.*meal|create.*meal|plan.*meal|would you like.*meal/i.test(content);
           });
           
+          // CRITICAL: Check if AI's most recent message asked about creating a meal plan
+          // This catches cases where AI asks "Would you like me to create a meal plan..." and user says "yes"
+          const aiJustAskedAboutMealPlan = chatHistory.length > 0 && 
+            chatHistory[chatHistory.length - 1]?.role === 'assistant' &&
+            /would you like.*meal.*plan|create.*meal.*plan|generate.*meal.*plan|meal.*plan.*includes/i.test(chatHistory[chatHistory.length - 1].content.toLowerCase());
+          
           // Check if user previously mentioned wanting a meal plan
           const userWantsMealPlan = chatHistory.some(msg => 
             msg.role === 'user' && /meal.*plan|generate|create.*plan|need.*plan/i.test(msg.content.toLowerCase())
@@ -540,17 +559,34 @@ const contextAwareChatFlow = ai.defineFlow(
           
           // Only trigger meal plan fallback if it's NOT a grocery list request
           // This prevents grocery list requests from incorrectly triggering meal plan generation
-          if (!isGroceryListRequest && (isMealPlanRequest || hasMealPlanContext || (isShortAffirmative && userWantsMealPlan) || (justAcknowledged && isMealPlanRequest)) && !hasToolCalls) {
+          // CRITICAL: If user says "yes/ok" after AI asks about meal plan, ALWAYS trigger meal plan generation
+          const shouldTriggerMealPlan = !isGroceryListRequest && (
+            isMealPlanRequest || 
+            hasMealPlanContext || 
+            (isShortAffirmative && userWantsMealPlan) || 
+            (justAcknowledged && isMealPlanRequest) ||
+            (isShortAffirmative && aiJustAskedAboutMealPlan) // User said "yes" after AI asked about meal plan
+          );
+          
+          if (shouldTriggerMealPlan && !hasToolCalls) {
             console.warn('[contextAwareChatFlow] ⚠️ WARNING: User requested meal plan but tool was NOT called!');
             console.warn('[contextAwareChatFlow] Response was:', output?.response);
             console.warn('[contextAwareChatFlow] User message was:', input.message);
             console.warn('[contextAwareChatFlow] Is grocery list request?', isGroceryListRequest);
+            console.warn('[contextAwareChatFlow] AI just asked about meal plan?', aiJustAskedAboutMealPlan);
             console.warn('[contextAwareChatFlow] 🔧 FALLBACK: Manually calling generateMealPlan tool...');
             
             // Fallback: Manually call the tool core function if model didn't
             try {
               // Use chat history to extract params if current message is short
+              // If AI just asked about meal plan and user said "yes", extract from full conversation context
               const params = extractMealPlanParams(input.message, chatHistory);
+              
+              if (process.env.NODE_ENV === 'development') {
+                console.log('[contextAwareChatFlow] Extracted meal plan params:', params);
+                console.log('[contextAwareChatFlow] Chat history length:', chatHistory.length);
+              }
+              
               const toolResult = await generateMealPlanCore(params);
               
               if (toolResult.success && toolResult.mealPlan) {
