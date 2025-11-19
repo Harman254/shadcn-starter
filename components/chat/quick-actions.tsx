@@ -29,14 +29,14 @@ const quickActions: Record<string, QuickAction[]> = {
     },
     {
       id: 'grocery',
-      label: '🛒 Create grocery list',
+      label: 'Create grocery list',
       icon: <ShoppingCart className="h-3.5 w-3.5" />,
       message: 'Create a grocery list for this meal plan',
       variant: 'outline',
     },
     {
       id: 'swap',
-      label: '🍛 Swap a meal',
+      label: 'Swap a meal',
       icon: <RefreshCw className="h-3.5 w-3.5" />,
       message: 'Can you swap one of the meals?',
       variant: 'outline',
@@ -84,28 +84,28 @@ const quickActions: Record<string, QuickAction[]> = {
   'general': [
     {
       id: 'quick-plan',
-      label: '🥗 Quick meal plan',
+      label: 'Quick meal plan',
       icon: <ChefHat className="h-3.5 w-3.5" />,
       message: 'Generate a quick 1-day meal plan',
       variant: 'outline',
     },
     {
       id: 'kenyan',
-      label: '🌍 Kenyan dishes',
+      label: 'Kenyan dishes',
       icon: <Globe className="h-3.5 w-3.5" />,
       message: 'Show me some Kenyan dishes',
       variant: 'outline',
     },
     {
       id: 'fast',
-      label: '⏱️ 15-minute meals',
+      label: '15-minute meals',
       icon: <Clock className="h-3.5 w-3.5" />,
       message: 'Show me 15-minute meal ideas',
       variant: 'outline',
     },
     {
       id: 'budget',
-      label: '💸 Budget meals',
+      label: 'Budget meals',
       icon: <DollarSign className="h-3.5 w-3.5" />,
       message: 'Show me budget meals under KSh 300',
       variant: 'outline',
@@ -123,7 +123,7 @@ export function QuickActions({ onActionClick, context = 'general' }: QuickAction
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.2, delay: 0.1 }}
-      className="flex flex-wrap items-center gap-2 mt-3 px-1"
+      className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-2 mt-3 px-1"
     >
       {actions.map((action, index) => (
         <motion.div
@@ -137,21 +137,19 @@ export function QuickActions({ onActionClick, context = 'general' }: QuickAction
             size="sm"
             onClick={() => onActionClick(action.message)}
             className={cn(
-              "h-7 px-2.5 sm:px-3 text-xs sm:text-[13px]",
+              "h-8 sm:h-7 px-3 sm:px-2.5 text-xs sm:text-[13px]",
               "font-medium",
               "rounded-lg",
               "transition-all duration-200",
               "hover:scale-105 active:scale-95",
               "border-border/50",
+              "w-full sm:w-auto",
               action.variant === 'default' 
                 ? "bg-primary text-primary-foreground hover:bg-primary/90"
                 : "bg-background/50 hover:bg-muted/50 hover:border-primary/30"
             )}
           >
-            {/* Only show icon if label doesn't contain emoji (emojis replace icons) */}
-            {!action.label.match(/[🥗🍛🛒🌍⏱️💸]/) && (
-              <span className="mr-1.5">{action.icon}</span>
-            )}
+            <span className="mr-1.5">{action.icon}</span>
             {action.label}
           </Button>
         </motion.div>
