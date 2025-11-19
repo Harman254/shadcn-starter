@@ -65,9 +65,9 @@ export interface ToolDefinition {
 // ============================================================================
 
 export class ToolOrchestrator {
-  private tools: Map<string, ToolDefinition> = new Map();
+  protected tools: Map<string, ToolDefinition> = new Map();
   private executionHistory: ToolCall[] = [];
-  private cache: Map<string, { result: any; timestamp: number; ttl: number }> = new Map();
+  protected cache: Map<string, { result: any; timestamp: number; ttl: number }> = new Map();
 
   /**
    * Register a tool definition
@@ -224,7 +224,7 @@ export class ToolOrchestrator {
   /**
    * Build dependency graph from tool calls
    */
-  private buildDependencyGraph(
+  protected buildDependencyGraph(
     calls: ToolCall[],
     context: OrchestrationContext
   ): Map<string, string[]> {
@@ -251,7 +251,7 @@ export class ToolOrchestrator {
    * Topological sort for dependency resolution
    * Returns array of phases, where each phase can be executed in parallel
    */
-  private topologicalSort(graph: Map<string, string[]>): string[][] {
+  protected topologicalSort(graph: Map<string, string[]>): string[][] {
     const phases: string[][] = [];
     const inDegree = new Map<string, number>();
     const nodes = Array.from(graph.keys());
@@ -306,7 +306,7 @@ export class ToolOrchestrator {
   /**
    * Aggregate results from multiple tools into a unified structure
    */
-  private aggregateResults(
+  protected aggregateResults(
     results: Record<string, any>,
     context: OrchestrationContext
   ): any {
