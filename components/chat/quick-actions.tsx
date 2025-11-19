@@ -120,6 +120,7 @@ export function QuickActions({ onActionClick, context = 'general' }: QuickAction
   // Determine layout based on context and number of actions
   const isCompact = context === 'grocery-list' || context === 'recipe';
   const isWide = context === 'meal-plan' && actions.length >= 4;
+  const isGeneral = context === 'general';
 
   return (
     <motion.div
@@ -134,23 +135,23 @@ export function QuickActions({ onActionClick, context = 'general' }: QuickAction
       {/* Subtle background container */}
       <div className={cn(
         "relative",
-        "rounded-xl sm:rounded-2xl",
-        "bg-gradient-to-br from-muted/30 via-muted/20 to-transparent",
-        "dark:from-muted/20 dark:via-muted/10 dark:to-transparent",
-        "border border-border/40",
+        isGeneral ? "rounded-lg sm:rounded-xl" : "rounded-xl sm:rounded-2xl",
+        isGeneral 
+          ? "bg-muted/20 dark:bg-muted/10 border border-border/30"
+          : "bg-gradient-to-br from-muted/30 via-muted/20 to-transparent dark:from-muted/20 dark:via-muted/10 dark:to-transparent border border-border/40",
         "backdrop-blur-sm",
-        "p-3 sm:p-4",
-        "shadow-sm"
+        isGeneral ? "p-2 sm:p-2.5" : "p-3 sm:p-4",
+        isGeneral ? "shadow-none" : "shadow-sm"
       )}>
         {/* Header label - only for general context */}
-        {context === 'general' && (
+        {isGeneral && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.1 }}
-            className="mb-3"
+            className="mb-2"
           >
-            <span className="text-xs font-medium text-muted-foreground tracking-wide uppercase">
+            <span className="text-[10px] sm:text-xs font-medium text-muted-foreground/80 tracking-wide uppercase">
               Quick Actions
             </span>
           </motion.div>
@@ -158,10 +159,12 @@ export function QuickActions({ onActionClick, context = 'general' }: QuickAction
 
         {/* Actions Grid */}
         <div className={cn(
-          "grid gap-2 sm:gap-2.5",
+          "grid gap-1.5 sm:gap-2",
           isCompact 
             ? "grid-cols-1 sm:grid-cols-2" 
             : isWide
+            ? "grid-cols-2 sm:grid-cols-2 lg:grid-cols-4"
+            : isGeneral
             ? "grid-cols-2 sm:grid-cols-2 lg:grid-cols-4"
             : "grid-cols-2 sm:grid-cols-2 lg:grid-cols-4"
         )}>
@@ -184,13 +187,14 @@ export function QuickActions({ onActionClick, context = 'general' }: QuickAction
                 onClick={() => onActionClick(action.message)}
                 className={cn(
                   "relative w-full",
-                  "h-auto min-h-[44px] sm:min-h-[48px]",
-                  "px-3 sm:px-4 py-2.5 sm:py-3",
-                  "flex flex-col items-start justify-center gap-1",
+                  isGeneral 
+                    ? "h-auto min-h-[32px] sm:min-h-[34px] px-2 sm:px-2.5 py-1 sm:py-1.5"
+                    : "h-auto min-h-[44px] sm:min-h-[48px] px-3 sm:px-4 py-2.5 sm:py-3",
+                  "flex flex-col items-start justify-center",
+                  isGeneral ? "gap-0" : "gap-1",
                   "text-left",
-                  "rounded-lg sm:rounded-xl",
+                  isGeneral ? "rounded-md" : "rounded-lg sm:rounded-xl",
                   "transition-all duration-200",
-                  "border-border/50",
                   "group",
                   // Primary action styling
                   action.variant === 'default' 
@@ -199,22 +203,31 @@ export function QuickActions({ onActionClick, context = 'general' }: QuickAction
                         "hover:bg-primary/90",
                         "shadow-md shadow-primary/20",
                         "hover:shadow-lg hover:shadow-primary/30",
-                        "border-primary/20"
+                        "border border-primary/20"
+                      )
+                    : isGeneral
+                    ? cn(
+                        "bg-transparent hover:bg-muted/40",
+                        "dark:hover:bg-muted/20",
+                        "border border-border/30 hover:border-border/50",
+                        "text-foreground"
                       )
                     : cn(
                         "bg-background/60 hover:bg-background/80",
                         "dark:bg-background/40 dark:hover:bg-background/60",
                         "hover:border-primary/40",
                         "hover:shadow-md",
+                        "border border-border/50",
                         "text-foreground"
                       )
                 )}
               >
                 {/* Label */}
                 <span className={cn(
-                  "font-semibold text-xs sm:text-sm",
-                  "leading-tight",
-                  "w-full"
+                  "font-medium w-full",
+                  isGeneral 
+                    ? "text-[11px] sm:text-xs leading-[1.3]"
+                    : "font-semibold text-xs sm:text-sm leading-tight"
                 )}>
                   {action.label}
                 </span>
@@ -222,11 +235,10 @@ export function QuickActions({ onActionClick, context = 'general' }: QuickAction
                 {/* Description - only show on larger screens and for outline variants */}
                 {action.description && action.variant !== 'default' && (
                   <span className={cn(
-                    "text-[10px] sm:text-xs",
-                    "text-muted-foreground/70",
-                    "leading-tight",
-                    "hidden sm:block",
-                    "w-full"
+                    "text-muted-foreground/70 leading-tight w-full",
+                    isGeneral
+                      ? "text-[9px] sm:text-[10px] hidden sm:block"
+                      : "text-[10px] sm:text-xs hidden sm:block"
                   )}>
                     {action.description}
                   </span>
@@ -234,7 +246,8 @@ export function QuickActions({ onActionClick, context = 'general' }: QuickAction
 
                 {/* Hover effect overlay */}
                 <div className={cn(
-                  "absolute inset-0 rounded-lg sm:rounded-xl",
+                  "absolute inset-0",
+                  isGeneral ? "rounded-md sm:rounded-lg" : "rounded-lg sm:rounded-xl",
                   "bg-gradient-to-br from-primary/0 via-primary/0 to-primary/5",
                   "opacity-0 group-hover:opacity-100",
                   "transition-opacity duration-200",

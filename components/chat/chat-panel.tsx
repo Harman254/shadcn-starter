@@ -315,6 +315,18 @@ export function ChatPanel({
       return;
     }
     
+    // Track quick action button clicks
+    const isQuickAction = /^(create|generate|make|get|show|give|explain|swap|add).*(grocery|meal|plan|snacks|variations|substitutes|cheaper|healthier|kenyan|dishes|15-min|budget)/i.test(value.trim());
+    if (isQuickAction) {
+      logger.log('[ChatPanel] 🎯 Quick action button clicked:', value.trim());
+      // Identify specific action type
+      if (/grocery.*list/i.test(value)) {
+        logger.log('[ChatPanel] 📝 Action type: GROCERY LIST REQUEST');
+      } else if (/meal.*plan/i.test(value)) {
+        logger.log('[ChatPanel] 📝 Action type: MEAL PLAN REQUEST');
+      }
+    }
+    
     if (!isAuthenticated) {
       openAuthModal('sign-in');
       return;

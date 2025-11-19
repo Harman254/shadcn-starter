@@ -172,8 +172,15 @@ You MUST call \`generate_meal_plan\` when the user does ANY of the following:
 
 You MUST call \`generate_grocery_list\` when the user:
 - Says "grocery list", "shopping list", "ingredients list"
+- Says "create a grocery list", "generate grocery list", "make a grocery list"
+- Says "grocery list for this meal plan" or "grocery list for meal plan" (this is a GROCERY LIST request, NOT a meal plan request)
 - Asks "what do I need to buy", "what ingredients do I need"
 - Says "yes/ok" after you ask if they want a grocery list
+
+**CRITICAL PRIORITY RULE:**
+- If the user message contains BOTH "grocery list" AND "meal plan" (e.g., "Create a grocery list for this meal plan"), this is ALWAYS a grocery list request, NOT a meal plan request.
+- The phrase "grocery list for meal plan" means: "generate a grocery list FROM the existing meal plan", not "generate a new meal plan".
+- NEVER call \`generate_meal_plan\` when user explicitly mentions "grocery list" in their message.
 
 **CRITICAL: If user mentions dish names (e.g., "ugali", "omena", "beans") WITHOUT explicitly saying "grocery list" or "shopping list", this is NOT a grocery list request. It's a cooking question - use CHAT MODE instead.**
 
@@ -487,12 +494,23 @@ const contextAwareChatFlow = ai.defineFlow(
           
           // Check for grocery list requests - MUST check this BEFORE meal plan requests
           // Use more specific patterns to avoid confusion with meal plan requests
+          // CRITICAL: "grocery list for meal plan" = grocery list request, NOT meal plan request
           // Enhanced patterns to catch: "grocery list for meal plan", "shopping list for meals", etc.
           const isGroceryListRequest = 
-            /grocery.*list|shopping.*list|ingredients.*list|what.*do.*i.*need.*to.*buy|what.*ingredients|buy.*for.*meal|shopping.*for.*meal|grocery.*for.*meal|list.*for.*meal|ingredients.*for.*meal|what.*to.*buy.*for|need.*to.*buy|create.*grocery|generate.*grocery|make.*grocery|get.*grocery/i.test(input.message) ||
+            // Primary patterns - these take absolute priority
+            /^(create|generate|make|get|show|give).*grocery.*list/i.test(input.message) ||
+            /grocery.*list|shopping.*list|ingredients.*list/i.test(input.message) ||
+            /(create|generate|make|get).*list.*for.*(meal|this|the)/i.test(input.message) ||
+            /list.*for.*(meal|this|the)/i.test(input.message) ||
+            /what.*do.*i.*need.*to.*buy|what.*ingredients|buy.*for.*meal|shopping.*for.*meal|grocery.*for.*meal|ingredients.*for.*meal|what.*to.*buy.*for|need.*to.*buy/i.test(input.message) ||
             (isShortAffirmative && chatHistory.some(msg => 
               msg.role === 'assistant' && /grocery.*list|shopping.*list|price.*estimate|create.*grocery|generate.*grocery/i.test(msg.content.toLowerCase())
             ));
+          
+          // Log for debugging
+          if (process.env.NODE_ENV === 'development' && isGroceryListRequest) {
+            console.log('[contextAwareChatFlow] ✅ GROCERY LIST REQUEST DETECTED:', input.message);
+          }
           
           // Check if there's a meal plan in the conversation history (for grocery list generation)
           const hasMealPlanInHistory = chatHistory.some(msg => {
@@ -507,6 +525,8 @@ const contextAwareChatFlow = ai.defineFlow(
           // This prevents grocery list requests from triggering meal plan generation
           if (isGroceryListRequest && !hasToolCalls) {
             console.warn('[contextAwareChatFlow] ⚠️ WARNING: User requested grocery list but tool was NOT called!');
+            console.warn('[contextAwareChatFlow] User message:', input.message);
+            console.warn('[contextAwareChatFlow] Response was:', output?.response);
             console.warn('[contextAwareChatFlow] 🔧 FALLBACK: Attempting to extract meal plan from conversation...');
             
             // Try to extract meal plan from conversation history
@@ -569,6 +589,50 @@ const contextAwareChatFlow = ai.defineFlow(
           );
           
           if (shouldTriggerMealPlan && !hasToolCalls) {
+            // Final safety check: if message contains "grocery list", do NOT generate meal plan
+            const messageLower = input.message.toLowerCase();
+            if (/grocery.*list|shopping.*list/i.test(messageLower)) {
+              console.error('[contextAwareChatFlow] 🚨 BLOCKED: Message contains "grocery list" - NOT generating meal plan!');
+              console.error('[contextAwareChatFlow] User message:', input.message);
+              // Try to handle as grocery list instead
+              if (hasMealPlanInHistory) {
+                console.warn('[contextAwareChatFlow] 🔧 Redirecting to grocery list generation...');
+                // Extract meal plan and generate grocery list
+                let mealPlanData = null;
+                for (let i = chatHistory.length - 1; i >= 0; i--) {
+                  const msg = chatHistory[i];
+                  if (msg.role === 'assistant' && msg.content.includes('[UI_METADATA:')) {
+                    try {
+                      const match = msg.content.match(/\[UI_METADATA:([A-Za-z0-9+/=]+)\]/);
+                      if (match) {
+                        const decoded = Buffer.from(match[1], 'base64').toString('utf-8');
+                        const uiMetadata = JSON.parse(decoded);
+                        if (uiMetadata.mealPlan) {
+                          mealPlanData = uiMetadata.mealPlan;
+                          break;
+                        }
+                      }
+                    } catch (e) {
+                      // Continue searching
+                    }
+                  }
+                }
+                if (mealPlanData) {
+                  try {
+                    const toolResult = await generateGroceryListCore({ mealPlan: mealPlanData });
+                    return {
+                      response: toolResult.message || 'Generated grocery list successfully.',
+                    };
+                  } catch (error) {
+                    console.error('[contextAwareChatFlow] Error generating grocery list:', error);
+                  }
+                }
+              }
+              return {
+                response: 'I detected a grocery list request. Let me generate a grocery list for your meal plan.',
+              };
+            }
+            
             console.warn('[contextAwareChatFlow] ⚠️ WARNING: User requested meal plan but tool was NOT called!');
             console.warn('[contextAwareChatFlow] Response was:', output?.response);
             console.warn('[contextAwareChatFlow] User message was:', input.message);
