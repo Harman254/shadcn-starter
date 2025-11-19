@@ -599,6 +599,47 @@ const contextAwareChatFlow = ai.defineFlow(
             return null;
           };
           
+          // CRITICAL: If wrong tool was called (meal plan instead of grocery list), override it
+          if (wrongToolCalled) {
+            console.error('[contextAwareChatFlow] 🚨 WRONG TOOL CALLED: AI called generate_meal_plan but user asked for grocery list!');
+            console.error('[contextAwareChatFlow] 🔧 OVERRIDING: Redirecting to grocery list generation...');
+            
+            const mealPlanData = extractMealPlanFromHistory();
+            
+            if (!mealPlanData) {
+              console.warn('[contextAwareChatFlow] ⚠️ No meal plan found in conversation history');
+              return {
+                response: 'I need a meal plan to generate a grocery list. Please generate a meal plan first, then I can create a shopping list with price estimates.',
+              };
+            }
+            
+            try {
+              const toolResult = await generateGroceryListCore({ mealPlan: mealPlanData });
+              
+              if (toolResult.success && toolResult.groceryList) {
+                console.log('[contextAwareChatFlow] ✅ Grocery list generated successfully (after wrong tool override):', {
+                  itemCount: toolResult.groceryList.length,
+                  hasLocationInfo: !!toolResult.locationInfo,
+                  messageHasUIMetadata: toolResult.message.includes('[UI_METADATA:'),
+                });
+                
+                return {
+                  response: toolResult.message, // Contains UI_METADATA for grocery list display
+                };
+              } else {
+                console.error('[contextAwareChatFlow] ❌ Grocery list generation failed:', toolResult.message);
+                return {
+                  response: toolResult.message || 'Failed to generate grocery list. Please try again.',
+                };
+              }
+            } catch (toolError) {
+              console.error('[contextAwareChatFlow] ❌ Error generating grocery list:', toolError);
+              return {
+                response: 'I encountered an error generating your grocery list. Please try again or contact support.',
+              };
+            }
+          }
+          
           if (isGroceryListRequest) {
             // STEP 1: Extract meal plan from conversation history
             console.log('[contextAwareChatFlow] 🛒 Grocery list request detected - extracting meal plan from conversation...');
