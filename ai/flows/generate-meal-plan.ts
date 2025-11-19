@@ -31,7 +31,12 @@ const GenerateMealPlanInputSchema = z.object({
     })
   ).describe('User preferences including dietary goals and cuisine choices.'),
   randomSeed: z.number().optional().describe('A random seed to introduce variation on regeneration.'),
-  conversationContext: z.string().optional().describe('Relevant context from the conversation (e.g., specific dietary needs, health conditions, mentioned foods, preferences expressed in chat).'),
+  chatMessages: z.array(
+    z.object({
+      role: z.enum(['user', 'assistant']),
+      content: z.string(),
+    })
+  ).optional().describe('Recent chat messages to understand what the user actually wants right now.'),
 });
 export type GenerateMealPlanInput = z.infer<typeof GenerateMealPlanInputSchema>;
 
@@ -89,43 +94,44 @@ const mealPlanPrompt = ai.definePrompt({
     }),
   },
   prompt: `
-You are an expert meal planner and nutritionist focused on creating meal plans that truly serve the user's immediate needs.
+You are an expert meal planner creating meal plans that serve the user's ACTUAL needs right now.
 
 Generate a **personalized meal plan** for {{duration}} days with {{mealsPerDay}} meals per day.
 
-{{#if conversationContext}}
-**PRIMARY FOCUS - Conversation Context (HIGHEST PRIORITY):**
-{{conversationContext}}
+{{#if chatMessages}}
+**CRITICAL - What the user ACTUALLY wants (READ THIS FIRST):**
+{{#each chatMessages}}
+{{this.role}}: {{this.content}}
+{{/each}}
 
-This is what the user ACTUALLY wants right now. Your meal plan MUST directly address this context:
-- If they mentioned specific foods or dishes, include them prominently
-- If they mentioned health conditions or needs (e.g., "hangover", "light and easy to digest"), tailor ALL meals accordingly
-- If they mentioned dietary restrictions or preferences in the conversation, prioritize those
-- If they asked about specific cuisines or dishes, make those the focus of the meal plan
-- The conversation context is MORE IMPORTANT than saved preferences - use it as the primary guide
+**PRIORITY RULES:**
+1. If the user mentioned specific foods, dishes, or cuisines in the chat above → INCLUDE THEM in the meal plan
+2. If the user mentioned health conditions, dietary needs, or restrictions → TAILOR ALL MEALS to address them
+3. If the user asked for something specific (e.g., "light meals", "comfort food", "quick meals") → MAKE THAT THE FOCUS
+4. The chat messages above are MORE IMPORTANT than saved preferences below - always prioritize what the user said in chat
 
 {{#if preferences}}
-**Background Context - Saved Preferences (Use as reference, not constraints):**
-- Dietary Preferences: {{#each preferences}}{{this.dietaryPreference}}{{#unless @last}}, {{/unless}}{{/each}}
+**Background - Saved Preferences (use as reference, but chat takes priority):**
+- Dietary: {{#each preferences}}{{this.dietaryPreference}}{{#unless @last}}, {{/unless}}{{/each}}
 - Goals: {{#each preferences}}{{this.goal}}{{#unless @last}}, {{/unless}}{{/each}}
-- Household Size: {{#each preferences}}{{this.householdSize}}{{#unless @last}}, {{/unless}}{{/each}}
-- Cuisine Preferences: {{#each preferences}}{{#each this.cuisinePreferences}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}{{#unless @last}}, {{/unless}}{{/each}}
+- Household: {{#each preferences}}{{this.householdSize}}{{#unless @last}}, {{/unless}}{{/each}}
+- Cuisines: {{#each preferences}}{{#each this.cuisinePreferences}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}{{#unless @last}}, {{/unless}}{{/each}}
 
-Use these preferences as a reference to inform your choices, but the conversation context takes priority. If there's a conflict, follow the conversation context.
+Use these as background info, but if chat messages conflict with these, follow the chat messages.
 {{/if}}
 {{else}}
 {{#if preferences}}
-**User Preferences (Use as guidance):**
-- Dietary Preferences: {{#each preferences}}{{this.dietaryPreference}}{{#unless @last}}, {{/unless}}{{/each}}
+**User Preferences:**
+- Dietary: {{#each preferences}}{{this.dietaryPreference}}{{#unless @last}}, {{/unless}}{{/each}}
 - Goals: {{#each preferences}}{{this.goal}}{{#unless @last}}, {{/unless}}{{/each}}
-- Household Size: {{#each preferences}}{{this.householdSize}}{{#unless @last}}, {{/unless}}{{/each}}
-- Cuisine Preferences: {{#each preferences}}{{#each this.cuisinePreferences}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}{{#unless @last}}, {{/unless}}{{/each}}
+- Household: {{#each preferences}}{{this.householdSize}}{{#unless @last}}, {{/unless}}{{/each}}
+- Cuisines: {{#each preferences}}{{#each this.cuisinePreferences}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}{{#unless @last}}, {{/unless}}{{/each}}
 
-Use these preferences to guide your meal plan, but feel free to be creative and flexible to give the user the best experience.
+Use these preferences to guide your meal plan, but be flexible and creative.
 {{/if}}
 {{/if}}
 
-Use the optional **randomSeed** ({{randomSeed}}) to introduce variety on regeneration.
+Use randomSeed {{randomSeed}} for variety.
 
 For each meal, include:
 - A **unique and descriptive title**
@@ -133,9 +139,9 @@ For each meal, include:
 - A **realistic and complete list of ingredients**
 - **Clear, beginner-friendly cooking instructions**
 
-Return a well-structured meal plan for each day as valid JSON conforming to the output schema. Do **not** include any explanation or formatting outside of the JSON response.
+Return ONLY valid JSON conforming to the output schema. No explanations outside JSON.
 
-Focus on creating meals that the user will actually want to eat and that address their current needs, not just matching preferences mechanically.
+Create meals the user will actually want to eat based on what they told you in chat.
   `,
 });
 

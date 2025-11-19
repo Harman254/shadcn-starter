@@ -705,46 +705,60 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
             >
               <div className={cn(
                 "relative overflow-hidden w-full",
-                "bg-gradient-to-br from-card via-card to-secondary/5",
+                "bg-gradient-to-br from-card via-card to-secondary/5 dark:from-card dark:via-card dark:to-secondary/10",
                 "border-y border-border/50 sm:border-x sm:border-border/50 sm:rounded-2xl",
-                "shadow-lg shadow-secondary/5",
+                "shadow-lg shadow-secondary/10 dark:shadow-secondary/5",
                 "backdrop-blur-sm"
               )}>
                 {/* Header with gradient accent */}
                 <div className={cn(
                   "relative px-4 sm:px-5 md:px-6 py-4 sm:py-5",
-                  "bg-gradient-to-r from-secondary/10 via-secondary/5 to-transparent",
+                  "bg-gradient-to-r from-secondary/10 via-secondary/5 to-transparent dark:from-secondary/15 dark:via-secondary/10",
                   "border-b border-border/50"
                 )}>
                   <div className="flex items-center gap-3">
                     <div className={cn(
-                      "p-2 rounded-xl",
-                      "bg-gradient-to-br from-secondary to-secondary/80",
+                      "p-2.5 rounded-xl",
+                      "bg-gradient-to-br from-secondary to-secondary/80 dark:from-secondary/90 dark:to-secondary/70",
                       "text-secondary-foreground",
-                      "shadow-md shadow-secondary/20"
+                      "shadow-md shadow-secondary/20 dark:shadow-secondary/30",
+                      "ring-1 ring-secondary/20"
                     )}>
-                      <ShoppingCart className="h-5 w-5" />
+                      <ShoppingCart className="h-5 w-5 sm:h-6 sm:w-6" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-bold text-lg sm:text-xl text-foreground leading-tight">
+                      <h3 className="font-bold text-lg sm:text-xl md:text-2xl text-foreground leading-tight">
                         Grocery List
                       </h3>
-                      {message.ui.groceryList.totalEstimatedCost && (
-                        <div className="flex items-center gap-4 mt-1.5 text-xs sm:text-sm text-muted-foreground">
-                          <div className="flex items-center gap-1.5">
-                            <DollarSign className="h-3.5 w-3.5" />
-                            <span className="font-semibold text-foreground">
-                              Total: {message.ui.groceryList.totalEstimatedCost}
+                      <div className="flex flex-wrap items-center gap-3 sm:gap-4 mt-2 text-xs sm:text-sm">
+                        {message.ui.groceryList.totalEstimatedCost && (
+                          <div className={cn(
+                            "flex items-center gap-1.5",
+                            "px-2.5 py-1 rounded-lg",
+                            "bg-secondary/10 dark:bg-secondary/20",
+                            "border border-secondary/20"
+                          )}>
+                            <DollarSign className="h-3.5 w-3.5 text-secondary" />
+                            <span className="font-bold text-foreground">
+                              {message.ui.groceryList.totalEstimatedCost}
                             </span>
                           </div>
-                          {message.ui.groceryList.locationInfo?.localStores && message.ui.groceryList.locationInfo.localStores.length > 0 && (
-                            <div className="flex items-center gap-1.5">
-                              <MapPin className="h-3.5 w-3.5" />
-                              <span>{message.ui.groceryList.locationInfo.localStores[0]}</span>
-                            </div>
-                          )}
-                        </div>
-                      )}
+                        )}
+                        {message.ui.groceryList.items && (
+                          <div className="flex items-center gap-1.5 text-muted-foreground">
+                            <span className="font-medium">{message.ui.groceryList.items.length}</span>
+                            <span>{message.ui.groceryList.items.length === 1 ? 'item' : 'items'}</span>
+                          </div>
+                        )}
+                        {message.ui.groceryList.locationInfo?.localStores && message.ui.groceryList.locationInfo.localStores.length > 0 && (
+                          <div className="flex items-center gap-1.5 text-muted-foreground">
+                            <MapPin className="h-3.5 w-3.5" />
+                            <span className="truncate max-w-[150px] sm:max-w-none">
+                              {message.ui.groceryList.locationInfo.localStores[0]}
+                            </span>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -773,18 +787,22 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
                           )}
                         >
                           {/* Category Header */}
-                          <div className="flex items-center gap-2 mb-4">
-                            <div className={cn(
-                              "flex items-center justify-center",
-                              "px-3 py-1 rounded-lg",
-                              "bg-secondary/10 text-secondary",
-                              "font-semibold text-sm",
-                              "border border-secondary/20"
-                            )}>
-                              <Tag className="h-3.5 w-3.5 mr-1.5" />
-                              {category}
+                          <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center gap-2.5">
+                              <div className={cn(
+                                "flex items-center justify-center gap-1.5",
+                                "px-3 py-1.5 rounded-lg",
+                                "bg-gradient-to-r from-secondary/15 to-secondary/10 dark:from-secondary/20 dark:to-secondary/15",
+                                "text-secondary-foreground dark:text-secondary",
+                                "font-semibold text-sm sm:text-base",
+                                "border border-secondary/30 dark:border-secondary/40",
+                                "shadow-sm"
+                              )}>
+                                <Tag className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                                <span>{category}</span>
+                              </div>
                             </div>
-                            <span className="text-xs text-muted-foreground">
+                            <span className="text-xs sm:text-sm text-muted-foreground font-medium">
                               {items.length} {items.length === 1 ? 'item' : 'items'}
                             </span>
                           </div>
@@ -794,49 +812,77 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
                             {items.map((item: any, itemIndex: number) => (
                               <motion.div
                                 key={item.id || itemIndex}
-                                initial={{ opacity: 0, scale: 0.98 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                transition={{ duration: 0.2, delay: (categoryIndex * 0.05) + (itemIndex * 0.02) }}
+                                initial={{ opacity: 0, scale: 0.98, y: 5 }}
+                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                transition={{ 
+                                  duration: 0.2, 
+                                  delay: (categoryIndex * 0.05) + (itemIndex * 0.02),
+                                  ease: [0.22, 1, 0.36, 1]
+                                }}
+                                whileHover={{ scale: 1.01, y: -2 }}
                                 className={cn(
                                   "group relative",
-                                  "p-3 sm:p-4 rounded-xl",
-                                  "bg-muted/30 hover:bg-muted/40",
-                                  "border border-border/30 hover:border-secondary/30",
-                                  "transition-all duration-200",
-                                  "hover:shadow-md hover:shadow-secondary/5"
+                                  "p-3.5 sm:p-4 rounded-xl",
+                                  "bg-gradient-to-br from-muted/40 via-muted/30 to-muted/20",
+                                  "dark:from-muted/30 dark:via-muted/20 dark:to-muted/10",
+                                  "hover:from-muted/50 hover:via-muted/40 hover:to-muted/30",
+                                  "dark:hover:from-muted/40 dark:hover:via-muted/30 dark:hover:to-muted/20",
+                                  "border border-border/40 hover:border-secondary/50 dark:border-border/30 dark:hover:border-secondary/40",
+                                  "transition-all duration-300",
+                                  "hover:shadow-lg hover:shadow-secondary/10 dark:hover:shadow-secondary/5",
+                                  "backdrop-blur-sm"
                                 )}
                               >
-                                <div className="flex items-start justify-between gap-3">
+                                <div className="flex items-start justify-between gap-3 sm:gap-4">
                                   <div className="flex-1 min-w-0">
-                                    <div className="flex items-start gap-2.5">
+                                    <div className="flex items-start gap-3">
                                       <div className={cn(
-                                        "mt-0.5 shrink-0",
-                                        "w-2 h-2 rounded-full",
-                                        "bg-secondary/60 group-hover:bg-secondary",
-                                        "transition-colors duration-200"
+                                        "mt-1 shrink-0",
+                                        "w-2.5 h-2.5 rounded-full",
+                                        "bg-gradient-to-br from-secondary to-secondary/70",
+                                        "group-hover:from-secondary group-hover:to-secondary/90",
+                                        "transition-all duration-300",
+                                        "ring-2 ring-secondary/20 group-hover:ring-secondary/40"
                                       )} />
                                       <div className="flex-1 min-w-0">
-                                        <h5 className="font-semibold text-sm sm:text-base text-foreground mb-1">
+                                        <h5 className="font-semibold text-sm sm:text-base md:text-lg text-foreground mb-1.5 leading-tight">
                                           {item.item}
                                         </h5>
                                         {item.quantity && (
-                                          <p className="text-xs sm:text-sm text-muted-foreground">
-                                            Quantity: {item.quantity}
-                                          </p>
+                                          <div className={cn(
+                                            "inline-flex items-center gap-1",
+                                            "px-2 py-0.5 rounded-md",
+                                            "text-xs font-medium",
+                                            "bg-secondary/10 dark:bg-secondary/20",
+                                            "text-secondary-foreground dark:text-secondary",
+                                            "border border-secondary/20"
+                                          )}>
+                                            <span>{item.quantity}</span>
+                                          </div>
                                         )}
                                       </div>
                                     </div>
                                   </div>
-                                  <div className="flex flex-col items-end gap-1 shrink-0">
+                                  <div className="flex flex-col items-end gap-2 shrink-0">
                                     {item.estimatedPrice && (
-                                      <span className="font-semibold text-sm sm:text-base text-foreground">
-                                        {item.estimatedPrice}
-                                      </span>
+                                      <div className={cn(
+                                        "flex items-center gap-1",
+                                        "px-2.5 py-1 rounded-lg",
+                                        "bg-secondary/10 dark:bg-secondary/20",
+                                        "border border-secondary/30 dark:border-secondary/40"
+                                      )}>
+                                        <DollarSign className="h-3.5 w-3.5 text-secondary" />
+                                        <span className="font-bold text-sm sm:text-base text-foreground">
+                                          {item.estimatedPrice}
+                                        </span>
+                                      </div>
                                     )}
                                     {item.suggestedLocation && (
                                       <div className="flex items-center gap-1 text-xs text-muted-foreground">
                                         <MapPin className="h-3 w-3" />
-                                        <span className="truncate max-w-[120px]">{item.suggestedLocation}</span>
+                                        <span className="truncate max-w-[120px] sm:max-w-[150px]">
+                                          {item.suggestedLocation}
+                                        </span>
                                       </div>
                                     )}
                                   </div>

@@ -402,13 +402,12 @@ const contextAwareChatFlow = ai.defineFlow(
             preferencesSummary: preferencesSummary || undefined, // Only set if provided (new conversation)
           });
           
-          // Extract conversation context for meal plan generation if tool was called
-          // This will be used by the tool to incorporate chat context into meal plans
-          const conversationContextForMealPlan = finalHistory
-            .slice(-5) // Last 5 messages
-            .map(msg => `${msg.role === 'user' ? 'User' : 'Assistant'}: ${msg.content}`)
-            .join(' | ')
-            .substring(0, 1000); // Limit to 1000 chars
+          // Extract recent chat messages for meal plan generation (last 5 messages)
+          // This ensures meal plans prioritize what user actually wants
+          const recentChatMessages = finalHistory.slice(-5).map(msg => ({
+            role: msg.role as 'user' | 'assistant',
+            content: msg.content.substring(0, 500), // Limit each message to 500 chars
+          }));
 
       // Extract output and check for tool calls
       const { output } = result;
@@ -591,96 +590,56 @@ const contextAwareChatFlow = ai.defineFlow(
           };
           
           if (isGroceryListRequest) {
-            // Always extract meal plan first, regardless of whether tool was called
+            // STEP 1: Extract meal plan from conversation history
+            console.log('[contextAwareChatFlow] 🛒 Grocery list request detected - extracting meal plan from conversation...');
             const mealPlanData = extractMealPlanFromHistory();
             
-            if (wrongToolCalled) {
-              console.error('[contextAwareChatFlow] 🚨 ERROR: User requested grocery list but AI called generate_meal_plan instead!');
-              console.error('[contextAwareChatFlow] User message:', input.message);
-              console.error('[contextAwareChatFlow] 🔧 CORRECTING: Calling generate_grocery_list instead...');
+            if (!mealPlanData) {
+              // No meal plan found - inform user they need one first
+              console.warn('[contextAwareChatFlow] ⚠️ No meal plan found in conversation history');
+              return {
+                response: 'I need a meal plan to generate a grocery list. Please generate a meal plan first, then I can create a shopping list with price estimates.',
+              };
+            }
+            
+            console.log('[contextAwareChatFlow] ✅ Meal plan extracted:', {
+              title: mealPlanData.title,
+              duration: mealPlanData.duration,
+              mealsPerDay: mealPlanData.mealsPerDay,
+              days: mealPlanData.days?.length || 0,
+            });
+            
+            // STEP 2: Generate grocery list using AI flow (with prices)
+            // This calls generateGroceryListFlow which uses AI to generate the list and prices
+            console.log('[contextAwareChatFlow] 🤖 Calling AI flow to generate grocery list with prices...');
+            
+            try {
+              const toolResult = await generateGroceryListCore({ mealPlan: mealPlanData });
               
-              // Override the wrong tool call and generate grocery list
-              if (mealPlanData) {
-                try {
-                  const toolResult = await generateGroceryListCore({ mealPlan: mealPlanData });
-                  if (toolResult.success && toolResult.groceryList) {
-                    return {
-                      response: toolResult.message,
-                    };
-                  } else {
-                    return {
-                      response: toolResult.message || 'Failed to generate grocery list. Please try again.',
-                    };
-                  }
-                } catch (toolError) {
-                  console.error('[contextAwareChatFlow] Error in corrected grocery list call:', toolError);
-                  return {
-                    response: 'I encountered an error generating your grocery list. Please try again or contact support.',
-                  };
-                }
-              } else {
+              if (toolResult.success && toolResult.groceryList) {
+                console.log('[contextAwareChatFlow] ✅ Grocery list generated successfully:', {
+                  itemCount: toolResult.groceryList.length,
+                  hasLocationInfo: !!toolResult.locationInfo,
+                  messageHasUIMetadata: toolResult.message.includes('[UI_METADATA:'),
+                });
+                
+                // STEP 3: Return tool call result with UI metadata for display
+                // The message contains [UI_METADATA:...] which will be extracted by chat-panel.tsx
+                // and displayed as a tool call result in the UI
                 return {
-                  response: 'I need a meal plan to generate a grocery list. Please generate a meal plan first, then I can create a shopping list with price estimates.',
+                  response: toolResult.message, // Contains UI_METADATA for grocery list display
+                };
+              } else {
+                console.error('[contextAwareChatFlow] ❌ Grocery list generation failed:', toolResult.message);
+                return {
+                  response: toolResult.message || 'Failed to generate grocery list. Please try again.',
                 };
               }
-            } else if (!hasToolCalls) {
-              console.warn('[contextAwareChatFlow] ⚠️ WARNING: User requested grocery list but tool was NOT called!');
-              console.warn('[contextAwareChatFlow] User message:', input.message);
-              console.warn('[contextAwareChatFlow] Response was:', output?.response);
-              console.warn('[contextAwareChatFlow] 🔧 FALLBACK: Attempting to extract meal plan from conversation...');
-              
-              if (mealPlanData) {
-                try {
-                  const toolResult = await generateGroceryListCore({ mealPlan: mealPlanData });
-                  
-                  if (toolResult.success && toolResult.groceryList) {
-                    return {
-                      response: toolResult.message,
-                    };
-                  } else {
-                    return {
-                      response: toolResult.message || 'Failed to generate grocery list. Please try again.',
-                    };
-                  }
-                } catch (toolError) {
-                  console.error('[contextAwareChatFlow] Error in fallback grocery list call:', toolError);
-                  return {
-                    response: 'I encountered an error generating your grocery list. Please try again or contact support.',
-                  };
-                }
-              } else {
-                return {
-                  response: 'I need a meal plan to generate a grocery list. Please generate a meal plan first, then I can create a shopping list with price estimates.',
-                };
-              }
-            } else if (hasToolCalls && calledToolName === 'generate_grocery_list') {
-              // Tool was called correctly, but check if meal plan data was passed
-              // If not, extract it and call the core function directly
-              const toolCalls = fullResult?.calls || fullResult?.steps || [];
-              const groceryListCall = toolCalls.find((call: any) => 
-                (call?.name || call?.tool) === 'generate_grocery_list'
-              );
-              
-              if (groceryListCall) {
-                const toolInput = groceryListCall?.input || groceryListCall?.params || {};
-                if (!toolInput.mealPlan || !toolInput.mealPlan.days || toolInput.mealPlan.days.length === 0) {
-                  console.warn('[contextAwareChatFlow] ⚠️ Grocery list tool called but meal plan data missing, extracting from history...');
-                  const extractedMealPlan = extractMealPlanFromHistory();
-                  if (extractedMealPlan) {
-                    try {
-                      const toolResult = await generateGroceryListCore({ mealPlan: extractedMealPlan });
-                      if (toolResult.success && toolResult.groceryList) {
-                        return {
-                          response: toolResult.message,
-                        };
-                      }
-                    } catch (toolError) {
-                      console.error('[contextAwareChatFlow] Error in grocery list call with extracted meal plan:', toolError);
-                    }
-                  }
-                }
-              }
-              // If tool was called correctly with meal plan data, let it proceed normally
+            } catch (toolError) {
+              console.error('[contextAwareChatFlow] ❌ Error generating grocery list:', toolError);
+              return {
+                response: 'I encountered an error generating your grocery list. Please try again or contact support.',
+              };
             }
           }
           
@@ -747,30 +706,22 @@ const contextAwareChatFlow = ai.defineFlow(
             console.warn('[contextAwareChatFlow] AI just asked about meal plan?', aiJustAskedAboutMealPlan);
             console.warn('[contextAwareChatFlow] 🔧 FALLBACK: Manually calling generateMealPlan tool...');
             
-            // Fallback: Manually call the tool core function if model didn't
-            try {
-              // Use chat history to extract params if current message is short
-              // If AI just asked about meal plan and user said "yes", extract from full conversation context
-              const params = extractMealPlanParams(input.message, chatHistory);
-              
-              // Extract conversation context from recent messages (last 3-5 messages)
-              // This includes dietary needs, mentioned foods, health conditions, etc.
-              const contextMessages = chatHistory.slice(-5); // Last 5 messages for context
-              const conversationContext = contextMessages
-                .map(msg => `${msg.role === 'user' ? 'User' : 'Assistant'}: ${msg.content}`)
-                .join(' | ')
-                .substring(0, 1000); // Limit to 1000 chars to avoid token overflow
-              
-              if (process.env.NODE_ENV === 'development') {
-                console.log('[contextAwareChatFlow] Extracted meal plan params:', params);
-                console.log('[contextAwareChatFlow] Chat history length:', chatHistory.length);
-                console.log('[contextAwareChatFlow] Conversation context:', conversationContext.substring(0, 200) + '...');
-              }
-              
-              const toolResult = await generateMealPlanCore({
-                ...params,
-                conversationContext: conversationContext || undefined,
-              });
+                // Fallback: Manually call the tool core function if model didn't
+                try {
+                  // Use chat history to extract params if current message is short
+                  // If AI just asked about meal plan and user said "yes", extract from full conversation context
+                  const params = extractMealPlanParams(input.message, chatHistory);
+                  
+                  if (process.env.NODE_ENV === 'development') {
+                    console.log('[contextAwareChatFlow] Extracted meal plan params:', params);
+                    console.log('[contextAwareChatFlow] Chat history length:', chatHistory.length);
+                    console.log('[contextAwareChatFlow] Passing recent chat messages to meal plan generation');
+                  }
+                  
+                  const toolResult = await generateMealPlanCore({
+                    ...params,
+                    chatMessages: recentChatMessages, // Pass actual chat messages
+                  });
               
               if (toolResult.success && toolResult.mealPlan) {
                 // Return the tool result message which includes UI metadata
@@ -873,7 +824,15 @@ const contextAwareChatFlow = ai.defineFlow(
           console.warn('[contextAwareChatFlow] 🔧 Error occurred, trying fallback meal plan generation...');
           // Use chat history to extract params if current message is short
           const params = extractMealPlanParams(input.message, chatHistory);
-          const toolResult = await generateMealPlanCore(params);
+          // Extract recent chat messages for meal plan generation
+          const recentChatMessagesForFallback = chatHistory.slice(-5).map(msg => ({
+            role: msg.role as 'user' | 'assistant',
+            content: msg.content.substring(0, 500), // Limit each message to 500 chars
+          }));
+          const toolResult = await generateMealPlanCore({
+            ...params,
+            chatMessages: recentChatMessagesForFallback, // Pass actual chat messages
+          });
           
           if (toolResult.success && toolResult.mealPlan) {
             return {
