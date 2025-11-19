@@ -80,40 +80,11 @@ const quickActions: Record<string, QuickAction[]> = {
       description: 'Find alternatives',
     },
   ],
-  'general': [
-    {
-      id: 'quick-plan',
-      label: 'Quick Meal Plan',
-      message: 'Generate a quick 1-day meal plan',
-      variant: 'outline',
-      description: '1-day plan',
-    },
-    {
-      id: 'kenyan',
-      label: 'Kenyan Dishes',
-      message: 'Show me some Kenyan dishes',
-      variant: 'outline',
-      description: 'Local cuisine',
-    },
-    {
-      id: 'fast',
-      label: '15-Min Meals',
-      message: 'Show me 15-minute meal ideas',
-      variant: 'outline',
-      description: 'Quick recipes',
-    },
-    {
-      id: 'budget',
-      label: 'Budget Meals',
-      message: 'Show me budget meals under KSh 300',
-      variant: 'outline',
-      description: 'Affordable options',
-    },
-  ],
+  'general': [], // Removed - no longer showing general quick actions in chat
 };
 
 export function QuickActions({ onActionClick, context = 'general' }: QuickActionsProps) {
-  const actions = quickActions[context] || quickActions.general;
+  const actions = quickActions[context] || [];
 
   if (actions.length === 0) return null;
 

@@ -31,6 +31,7 @@ const GenerateMealPlanInputSchema = z.object({
     })
   ).describe('User preferences including dietary goals and cuisine choices.'),
   randomSeed: z.number().optional().describe('A random seed to introduce variation on regeneration.'),
+  conversationContext: z.string().optional().describe('Relevant context from the conversation (e.g., specific dietary needs, health conditions, mentioned foods, preferences expressed in chat).'),
 });
 export type GenerateMealPlanInput = z.infer<typeof GenerateMealPlanInputSchema>;
 
@@ -97,6 +98,19 @@ Generate a **personalized meal plan** for {{duration}} days with {{mealsPerDay}}
 - **Household Size**: {{#each preferences}}{{this.householdSize}}{{#unless @last}}, {{/unless}}{{/each}}
 - **Cuisine Preferences**: {{#each preferences}}{{#each this.cuisinePreferences}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}{{#unless @last}}, {{/unless}}{{/each}}
 
+{{#if conversationContext}}
+**IMPORTANT - Conversation Context:**
+The user has mentioned the following in our conversation: {{conversationContext}}
+
+You MUST incorporate this context into the meal plan. For example:
+- If they mentioned specific foods (e.g., "toast with avocado", "ginger tea"), include these in appropriate meals
+- If they mentioned health conditions (e.g., "hangover", "light and easy to digest"), tailor meals accordingly
+- If they mentioned dietary needs or restrictions, prioritize those over general preferences
+- If they mentioned specific cuisines or dishes, incorporate those into the plan
+
+The conversation context takes PRIORITY over general preferences when there's a conflict.
+{{/if}}
+
 Use the optional **randomSeed** ({{randomSeed}}) to introduce variety on regeneration.
 
 For each meal, include:
@@ -107,7 +121,7 @@ For each meal, include:
 
 Return a well-structured meal plan for each day as valid JSON conforming to the output schema. Do **not** include any explanation or formatting outside of the JSON response.
 
-Ensure meals are diverse, not repeated, and aligned with the dietary and culinary preferences provided.
+Ensure meals are diverse, not repeated, and aligned with BOTH the dietary preferences AND the conversation context provided.
   `,
 });
 

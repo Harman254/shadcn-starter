@@ -59,6 +59,10 @@ const GenerateMealPlanInputSchema = z.object({
     .string()
     .optional()
     .describe("Optional title for the meal plan. If not provided, a title will be auto-generated based on duration and mealsPerDay."),
+  conversationContext: z
+    .string()
+    .optional()
+    .describe("IMPORTANT: Extract relevant context from the conversation history (last 3-5 messages). Include: mentioned foods, health conditions, dietary needs, specific preferences, or any special requirements the user mentioned. Example: 'User mentioned hangover, wants light and easy to digest foods like toast with avocado and ginger tea'. This context will be incorporated into the meal plan alongside user preferences."),
 });
 
 const GenerateMealPlanOutputSchema = z.object({
@@ -97,6 +101,7 @@ async function generateMealPlanCore(input: {
   duration?: number;
   mealsPerDay?: number;
   title?: string;
+  conversationContext?: string; // Optional conversation context
 }): Promise<{
   success: boolean;
   mealPlan?: any;
@@ -152,12 +157,13 @@ async function generateMealPlanCore(input: {
       const duration = input.duration ?? 1;
       const mealsPerDay = input.mealsPerDay ?? 3;
 
-      // Generate the meal plan
+      // Generate the meal plan with conversation context if provided
       const result = await generatePersonalizedMealPlan({
         duration,
         mealsPerDay,
         preferences,
         randomSeed: Math.floor(Math.random() * 1000),
+        conversationContext: input.conversationContext, // Pass conversation context
       });
 
       if (!result?.mealPlan) {
@@ -278,7 +284,7 @@ export const generateMealPlan = ai.defineTool(
   {
     name: "generate_meal_plan",
     description:
-      "MANDATORY: Call this function when user asks to generate, create, or plan meals. Do NOT respond with text - you MUST call this function. CRITICAL: Always use the EXACT duration and mealsPerDay the user specifies in their message. Only use defaults (duration: 1, mealsPerDay: 3) if user does NOT mention any numbers. User's explicit requests ALWAYS override defaults. Automatically uses user's saved preferences for dietary restrictions, goals, etc.",
+      "MANDATORY: Call this function when user asks to generate, create, or plan meals. Do NOT respond with text - you MUST call this function. CRITICAL: Always use the EXACT duration and mealsPerDay the user specifies in their message. Only use defaults (duration: 1, mealsPerDay: 3) if user does NOT mention any numbers. User's explicit requests ALWAYS override defaults. Automatically uses user's saved preferences for dietary restrictions, goals, etc. IMPORTANT: Extract conversation context from the last 3-5 messages and pass it as conversationContext parameter. Include mentioned foods, health conditions, dietary needs, or special requirements. This ensures the meal plan incorporates both saved preferences AND current conversation context.",
     inputSchema: GenerateMealPlanInputSchema,
     outputSchema: GenerateMealPlanOutputSchema,
   },

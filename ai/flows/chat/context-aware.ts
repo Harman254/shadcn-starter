@@ -142,12 +142,16 @@ These modes MUST NEVER mix.
 ### 1. TOOL MODE — MEAL PLAN GENERATION
 ====================================================
 
+**IMPORTANT: Only call this if the user does NOT mention "grocery list" or "shopping list".**
+
 You MUST call \`generate_meal_plan\` when the user does ANY of the following:
-- Asks for a meal plan ("meal plan", "plan meals", "create a plan", "one-day plan", "2 day plan")
-- Uses action words ("generate", "create", "make", "do it")
-- **CRITICAL: Responds "yes", "ok", "sure", "yeah", "yep", or similar after YOU asked about creating a meal plan (e.g., "Would you like me to create a meal plan...")**
-- Responds "yes", "ok", "sure", or similar after discussing a meal plan
-- Mentions number of days or meals (e.g., "4 meals", "one day", "seven days")
+- Asks for a meal plan ("meal plan", "plan meals", "create a plan", "one-day plan", "2 day plan") **WITHOUT mentioning "grocery list" or "shopping list"**
+- Uses action words ("generate", "create", "make", "do it") **WITHOUT mentioning "grocery list" or "shopping list"**
+- **CRITICAL: Responds "yes", "ok", "sure", "yeah", "yep", or similar after YOU asked about creating a meal plan (e.g., "Would you like me to create a meal plan...")** - but ONLY if your question was about meal plans, not grocery lists
+- Responds "yes", "ok", "sure", or similar after discussing a meal plan (not grocery list)
+- Mentions number of days or meals (e.g., "4 meals", "one day", "seven days") **WITHOUT mentioning "grocery list" or "shopping list"**
+
+**CRITICAL: If user message contains "grocery list" or "shopping list", DO NOT call this tool. Call \`generate_grocery_list\` instead.**
 
 **When user says "yes" or "ok" after you ask "Would you like me to create a meal plan...":**
 - IMMEDIATELY call \`generate_meal_plan\` with the dishes mentioned in the conversation
@@ -158,6 +162,12 @@ You MUST call \`generate_meal_plan\` when the user does ANY of the following:
 **Rules:**
 - Extract **duration** from the user message or conversation history (default = 1).
 - Extract **mealsPerDay** from the user message or conversation history (default = 3).
+- **CRITICAL: Extract conversation context** from the last 3-5 messages and pass it as conversationContext parameter. Include:
+  - Mentioned foods (e.g., "toast with avocado", "ginger tea")
+  - Health conditions (e.g., "hangover", "light and easy to digest")
+  - Dietary needs or restrictions mentioned in chat
+  - Specific preferences or requirements
+  - Example: If user said "I have a hangover, need something light", pass: "User has hangover, needs light and easy to digest foods. Mentioned toast with avocado and ginger tea."
 - If the user mentions dishes ("include ugali"), STILL call \`generate_meal_plan\`. The tool handles dish relevance.
 - The response MUST be ONLY the tool call. No conversation, no suggestions, no explanations.
 
@@ -167,20 +177,25 @@ You MUST call \`generate_meal_plan\` when the user does ANY of the following:
 - No UX guidance inside the tool-call response.
 
 ====================================================
-### 2. TOOL MODE — GROCERY LIST GENERATION
+### 2. TOOL MODE — GROCERY LIST GENERATION (HIGHEST PRIORITY)
 ====================================================
+
+**ABSOLUTE PRIORITY: Grocery list requests take precedence over EVERYTHING else.**
 
 You MUST call \`generate_grocery_list\` when the user:
 - Says "grocery list", "shopping list", "ingredients list"
-- Says "create a grocery list", "generate grocery list", "make a grocery list"
+- Says "create a grocery list", "generate grocery list", "make a grocery list", "get grocery list"
 - Says "grocery list for this meal plan" or "grocery list for meal plan" (this is a GROCERY LIST request, NOT a meal plan request)
+- Says "grocery list" button clicked or "Create a grocery list for this meal plan"
 - Asks "what do I need to buy", "what ingredients do I need"
 - Says "yes/ok" after you ask if they want a grocery list
 
-**CRITICAL PRIORITY RULE:**
-- If the user message contains BOTH "grocery list" AND "meal plan" (e.g., "Create a grocery list for this meal plan"), this is ALWAYS a grocery list request, NOT a meal plan request.
-- The phrase "grocery list for meal plan" means: "generate a grocery list FROM the existing meal plan", not "generate a new meal plan".
-- NEVER call \`generate_meal_plan\` when user explicitly mentions "grocery list" in their message.
+**CRITICAL PRIORITY RULES (MUST FOLLOW):**
+1. **If the user message contains "grocery list" or "shopping list" in ANY form, you MUST call \`generate_grocery_list\`, NOT \`generate_meal_plan\`.**
+2. If the user message contains BOTH "grocery list" AND "meal plan" (e.g., "Create a grocery list for this meal plan"), this is ALWAYS a grocery list request, NOT a meal plan request.
+3. The phrase "grocery list for meal plan" means: "generate a grocery list FROM the existing meal plan", not "generate a new meal plan".
+4. **NEVER call \`generate_meal_plan\` when user explicitly mentions "grocery list" or "shopping list" in their message.**
+5. **Even if you see "meal plan" in the message, if it also contains "grocery list", it's a grocery list request.**
 
 **CRITICAL: If user mentions dish names (e.g., "ugali", "omena", "beans") WITHOUT explicitly saying "grocery list" or "shopping list", this is NOT a grocery list request. It's a cooking question - use CHAT MODE instead.**
 
@@ -267,16 +282,20 @@ These suggestions must ONLY appear **after** the tool result, not inside the too
 - Guide naturally: cooking → meal plan → grocery list (in that order)
 
 ====================================================
-### 5. PRIORITY ORDER
-====================================================
+    ### 5. PRIORITY ORDER (CRITICAL - FOLLOW EXACTLY)
+    ====================================================
 
-When deciding what to do, prioritize in this exact order:
+    When deciding what to do, prioritize in this EXACT order:
 
-1. **Explicit user request** (if user explicitly says "meal plan" or "grocery list")
-2. **Cooking/recipe/nutrition → direct chat response** (if user mentions dish names, cooking questions, or recipe requests WITHOUT "meal plan" or "grocery list" keywords)
-3. **Meal plan → generate_meal_plan** (if user asks for meal plan with keywords like "plan", "generate meal plan", "create meal plan")
-4. **Grocery list → generate_grocery_list** (if user explicitly asks for grocery list AND meal plan exists)
-5. **After tool result → offer next-step guidance**
+    1. **GROCERY LIST REQUESTS (HIGHEST PRIORITY)** - If user says "grocery list", "shopping list", "create grocery list", "grocery list for meal plan", or ANY variation → IMMEDIATELY call \`generate_grocery_list\`. NEVER call \`generate_meal_plan\` for grocery list requests.
+    
+    2. **Explicit meal plan request** (if user explicitly says "meal plan", "generate meal plan", "create meal plan" WITHOUT mentioning "grocery list") → call \`generate_meal_plan\`
+    
+    3. **Cooking/recipe/nutrition → direct chat response** (if user mentions dish names, cooking questions, or recipe requests WITHOUT "meal plan" or "grocery list" keywords)
+    
+    4. **After tool result → offer next-step guidance**
+
+    **CRITICAL RULE:** If the user message contains "grocery list" or "shopping list" in ANY form, you MUST call \`generate_grocery_list\`, NOT \`generate_meal_plan\`. Even if the message also contains "meal plan" (e.g., "grocery list for meal plan"), it's still a grocery list request.
 
 ====================================================
 ### 6. SAFETY & CONSISTENCY RULES
@@ -377,11 +396,19 @@ const contextAwareChatFlow = ai.defineFlow(
         }
       }
 
-      const result = await prompt({
-        message: limitedCurrentMessage,
-        chatHistory: finalHistory,
-        preferencesSummary: preferencesSummary || undefined, // Only set if provided (new conversation)
-      });
+          const result = await prompt({
+            message: limitedCurrentMessage,
+            chatHistory: finalHistory,
+            preferencesSummary: preferencesSummary || undefined, // Only set if provided (new conversation)
+          });
+          
+          // Extract conversation context for meal plan generation if tool was called
+          // This will be used by the tool to incorporate chat context into meal plans
+          const conversationContextForMealPlan = finalHistory
+            .slice(-5) // Last 5 messages
+            .map(msg => `${msg.role === 'user' ? 'User' : 'Assistant'}: ${msg.content}`)
+            .join(' | ')
+            .substring(0, 1000); // Limit to 1000 chars
 
       // Extract output and check for tool calls
       const { output } = result;
@@ -389,6 +416,18 @@ const contextAwareChatFlow = ai.defineFlow(
       
       // Check if tool was actually called
       const hasToolCalls = !!(fullResult?.calls?.length || fullResult?.steps?.length);
+      
+      // Check which tool was called
+      let calledToolName = null;
+      if (hasToolCalls) {
+        const toolCalls = fullResult?.calls || fullResult?.steps || [];
+        if (toolCalls.length > 0) {
+          calledToolName = toolCalls[0]?.name || toolCalls[0]?.tool || null;
+          if (process.env.NODE_ENV === 'development') {
+            console.log('[contextAwareChatFlow] 🔧 Tool called:', calledToolName);
+          }
+        }
+      }
       
       // Log tool calls and response for debugging
       if (process.env.NODE_ENV === 'development') {
@@ -523,11 +562,20 @@ const contextAwareChatFlow = ai.defineFlow(
           
           // CRITICAL: Handle grocery list requests FIRST, before meal plan fallback
           // This prevents grocery list requests from triggering meal plan generation
-          if (isGroceryListRequest && !hasToolCalls) {
-            console.warn('[contextAwareChatFlow] ⚠️ WARNING: User requested grocery list but tool was NOT called!');
-            console.warn('[contextAwareChatFlow] User message:', input.message);
-            console.warn('[contextAwareChatFlow] Response was:', output?.response);
-            console.warn('[contextAwareChatFlow] 🔧 FALLBACK: Attempting to extract meal plan from conversation...');
+          // Also check if wrong tool was called (meal plan instead of grocery list)
+          const wrongToolCalled = hasToolCalls && calledToolName === 'generate_meal_plan' && isGroceryListRequest;
+          
+          if (isGroceryListRequest && (!hasToolCalls || wrongToolCalled)) {
+            if (wrongToolCalled) {
+              console.error('[contextAwareChatFlow] 🚨 ERROR: User requested grocery list but AI called generate_meal_plan instead!');
+              console.error('[contextAwareChatFlow] User message:', input.message);
+              console.error('[contextAwareChatFlow] 🔧 CORRECTING: Calling generate_grocery_list instead...');
+            } else {
+              console.warn('[contextAwareChatFlow] ⚠️ WARNING: User requested grocery list but tool was NOT called!');
+              console.warn('[contextAwareChatFlow] User message:', input.message);
+              console.warn('[contextAwareChatFlow] Response was:', output?.response);
+              console.warn('[contextAwareChatFlow] 🔧 FALLBACK: Attempting to extract meal plan from conversation...');
+            }
             
             // Try to extract meal plan from conversation history
             // Look for the most recent meal plan in assistant messages
@@ -646,12 +694,24 @@ const contextAwareChatFlow = ai.defineFlow(
               // If AI just asked about meal plan and user said "yes", extract from full conversation context
               const params = extractMealPlanParams(input.message, chatHistory);
               
+              // Extract conversation context from recent messages (last 3-5 messages)
+              // This includes dietary needs, mentioned foods, health conditions, etc.
+              const contextMessages = chatHistory.slice(-5); // Last 5 messages for context
+              const conversationContext = contextMessages
+                .map(msg => `${msg.role === 'user' ? 'User' : 'Assistant'}: ${msg.content}`)
+                .join(' | ')
+                .substring(0, 1000); // Limit to 1000 chars to avoid token overflow
+              
               if (process.env.NODE_ENV === 'development') {
                 console.log('[contextAwareChatFlow] Extracted meal plan params:', params);
                 console.log('[contextAwareChatFlow] Chat history length:', chatHistory.length);
+                console.log('[contextAwareChatFlow] Conversation context:', conversationContext.substring(0, 200) + '...');
               }
               
-              const toolResult = await generateMealPlanCore(params);
+              const toolResult = await generateMealPlanCore({
+                ...params,
+                conversationContext: conversationContext || undefined,
+              });
               
               if (toolResult.success && toolResult.mealPlan) {
                 // Return the tool result message which includes UI metadata
