@@ -694,7 +694,24 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
           )}
           
           {/* Grocery List Display - Full width immersive */}
-          {message?.ui?.groceryList && (
+          {(() => {
+            const groceryList = message?.ui?.groceryList;
+            if (!groceryList) return null;
+            
+            // Debug logging in development
+            if (process.env.NODE_ENV === 'development') {
+              console.log('[ChatMessage] 🛒 Rendering grocery list:', {
+                hasGroceryList: !!groceryList,
+                hasItems: !!groceryList.items,
+                itemsLength: groceryList.items?.length || 0,
+                itemsType: Array.isArray(groceryList.items) ? 'array' : typeof groceryList.items,
+                hasLocationInfo: !!groceryList.locationInfo,
+                hasTotalCost: !!groceryList.totalEstimatedCost,
+                fullGroceryList: groceryList,
+              });
+            }
+            
+            return (
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -732,7 +749,7 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
                         Grocery List
                       </h3>
                       <div className="flex flex-wrap items-center gap-3 sm:gap-4 mt-2 text-xs sm:text-sm">
-                        {message.ui.groceryList.totalEstimatedCost && (
+                        {groceryList.totalEstimatedCost && (
                           <div className={cn(
                             "flex items-center gap-1.5",
                             "px-2.5 py-1 rounded-lg",
@@ -741,21 +758,21 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
                           )}>
                             <DollarSign className="h-3.5 w-3.5 text-secondary" />
                             <span className="font-bold text-foreground">
-                              {message.ui.groceryList.totalEstimatedCost}
+                              {groceryList.totalEstimatedCost}
                             </span>
                           </div>
                         )}
-                        {message.ui.groceryList.items && (
+                        {groceryList.items && (
                           <div className="flex items-center gap-1.5 text-muted-foreground">
-                            <span className="font-medium">{message.ui.groceryList.items.length}</span>
-                            <span>{message.ui.groceryList.items.length === 1 ? 'item' : 'items'}</span>
+                            <span className="font-medium">{groceryList.items.length}</span>
+                            <span>{groceryList.items.length === 1 ? 'item' : 'items'}</span>
                           </div>
                         )}
-                        {message.ui.groceryList.locationInfo?.localStores && message.ui.groceryList.locationInfo.localStores.length > 0 && (
+                        {groceryList.locationInfo?.localStores && groceryList.locationInfo.localStores.length > 0 && (
                           <div className="flex items-center gap-1.5 text-muted-foreground">
                             <MapPin className="h-3.5 w-3.5" />
                             <span className="truncate max-w-[150px] sm:max-w-none">
-                              {message.ui.groceryList.locationInfo.localStores[0]}
+                              {groceryList.locationInfo.localStores[0]}
                             </span>
                           </div>
                         )}
@@ -765,11 +782,11 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
                 </div>
 
                 {/* Grocery List Content */}
-                {message.ui.groceryList.items && message.ui.groceryList.items.length > 0 && (
+                {groceryList.items && groceryList.items.length > 0 && (
                   <div className="p-4 sm:p-5 md:px-6 md:py-5">
                     {/* Group items by category */}
                     {(() => {
-                      const itemsByCategory = message.ui.groceryList.items.reduce((acc: Record<string, typeof message.ui.groceryList.items>, item: any) => {
+                      const itemsByCategory = groceryList.items.reduce((acc: Record<string, typeof groceryList.items>, item: any) => {
                         const category = item.category || 'Other';
                         if (!acc[category]) acc[category] = [];
                         acc[category].push(item);
@@ -898,7 +915,8 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
                 )}
               </div>
             </motion.div>
-          )}
+            );
+          })()}
           
           {/* Quick Actions for meal plans */}
           {isAssistant && message?.ui?.mealPlan && onActionClick && (

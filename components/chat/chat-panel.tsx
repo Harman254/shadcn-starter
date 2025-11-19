@@ -458,16 +458,42 @@ export function ChatPanel({
           const base64String = uiMetadataMatch[1];
           const decoded = atob(base64String); // Browser's built-in base64 decode
           const uiMetadata = JSON.parse(decoded);
+          
+          // Log the extracted metadata structure for debugging
+          if (process.env.NODE_ENV === 'development') {
+            logger.log('[ChatPanel] 🎨 Extracted UI metadata:', {
+              hasGroceryList: !!uiMetadata.groceryList,
+              hasMealPlan: !!uiMetadata.mealPlan,
+              groceryListItems: uiMetadata.groceryList?.items?.length || 0,
+              groceryListStructure: uiMetadata.groceryList ? {
+                hasItems: !!uiMetadata.groceryList.items,
+                itemsType: Array.isArray(uiMetadata.groceryList.items) ? 'array' : typeof uiMetadata.groceryList.items,
+                itemsLength: Array.isArray(uiMetadata.groceryList.items) ? uiMetadata.groceryList.items.length : 'N/A',
+                hasLocationInfo: !!uiMetadata.groceryList.locationInfo,
+                hasTotalCost: !!uiMetadata.groceryList.totalEstimatedCost,
+              } : null,
+              fullMetadata: uiMetadata,
+            });
+          }
+          
           assistantMessage.ui = uiMetadata;
           // Remove the marker from the message content (don't show it to user)
           assistantMessage.content = assistantMessage.content.replace(/\[UI_METADATA:[A-Za-z0-9+/=]+\]/g, '').trim();
-          if (process.env.NODE_ENV === 'development') {
-            logger.log('[ChatPanel] 🎨 Extracted UI metadata:', uiMetadata);
-          }
         } catch (error) {
           logger.warn('[ChatPanel] Failed to parse UI metadata:', error);
+          if (process.env.NODE_ENV === 'development') {
+            logger.warn('[ChatPanel] Base64 string:', uiMetadataMatch[1].substring(0, 50) + '...');
+          }
           // Remove the invalid marker anyway
           assistantMessage.content = assistantMessage.content.replace(/\[UI_METADATA:[A-Za-z0-9+/=]+\]/g, '').trim();
+        }
+      } else {
+        // Log when UI_METADATA is expected but not found
+        if (process.env.NODE_ENV === 'development' && assistantMessage.content.toLowerCase().includes('grocery list')) {
+          logger.warn('[ChatPanel] ⚠️ Grocery list message but no UI_METADATA found:', {
+            messagePreview: assistantMessage.content.substring(0, 200),
+            hasUIMetadataMarker: assistantMessage.content.includes('[UI_METADATA:'),
+          });
         }
       }
       

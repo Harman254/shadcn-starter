@@ -610,8 +610,23 @@ export async function generateGroceryListCore(input: {
       },
     };
 
+    // Log the metadata structure for debugging
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[generateGroceryListCore] 📦 Creating UI metadata:', {
+        itemsCount: result.groceryList.length,
+        itemsType: Array.isArray(result.groceryList) ? 'array' : typeof result.groceryList,
+        hasLocationInfo: !!result.locationInfo,
+        totalCost: `${currencySymbol}${totalCost.toFixed(2)}`,
+        metadataStructure: JSON.stringify(uiMetadata, null, 2).substring(0, 500),
+      });
+    }
+
     // Encode UI metadata as base64
     const uiMetadataEncoded = Buffer.from(JSON.stringify(uiMetadata)).toString('base64');
+    
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[generateGroceryListCore] ✅ UI metadata encoded, length:', uiMetadataEncoded.length);
+    }
 
     return {
       success: true,
