@@ -498,7 +498,7 @@ export function ChatPanel({
         // Simulate progress updates (basic version - Phase 2 will add real-time server updates)
         const progressInterval = setInterval(() => {
           setToolProgress((prev) => {
-            if (!prev) return null;
+            if (!prev || !prev.startedAt) return null;
             
             const updated = { ...prev };
             const elapsed = Date.now() - prev.startedAt.getTime();

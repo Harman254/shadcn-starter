@@ -33,6 +33,7 @@ export interface ExecutionProgressData {
   overallProgress: number;
   tools: Map<string, ToolProgressData>;
   estimatedTimeRemaining?: number;
+  startedAt: Date; // Timestamp when execution started (for progress calculation)
 }
 
 interface ToolProgressProps {
