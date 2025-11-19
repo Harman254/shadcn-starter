@@ -565,21 +565,9 @@ const contextAwareChatFlow = ai.defineFlow(
           // Also check if wrong tool was called (meal plan instead of grocery list)
           const wrongToolCalled = hasToolCalls && calledToolName === 'generate_meal_plan' && isGroceryListRequest;
           
-          if (isGroceryListRequest && (!hasToolCalls || wrongToolCalled)) {
-            if (wrongToolCalled) {
-              console.error('[contextAwareChatFlow] 🚨 ERROR: User requested grocery list but AI called generate_meal_plan instead!');
-              console.error('[contextAwareChatFlow] User message:', input.message);
-              console.error('[contextAwareChatFlow] 🔧 CORRECTING: Calling generate_grocery_list instead...');
-            } else {
-              console.warn('[contextAwareChatFlow] ⚠️ WARNING: User requested grocery list but tool was NOT called!');
-              console.warn('[contextAwareChatFlow] User message:', input.message);
-              console.warn('[contextAwareChatFlow] Response was:', output?.response);
-              console.warn('[contextAwareChatFlow] 🔧 FALLBACK: Attempting to extract meal plan from conversation...');
-            }
-            
-            // Try to extract meal plan from conversation history
+          // Helper function to extract meal plan from conversation history
+          const extractMealPlanFromHistory = (): any => {
             // Look for the most recent meal plan in assistant messages
-            let mealPlanData = null;
             for (let i = chatHistory.length - 1; i >= 0; i--) {
               const msg = chatHistory[i];
               if (msg.role === 'assistant' && msg.content.includes('[UI_METADATA:')) {
@@ -589,39 +577,110 @@ const contextAwareChatFlow = ai.defineFlow(
                     const decoded = Buffer.from(match[1], 'base64').toString('utf-8');
                     const uiMetadata = JSON.parse(decoded);
                     if (uiMetadata.mealPlan) {
-                      mealPlanData = uiMetadata.mealPlan;
-                      break;
+                      console.log('[contextAwareChatFlow] ✅ Found meal plan in conversation history');
+                      return uiMetadata.mealPlan;
                     }
                   }
                 } catch (e) {
+                  console.warn('[contextAwareChatFlow] Error parsing UI_METADATA:', e);
                   // Continue searching
                 }
               }
             }
+            return null;
+          };
+          
+          if (isGroceryListRequest) {
+            // Always extract meal plan first, regardless of whether tool was called
+            const mealPlanData = extractMealPlanFromHistory();
             
-            if (mealPlanData) {
-              try {
-                const toolResult = await generateGroceryListCore({ mealPlan: mealPlanData });
-                
-                if (toolResult.success && toolResult.groceryList) {
+            if (wrongToolCalled) {
+              console.error('[contextAwareChatFlow] 🚨 ERROR: User requested grocery list but AI called generate_meal_plan instead!');
+              console.error('[contextAwareChatFlow] User message:', input.message);
+              console.error('[contextAwareChatFlow] 🔧 CORRECTING: Calling generate_grocery_list instead...');
+              
+              // Override the wrong tool call and generate grocery list
+              if (mealPlanData) {
+                try {
+                  const toolResult = await generateGroceryListCore({ mealPlan: mealPlanData });
+                  if (toolResult.success && toolResult.groceryList) {
+                    return {
+                      response: toolResult.message,
+                    };
+                  } else {
+                    return {
+                      response: toolResult.message || 'Failed to generate grocery list. Please try again.',
+                    };
+                  }
+                } catch (toolError) {
+                  console.error('[contextAwareChatFlow] Error in corrected grocery list call:', toolError);
                   return {
-                    response: toolResult.message,
-                  };
-                } else {
-                  return {
-                    response: toolResult.message || 'Failed to generate grocery list. Please try again.',
+                    response: 'I encountered an error generating your grocery list. Please try again or contact support.',
                   };
                 }
-              } catch (toolError) {
-                console.error('[contextAwareChatFlow] Error in fallback grocery list call:', toolError);
+              } else {
                 return {
-                  response: 'I encountered an error generating your grocery list. Please try again or contact support.',
+                  response: 'I need a meal plan to generate a grocery list. Please generate a meal plan first, then I can create a shopping list with price estimates.',
                 };
               }
-            } else {
-              return {
-                response: 'I need a meal plan to generate a grocery list. Please generate a meal plan first, then I can create a shopping list with price estimates.',
-              };
+            } else if (!hasToolCalls) {
+              console.warn('[contextAwareChatFlow] ⚠️ WARNING: User requested grocery list but tool was NOT called!');
+              console.warn('[contextAwareChatFlow] User message:', input.message);
+              console.warn('[contextAwareChatFlow] Response was:', output?.response);
+              console.warn('[contextAwareChatFlow] 🔧 FALLBACK: Attempting to extract meal plan from conversation...');
+              
+              if (mealPlanData) {
+                try {
+                  const toolResult = await generateGroceryListCore({ mealPlan: mealPlanData });
+                  
+                  if (toolResult.success && toolResult.groceryList) {
+                    return {
+                      response: toolResult.message,
+                    };
+                  } else {
+                    return {
+                      response: toolResult.message || 'Failed to generate grocery list. Please try again.',
+                    };
+                  }
+                } catch (toolError) {
+                  console.error('[contextAwareChatFlow] Error in fallback grocery list call:', toolError);
+                  return {
+                    response: 'I encountered an error generating your grocery list. Please try again or contact support.',
+                  };
+                }
+              } else {
+                return {
+                  response: 'I need a meal plan to generate a grocery list. Please generate a meal plan first, then I can create a shopping list with price estimates.',
+                };
+              }
+            } else if (hasToolCalls && calledToolName === 'generate_grocery_list') {
+              // Tool was called correctly, but check if meal plan data was passed
+              // If not, extract it and call the core function directly
+              const toolCalls = fullResult?.calls || fullResult?.steps || [];
+              const groceryListCall = toolCalls.find((call: any) => 
+                (call?.name || call?.tool) === 'generate_grocery_list'
+              );
+              
+              if (groceryListCall) {
+                const toolInput = groceryListCall?.input || groceryListCall?.params || {};
+                if (!toolInput.mealPlan || !toolInput.mealPlan.days || toolInput.mealPlan.days.length === 0) {
+                  console.warn('[contextAwareChatFlow] ⚠️ Grocery list tool called but meal plan data missing, extracting from history...');
+                  const extractedMealPlan = extractMealPlanFromHistory();
+                  if (extractedMealPlan) {
+                    try {
+                      const toolResult = await generateGroceryListCore({ mealPlan: extractedMealPlan });
+                      if (toolResult.success && toolResult.groceryList) {
+                        return {
+                          response: toolResult.message,
+                        };
+                      }
+                    } catch (toolError) {
+                      console.error('[contextAwareChatFlow] Error in grocery list call with extracted meal plan:', toolError);
+                    }
+                  }
+                }
+              }
+              // If tool was called correctly with meal plan data, let it proceed normally
             }
           }
           

@@ -89,26 +89,40 @@ const mealPlanPrompt = ai.definePrompt({
     }),
   },
   prompt: `
-You are an expert meal planner and nutritionist.
+You are an expert meal planner and nutritionist focused on creating meal plans that truly serve the user's immediate needs.
 
-Generate a **personalized meal plan** for {{duration}} days with {{mealsPerDay}} meals per day. The meal plan should reflect the following user preferences:
-
-- **Dietary Preferences**: {{#each preferences}}{{this.dietaryPreference}}{{#unless @last}}, {{/unless}}{{/each}}
-- **Health or Fitness Goals**: {{#each preferences}}{{this.goal}}{{#unless @last}}, {{/unless}}{{/each}}
-- **Household Size**: {{#each preferences}}{{this.householdSize}}{{#unless @last}}, {{/unless}}{{/each}}
-- **Cuisine Preferences**: {{#each preferences}}{{#each this.cuisinePreferences}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}{{#unless @last}}, {{/unless}}{{/each}}
+Generate a **personalized meal plan** for {{duration}} days with {{mealsPerDay}} meals per day.
 
 {{#if conversationContext}}
-**IMPORTANT - Conversation Context:**
-The user has mentioned the following in our conversation: {{conversationContext}}
+**PRIMARY FOCUS - Conversation Context (HIGHEST PRIORITY):**
+{{conversationContext}}
 
-You MUST incorporate this context into the meal plan. For example:
-- If they mentioned specific foods (e.g., "toast with avocado", "ginger tea"), include these in appropriate meals
-- If they mentioned health conditions (e.g., "hangover", "light and easy to digest"), tailor meals accordingly
-- If they mentioned dietary needs or restrictions, prioritize those over general preferences
-- If they mentioned specific cuisines or dishes, incorporate those into the plan
+This is what the user ACTUALLY wants right now. Your meal plan MUST directly address this context:
+- If they mentioned specific foods or dishes, include them prominently
+- If they mentioned health conditions or needs (e.g., "hangover", "light and easy to digest"), tailor ALL meals accordingly
+- If they mentioned dietary restrictions or preferences in the conversation, prioritize those
+- If they asked about specific cuisines or dishes, make those the focus of the meal plan
+- The conversation context is MORE IMPORTANT than saved preferences - use it as the primary guide
 
-The conversation context takes PRIORITY over general preferences when there's a conflict.
+{{#if preferences}}
+**Background Context - Saved Preferences (Use as reference, not constraints):**
+- Dietary Preferences: {{#each preferences}}{{this.dietaryPreference}}{{#unless @last}}, {{/unless}}{{/each}}
+- Goals: {{#each preferences}}{{this.goal}}{{#unless @last}}, {{/unless}}{{/each}}
+- Household Size: {{#each preferences}}{{this.householdSize}}{{#unless @last}}, {{/unless}}{{/each}}
+- Cuisine Preferences: {{#each preferences}}{{#each this.cuisinePreferences}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}{{#unless @last}}, {{/unless}}{{/each}}
+
+Use these preferences as a reference to inform your choices, but the conversation context takes priority. If there's a conflict, follow the conversation context.
+{{/if}}
+{{else}}
+{{#if preferences}}
+**User Preferences (Use as guidance):**
+- Dietary Preferences: {{#each preferences}}{{this.dietaryPreference}}{{#unless @last}}, {{/unless}}{{/each}}
+- Goals: {{#each preferences}}{{this.goal}}{{#unless @last}}, {{/unless}}{{/each}}
+- Household Size: {{#each preferences}}{{this.householdSize}}{{#unless @last}}, {{/unless}}{{/each}}
+- Cuisine Preferences: {{#each preferences}}{{#each this.cuisinePreferences}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}{{#unless @last}}, {{/unless}}{{/each}}
+
+Use these preferences to guide your meal plan, but feel free to be creative and flexible to give the user the best experience.
+{{/if}}
 {{/if}}
 
 Use the optional **randomSeed** ({{randomSeed}}) to introduce variety on regeneration.
@@ -121,7 +135,7 @@ For each meal, include:
 
 Return a well-structured meal plan for each day as valid JSON conforming to the output schema. Do **not** include any explanation or formatting outside of the JSON response.
 
-Ensure meals are diverse, not repeated, and aligned with BOTH the dietary preferences AND the conversation context provided.
+Focus on creating meals that the user will actually want to eat and that address their current needs, not just matching preferences mechanically.
   `,
 });
 

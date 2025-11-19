@@ -630,13 +630,25 @@ export async function generateGroceryListCore(input: {
       {
         name: "generate_grocery_list",
         description:
-          "CRITICAL: This tool ONLY generates grocery lists - it does NOT generate meal plans. MANDATORY: Call this IMMEDIATELY when user asks for: 'grocery list', 'shopping list', 'ingredients list', 'grocery list for meal plan', 'shopping list for meals', 'grocery list for this meal plan', 'what do I need to buy', 'what ingredients', 'create grocery list', 'generate grocery list', or any variation asking for a list of items to buy. IMPORTANT: The mealPlan parameter is REQUIRED. Look in the conversation history for a recently generated meal plan (usually in the most recent assistant message that contains meal plan data). The meal plan should have: title (optional), duration (number of days), mealsPerDay (number), and days array with day numbers and meals (each meal has name, description, ingredients, instructions). If you see a meal plan in the conversation, extract its structure and pass it as the mealPlan parameter. DO NOT call generate_meal_plan() - only use existing meal plans from the conversation. If no meal plan exists in conversation, inform the user they need to generate a meal plan first. NEVER say 'I will create' or 'I can create' - YOU MUST CALL THIS FUNCTION IMMEDIATELY with the meal plan data.",
+          "CRITICAL: This tool ONLY generates grocery lists - it does NOT generate meal plans. MANDATORY: Call this IMMEDIATELY when user asks for: 'grocery list', 'shopping list', 'ingredients list', 'grocery list for meal plan', 'shopping list for meals', 'grocery list for this meal plan', 'what do I need to buy', 'what ingredients', 'create grocery list', 'generate grocery list', or any variation asking for a list of items to buy. IMPORTANT: The mealPlan parameter is REQUIRED and will be automatically extracted from the conversation history by the system. You just need to call this function - the system will handle finding the meal plan. DO NOT call generate_meal_plan() - only use existing meal plans from the conversation. NEVER say 'I will create' or 'I can create' - YOU MUST CALL THIS FUNCTION IMMEDIATELY. If you cannot find a meal plan in the conversation, still call this function and the system will handle it appropriately.",
         inputSchema: GenerateGroceryListInputSchema,
         outputSchema: GenerateGroceryListOutputSchema,
       },
   async (input) => {
     // Log to confirm grocery list tool is being called (not meal plan)
     console.log('[generateGroceryList] 🛒 GROCERY LIST TOOL CALLED - NOT meal plan generation');
+    console.log('[generateGroceryList] Input received:', JSON.stringify(input, null, 2));
+    
+    // If mealPlan is missing or incomplete, try to extract from conversation
+    // This is a safety net - the system should have extracted it before calling
+    if (!input.mealPlan || !input.mealPlan.days || input.mealPlan.days.length === 0) {
+      console.warn('[generateGroceryList] ⚠️ Meal plan data missing or incomplete in tool input');
+      return {
+        success: false,
+        message: "I need a meal plan to generate a grocery list. Please generate a meal plan first, then I can create a shopping list with price estimates.",
+      };
+    }
+    
     return await generateGroceryListCore(input);
   }
 );
