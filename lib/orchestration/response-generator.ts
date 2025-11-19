@@ -207,7 +207,7 @@ export class ResponseGenerator {
                context.userMessage.toLowerCase().includes('calories')) {
       response += ' Would you like more detailed nutritional breakdowns for specific meals?';
     } else {
-      response += ' Is there anything you'd like me to adjust or explain further?';
+      response += ' Is there anything you\'d like me to adjust or explain further?';
     }
 
     return response;
