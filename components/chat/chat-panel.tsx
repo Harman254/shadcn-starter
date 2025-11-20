@@ -840,7 +840,7 @@ export function ChatPanel({
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.2 }}
-            className="shrink-0 border-b border-border/50 bg-background/80 dark:bg-background/70 backdrop-blur-sm p-2 sm:p-3"
+            className="shrink-0 border-b border-border/50 bg-background/80 dark:bg-background/70 backdrop-blur-sm p-2.5 sm:p-3 md:p-4"
           >
             <MessageSearch 
               messages={messages} 
@@ -862,13 +862,13 @@ export function ChatPanel({
             <ChatMessages messages={messages} isLoading={isLoading} onActionClick={handleSubmit} />
             {/* Progress tracking UI - shown during tool execution */}
             {toolProgress && isLoading && (
-              <div className="absolute bottom-4 left-0 right-0 z-10 px-4 sm:px-6 md:px-8">
+              <div className="absolute bottom-2 sm:bottom-4 left-0 right-0 z-10 px-3 sm:px-4 md:px-6 lg:px-8">
                 <div className="max-w-4xl mx-auto">
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: 20 }}
-                    className="bg-card/95 backdrop-blur-sm border border-border/50 rounded-xl shadow-lg p-4"
+                    className="bg-card/95 backdrop-blur-sm border border-border/50 rounded-xl sm:rounded-2xl shadow-lg p-3 sm:p-4"
                   >
                     <ToolProgress progress={toolProgress} compact={true} showIndividualTools={toolProgress.totalTools > 1} />
                   </motion.div>
@@ -888,9 +888,9 @@ export function ChatPanel({
           aria-label="Message input"
         >
           {/* Gradient fade effect above input */}
-          <div className="absolute top-0 left-0 right-0 h-8 bg-gradient-to-b from-transparent to-background/80 dark:to-background/70 pointer-events-none z-10" />
+          <div className="absolute top-0 left-0 right-0 h-6 sm:h-8 bg-gradient-to-b from-transparent via-background/60 to-background/95 dark:via-background/50 dark:to-background/90 pointer-events-none z-10" />
           
-          <div className="relative z-20 border-t border-border/50 bg-background/95 dark:bg-background/90 backdrop-blur-xl">
+          <div className="relative z-20 border-t border-border/50 bg-background/95 dark:bg-background/90 backdrop-blur-xl safe-area-inset-bottom">
         <ChatInput onSubmit={handleSubmit} isLoading={isLoading} disabled={false} />
           </div>
       </div>

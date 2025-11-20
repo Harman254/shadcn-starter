@@ -531,8 +531,8 @@ const GenerateGroceryListOutputSchema = z.object({
 export async function generateGroceryListCore(input: {
   mealPlan: {
     title?: string;
-    duration: number;
-    mealsPerDay: number;
+    duration?: number;
+    mealsPerDay?: number;
     days: Array<{
       day: number;
       meals: Array<{
@@ -550,6 +550,23 @@ export async function generateGroceryListCore(input: {
   message: string;
 }> {
   try {
+    // Validate input structure
+    if (!input || !input.mealPlan) {
+      console.error('[generateGroceryListCore] ❌ Invalid input: mealPlan is missing');
+      return {
+        success: false,
+        message: "Invalid meal plan data. Please generate a new meal plan first.",
+      };
+    }
+    
+    if (!input.mealPlan.days || !Array.isArray(input.mealPlan.days) || input.mealPlan.days.length === 0) {
+      console.error('[generateGroceryListCore] ❌ Invalid input: days array is missing or empty');
+      return {
+        success: false,
+        message: "The meal plan doesn't contain any days. Please generate a new meal plan first.",
+      };
+    }
+    
     // Get user session
     const session = await auth.api.getSession({
       headers: await headers(),
@@ -568,12 +585,25 @@ export async function generateGroceryListCore(input: {
     const locationData = await getLocationDataWithCaching(userId, session.session.id);
     
     // Convert meal plan to simplified format for grocery list generation
-    const simplifiedMeals = input.mealPlan.days.flatMap(day => 
-      day.meals.map(meal => ({
-        name: meal.name,
-        ingredients: meal.ingredients
-      }))
-    );
+    // Filter out invalid days/meals
+    const simplifiedMeals = input.mealPlan.days
+      .filter((day: any) => day && day.meals && Array.isArray(day.meals))
+      .flatMap((day: any) => 
+        day.meals
+          .filter((meal: any) => meal && meal.name && meal.ingredients && Array.isArray(meal.ingredients))
+          .map((meal: any) => ({
+            name: meal.name,
+            ingredients: meal.ingredients || []
+          }))
+      );
+    
+    if (simplifiedMeals.length === 0) {
+      console.error('[generateGroceryListCore] ❌ No valid meals found in meal plan');
+      return {
+        success: false,
+        message: "The meal plan doesn't contain any valid meals with ingredients. Please generate a new meal plan first.",
+      };
+    }
 
     const groceryListInput: GenerateGroceryListInput = {
       meals: simplifiedMeals,
@@ -593,13 +623,18 @@ export async function generateGroceryListCore(input: {
       };
     }
 
-    // Calculate total estimated cost
+    // Calculate total estimated cost (safely handle missing prices)
     const totalCost = result.groceryList.reduce((sum: number, item: any) => {
-      const priceStr = item.estimatedPrice.replace(/[^\d.]/g, '');
-      const price = parseFloat(priceStr) || 0;
-      return sum + price;
+      if (!item || !item.estimatedPrice) return sum;
+      try {
+        const priceStr = String(item.estimatedPrice).replace(/[^\d.]/g, '');
+        const price = parseFloat(priceStr) || 0;
+        return sum + price;
+      } catch (e) {
+        return sum;
+      }
     }, 0);
-    const currencySymbol = result.locationInfo?.currencySymbol || '$';
+    const currencySymbol = result.locationInfo?.currencySymbol || locationData?.currencySymbol || '$';
 
     // Create UI metadata for displaying the grocery list
     const uiMetadata = {
@@ -632,7 +667,7 @@ export async function generateGroceryListCore(input: {
       success: true,
       groceryList: result.groceryList,
       locationInfo: result.locationInfo,
-      message: `✅ Generated grocery list for your ${input.mealPlan.duration}-day meal plan! Found ${result.groceryList.length} items with estimated total cost of ${currencySymbol}${totalCost.toFixed(2)}. [UI_METADATA:${uiMetadataEncoded}]`,
+      message: `✅ Generated grocery list for your ${input.mealPlan.duration || input.mealPlan.days?.length || 'meal'} plan! Found ${result.groceryList.length} items with estimated total cost of ${currencySymbol}${totalCost.toFixed(2)}. [UI_METADATA:${uiMetadataEncoded}]`,
     };
   } catch (error) {
     console.error("[generateGroceryList] Error:", error);
@@ -656,13 +691,39 @@ export async function generateGroceryListCore(input: {
     console.log('[generateGroceryList] 🛒 GROCERY LIST TOOL CALLED - NOT meal plan generation');
     console.log('[generateGroceryList] Input received:', JSON.stringify(input, null, 2));
     
-    // If mealPlan is missing or incomplete, try to extract from conversation
-    // This is a safety net - the system should have extracted it before calling
-    if (!input.mealPlan || !input.mealPlan.days || input.mealPlan.days.length === 0) {
-      console.warn('[generateGroceryList] ⚠️ Meal plan data missing or incomplete in tool input');
+    // Validate meal plan structure
+    if (!input.mealPlan) {
+      console.warn('[generateGroceryList] ⚠️ Meal plan is missing in tool input');
       return {
         success: false,
         message: "I need a meal plan to generate a grocery list. Please generate a meal plan first, then I can create a shopping list with price estimates.",
+      };
+    }
+    
+    // Validate meal plan has days array
+    if (!input.mealPlan.days || !Array.isArray(input.mealPlan.days) || input.mealPlan.days.length === 0) {
+      console.warn('[generateGroceryList] ⚠️ Meal plan days array is missing or empty:', {
+        hasDays: !!input.mealPlan.days,
+        isArray: Array.isArray(input.mealPlan.days),
+        length: input.mealPlan.days?.length || 0,
+        mealPlanKeys: Object.keys(input.mealPlan),
+      });
+      return {
+        success: false,
+        message: "The meal plan structure is invalid. Please generate a new meal plan first, then I can create a shopping list with price estimates.",
+      };
+    }
+    
+    // Validate that days have meals
+    const hasValidMeals = input.mealPlan.days.some((day: any) => 
+      day && day.meals && Array.isArray(day.meals) && day.meals.length > 0
+    );
+    
+    if (!hasValidMeals) {
+      console.warn('[generateGroceryList] ⚠️ Meal plan days have no valid meals');
+      return {
+        success: false,
+        message: "The meal plan doesn't contain any meals. Please generate a new meal plan first, then I can create a shopping list with price estimates.",
       };
     }
     

@@ -235,12 +235,12 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
       data-message-id={message?.id}
     >
       <div className={cn(
-        "max-w-4xl mx-auto px-4 sm:px-5 md:px-6 lg:px-8",
+        "max-w-4xl mx-auto px-3 sm:px-4 md:px-5 lg:px-6 xl:px-8",
         isAssistant ? "flex justify-start" : "flex justify-end"
       )}>
         <div className={cn(
-          "flex items-start gap-3 sm:gap-4",
-          "max-w-[85%] sm:max-w-[80%] md:max-w-[75%]",
+          "flex items-start gap-2.5 sm:gap-3 md:gap-4",
+          "max-w-[90%] sm:max-w-[85%] md:max-w-[80%] lg:max-w-[75%]",
         isAssistant ? "flex-row" : "flex-row-reverse"
       )}>
         <Avatar
@@ -724,31 +724,31 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
               <div className={cn(
                 "relative overflow-hidden w-full",
                 "bg-gradient-to-br from-card via-card to-secondary/5 dark:from-card dark:via-card dark:to-secondary/10",
-                "border-y border-border/50 sm:border-x sm:border-border/50 sm:rounded-2xl",
+                "border-y border-border/50 sm:border-x sm:border-border/50 sm:rounded-xl md:rounded-2xl",
                 "shadow-lg shadow-secondary/10 dark:shadow-secondary/5",
                 "backdrop-blur-sm"
               )}>
                 {/* Header with gradient accent */}
                 <div className={cn(
-                  "relative px-4 sm:px-5 md:px-6 py-4 sm:py-5",
+                  "relative px-3 sm:px-4 md:px-5 lg:px-6 py-3 sm:py-4 md:py-5",
                   "bg-gradient-to-r from-secondary/10 via-secondary/5 to-transparent dark:from-secondary/15 dark:via-secondary/10",
                   "border-b border-border/50"
                 )}>
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2.5 sm:gap-3">
                     <div className={cn(
-                      "p-2.5 rounded-xl",
+                      "p-2 sm:p-2.5 rounded-lg sm:rounded-xl shrink-0",
                       "bg-gradient-to-br from-secondary to-secondary/80 dark:from-secondary/90 dark:to-secondary/70",
                       "text-secondary-foreground",
                       "shadow-md shadow-secondary/20 dark:shadow-secondary/30",
                       "ring-1 ring-secondary/20"
                     )}>
-                      <ShoppingCart className="h-5 w-5 sm:h-6 sm:w-6" />
+                      <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-bold text-lg sm:text-xl md:text-2xl text-foreground leading-tight">
+                      <h3 className="font-bold text-base sm:text-lg md:text-xl lg:text-2xl text-foreground leading-tight">
                         Grocery List
                       </h3>
-                      <div className="flex flex-wrap items-center gap-3 sm:gap-4 mt-2 text-xs sm:text-sm">
+                      <div className="flex flex-wrap items-center gap-2 sm:gap-3 md:gap-4 mt-1.5 sm:mt-2 text-xs sm:text-sm">
                         {groceryList.totalEstimatedCost && (
                           <div className={cn(
                             "flex items-center gap-1.5",
@@ -783,7 +783,7 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
 
                 {/* Grocery List Content */}
                 {groceryList.items && groceryList.items.length > 0 && (
-                  <div className="p-4 sm:p-5 md:px-6 md:py-5">
+                  <div className="p-3 sm:p-4 md:p-5 lg:px-6 lg:py-5">
                     {/* Group items by category */}
                     {(() => {
                       const itemsByCategory = groceryList.items.reduce((acc: Record<string, typeof groceryList.items>, item: any) => {
@@ -801,32 +801,32 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
                           transition={{ duration: 0.2, delay: categoryIndex * 0.05 }}
                           className={cn(
                             "relative",
-                            categoryIndex < Object.keys(itemsByCategory).length - 1 && "mb-6 pb-6 border-b border-border/30"
+                            categoryIndex < Object.keys(itemsByCategory).length - 1 && "mb-4 sm:mb-5 md:mb-6 pb-4 sm:pb-5 md:pb-6 border-b border-border/30"
                           )}
                         >
                           {/* Category Header */}
-                          <div className="flex items-center justify-between mb-4">
-                            <div className="flex items-center gap-2.5">
+                          <div className="flex items-center justify-between mb-3 sm:mb-4">
+                            <div className="flex items-center gap-2 sm:gap-2.5">
                               <div className={cn(
-                                "flex items-center justify-center gap-1.5",
-                                "px-3 py-1.5 rounded-lg",
+                                "flex items-center justify-center gap-1 sm:gap-1.5",
+                                "px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-md sm:rounded-lg",
                                 "bg-gradient-to-r from-secondary/15 to-secondary/10 dark:from-secondary/20 dark:to-secondary/15",
                                 "text-secondary-foreground dark:text-secondary",
-                                "font-semibold text-sm sm:text-base",
+                                "font-semibold text-xs sm:text-sm md:text-base",
                                 "border border-secondary/30 dark:border-secondary/40",
                                 "shadow-sm"
                               )}>
-                                <Tag className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                                <span>{category}</span>
+                                <Tag className="h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4" />
+                                <span className="truncate">{category}</span>
                               </div>
                             </div>
-                            <span className="text-xs sm:text-sm text-muted-foreground font-medium">
+                            <span className="text-xs sm:text-sm text-muted-foreground font-medium shrink-0 ml-2">
                               {items.length} {items.length === 1 ? 'item' : 'items'}
                             </span>
                           </div>
 
                           {/* Items Grid */}
-                          <div className="grid gap-2.5 sm:gap-3">
+                          <div className="grid gap-2 sm:gap-2.5 md:gap-3">
                             {items.map((item: any, itemIndex: number) => (
                               <motion.div
                                 key={item.id || itemIndex}

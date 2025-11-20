@@ -611,14 +611,38 @@ const contextAwareChatFlow = ai.defineFlow(
                       const uiMetadata = JSON.parse(decoded);
                       
                       if (uiMetadata.mealPlan) {
-                        console.log('[contextAwareChatFlow] ✅ Found meal plan in conversation history:', {
-                          title: uiMetadata.mealPlan.title,
-                          duration: uiMetadata.mealPlan.duration,
-                          mealsPerDay: uiMetadata.mealPlan.mealsPerDay,
-                          daysCount: uiMetadata.mealPlan.days?.length || 0,
+                        // Validate meal plan structure before returning
+                        const mealPlan = uiMetadata.mealPlan;
+                        
+                        // Ensure days array exists and is valid
+                        if (!mealPlan.days || !Array.isArray(mealPlan.days) || mealPlan.days.length === 0) {
+                          console.warn('[contextAwareChatFlow] ⚠️ Meal plan found but days array is invalid:', {
+                            hasDays: !!mealPlan.days,
+                            isArray: Array.isArray(mealPlan.days),
+                            length: mealPlan.days?.length || 0,
+                          });
+                          continue; // Try next match
+                        }
+                        
+                        // Validate that days have meals
+                        const hasValidMeals = mealPlan.days.some((day: any) => 
+                          day && day.meals && Array.isArray(day.meals) && day.meals.length > 0
+                        );
+                        
+                        if (!hasValidMeals) {
+                          console.warn('[contextAwareChatFlow] ⚠️ Meal plan found but has no valid meals');
+                          continue; // Try next match
+                        }
+                        
+                        console.log('[contextAwareChatFlow] ✅ Found valid meal plan in conversation history:', {
+                          title: mealPlan.title,
+                          duration: mealPlan.duration,
+                          mealsPerDay: mealPlan.mealsPerDay,
+                          daysCount: mealPlan.days.length,
+                          totalMeals: mealPlan.days.reduce((sum: number, day: any) => sum + (day.meals?.length || 0), 0),
                           messageIndex: i,
                         });
-                        return uiMetadata.mealPlan;
+                        return mealPlan;
                       }
                     } catch (parseError) {
                       // Try next match
@@ -633,8 +657,8 @@ const contextAwareChatFlow = ai.defineFlow(
             }
             
             // If no meal plan found in UI_METADATA, log for debugging
+            console.warn('[contextAwareChatFlow] ⚠️ No valid meal plan found in conversation history');
             if (process.env.NODE_ENV === 'development') {
-              console.warn('[contextAwareChatFlow] ⚠️ No meal plan found in conversation history');
               console.warn('[contextAwareChatFlow] Chat history:', chatHistory.map(m => ({
                 role: m.role,
                 hasUIMetadata: m.content.includes('[UI_METADATA:'),
