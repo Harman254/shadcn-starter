@@ -11,6 +11,7 @@
 import { ai } from "@/ai/instance";
 import { z } from "genkit";
 import { generateMealPlan, saveMealPlan, generateMealPlanCore, generateGroceryList, generateGroceryListCore } from "./dynamic-select-tools";
+import { ReliableToolCaller, ConversationFlowManager } from '@/lib/orchestration/reliable-tool-caller';
 
 // Helper to extract duration and mealsPerDay from user message or chat history
 // Prioritizes explicit user requests over defaults
@@ -187,21 +188,57 @@ You MUST call \`generate_meal_plan\` when the user does ANY of the following:
 
 **ABSOLUTE PRIORITY: Grocery list requests take precedence over EVERYTHING else.**
 
-You MUST call \`generate_grocery_list\` IMMEDIATELY (NO TEXT, JUST THE TOOL CALL) when the user:
-- Says "grocery list", "shopping list", "ingredients list"
-- Says "create a grocery list", "generate grocery list", "make a grocery list", "get grocery list", "can i get the grocery list"
-- Says "grocery list for this meal plan", "grocery list for meal plan", "grocery list for it", "grocery list for this", "grocery list for that", "create a grocery list for this mealplan" (this is a GROCERY LIST request, NOT a meal plan request)
-- Says "grocery list" button clicked or "Create a grocery list for this meal plan"
-- Asks "what do I need to buy", "what ingredients do I need"
-- Says "yes/ok" after you ask if they want a grocery list
-- Mentions "grocery list" or "shopping list" in ANY context when a meal plan exists in the conversation
+**MANDATORY: You MUST call \`generate_grocery_list\` IMMEDIATELY (NO TEXT, JUST THE TOOL CALL) when the user says ANY of the following:**
 
-**CRITICAL: When user says "create a grocery list for this mealplan" or any variation:**
-- DO NOT respond with text
-- DO NOT say "I will create" or "Let me generate"
-- IMMEDIATELY call \`generate_grocery_list\` with an empty mealPlan object: \`{ mealPlan: {} }\`
-- The system will automatically extract the meal plan from conversation history
-- The tool call is your ONLY response - NO TEXT BEFORE OR AFTER
+1. **Direct mentions:**
+   - "grocery list", "shopping list", "ingredients list"
+   - "create a grocery list", "generate grocery list", "make a grocery list", "get grocery list"
+   - "can i get the grocery list", "i want a grocery list", "i need a grocery list"
+
+2. **With meal plan context:**
+   - "grocery list for this meal plan"
+   - "grocery list for meal plan"
+   - "grocery list for it"
+   - "grocery list for this"
+   - "grocery list for that"
+   - "create a grocery list for this mealplan"
+   - "create a grocery list for this meal plan"
+   - "grocery list for my meal plan"
+   - "shopping list for the meal plan"
+
+3. **Shopping/buying questions:**
+   - "what do I need to buy"
+   - "what ingredients do I need"
+   - "what should I buy"
+   - "what to buy for this meal plan"
+
+4. **Button clicks or actions:**
+   - "grocery list" button clicked
+   - "Create a grocery list for this meal plan" (from button)
+
+5. **Affirmatives after grocery list question:**
+   - "yes" or "ok" after you ask if they want a grocery list
+
+6. **ANY mention of "grocery list" or "shopping list" when a meal plan exists in the conversation**
+
+**CRITICAL RULES FOR GROCERY LIST REQUESTS:**
+
+1. **IMMEDIATE TOOL CALL - NO EXCEPTIONS:**
+   - When you detect ANY grocery list request, you MUST call \`generate_grocery_list\` IMMEDIATELY
+   - DO NOT respond with text first
+   - DO NOT say "I will create" or "Let me generate"
+   - DO NOT acknowledge the request
+   - The tool call is your ONLY response - NO TEXT BEFORE OR AFTER
+
+2. **Tool call format:**
+   - Call \`generate_grocery_list\` with: \`{ mealPlan: {} }\`
+   - The system will automatically extract the meal plan from conversation history
+   - You do NOT need to pass the meal plan data - just call the tool
+
+3. **Detection priority:**
+   - If the message contains "grocery list" or "shopping list" in ANY form, it's a grocery list request
+   - Even if the message also mentions "meal plan", it's STILL a grocery list request
+   - Example: "create a grocery list for this meal plan" = GROCERY LIST REQUEST, NOT meal plan request
 
 **CRITICAL PRIORITY RULES (MUST FOLLOW):**
 1. **If the user message contains "grocery list" or "shopping list" in ANY form, you MUST call \`generate_grocery_list\`, NOT \`generate_meal_plan\`.**
@@ -345,6 +382,27 @@ const contextAwareChatFlow = ai.defineFlow(
     outputSchema: ContextAwareChatOutputSchema,
   },
   async (input) => {
+    // PRE-FLIGHT: Deterministic tool call detection (runs before AI processes)
+    // This ensures reliable tool calling like Perplexity AI
+    const toolDecision = ReliableToolCaller.detectToolCall(
+      input.message,
+      input.chatHistory || [],
+      {
+        conversationHistory: input.chatHistory || [],
+        userPreferences: undefined,
+      }
+    );
+
+    // Log tool decision for debugging
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[contextAwareChatFlow] 🔍 Pre-flight tool call decision:', {
+        shouldCallTool: toolDecision.shouldCallTool,
+        toolName: toolDecision.toolName,
+        confidence: toolDecision.confidence,
+        reason: toolDecision.reason,
+      });
+    }
+
     const chatHistory = input.chatHistory || [];
         const preferencesSummary = input.preferencesSummary || '';
         
@@ -502,6 +560,61 @@ const contextAwareChatFlow = ai.defineFlow(
             }
           }
         } else {
+          // RELIABLE TOOL CALLING: If pre-flight detection says we should call a tool,
+          // but AI didn't call it, force the tool call for reliability (like Perplexity AI)
+          if (toolDecision.shouldCallTool && toolDecision.confidence === 'high' && !hasToolCalls) {
+            console.log('[contextAwareChatFlow] ⚡ FORCING TOOL CALL: Pre-flight detection requires tool but AI did not call it');
+            console.log('[contextAwareChatFlow] 🔧 Tool:', toolDecision.toolName, 'Confidence:', toolDecision.confidence);
+            
+            // Force tool call based on pre-flight detection
+            if (toolDecision.toolName === 'generate_grocery_list') {
+              // Extract meal plan and call tool directly
+              const extractMealPlanFromHistory = (): any => {
+                for (let i = (input.chatHistory || []).length - 1; i >= 0; i--) {
+                  const msg = (input.chatHistory || [])[i];
+                  if (msg.role === 'assistant' && msg.content.includes('[UI_METADATA:')) {
+                    try {
+                      const matches = msg.content.matchAll(/\[UI_METADATA:([A-Za-z0-9+/=]+)\]/g);
+                      for (const match of matches) {
+                        try {
+                          const decoded = Buffer.from(match[1], 'base64').toString('utf-8');
+                          const uiMetadata = JSON.parse(decoded);
+                          if (uiMetadata.mealPlan && uiMetadata.mealPlan.days && Array.isArray(uiMetadata.mealPlan.days) && uiMetadata.mealPlan.days.length > 0) {
+                            return uiMetadata.mealPlan;
+                          }
+                        } catch (e) {
+                          continue;
+                        }
+                      }
+                    } catch (e) {
+                      continue;
+                    }
+                  }
+                }
+                return null;
+              };
+
+              const mealPlanData = extractMealPlanFromHistory();
+              if (mealPlanData) {
+                try {
+                  const toolResult = await generateGroceryListCore({ mealPlan: mealPlanData });
+                  if (toolResult.success && toolResult.groceryList) {
+                    console.log('[contextAwareChatFlow] ✅ Forced grocery list tool call succeeded');
+                    return { response: toolResult.message };
+                  } else {
+                    console.warn('[contextAwareChatFlow] ⚠️ Forced grocery list tool call returned failure');
+                  }
+                } catch (error) {
+                  console.error('[contextAwareChatFlow] ❌ Forced tool call failed:', error);
+                  // Fall through to natural response
+                }
+              } else {
+                console.warn('[contextAwareChatFlow] ⚠️ Cannot force grocery list - no meal plan found');
+              }
+            }
+            // For meal plan, the prompt should handle it, but we've logged the decision
+          }
+
           // Check if response suggests tool should have been called
           const responseText = output?.response?.toLowerCase() || '';
           const suggestsMealPlan = /generate|creating|planning|meal.*plan|will generate/i.test(responseText);
@@ -552,17 +665,26 @@ const contextAwareChatFlow = ai.defineFlow(
           // Use more specific patterns to avoid confusion with meal plan requests
           // CRITICAL: "grocery list for meal plan" = grocery list request, NOT meal plan request
           // Enhanced patterns to catch: "grocery list for meal plan", "shopping list for meals", etc.
+          const messageLower = input.message.toLowerCase().trim();
+          
+          // Comprehensive grocery list detection patterns
           const isGroceryListRequest = 
-            // Primary patterns - these take absolute priority
-            /^(create|generate|make|get|show|give|can.*i.*get).*grocery.*list/i.test(input.message) ||
-            /grocery.*list|shopping.*list|ingredients.*list/i.test(input.message) ||
-            /(create|generate|make|get|can.*i.*get).*list.*for.*(meal|this|the|it)/i.test(input.message) ||
-            /list.*for.*(meal|this|the|it)/i.test(input.message) ||
-            /grocery.*list.*for.*(it|this|that|meal|plan|mealplan)/i.test(input.message) ||
-            /create.*grocery.*list.*for.*this.*mealplan/i.test(input.message) || // Explicit pattern for user's exact phrase
-            /what.*do.*i.*need.*to.*buy|what.*ingredients|buy.*for.*meal|shopping.*for.*meal|grocery.*for.*meal|ingredients.*for.*meal|what.*to.*buy.*for|need.*to.*buy/i.test(input.message) ||
+            // Direct grocery list mentions (highest priority)
+            /grocery.*list|shopping.*list|ingredients.*list/i.test(messageLower) ||
+            // Action verbs + grocery list
+            /^(create|generate|make|get|show|give|can.*i.*get|i.*want|i.*need|i.*would.*like).*grocery.*list/i.test(messageLower) ||
+            // Grocery list for meal plan variations
+            /grocery.*list.*for.*(this|that|the|it|meal|plan|mealplan|my|your)/i.test(messageLower) ||
+            /(create|generate|make|get).*grocery.*list.*for.*(this|that|the|it|meal|plan|mealplan)/i.test(messageLower) ||
+            // List for meal plan (when "list" is mentioned)
+            /(create|generate|make|get|show|give).*list.*for.*(this|that|the|it|meal|plan|mealplan)/i.test(messageLower) ||
+            // Shopping/buying related
+            /what.*do.*i.*need.*to.*buy|what.*ingredients|buy.*for.*meal|shopping.*for.*meal|grocery.*for.*meal|ingredients.*for.*meal|what.*to.*buy.*for|need.*to.*buy|what.*should.*i.*buy/i.test(messageLower) ||
+            // Button clicks or quick actions
+            /grocery.*list.*button|create.*grocery.*list.*button|get.*shopping.*list/i.test(messageLower) ||
+            // Short affirmatives after grocery list question
             (isShortAffirmative && chatHistory.some(msg => 
-              msg.role === 'assistant' && /grocery.*list|shopping.*list|price.*estimate|create.*grocery|generate.*grocery/i.test(msg.content.toLowerCase())
+              msg.role === 'assistant' && /grocery.*list|shopping.*list|price.*estimate|create.*grocery|generate.*grocery|would.*you.*like.*grocery/i.test(msg.content.toLowerCase())
             ));
           
           // Log for debugging
@@ -595,24 +717,42 @@ const contextAwareChatFlow = ai.defineFlow(
           const wrongToolCalled = hasToolCalls && calledToolName === 'generate_meal_plan' && isGroceryListRequest;
           
           // Helper function to extract meal plan from conversation history
+          // This function searches through all assistant messages to find meal plans
           const extractMealPlanFromHistory = (): any => {
+            console.log('[contextAwareChatFlow] 🔍 Starting meal plan extraction from conversation history...');
+            console.log('[contextAwareChatFlow] 📊 Chat history length:', chatHistory.length);
+            
             // Look for the most recent meal plan in assistant messages
             // Search in reverse order (most recent first) to get the latest meal plan
             for (let i = chatHistory.length - 1; i >= 0; i--) {
               const msg = chatHistory[i];
+              
+              // Check if message is from assistant and contains UI metadata
               if (msg.role === 'assistant' && msg.content.includes('[UI_METADATA:')) {
+                console.log(`[contextAwareChatFlow] 🔎 Checking message ${i} for meal plan...`);
+                
                 try {
                   // Find all UI_METADATA matches in the message (there might be multiple)
-                  const matches = msg.content.matchAll(/\[UI_METADATA:([A-Za-z0-9+/=]+)\]/g);
+                  const matches = Array.from(msg.content.matchAll(/\[UI_METADATA:([A-Za-z0-9+/=]+)\]/g));
+                  console.log(`[contextAwareChatFlow] 📦 Found ${matches.length} UI_METADATA tag(s) in message ${i}`);
                   
                   for (const match of matches) {
                     try {
                       const decoded = Buffer.from(match[1], 'base64').toString('utf-8');
                       const uiMetadata = JSON.parse(decoded);
                       
+                      console.log(`[contextAwareChatFlow] 🔓 Decoded UI metadata, keys:`, Object.keys(uiMetadata));
+                      
                       if (uiMetadata.mealPlan) {
                         // Validate meal plan structure before returning
                         const mealPlan = uiMetadata.mealPlan;
+                        
+                        console.log('[contextAwareChatFlow] ✅ Found meal plan in metadata:', {
+                          hasTitle: !!mealPlan.title,
+                          hasDays: !!mealPlan.days,
+                          daysType: Array.isArray(mealPlan.days) ? 'array' : typeof mealPlan.days,
+                          daysLength: mealPlan.days?.length || 0,
+                        });
                         
                         // Ensure days array exists and is valid
                         if (!mealPlan.days || !Array.isArray(mealPlan.days) || mealPlan.days.length === 0) {
@@ -634,37 +774,47 @@ const contextAwareChatFlow = ai.defineFlow(
                           continue; // Try next match
                         }
                         
+                        const totalMeals = mealPlan.days.reduce((sum: number, day: any) => sum + (day.meals?.length || 0), 0);
+                        
                         console.log('[contextAwareChatFlow] ✅ Found valid meal plan in conversation history:', {
                           title: mealPlan.title,
                           duration: mealPlan.duration,
                           mealsPerDay: mealPlan.mealsPerDay,
                           daysCount: mealPlan.days.length,
-                          totalMeals: mealPlan.days.reduce((sum: number, day: any) => sum + (day.meals?.length || 0), 0),
+                          totalMeals,
                           messageIndex: i,
                         });
                         return mealPlan;
+                      } else {
+                        console.log(`[contextAwareChatFlow] ℹ️ UI metadata found but no mealPlan key (has keys: ${Object.keys(uiMetadata).join(', ')})`);
                       }
                     } catch (parseError) {
+                      console.warn(`[contextAwareChatFlow] ⚠️ Error parsing UI_METADATA match:`, parseError);
                       // Try next match
                       continue;
                     }
                   }
                 } catch (e) {
-                  console.warn('[contextAwareChatFlow] Error parsing UI_METADATA:', e);
+                  console.warn('[contextAwareChatFlow] ⚠️ Error parsing UI_METADATA:', e);
                   // Continue searching in other messages
+                }
+              } else if (msg.role === 'assistant') {
+                // Log if assistant message doesn't have UI_METADATA
+                if (process.env.NODE_ENV === 'development') {
+                  console.log(`[contextAwareChatFlow] ℹ️ Message ${i} is assistant but has no UI_METADATA`);
                 }
               }
             }
             
             // If no meal plan found in UI_METADATA, log for debugging
             console.warn('[contextAwareChatFlow] ⚠️ No valid meal plan found in conversation history');
-            if (process.env.NODE_ENV === 'development') {
-              console.warn('[contextAwareChatFlow] Chat history:', chatHistory.map(m => ({
-                role: m.role,
-                hasUIMetadata: m.content.includes('[UI_METADATA:'),
-                contentPreview: m.content.substring(0, 100),
-              })));
-            }
+            console.warn('[contextAwareChatFlow] 📋 Chat history summary:', chatHistory.map((m, idx) => ({
+              index: idx,
+              role: m.role,
+              hasUIMetadata: m.content.includes('[UI_METADATA:'),
+              uiMetadataCount: (m.content.match(/\[UI_METADATA:/g) || []).length,
+              contentPreview: m.content.substring(0, 150),
+            })));
             
             return null;
           };
@@ -710,61 +860,81 @@ const contextAwareChatFlow = ai.defineFlow(
             }
           }
           
+          // CRITICAL: Always check for grocery list requests, even if AI called a tool
+          // This ensures we catch cases where AI responds with text instead of calling the tool
           if (isGroceryListRequest) {
-            // CRITICAL: If AI didn't call the tool but user requested grocery list, trigger it immediately
-            // This ensures the tool is called even if AI responds with text instead
-            console.log('[contextAwareChatFlow] 🛒 Grocery list request detected - triggering tool immediately...');
+            console.log('[contextAwareChatFlow] 🛒 GROCERY LIST REQUEST DETECTED - Processing immediately...');
+            console.log('[contextAwareChatFlow] 📝 User message:', input.message);
+            console.log('[contextAwareChatFlow] 🔍 AI called tool?', hasToolCalls, calledToolName);
             
-            // STEP 1: Extract meal plan from conversation history
-            console.log('[contextAwareChatFlow] 🔍 Extracting meal plan from conversation history...');
-            const mealPlanData = extractMealPlanFromHistory();
+            // If AI called the wrong tool (meal plan instead of grocery list), we already handled it above
+            // If AI called the correct tool (grocery list), let it proceed
+            // If AI didn't call any tool, we need to trigger it manually
             
-            if (!mealPlanData) {
-              // No meal plan found - inform user they need one first
-              console.warn('[contextAwareChatFlow] ⚠️ No meal plan found in conversation history');
-              return {
-                response: 'I need a meal plan to generate a grocery list. Please generate a meal plan first, then I can create a shopping list with price estimates.',
-              };
-            }
-            
-            console.log('[contextAwareChatFlow] ✅ Meal plan extracted:', {
-              title: mealPlanData.title,
-              duration: mealPlanData.duration,
-              mealsPerDay: mealPlanData.mealsPerDay,
-              days: mealPlanData.days?.length || 0,
-            });
-            
-            // STEP 2: Generate grocery list using AI flow (with prices)
-            // This calls generateGroceryListFlow which uses AI to generate the list and prices
-            console.log('[contextAwareChatFlow] 🤖 Calling generateGroceryListCore to generate grocery list with prices...');
-            
-            try {
-              const toolResult = await generateGroceryListCore({ mealPlan: mealPlanData });
+            if (!hasToolCalls || (hasToolCalls && calledToolName !== 'generate_grocery_list')) {
+              // AI didn't call grocery list tool - trigger it immediately
+              console.log('[contextAwareChatFlow] ⚡ AI did not call grocery list tool - triggering manually...');
               
-              if (toolResult.success && toolResult.groceryList) {
-                console.log('[contextAwareChatFlow] ✅ Grocery list generated successfully:', {
-                  itemCount: toolResult.groceryList.length,
-                  hasLocationInfo: !!toolResult.locationInfo,
-                  messageHasUIMetadata: toolResult.message.includes('[UI_METADATA:'),
-                });
-                
-                // STEP 3: Return tool call result with UI metadata for display
-                // The message contains [UI_METADATA:...] which will be extracted by chat-panel.tsx
-                // and displayed as a tool call result in the UI
+              // STEP 1: Extract meal plan from conversation history
+              console.log('[contextAwareChatFlow] 🔍 Extracting meal plan from conversation history...');
+              const mealPlanData = extractMealPlanFromHistory();
+              
+              if (!mealPlanData) {
+                // No meal plan found - inform user they need one first
+                console.warn('[contextAwareChatFlow] ⚠️ No meal plan found in conversation history');
+                console.warn('[contextAwareChatFlow] Chat history:', chatHistory.map(m => ({
+                  role: m.role,
+                  hasUIMetadata: m.content.includes('[UI_METADATA:'),
+                  contentPreview: m.content.substring(0, 100),
+                })));
                 return {
-                  response: toolResult.message, // Contains UI_METADATA for grocery list display
-                };
-              } else {
-                console.error('[contextAwareChatFlow] ❌ Grocery list generation failed:', toolResult.message);
-                return {
-                  response: toolResult.message || 'Failed to generate grocery list. Please try again.',
+                  response: 'I need a meal plan to generate a grocery list. Please generate a meal plan first, then I can create a shopping list with price estimates.',
                 };
               }
-            } catch (toolError) {
-              console.error('[contextAwareChatFlow] ❌ Error generating grocery list:', toolError);
-              return {
-                response: 'I encountered an error generating your grocery list. Please try again or contact support.',
-              };
+              
+              console.log('[contextAwareChatFlow] ✅ Meal plan extracted:', {
+                title: mealPlanData.title,
+                duration: mealPlanData.duration,
+                mealsPerDay: mealPlanData.mealsPerDay,
+                days: mealPlanData.days?.length || 0,
+                totalMeals: mealPlanData.days?.reduce((sum: number, day: any) => sum + (day.meals?.length || 0), 0) || 0,
+              });
+              
+              // STEP 2: Generate grocery list using AI flow (with prices)
+              // This calls generateGroceryListFlow which uses AI to generate the list and prices
+              console.log('[contextAwareChatFlow] 🤖 Calling generateGroceryListCore to generate grocery list with prices...');
+              
+              try {
+                const toolResult = await generateGroceryListCore({ mealPlan: mealPlanData });
+                
+                if (toolResult.success && toolResult.groceryList) {
+                  console.log('[contextAwareChatFlow] ✅ Grocery list generated successfully:', {
+                    itemCount: toolResult.groceryList.length,
+                    hasLocationInfo: !!toolResult.locationInfo,
+                    messageHasUIMetadata: toolResult.message.includes('[UI_METADATA:'),
+                  });
+                  
+                  // STEP 3: Return tool call result with UI metadata for display
+                  // The message contains [UI_METADATA:...] which will be extracted by chat-panel.tsx
+                  // and displayed as a tool call result in the UI
+                  return {
+                    response: toolResult.message, // Contains UI_METADATA for grocery list display
+                  };
+                } else {
+                  console.error('[contextAwareChatFlow] ❌ Grocery list generation failed:', toolResult.message);
+                  return {
+                    response: toolResult.message || 'Failed to generate grocery list. Please try again.',
+                  };
+                }
+              } catch (toolError) {
+                console.error('[contextAwareChatFlow] ❌ Error generating grocery list:', toolError);
+                return {
+                  response: 'I encountered an error generating your grocery list. Please try again or contact support.',
+                };
+              }
+            } else {
+              // AI called the correct tool - let it proceed
+              console.log('[contextAwareChatFlow] ✅ AI correctly called generate_grocery_list tool');
             }
           }
           

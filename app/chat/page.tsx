@@ -20,8 +20,8 @@ export default async function ChatPage() {
     let session;
     try {
       session = await auth.api.getSession({
-        headers: await headers(),
-      });
+      headers: await headers(),
+    });
     } catch (sessionError) {
       // Handle database connection errors when fetching session
       console.error('[ChatPage] Error fetching session:', sessionError);
