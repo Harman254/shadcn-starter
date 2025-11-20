@@ -237,7 +237,7 @@ export class RobustOrchestrator extends EnhancedToolOrchestrator {
   private enableStaleDataFallback: boolean;
   private staleDataThreshold: number;
   private contextStates: Map<string, ContextState> = new Map();
-  private cache = getCacheManager();
+  private cacheManager = getCacheManager(); // Use different name to avoid conflict with base class cache
 
   constructor(options: RobustOrchestrationOptions = {}) {
     super(options);
@@ -332,7 +332,8 @@ export class RobustOrchestrator extends EnhancedToolOrchestrator {
           // Check cache first (including stale data if enabled)
           if (tool.cacheKey) {
             const cacheKey = tool.cacheKey(call.input, enrichedContext);
-            const cached = this.cache.get(cacheKey);
+            // Check CacheManager first
+            const cached = this.cacheManager.get(cacheKey);
             
             if (cached) {
               usedCachedData.push(call.toolName);
@@ -340,17 +341,23 @@ export class RobustOrchestrator extends EnhancedToolOrchestrator {
               break;
             }
 
+            // Also check base class cache for compatibility
+            const baseCached = this.cache.get(cacheKey);
+            if (baseCached && Date.now() - baseCached.timestamp < baseCached.ttl) {
+              usedCachedData.push(call.toolName);
+              result = baseCached.result;
+              break;
+            }
+
             // Try stale data if enabled
             if (this.enableStaleDataFallback && attempts > 0) {
               const staleCacheKey = `${cacheKey}:stale`;
-              const staleCached = this.cache.get(staleCacheKey);
+              const staleCached = this.cacheManager.get(staleCacheKey);
               if (staleCached) {
-                const age = Date.now() - staleCached.timestamp;
-                if (age < this.staleDataThreshold) {
-                  usedStaleData.push(call.toolName);
-                  result = staleCached.data;
-                  break;
-                }
+                // CacheManager handles TTL internally, so if we get it, it's valid
+                usedStaleData.push(call.toolName);
+                result = staleCached;
+                break;
               }
             }
           }
@@ -376,12 +383,18 @@ export class RobustOrchestrator extends EnhancedToolOrchestrator {
           // Success - cache result
           if (tool.cacheKey) {
             const cacheKey = tool.cacheKey(call.input, enrichedContext);
-            this.cache.set(cacheKey, result, { ttl: 5 * 60 * 1000 });
+            // Cache in both CacheManager and base class cache for compatibility
+            this.cacheManager.set(cacheKey, result, { ttl: 5 * 60 * 1000 });
+            this.cache.set(cacheKey, {
+              result,
+              timestamp: Date.now(),
+              ttl: 5 * 60 * 1000,
+            });
             
             // Also cache as stale fallback
             if (this.enableStaleDataFallback) {
               const staleCacheKey = `${cacheKey}:stale`;
-              this.cache.set(staleCacheKey, result, { ttl: this.staleDataThreshold });
+              this.cacheManager.set(staleCacheKey, result, { ttl: this.staleDataThreshold });
             }
           }
 
