@@ -415,11 +415,12 @@ export class RobustOrchestrator extends EnhancedToolOrchestrator {
           // Check if we should retry
           if (attempts < this.maxRetries && handler.shouldRetry(lastError, attempts, this.maxRetries)) {
             // Calculate delay with exponential backoff
+            // Use defaults if not set (shouldn't happen due to constructor, but TypeScript needs this)
             const delay = calculateRetryDelay(
               attempts,
-              this.retryOptions.retryDelay,
-              this.retryOptions.backoffMultiplier,
-              this.retryOptions.maxDelay
+              this.retryOptions.retryDelay ?? 1000,
+              this.retryOptions.backoffMultiplier ?? 2,
+              this.retryOptions.maxDelay ?? 30000
             );
 
             // Add jitter to prevent thundering herd
