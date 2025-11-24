@@ -51,7 +51,7 @@ export default async function  RootLayout({ children }: RootLayoutProps) {
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <AuthModalProvider>
             {/* Single container for the entire application */}
-            <div className="flex min-h-screen bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 flex-col">
+            <div className="flex min-h-screen bg-background flex-col">
               <Navbar />
               {children}
             </div>

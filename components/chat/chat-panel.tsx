@@ -22,6 +22,7 @@ import { Trash2 } from 'lucide-react';
 import { logger } from '@/utils/logger';
 import { fetchWithRetry } from '@/utils/api-retry';
 import { motion } from 'framer-motion';
+import { cn } from '@/lib/utils';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -852,48 +853,48 @@ export function ChatPanel({
         )} */}
         
       {/* Messages area - takes remaining space and scrolls */}
-        <div 
-          className="flex-1 min-h-0 overflow-hidden relative" 
-          aria-live="polite" 
-          aria-atomic="false"
-        >
-        {hasMessages ? (
-          <>
-            <ChatMessages messages={messages} isLoading={isLoading} onActionClick={handleSubmit} />
-            {/* Progress tracking UI - shown during tool execution */}
-            {toolProgress && isLoading && (
-              <div className="absolute bottom-2 sm:bottom-4 left-0 right-0 z-10 px-3 sm:px-4 md:px-6 lg:px-8">
-                <div className="max-w-4xl mx-auto">
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 20 }}
-                    className="bg-card/95 backdrop-blur-sm border border-border/50 rounded-xl sm:rounded-2xl shadow-lg p-3 sm:p-4"
-                  >
-                    <ToolProgress progress={toolProgress} compact={true} showIndividualTools={toolProgress.totalTools > 1} />
-                  </motion.div>
-                </div>
+        <div className={cn(
+        "flex-1 overflow-hidden relative",
+        "bg-background/50 backdrop-blur-3xl" // Enhanced background
+      )}>
+        <div className="h-full flex flex-col">
+          <div className="flex-1 overflow-y-auto">
+            {messages.length === 0 ? (
+              <EmptyScreen onExampleClick={handleSubmit} requireAuth={!isAuthenticated && !isLoading} />
+            ) : (
+              <div className={cn(
+                "max-w-4xl mx-auto w-full",
+                "px-4 sm:px-6 md:px-8", // Responsive padding
+                "pb-32 sm:pb-40" // Extra padding at bottom for floating input
+              )}>
+                <ChatMessages
+                  messages={messages}
+                  isLoading={isLoading}
+                  onActionClick={handleSubmit}
+                />
+                
+                {/* Tool Progress Indicator */}
+                {toolProgress && (
+                  <div className="mt-4 mb-8">
+                    <ToolProgress progress={toolProgress} />
+                  </div>
+                )}
+                
+                <div className="h-4" /> {/* Spacer */}
               </div>
             )}
-          </>
-        ) : (
-          <EmptyScreen onExampleClick={handleSubmit} requireAuth={false} />
-        )}
+          </div>
+          
+          {/* Input Area - Now handled by ChatInput's fixed positioning */}
+          <ChatInput
+            onSubmit={handleSubmit}
+            isLoading={isLoading}
+            disabled={!isAuthenticated && messages.length > 0}
+          />
+        </div>
       </div>
       
-        {/* Fixed input at bottom with gradient fade */}
-        <div 
-          className="relative shrink-0"
-          role="region" 
-          aria-label="Message input"
-        >
-          {/* Gradient fade effect above input */}
-          <div className="absolute top-0 left-0 right-0 h-6 sm:h-8 bg-gradient-to-b from-transparent via-background/60 to-background/95 dark:via-background/50 dark:to-background/90 pointer-events-none z-10" />
-          
-          <div className="relative z-20 border-t border-border/50 bg-background/95 dark:bg-background/90 backdrop-blur-xl safe-area-inset-bottom">
-        <ChatInput onSubmit={handleSubmit} isLoading={isLoading} disabled={false} />
-          </div>
-      </div>
+
     </div>
     </ChatErrorBoundary>
   );

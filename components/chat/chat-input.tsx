@@ -65,135 +65,92 @@ export function ChatInput({ onSubmit, isLoading, disabled = false }: ChatInputPr
   const hasValue = value.trim().length > 0
 
   return (
-    <div className="w-full safe-area-bottom"> {/* Support for notched devices */}
-      <div className="max-w-4xl mx-auto px-4 sm:px-5 md:px-6 lg:px-8 py-3.5 sm:py-4 md:py-5">
-              <form onSubmit={handleSubmit} className="relative">
+    <div className="w-full safe-area-bottom fixed bottom-0 left-0 right-0 z-50 p-4 bg-gradient-to-t from-background via-background/80 to-transparent pointer-events-none">
+      <div className="max-w-4xl mx-auto pointer-events-auto">
+        <form onSubmit={handleSubmit} className="relative">
           <motion.div
             className={cn(
               "relative flex items-end gap-2 sm:gap-3",
-              "bg-muted/30 dark:bg-muted/20",
-              "border border-border/60",
-              "rounded-2xl sm:rounded-3xl",
+              "bg-background/60 dark:bg-background/40",
+              "backdrop-blur-xl saturate-150",
+              "border border-border/40",
+              "rounded-[2rem]",
+              "shadow-2xl shadow-primary/5",
               "transition-all duration-300 ease-out",
-              "backdrop-blur-sm",
-              isFocused && "ring-2 ring-primary/20 border-primary/40 shadow-lg shadow-primary/5",
-              "px-3 sm:px-4 md:px-5 py-3 sm:py-3.5 md:py-4"
+              isFocused && "ring-2 ring-primary/20 border-primary/40 shadow-primary/10 bg-background/80",
+              "px-4 py-3"
             )}
             animate={{
-              scale: isFocused ? 1.01 : 1,
+              scale: isFocused ? 1.005 : 1,
+              y: isFocused ? -2 : 0,
             }}
             transition={{ duration: 0.2 }}
           >
-            {/* Decorative gradient on focus */}
-          <div className={cn(
-              "absolute inset-0 rounded-2xl sm:rounded-3xl",
-              "bg-gradient-to-r from-primary/5 via-transparent to-secondary/5",
-              "opacity-0 transition-opacity duration-300",
-              isFocused && "opacity-100"
-            )} />
-
             {/* Textarea */}
-                  <textarea
-                    ref={textareaRef}
-                    value={value}
-                    onChange={(e) => setValue(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    onFocus={() => setIsFocused(true)}
-                    onBlur={() => setIsFocused(false)}
-              placeholder={disabled ? "Sign in to start chatting..." : "Type your message..."}
-                    rows={1}
+            <textarea
+              ref={textareaRef}
+              value={value}
+              onChange={(e) => setValue(e.target.value)}
+              onKeyDown={handleKeyDown}
+              onFocus={() => setIsFocused(true)}
+              onBlur={() => setIsFocused(false)}
+              placeholder={disabled ? "Sign in to start chatting..." : "Ask anything about food..."}
+              rows={1}
               className={cn(
                 "relative z-10 flex-1 resize-none bg-transparent border-none",
-                "text-foreground text-base sm:text-[15px] md:text-base", // Larger base size for mobile readability
-                "leading-[1.6] placeholder:text-muted-foreground/50",
+                "text-foreground text-base",
+                "leading-[1.5] placeholder:text-muted-foreground/60",
                 "focus:ring-0 focus:outline-none focus-visible:ring-0",
                 "w-full font-sans antialiased",
-                "min-h-[28px] max-h-[200px]", // Slightly larger min-height for mobile
+                "min-h-[24px] max-h-[200px]",
                 "scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent",
-                "-webkit-text-size-adjust-none" // Prevent iOS text size adjustment
+                "py-2"
               )}
-                    disabled={isLoading || disabled}
+              disabled={isLoading || disabled}
               aria-label={disabled ? "Sign in to start chatting" : "Chat message input"}
-              aria-describedby={disabled ? "auth-required" : undefined}
-              aria-required="false"
-                    onClick={disabled ? () => onSubmit('') : undefined}
+              onClick={disabled ? () => onSubmit('') : undefined}
               maxLength={4000}
             />
             
-            {disabled && (
-              <span id="auth-required" className="sr-only">
-                Sign in required to send messages
-              </span>
-            )}
-
-            {/* Send Button - minimum 44x44px touch target for mobile */}
+            {/* Send Button */}
             <motion.button
-                      type="submit"
+              type="submit"
               disabled={isLoading || !hasValue || disabled}
-                      className={cn(
+              className={cn(
                 "relative z-10 shrink-0",
-                "min-h-[44px] min-w-[44px]", // Minimum touch target size
-                "h-10 w-10 sm:h-11 sm:w-11 md:h-12 md:w-12",
-                "rounded-xl sm:rounded-2xl",
+                "h-10 w-10 sm:h-11 sm:w-11",
+                "rounded-full",
                 "flex items-center justify-center",
                 "transition-all duration-200",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
                 isLoading || !hasValue || disabled
-                  ? "bg-muted/50 text-muted-foreground cursor-not-allowed"
-                  : "bg-primary text-primary-foreground hover:bg-primary/90 active:scale-95 shadow-md shadow-primary/20"
-                      )}
+                  ? "bg-muted text-muted-foreground cursor-not-allowed"
+                  : "bg-primary text-primary-foreground hover:bg-primary/90 shadow-md hover:shadow-lg"
+              )}
               whileHover={!isLoading && hasValue && !disabled ? { scale: 1.05 } : {}}
               whileTap={!isLoading && hasValue && !disabled ? { scale: 0.95 } : {}}
-              aria-label={disabled ? "Sign in to chat" : isLoading ? "Sending message" : "Send message"}
-              aria-disabled={isLoading || !hasValue || disabled}
             >
               <AnimatePresence mode="wait">
-              {isLoading ? (
-                <motion.div
+                {isLoading ? (
+                  <motion.div
                     key="loading"
                     initial={{ opacity: 0, rotate: -180 }}
                     animate={{ opacity: 1, rotate: 0 }}
                     exit={{ opacity: 0, rotate: 180 }}
-                    transition={{ duration: 0.2 }}
-                    className="h-4 w-4 sm:h-5 sm:w-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin"
-                />
-              ) : (
+                    className="h-5 w-5 border-2 border-current border-t-transparent rounded-full animate-spin"
+                  />
+                ) : (
                   <motion.div
                     key="send"
                     initial={{ opacity: 0, scale: 0.8 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.8 }}
-                    transition={{ duration: 0.15 }}
                   >
-                      <Send className="h-4 w-4 sm:h-5 sm:w-5" />
+                    <Send className="h-5 w-5 ml-0.5" />
                   </motion.div>
-              )}
+                )}
               </AnimatePresence>
             </motion.button>
           </motion.div>
-
-          {/* Helper text - only show when not focused and empty */}
-          <AnimatePresence>
-          {!isFocused && !value && !disabled && (
-              <motion.p
-                initial={{ opacity: 0, y: -5 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -5 }}
-                transition={{ duration: 0.2 }}
-                className="text-xs text-muted-foreground/60 mt-2 px-1 text-center flex items-center justify-center gap-2"
-              >
-                <span className="hidden sm:inline">Press</span>
-                <kbd className="px-1.5 py-0.5 bg-muted/80 dark:bg-muted/60 rounded text-[10px] font-mono border border-border/50">
-                  Enter
-                </kbd>
-                <span className="hidden sm:inline">to send,</span>
-                <kbd className="px-1.5 py-0.5 bg-muted/80 dark:bg-muted/60 rounded text-[10px] font-mono border border-border/50">
-                  Shift + Enter
-                </kbd>
-                <span className="hidden sm:inline">for new line</span>
-              </motion.p>
-          )}
-          </AnimatePresence>
         </form>
       </div>
     </div>

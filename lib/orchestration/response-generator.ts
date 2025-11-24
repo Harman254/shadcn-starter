@@ -43,15 +43,15 @@ export class ResponseGenerator {
     orchestrationResult: OrchestrationResult,
     context: ResponseContext
   ): Promise<GeneratedResponse> {
-    const { results, errors, aggregatedData } = orchestrationResult;
+    const { results, errors } = orchestrationResult;
 
     // Build response sections
     const sections: string[] = [];
     const structuredData: any = {};
 
     // Meal Plan Section
-    if (results.mealPlan) {
-      const mealPlan = results.mealPlan;
+    if (results.generateMealPlan) {
+      const mealPlan = results.generateMealPlan.mealPlan || results.generateMealPlan;
       sections.push(
         this.formatMealPlanSummary(mealPlan)
       );
@@ -59,8 +59,8 @@ export class ResponseGenerator {
     }
 
     // Nutrition Section
-    if (results.nutrition) {
-      const nutrition = results.nutrition;
+    if (results.analyzeNutrition) {
+      const nutrition = results.analyzeNutrition;
       sections.push(
         this.formatNutritionSummary(nutrition)
       );
@@ -68,8 +68,8 @@ export class ResponseGenerator {
     }
 
     // Pricing Section
-    if (results.pricing) {
-      const pricing = results.pricing;
+    if (results.getGroceryPricing) {
+      const pricing = results.getGroceryPricing;
       sections.push(
         this.formatPricingSummary(pricing)
       );
@@ -77,12 +77,17 @@ export class ResponseGenerator {
     }
 
     // Grocery List Section
-    if (results.groceryList) {
-      const groceryList = results.groceryList;
+    if (results.generateGroceryList) {
+      const groceryListData = results.generateGroceryList;
       sections.push(
-        this.formatGroceryListSummary(groceryList)
+        this.formatGroceryListSummary(groceryListData)
       );
-      structuredData.groceryList = groceryList;
+      // Store the full grocery list data with items and location info
+      structuredData.groceryList = {
+        items: groceryListData.groceryList,
+        locationInfo: groceryListData.locationInfo,
+        totalEstimatedCost: groceryListData.totalEstimatedCost,
+      };
     }
 
     // Error Handling
@@ -94,15 +99,23 @@ export class ResponseGenerator {
 
     // Combine sections into natural response
     const text = this.combineSections(sections, context);
-    
+
     // Generate suggestions
     const suggestions = this.generateSuggestions(results, context);
 
     // Determine confidence
     const confidence = this.calculateConfidence(results, errors);
 
+    // Inject UI metadata tag if structured data exists
+    let finalText = text;
+    if (Object.keys(structuredData).length > 0) {
+      const jsonString = JSON.stringify(structuredData);
+      const base64Data = Buffer.from(jsonString).toString('base64');
+      finalText = `${text} [UI_METADATA:${base64Data}]`;
+    }
+
     return {
-      text,
+      text: finalText,
       structuredData: Object.keys(structuredData).length > 0 ? structuredData : undefined,
       suggestions,
       confidence,
@@ -113,12 +126,12 @@ export class ResponseGenerator {
    * Format meal plan summary
    */
   private formatMealPlanSummary(mealPlan: any): string {
-    const { duration, mealsPerDay, days } = mealPlan;
+    const { duration, mealsPerDay } = mealPlan;
     const totalMeals = duration * mealsPerDay;
 
     return `I've created a ${duration}-day meal plan with ${mealsPerDay} meals per day (${totalMeals} total meals). ` +
-           `The plan includes a variety of nutritious and delicious meals tailored to your preferences. ` +
-           `Each day features balanced meals with clear cooking instructions.`;
+      `The plan includes a variety of nutritious and delicious meals tailored to your preferences. ` +
+      `Each day features balanced meals with clear cooking instructions.`;
   }
 
   /**
@@ -136,8 +149,8 @@ export class ResponseGenerator {
     );
 
     return `Nutritional information: The meal plan provides approximately ${Math.round(totalCalories)} calories per day ` +
-           `with ${Math.round(totalProtein)}g of protein. ` +
-           `Each meal is balanced to support your dietary goals.`;
+      `with ${Math.round(totalProtein)}g of protein. ` +
+      `Each meal is balanced to support your dietary goals.`;
   }
 
   /**
@@ -152,20 +165,20 @@ export class ResponseGenerator {
     const currency = pricing.currency || '$';
 
     return `Estimated grocery cost: ${currency}${total.toFixed(2)} for all items. ` +
-           `Prices are based on local stores in your area and may vary. ` +
-           `I can help you find cheaper alternatives or compare prices across different stores.`;
+      `Prices are based on local stores in your area and may vary. ` +
+      `I can help you find cheaper alternatives or compare prices across different stores.`;
   }
 
   /**
    * Format grocery list summary
    */
-  private formatGroceryListSummary(groceryList: any): string {
-    const itemCount = groceryList.items?.length || 0;
+  private formatGroceryListSummary(groceryListData: any): string {
+    const itemCount = groceryListData.groceryList?.length || 0;
     if (itemCount === 0) return '';
 
     return `I've prepared a grocery list with ${itemCount} items, organized by category for easy shopping. ` +
-           `Each item includes quantity recommendations and estimated prices. ` +
-           `The list is optimized to minimize trips to the store.`;
+      `Each item includes quantity recommendations and estimated prices. ` +
+      `The list is optimized to minimize trips to the store.`;
   }
 
   /**
@@ -176,7 +189,7 @@ export class ResponseGenerator {
     if (errorCount === 0) return '';
 
     return `Note: I encountered some issues retrieving ${errorCount === 1 ? 'one piece' : 'some'} of information, ` +
-           `but I've provided the best available data. You can ask me to retry or provide more details.`;
+      `but I've provided the best available data. You can ask me to retry or provide more details.`;
   }
 
   /**
@@ -200,11 +213,11 @@ export class ResponseGenerator {
     }
 
     // Add closing based on context
-    if (context.userMessage.toLowerCase().includes('grocery') || 
-        context.userMessage.toLowerCase().includes('shopping')) {
+    if (context.userMessage.toLowerCase().includes('grocery') ||
+      context.userMessage.toLowerCase().includes('shopping')) {
       response += ' Would you like me to help you find cheaper alternatives or adjust quantities?';
     } else if (context.userMessage.toLowerCase().includes('nutrition') ||
-               context.userMessage.toLowerCase().includes('calories')) {
+      context.userMessage.toLowerCase().includes('calories')) {
       response += ' Would you like more detailed nutritional breakdowns for specific meals?';
     } else {
       response += ' Is there anything you\'d like me to adjust or explain further?';
@@ -222,18 +235,18 @@ export class ResponseGenerator {
   ): string[] {
     const suggestions: string[] = [];
 
-    if (results.mealPlan && !results.groceryList) {
+    if (results.generateMealPlan && !results.generateGroceryList) {
       suggestions.push('Create a grocery list for this meal plan');
       suggestions.push('Adjust the meal plan duration');
       suggestions.push('Swap some meals');
     }
 
-    if (results.groceryList && !results.pricing) {
+    if (results.generateGroceryList && !results.getGroceryPricing) {
       suggestions.push('Compare prices across stores');
       suggestions.push('Find cheaper alternatives');
     }
 
-    if (results.mealPlan && !results.nutrition) {
+    if (results.generateMealPlan && !results.analyzeNutrition) {
       suggestions.push('Get detailed nutrition information');
       suggestions.push('Calculate daily calorie intake');
     }
@@ -277,5 +290,3 @@ export function getResponseGenerator(): ResponseGenerator {
   }
   return responseGeneratorInstance;
 }
-
-

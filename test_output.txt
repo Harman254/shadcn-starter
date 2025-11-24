@@ -1,0 +1,29 @@
+Testing Orchestrated Chat Flow...
+
+--- Test 1: Generate Meal Plan ---
+[generateMealPlan] 🔧 TOOL CALLED! Input received: {
+  duration: 2,
+  mealsPerDay: 3,
+  title: undefined,
+  timestamp: '2025-11-24T15:53:56.836Z'
+}
+[generateMealPlan] Error: Error: `headers` was called outside a request scope. Read more: https://nextjs.org/docs/messages/next-dynamic-api-wrong-context
+    at throwForMissingRequestStore (C:\Users\hp\Desktop\code\prod\shadcn-starter\node_modules\.pnpm\next@15.3.1_@babel+core@7.26.10_@opentelemetry+api@1.9.0_react-dom@19.1.0_react@19.1.0__react@19.1.0\node_modules\next\src\server\app-render\work-unit-async-storage.external.ts:250:9)
+    at getExpectedRequestStore (C:\Users\hp\Desktop\code\prod\shadcn-starter\node_modules\.pnpm\next@15.3.1_@babel+core@7.26.10_@opentelemetry+api@1.9.0_react-dom@19.1.0_react@19.1.0__react@19.1.0\node_modules\next\src\server\app-render\work-unit-async-storage.external.ts:218:5)
+    at headers (C:\Users\hp\Desktop\code\prod\shadcn-starter\node_modules\.pnpm\next@15.3.1_@babel+core@7.26.10_@opentelemetry+api@1.9.0_react-dom@19.1.0_react@19.1.0__react@19.1.0\node_modules\next\src\server\request\headers.ts:127:47)
+    at generateMealPlanCore (c:\Users\hp\Desktop\code\prod\shadcn-starter\ai\flows\chat\dynamic-select-tools.ts:127:24)
+    at Object.execute (c:\Users\hp\Desktop\code\prod\shadcn-starter\lib\orchestration\ai-tools.ts:22:34)
+    at fn (C:\Users\hp\Desktop\code\prod\shadcn-starter\node_modules\.pnpm\ai@4.3.4_react@19.1.0_zod@3.24.2\node_modules\ai\core\generate-text\generate-text.ts:648:39)
+    at <anonymous> (C:\Users\hp\Desktop\code\prod\shadcn-starter\node_modules\.pnpm\ai@4.3.4_react@19.1.0_zod@3.24.2\node_modules\ai\core\telemetry\record-span.ts:18:28)
+    at Object.startActiveSpan (C:\Users\hp\Desktop\code\prod\shadcn-starter\node_modules\.pnpm\ai@4.3.4_react@19.1.0_zod@3.24.2\node_modules\ai\core\telemetry\noop-tracer.ts:21:14)
+    at recordSpan (C:\Users\hp\Desktop\code\prod\shadcn-starter\node_modules\.pnpm\ai@4.3.4_react@19.1.0_zod@3.24.2\node_modules\ai\core\telemetry\record-span.ts:16:17)
+    at <anonymous> (C:\Users\hp\Desktop\code\prod\shadcn-starter\node_modules\.pnpm\ai@4.3.4_react@19.1.0_zod@3.24.2\node_modules\ai\core\generate-text\generate-text.ts:629:28)
+Response: I am sorry, I was unable to generate a meal plan. There was an error with the tool. Please try again in sometime.
+
+Confidence: high
+❌ Meal Plan NOT generated
+
+--- Test 2: Analyze Nutrition ---
+Response: I need the meal plan ID to analyze the nutrition. Could you please provide it?
+
+ℹ️ Analyze Nutrition tool might not have been called (expected if no ID in context)

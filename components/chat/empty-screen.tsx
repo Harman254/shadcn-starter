@@ -175,7 +175,7 @@ export function EmptyScreen({ onExampleClick, requireAuth = false }: EmptyScreen
         {/* Example Messages */}
         <motion.div
           variants={containerVariants}
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 w-full max-w-5xl mx-auto"
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 w-full max-w-5xl mx-auto"
           role="group"
           aria-label="Example conversation starters"
         >
@@ -185,57 +185,49 @@ export function EmptyScreen({ onExampleClick, requireAuth = false }: EmptyScreen
               <motion.div
                 key={example.heading}
                 variants={itemVariants}
-                whileHover={{ scale: 1.02, y: -2 }}
+                whileHover={{ scale: 1.02, y: -4 }}
                 whileTap={{ scale: 0.98 }}
+                className="h-full"
               >
-            <Button
-              variant="outline"
+                <Button
+                  variant="outline"
                   className={cn(
-                    "h-auto w-full p-4 sm:p-5 md:p-6",
-                    "min-h-[100px] sm:min-h-[110px]", // Ensure adequate touch target size
-                    "text-left justify-start",
-                    "bg-card/50 dark:bg-card/30",
-                    "border-border/60",
-                    "hover:bg-muted/50 dark:hover:bg-muted/30",
-                    "hover:border-primary/40",
+                    "h-full w-full p-6",
+                    "flex flex-col items-start gap-4",
+                    "bg-card/50 dark:bg-card/20",
+                    "backdrop-blur-sm",
+                    "border-border/50",
+                    "hover:bg-accent/50 hover:border-primary/20",
                     "transition-all duration-300",
-                    "group focus-visible:ring-2 focus-visible:ring-primary",
-                    "rounded-xl sm:rounded-2xl",
+                    "rounded-2xl",
                     "shadow-sm hover:shadow-md",
-                    "relative overflow-hidden",
-                    "active:scale-[0.98]" // Better mobile tap feedback
+                    "relative overflow-hidden group"
                   )}
-              onClick={() => onExampleClick(example.message)}
-              aria-label={`Start conversation: ${example.message}`}
-            >
-                  {/* Gradient background */}
+                  onClick={() => onExampleClick(example.message)}
+                >
                   <div className={cn(
-                    "absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300",
+                    "absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500",
                     "bg-gradient-to-br",
                     example.gradient
                   )} />
                   
-                  <div className="relative z-10 flex items-start gap-3 sm:gap-4 w-full">
-                    <div className={cn(
-                      "p-2 sm:p-2.5 rounded-lg sm:rounded-xl",
-                      "bg-primary/10 group-hover:bg-primary/20",
-                      "border border-primary/20",
-                      "transition-colors duration-300",
-                      "shrink-0"
-                    )}>
-                      <Icon className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
-                    </div>
-              <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-sm sm:text-base mb-1.5 group-hover:text-foreground text-foreground transition-colors">
-                        {example.heading}
-                      </p>
-                <p className="font-normal text-muted-foreground text-xs sm:text-sm line-clamp-2 leading-relaxed">
-                  {example.message}
-                </p>
-              </div>
-                    <ArrowRight className="h-4 w-4 text-muted-foreground ml-2 shrink-0 group-hover:text-primary group-hover:translate-x-1 transition-all duration-300" aria-hidden="true" />
+                  <div className="relative z-10 flex items-center justify-center w-12 h-12 rounded-xl bg-background/80 shadow-sm border border-border/50 group-hover:scale-110 transition-transform duration-300">
+                    <Icon className="h-6 w-6 text-primary" />
                   </div>
-            </Button>
+                  
+                  <div className="relative z-10 text-left space-y-2">
+                    <h3 className="font-semibold text-lg text-foreground group-hover:text-primary transition-colors">
+                      {example.heading}
+                    </h3>
+                    <p className="text-sm text-muted-foreground leading-relaxed line-clamp-2">
+                      {example.message}
+                    </p>
+                  </div>
+                  
+                  <div className="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transform translate-x-2 group-hover:translate-x-0 transition-all duration-300">
+                    <ArrowRight className="h-5 w-5 text-primary" />
+                  </div>
+                </Button>
               </motion.div>
             );
           })}

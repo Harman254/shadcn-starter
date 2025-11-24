@@ -5,11 +5,10 @@
  * This is the main entry point for the Perplexity-like chat experience
  */
 
-import { getOrchestrator, OrchestrationContext } from './tool-orchestrator';
-import { mealPlanningTools } from './tools/meal-planning-tools';
-import { getChatStateManager } from './enhanced-chat-state';
-import { getResponseGenerator, ResponseContext } from './response-generator';
-import { getCacheManager } from './cache-manager';
+import { generateText, tool } from 'ai';
+import { google } from '@ai-sdk/google';
+import { tools } from './ai-tools';
+import { z } from 'zod';
 
 // ============================================================================
 // TYPES
@@ -37,176 +36,93 @@ export interface OrchestratedChatOutput {
 // ============================================================================
 
 export class OrchestratedChatFlow {
-  private orchestrator = getOrchestrator();
-  private stateManager = getChatStateManager();
-  private responseGenerator = getResponseGenerator();
-  private cache = getCacheManager();
 
-  constructor() {
-    // Register all tools
-    this.orchestrator.registerTools(mealPlanningTools);
-  }
+  constructor() { }
 
   /**
    * Process user message and orchestrate tool calls
    */
   async processMessage(input: OrchestratedChatInput): Promise<OrchestratedChatOutput> {
-    // Determine which tools to call based on user intent
-    const toolCalls = this.determineToolCalls(input);
+    try {
+      // Prepare system prompt with context
+      const systemPrompt = `
+You are an expert AI assistant for a meal planning application.
+Your goal is to help users plan meals, analyze nutrition, check grocery prices, and generate grocery lists.
 
-    if (toolCalls.length === 0) {
-      // No tools needed - direct chat response
-      return {
-        response: await this.generateDirectResponse(input),
-        confidence: 'high',
-      };
-    }
+User Preferences: ${JSON.stringify(input.userPreferences || {})}
+Location Data: ${JSON.stringify(input.locationData || {})}
 
-    // Build orchestration context
-    const context: OrchestrationContext = {
-      userId: input.userId,
-      sessionId: input.sessionId,
-      conversationHistory: input.conversationHistory,
-      userPreferences: input.userPreferences,
-      locationData: input.locationData,
-      previousResults: this.stateManager.getState().conversationContext,
-    };
+You have access to the following tools:
+- generateMealPlan: Create a meal plan.
+- analyzeNutrition: Analyze nutrition for a meal plan (requires mealPlanId).
+- getGroceryPricing: Get pricing for a meal plan (requires mealPlanId).
+- generateGroceryList: Create a grocery list (requires mealPlanId).
 
-    // Execute tools
-    const orchestrationResult = await this.orchestrator.executeTools(toolCalls, context);
+Rules:
+1. ALWAYS use the provided tools when the user asks for these specific tasks.
+2. If you generate a meal plan, the tool will return a 'mealPlan' object. You MUST refer to its ID for subsequent tool calls.
+3. Be helpful and concise in your natural language responses.
+4. If a tool fails, explain the error to the user and suggest a fix.
+`;
 
-    // Update state with results
-    this.updateStateFromResults(orchestrationResult.results);
+      // Convert history to Vercel AI SDK format
+      const messages = [
+        ...input.conversationHistory.map(msg => ({
+          role: msg.role,
+          content: msg.content,
+        })),
+        { role: 'user', content: input.message }
+      ];
 
-    // Generate response
-    const responseContext: ResponseContext = {
-      userMessage: input.message,
-      conversationHistory: input.conversationHistory,
-      userPreferences: input.userPreferences,
-    };
-
-    const generatedResponse = await this.responseGenerator.generateResponse(
-      orchestrationResult,
-      responseContext
-    );
-
-    // Save snapshot
-    this.stateManager.saveSnapshot(input.conversationHistory);
-
-    return {
-      response: generatedResponse.text,
-      structuredData: generatedResponse.structuredData,
-      suggestions: generatedResponse.suggestions,
-      toolResults: orchestrationResult.results,
-      confidence: generatedResponse.confidence,
-    };
-  }
-
-  /**
-   * Determine which tools to call based on user message
-   */
-  private determineToolCalls(input: OrchestratedChatInput): Array<{ toolName: string; input: any }> {
-    const message = input.message.toLowerCase();
-    const toolCalls: Array<{ toolName: string; input: any }> = [];
-
-    // Check for meal plan request
-    if (
-      /meal.*plan|plan.*meal|generate.*meal|create.*meal.*plan/i.test(input.message) ||
-      /(\d+)\s*(?:day|days?)/i.test(input.message)
-    ) {
-      const duration = this.extractDuration(input.message);
-      const mealsPerDay = this.extractMealsPerDay(input.message);
-
-      toolCalls.push({
-        toolName: 'generateMealPlan',
-        input: {
-          duration,
-          mealsPerDay,
-          preferences: input.userPreferences,
-        },
+      // Call the model with tools
+      const { text, toolResults, steps } = await generateText({
+        model: google('gemini-2.0-flash-001'), // Ensure this model name is correct for the provider
+        system: systemPrompt,
+        messages: messages as any, // Type cast to avoid strict type issues with 'user' | 'assistant' vs 'system' | 'user' | 'assistant' | 'data'
+        tools: tools,
+        maxSteps: 5, // Allow multi-step orchestration
       });
 
-      // If user also asks for nutrition or pricing, add those tools
-      if (/nutrition|calories|protein|carbs/i.test(message)) {
-        toolCalls.push({
-          toolName: 'analyzeNutrition',
-          input: {}, // Will use meal plan from previous tool
+      // Extract structured data from tool results
+      // We iterate through steps to find the latest relevant data
+      let structuredData: any = {};
+      let aggregatedToolResults: Record<string, any> = {};
+
+      if (toolResults && toolResults.length > 0) {
+        toolResults.forEach(tr => {
+          aggregatedToolResults[tr.toolName] = tr.result;
+
+          // Populate structuredData based on tool type
+          if (tr.toolName === 'generateMealPlan' && tr.result.success) {
+            structuredData.mealPlan = (tr.result as any).mealPlan;
+          }
+          if (tr.toolName === 'generateGroceryList' && tr.result.success) {
+            structuredData.groceryList = (tr.result as any).groceryList;
+          }
+          if (tr.toolName === 'getGroceryPricing' && tr.result.success) {
+            structuredData.prices = (tr.result as any).prices;
+          }
+          if (tr.toolName === 'analyzeNutrition' && tr.result.success) {
+            structuredData.nutrition = (tr.result as any).totalNutrition;
+          }
         });
       }
 
-      if (/price|cost|grocery|shopping/i.test(message)) {
-        toolCalls.push({
-          toolName: 'getGroceryPricing',
-          input: {}, // Will use meal plan from previous tool
-        });
-      }
+      return {
+        response: text,
+        structuredData,
+        suggestions: [], // We could ask the model to generate these too
+        toolResults: aggregatedToolResults,
+        confidence: 'high',
+      };
 
-      if (/grocery.*list|shopping.*list/i.test(message)) {
-        toolCalls.push({
-          toolName: 'generateGroceryList',
-          input: {}, // Will use meal plan from previous tool
-        });
-      }
-    } else if (/grocery.*list|shopping.*list/i.test(message)) {
-      // Grocery list request (may need meal plan first)
-      const state = this.stateManager.getState();
-      if (state.activeMealPlan) {
-        toolCalls.push({
-          toolName: 'generateGroceryList',
-          input: {
-            mealPlan: state.activeMealPlan,
-          },
-        });
-      }
+    } catch (error) {
+      console.error('[OrchestratedChatFlow] Error:', error);
+      return {
+        response: "I'm sorry, I encountered an error while processing your request.",
+        confidence: 'low',
+      };
     }
-
-    return toolCalls;
-  }
-
-  /**
-   * Extract duration from message
-   */
-  private extractDuration(message: string): number {
-    const match = message.match(/(\d+)\s*(?:day|days?)/i);
-    return match ? parseInt(match[1], 10) : 1;
-  }
-
-  /**
-   * Extract meals per day from message
-   */
-  private extractMealsPerDay(message: string): number {
-    const match = message.match(/(\d+)\s*(?:meal|meals?)/i);
-    return match ? parseInt(match[1], 10) : 3;
-  }
-
-  /**
-   * Generate direct response when no tools are needed
-   */
-  private async generateDirectResponse(input: OrchestratedChatInput): Promise<string> {
-    // For now, return a simple response
-    // In production, you'd call your AI model here
-    return "I'm here to help with your meal planning needs. Would you like me to generate a meal plan, analyze nutrition, or create a grocery list?";
-  }
-
-  /**
-   * Update state from tool results
-   */
-  private updateStateFromResults(results: Record<string, any>): void {
-    if (results.generateMealPlan?.mealPlan) {
-      this.stateManager.setActiveMealPlan(results.generateMealPlan.mealPlan);
-    }
-
-    if (results.generateGroceryList?.groceryList) {
-      this.stateManager.setActiveGroceryList(results.generateGroceryList.groceryList);
-    }
-
-    // Update conversation context
-    this.stateManager.updateState({
-      conversationContext: {
-        ...this.stateManager.getState().conversationContext,
-        ...results,
-      },
-    });
   }
 }
 
