@@ -143,6 +143,7 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
   const [formattedTime, setFormattedTime] = useState('')
   const [isMounted, setIsMounted] = useState(false)
   const [savingMealPlan, setSavingMealPlan] = useState(false)
+  const [savedMealPlanId, setSavedMealPlanId] = useState<string | null>(null)
   const { toast } = useToast()
   const { theme, systemTheme } = useTheme()
   const router = useRouter()
@@ -745,6 +746,7 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
                         });
                         
                         if (result.success) {
+                          setSavedMealPlanId(result.mealPlan.id);
                           toast({
                             title: "Meal Plan Saved",
                             description: "You can find it in your saved plans.",
@@ -781,7 +783,6 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
                     )}
                   </Button>
                   
-                  {/* Placeholder for Explore Plan button - Coming soon */}
                   <Button
                     variant="outline"
                     size="lg"
@@ -792,10 +793,15 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
                       "hover:bg-primary/5 hover:border-primary/40",
                       "transition-all duration-200"
                     )}
-                    disabled
+                    onClick={() => {
+                      if (savedMealPlanId) {
+                        router.push(`/meal-plans/${savedMealPlanId}/explore`);
+                      }
+                    }}
+                    disabled={!savedMealPlanId}
                   >
                     <ChefHat className="h-4 w-4" />
-                    Explore Plan (Coming Soon)
+                    Explore Plan
                   </Button>
                 </div>
               </div>

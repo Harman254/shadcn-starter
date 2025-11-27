@@ -23,25 +23,108 @@ export const generateMealPlan = tool({
     }),
     execute: async ({ duration, mealsPerDay, preferences, chatMessages }) => {
         try {
-            const result = await generateMealPlanCore({
-                duration,
-                mealsPerDay,
-                chatMessages: chatMessages || [],
-            });
+            console.log('[generateMealPlan] 🍳 Generating plan with AI SDK. Duration:', duration, 'Context:', chatMessages?.length || 0, 'msgs');
 
-            if (!result.success || !result.mealPlan) {
+            // 1. Get User Session & Preferences
+            const { auth } = await import('@/lib/auth');
+            const { headers } = await import('next/headers');
+            const session = await auth.api.getSession({ headers: await headers() });
+
+            if (!session?.user?.id) {
                 return {
                     success: false,
-                    error: result.message || 'Failed to generate meal plan',
+                    error: 'UNAUTHORIZED',
+                    message: 'You must be logged in to generate a meal plan.',
                 };
             }
 
+            // Fetch full preferences for context if not passed explicitly
+            let userPrefsContext = preferences || '';
+            if (!userPrefsContext) {
+                const prisma = (await import('@/lib/prisma')).default;
+                const onboarding = await prisma.onboardingData.findUnique({
+                    where: { userId: session.user.id }
+                });
+                if (onboarding) {
+                    userPrefsContext = `Dietary: ${onboarding.dietaryPreference}, Goal: ${onboarding.goal}, Cuisines: ${onboarding.cuisinePreferences.join(', ')}`;
+                }
+            }
+
+            // 2. Generate Meal Plan using AI SDK
+            const { generateObject } = await import('ai');
+            const { google } = await import('@ai-sdk/google');
+            const { z } = await import('zod');
+
+            const result = await generateObject({
+                model: google('gemini-2.0-flash-exp'),
+                temperature: 0.7, // Higher temperature for variety
+                schema: z.object({
+                    title: z.string().describe('A catchy title for this meal plan'),
+                    days: z.array(z.object({
+                        day: z.number(),
+                        meals: z.array(z.object({
+                            name: z.string(),
+                            description: z.string(),
+                            ingredients: z.array(z.string()),
+                            instructions: z.string(),
+                        }))
+                    }))
+                }),
+                prompt: `Generate a personalized meal plan for ${duration} days with ${mealsPerDay} meals per day.
+
+CRITICAL: PRIORITIZE THE USER'S RECENT REQUESTS IN CHAT MESSAGES ABOVE ALL ELSE.
+
+## User's Recent Chat Context (HIGHEST PRIORITY)
+${chatMessages?.map(m => `${m.role.toUpperCase()}: ${m.content}`).join('\n') || 'No recent context.'}
+
+## Saved User Preferences (Use as default, but OVERRIDE if Chat Context conflicts)
+${userPrefsContext || 'No saved preferences. Use balanced diet.'}
+
+## Requirements
+1. **Specific Requests:** If user asked for specific foods (e.g. "ugali", "keto", "pasta"), YOU MUST INCLUDE THEM.
+2. **Variety:** Ensure meals are diverse and not repetitive.
+3. **Completeness:** For each meal, provide a name, brief description, full ingredient list, and simple instructions.
+4. **Structure:** Generate exactly ${duration} days.
+
+Return a valid JSON object.`,
+            });
+
+            if (!result.object) {
+                throw new Error('Failed to generate meal plan data');
+            }
+
+            const mealPlanData = {
+                title: result.object.title,
+                duration,
+                mealsPerDay,
+                days: result.object.days
+            };
+
+            // 3. Create UI Metadata for Save Button
+            const uiMetadata = {
+                actions: [
+                    {
+                        label: 'Save Meal Plan',
+                        action: 'save' as const,
+                        data: mealPlanData,
+                    },
+                ],
+                mealPlan: mealPlanData,
+            };
+
+            const uiMetadataEncoded = Buffer.from(JSON.stringify(uiMetadata)).toString('base64');
+
+            // 4. Return Success Response
+            const totalMeals = mealPlanData.days.reduce((sum, day) => sum + day.meals.length, 0);
+
             return {
                 success: true,
-                mealPlan: result.mealPlan,
-                message: result.message,
+                mealPlan: mealPlanData,
+                message: `✅ Generated ${duration}-day meal plan: "${mealPlanData.title}". Includes ${totalMeals} meals. [UI_METADATA:${uiMetadataEncoded}]`,
             };
+
         } catch (error) {
+            console.error('[generateMealPlan] Error:', error);
             return {
                 success: false,
                 error: error instanceof Error ? error.message : 'Unknown error',

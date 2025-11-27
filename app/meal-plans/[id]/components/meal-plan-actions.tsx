@@ -1,7 +1,8 @@
 'use client';
 import GroceryListButton from "@/components/groceries-button";
 import { Button } from "@/components/ui/button";
-import { Share2 } from "lucide-react";
+import { Share2, ChefHat } from "lucide-react";
+import Link from "next/link";
 import { MealPlanActionsProps } from "../components/types";
 import toast from "react-hot-toast";
 import { cn } from "@/lib/utils";
@@ -35,6 +36,17 @@ export const MealPlanActions = ({ mealPlanId }: MealPlanActionsProps) => {
   return (
     <div className="flex flex-wrap items-center gap-3">
       <GroceryListButton mealplanId={mealPlanId} />
+      <Link href={`/meal-plans/${mealPlanId}/explore`}>
+        <Button
+          className={cn(
+            "inline-flex items-center gap-2 px-5 py-2 rounded-full font-semibold text-base shadow-lg transition-all duration-200",
+            "bg-white text-emerald-600 hover:bg-emerald-50 focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2"
+          )}
+        >
+          <ChefHat className="h-5 w-5 mr-2" />
+          Explore Plan
+        </Button>
+      </Link>
       <Button
         onClick={handleShare}
         disabled={false} // isLoading is not defined in this component, so set to false
