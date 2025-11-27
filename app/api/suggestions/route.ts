@@ -4,6 +4,8 @@ import { z } from 'zod';
 
 export const runtime = 'edge';
 
+import { NextResponse } from 'next/server';
+
 export async function POST(req: Request) {
     try {
         const { context } = await req.json();
@@ -29,9 +31,9 @@ export async function POST(req: Request) {
       Make them sound exciting and helpful.`,
         });
 
-        return Response.json(result.object);
+        return NextResponse.json(result.object);
     } catch (error) {
         console.error('Error generating suggestions:', error);
-        return Response.json({ error: 'Failed to generate suggestions' }, { status: 500 });
+        return NextResponse.json({ error: 'Failed to generate suggestions' }, { status: 500 });
     }
 }

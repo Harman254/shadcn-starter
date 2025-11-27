@@ -16,13 +16,17 @@ export const generateMealPlan = tool({
         duration: z.number().min(1).max(30).default(1).describe('Number of days for the meal plan'),
         mealsPerDay: z.number().min(1).max(5).default(3).describe('Number of meals per day'),
         preferences: z.string().optional().describe('User dietary preferences or restrictions'),
+        chatMessages: z.array(z.object({
+            role: z.enum(['user', 'assistant']),
+            content: z.string()
+        })).optional().describe('Recent chat messages to understand context and specific requests'),
     }),
-    execute: async ({ duration, mealsPerDay, preferences }) => {
+    execute: async ({ duration, mealsPerDay, preferences, chatMessages }) => {
         try {
             const result = await generateMealPlanCore({
                 duration,
                 mealsPerDay,
-                chatMessages: [],
+                chatMessages: chatMessages || [],
             });
 
             if (!result.success || !result.mealPlan) {
