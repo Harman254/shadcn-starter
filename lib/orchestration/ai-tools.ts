@@ -162,28 +162,31 @@ export const generateGroceryList = tool({
         try {
             console.log('[generateGroceryList] 🛒 Source:', source);
 
-            let groceryInput;
+            // Get auth session for location data
+            const { auth } = await import('@/lib/auth');
+            const { headers } = await import('next/headers');
+            const session = await auth.api.getSession({ headers: await headers() });
+
+            if (!session?.user?.id) {
+                return {
+                    success: false,
+                    error: 'UNAUTHORIZED',
+                    message: 'You must be logged in to generate a grocery list.',
+                };
+            }
+
+            // Get user location for pricing
+            const { getLocationDataWithCaching } = await import('@/lib/location');
+            const locationData = await getLocationDataWithCaching(session.user.id, session.session.id);
+
+            let meals: Array<{ name: string; ingredients: string[] }> = [];
+            let planTitle = '';
 
             // Handle single recipe/meal
             if (source === 'recipe' && recipeName && ingredients) {
                 console.log('[generateGroceryList] Creating list for recipe:', recipeName);
-
-                // Convert single recipe to meal plan format for processing
-                groceryInput = {
-                    mealPlan: {
-                        title: `Shopping list for ${recipeName}`,
-                        duration: 1,
-                        mealsPerDay: 1,
-                        days: [{
-                            day: 1,
-                            meals: [{
-                                name: recipeName,
-                                ingredients: ingredients,
-                                description: `Ingredients for ${recipeName}`,
-                            }]
-                        }]
-                    }
-                };
+                meals = [{ name: recipeName, ingredients }];
+                planTitle = recipeName;
             }
             // Handle full meal plan from DB
             else if (source === 'mealplan' && mealPlanId) {
@@ -203,27 +206,24 @@ export const generateGroceryList = tool({
                     };
                 }
 
-                groceryInput = {
-                    mealPlan: {
-                        title: dbMealPlan.title,
-                        duration: dbMealPlan.duration,
-                        mealsPerDay: dbMealPlan.mealsPerDay,
-                        days: dbMealPlan.days.map((day: any) => ({
-                            day: day.day,
-                            meals: day.meals.map((meal: any) => ({
-                                name: meal.name,
-                                description: meal.description || undefined,
-                                ingredients: meal.ingredients || [],
-                                instructions: meal.instructions || undefined,
-                            }))
-                        }))
-                    }
-                };
+                meals = dbMealPlan.days.flatMap((day: any) =>
+                    day.meals.map((meal: any) => ({
+                        name: meal.name,
+                        ingredients: meal.ingredients || []
+                    }))
+                );
+                planTitle = dbMealPlan.title;
             }
             // Handle meal plan from context (not saved)
             else if (source === 'mealplan' && mealPlan) {
                 console.log('[generateGroceryList] Using meal plan from context');
-                groceryInput = { mealPlan };
+                meals = mealPlan.days.flatMap((day: any) =>
+                    day.meals.map((meal: any) => ({
+                        name: meal.name,
+                        ingredients: meal.ingredients || []
+                    }))
+                );
+                planTitle = mealPlan.title || 'Your meal plan';
             }
             else {
                 return {
@@ -235,29 +235,90 @@ export const generateGroceryList = tool({
                 };
             }
 
-            // Call the core grocery list generator with local pricing
-            const { generateGroceryListCore } = await import('@/ai/flows/chat/dynamic-select-tools');
-            const result = await generateGroceryListCore(groceryInput);
-
-            if (!result.success) {
+            // Validate we have meals
+            if (meals.length === 0 || meals.every(m => !m.ingredients || m.ingredients.length === 0)) {
                 return {
                     success: false,
-                    error: result.message || 'Failed to generate grocery list',
+                    error: 'NO_INGREDIENTS',
+                    message: "The meal plan doesn't contain any ingredients. Please try again.",
                 };
             }
 
-            // Return with UI metadata for beautiful display
+            // Use AI SDK to generate grocery list with local pricing
+            const { generateObject } = await import('ai');
+            const { google } = await import('@ai-sdk/google');
+
+            const result = await generateObject({
+                model: google('gemini-2.0-flash-exp'),
+                schema: z.object({
+                    groceryList: z.array(z.object({
+                        id: z.string().describe('Unique ID for the item'),
+                        item: z.string().describe('Name of the grocery item'),
+                        quantity: z.string().describe('Quantity needed (e.g., "2 lbs", "1 cup")'),
+                        category: z.string().describe('Category (e.g., "Produce", "Dairy", "Meat")'),
+                        estimatedPrice: z.string().describe('Estimated price with currency symbol (e.g., "$3.50")'),
+                        suggestedLocation: z.string().describe('Suggested local store'),
+                    })),
+                    locationInfo: z.object({
+                        currencySymbol: z.string().describe('Currency symbol'),
+                        localStores: z.array(z.string()).describe('List of local stores'),
+                    }),
+                }),
+                prompt: `You are a hyper-local grocery expert. Generate a consolidated grocery list with realistic local pricing and store suggestions.
+
+## USER LOCATION
+- City: ${locationData.city || 'San Francisco'}
+- Country: ${locationData.country || 'USA'}
+- Currency: ${locationData.currencySymbol || '$'}
+
+## MEALS
+${meals.map(m => `- **${m.name}**: ${m.ingredients.join(', ')}`).join('\n')}
+
+## CRITICAL RULES
+1. **Local Pricing:** Provide realistic single price estimates in local currency (${locationData.currencySymbol || '$'}). The 'estimatedPrice' field must be a string with currency symbol and price (e.g., "$4.99").
+2. **Local Stores:** Suggest real grocery stores in ${locationData.city || 'San Francisco'}.
+3. **Consolidate:** Combine identical ingredients and sum quantities.
+4. **Categorize:** Assign category to each item (Produce, Dairy, Meat, Pantry, etc.).
+5. **Generate IDs:** Assign unique string ID to each item (e.g., "item-1", "item-2").
+
+Return only the JSON object with groceryList and locationInfo.`,
+            });
+
+            if (!result.object || !result.object.groceryList || !Array.isArray(result.object.groceryList)) {
+                return {
+                    success: false,
+                    error: 'AI_GENERATION_FAILED',
+                    message: 'Failed to generate grocery list. Please try again.',
+                };
+            }
+
+            // Calculate total cost
+            const totalCost = result.object.groceryList.reduce((sum: number, item: any) => {
+                const priceStr = String(item.estimatedPrice).replace(/[^\\d.]/g, '');
+                return sum + (parseFloat(priceStr) || 0);
+            }, 0);
+
+            const currencySymbol = result.object.locationInfo?.currencySymbol || locationData.currencySymbol || '$';
+
+            // Create UI metadata
+            const uiMetadata = {
+                groceryList: {
+                    items: result.object.groceryList,
+                    locationInfo: result.object.locationInfo,
+                    totalEstimatedCost: `${currencySymbol}${totalCost.toFixed(2)}`,
+                },
+            };
+
+            const uiMetadataEncoded = Buffer.from(JSON.stringify(uiMetadata)).toString('base64');
+
             return {
                 success: true,
-                message: result.message, // Contains [UI_METADATA:base64] tag
+                message: `✅ Generated grocery list for ${planTitle}! Found ${result.object.groceryList.length} items with estimated total cost of ${currencySymbol}${totalCost.toFixed(2)}. [UI_METADATA:${uiMetadataEncoded}]`,
                 groceryList: {
                     id: 'generated-list',
-                    items: result.groceryList,
-                    locationInfo: result.locationInfo,
-                    totalEstimatedCost: result.groceryList?.reduce((sum: number, item: any) => {
-                        const priceStr = String(item.estimatedPrice).replace(/[^\d.]/g, '');
-                        return sum + (parseFloat(priceStr) || 0);
-                    }, 0).toFixed(2)
+                    items: result.object.groceryList,
+                    locationInfo: result.object.locationInfo,
+                    totalEstimatedCost: `${currencySymbol}${totalCost.toFixed(2)}`
                 }
             };
         } catch (error) {
