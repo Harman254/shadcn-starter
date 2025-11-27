@@ -10,12 +10,12 @@ import type { Message } from '@/types';
  * Automatically saves messages to the database and loads them on mount
  */
 export function useChatSync(sessionId: string | null, chatType: 'context-aware' | 'tool-selection') {
-  const { 
-    getCurrentMessages, 
+  const {
+    getCurrentMessages,
     getCurrentSession,
-    addMessage, 
-    addMessages, 
-    createSession, 
+    addMessage,
+    addMessages,
+    createSession,
     setCurrentSession,
     syncFromDatabase,
     clearSession,
@@ -35,12 +35,12 @@ export function useChatSync(sessionId: string | null, chatType: 'context-aware' 
           const response = await fetch(`/api/chat/sessions`, {
             credentials: 'include', // Include cookies for authentication
           });
-          
+
           // API now returns empty array if not authenticated (no 401 error)
           if (response.ok) {
             const { sessions } = await response.json();
             const exists = sessions.some((s: any) => s.id === sessionId);
-            
+
             if (process.env.NODE_ENV === 'development') {
               if (exists) {
                 logger.debug('[useChatSync] Session exists in database:', sessionId);
@@ -48,7 +48,7 @@ export function useChatSync(sessionId: string | null, chatType: 'context-aware' 
                 logger.debug('[useChatSync] Session not in database yet (waiting for title):', sessionId);
               }
             }
-            
+
             // Do NOT create session here - it must have an AI-generated title first
             // The session will be created automatically after title generation in chat-panel.tsx
           }
@@ -59,7 +59,7 @@ export function useChatSync(sessionId: string | null, chatType: 'context-aware' 
           }
         }
       };
-      
+
       initSession();
       isInitializedRef.current = true;
     }
@@ -69,7 +69,7 @@ export function useChatSync(sessionId: string | null, chatType: 'context-aware' 
   // Use a ref to track if we've loaded for this session to prevent overwriting new messages
   const loadedSessionRef = useRef<string | null>(null);
   const lastSessionIdRef = useRef<string | null>(null);
-  
+
   useEffect(() => {
     if (!sessionId) {
       loadedSessionRef.current = null;
@@ -91,21 +91,21 @@ export function useChatSync(sessionId: string | null, chatType: 'context-aware' 
     const session = storeState.sessions[sessionId];
     const currentSession = getCurrentSession();
     const hasLocalMessages = session?.messages && session.messages.length > 0;
-    
+
     // CRITICAL: If session doesn't exist in store at all, don't load
     // This means handleSessionSelect is probably loading it - let that handle it
     if (!session) {
       logger.debug(`[useChatSync] Skipping load - session ${sessionId} doesn't exist in store yet (probably being loaded by handleSessionSelect)`);
       return;
     }
-    
+
     // If we've already loaded for this session AND we have local messages, skip
     // NOTE: This prevents duplicate loading when handleSessionSelect already loaded messages
     if (loadedSessionRef.current === sessionId && hasLocalMessages) {
       logger.debug('[useChatSync] Skipping load - already loaded and has local messages');
       return;
-      }
-    
+    }
+
     // IMPORTANT: If this sessionId doesn't match the current session, don't load
     // This prevents interfering with session selection - let handleSessionSelect handle it
     if (currentSession && currentSession.id !== sessionId) {
@@ -119,7 +119,7 @@ export function useChatSync(sessionId: string | null, chatType: 'context-aware' 
         const response = await fetchWithRetry(`/api/chat/messages?sessionId=${sessionId}`, {
           credentials: 'include', // Include cookies for authentication
         });
-        
+
         // Handle 404 - session doesn't exist in database yet (newly created, waiting for title)
         if (response.status === 404) {
           logger.debug('[useChatSync] Session not in database yet (waiting for title):', sessionId);
@@ -127,28 +127,28 @@ export function useChatSync(sessionId: string | null, chatType: 'context-aware' 
           loadedSessionRef.current = sessionId;
           return; // Don't try to load messages for a session that doesn't exist yet
         }
-        
+
         // Handle 401 - not authenticated
         if (response.status === 401) {
           logger.debug('[useChatSync] Not authenticated, skipping message load');
           loadedSessionRef.current = sessionId;
           return;
         }
-        
+
         // API now returns empty array if not authenticated (no 401 error)
         if (response.ok) {
           const { messages } = await response.json();
-          
+
           // If authenticated and messages exist in DB, load them
           // If not authenticated, messages will be empty array and we keep local messages
           if (messages && messages.length > 0) {
             // Check current session state before loading
             // IMPORTANT: Re-check store state to ensure session still exists and is current
             const currentStoreState = useChatStore.getState();
-            const currentSession = currentStoreState.currentSessionId === sessionId 
-              ? currentStoreState.sessions[sessionId] 
+            const currentSession = currentStoreState.currentSessionId === sessionId
+              ? currentStoreState.sessions[sessionId]
               : null;
-            
+
             // Only proceed if this session is still the current session
             // This prevents interfering with session selection
             if (currentSession && currentSession.id === sessionId) {
@@ -156,7 +156,7 @@ export function useChatSync(sessionId: string | null, chatType: 'context-aware' 
               // Merge with existing messages instead of clearing (preserve optimistic updates)
               const existingMessages = currentSession.messages || [];
               const existingIds = new Set(existingMessages.map((m: Message) => m.id));
-              
+
               // Only add messages from DB that don't exist locally
               const newMessages = messages
                 .filter((m: any) => !existingIds.has(m.id))
@@ -166,61 +166,61 @@ export function useChatSync(sessionId: string | null, chatType: 'context-aware' 
                   content: m.content,
                   timestamp: m.timestamp ? new Date(m.timestamp) : new Date(),
                 }));
-              
+
               if (newMessages.length > 0) {
                 addMessages(sessionId, newMessages);
               } else if (existingMessages.length === 0 && messages.length > 0) {
                 // Only load from DB if we have NO local messages AND DB has messages
                 // This prevents overwriting optimistic updates
+
                 // CRITICAL: Add a longer delay and more checks to avoid race conditions
                 // Never clear a session that's currently being selected
                 setTimeout(() => {
                   const finalStoreState = useChatStore.getState();
                   const finalCurrentSessionId = finalStoreState.currentSessionId;
                   const finalSession = finalStoreState.sessions[sessionId];
-                  
+
                   // QUADRUPLE-CHECK: 
                   // 1. Session is still current
                   // 2. Session exists
                   // 3. Session still has no messages (wasn't populated by handleSessionSelect)
                   // 4. We're still loading for this session
                   if (finalCurrentSessionId === sessionId &&
-                      finalSession && 
-                      finalSession.id === sessionId && 
-                      finalSession.messages.length === 0 &&
-                      loadedSessionRef.current === sessionId) {
-                // If no local messages and DB has messages, load all from DB
-                const formattedMessages = messages.map((m: any) => ({
-                  id: m.id,
-                  role: m.role,
-                  content: m.content,
-                  timestamp: m.timestamp ? new Date(m.timestamp) : new Date(),
-                }));
-                // Sort by timestamp to ensure correct order
+                    finalSession &&
+                    finalSession.id === sessionId &&
+                    finalSession.messages.length === 0 &&
+                    loadedSessionRef.current === sessionId) {
+
+                    // If no local messages and DB has messages, load all from DB
+                    const formattedMessages = messages.map((m: any) => ({
+                      id: m.id,
+                      role: m.role,
+                      content: m.content,
+                      timestamp: m.timestamp ? new Date(m.timestamp) : new Date(),
+                    }));
+
+                    // Sort by timestamp to ensure correct order
                     formattedMessages.sort((a: Message, b: Message) => {
-                      const timeA = a.timestamp instanceof Date 
-                        ? a.timestamp.getTime() 
-                        : a.timestamp 
-                          ? new Date(a.timestamp).getTime() 
+                      const timeA = a.timestamp instanceof Date
+                        ? a.timestamp.getTime()
+                        : a.timestamp
+                          ? new Date(a.timestamp).getTime()
                           : 0;
-                      const timeB = b.timestamp instanceof Date 
-                        ? b.timestamp.getTime() 
-                        : b.timestamp 
-                          ? new Date(b.timestamp).getTime() 
+                      const timeB = b.timestamp instanceof Date
+                        ? b.timestamp.getTime()
+                        : b.timestamp
+                          ? new Date(b.timestamp).getTime()
                           : 0;
-                  return timeA - timeB;
-                });
-                clearSession(sessionId);
-                addMessages(sessionId, formattedMessages);
-                  } else {
-                    if (process.env.NODE_ENV === 'development') {
-                      console.log('[useChatSync] Skipping clearSession - session state changed or has messages now');
-                    }
+                      return timeA - timeB;
+                    });
+
+                    // Instead of clearSession + addMessages which triggers two updates,
+                    // we should have a replaceMessages action, but for now this is safer
+                    // than clearing first if we want to avoid flickering
+                    addMessages(sessionId, formattedMessages);
                   }
                 }, 300); // Increased delay to 300ms to avoid race conditions with handleSessionSelect
               }
-            } else {
-              logger.debug(`[useChatSync] Skipping load - session ${sessionId} is not current session`);
             }
           }
           // If messages is empty (not authenticated or no messages), keep local messages
@@ -235,7 +235,7 @@ export function useChatSync(sessionId: string | null, chatType: 'context-aware' 
     };
 
     loadMessages();
-  }, [sessionId, addMessages, clearSession, getCurrentSession]);
+  }, [sessionId, addMessages, getCurrentSession]); // Removed clearSession from deps to avoid unnecessary re-runs
 
   // Save messages to database with debouncing
   // This ensures messages are saved efficiently while preventing excessive API calls
@@ -257,18 +257,18 @@ export function useChatSync(sessionId: string | null, chatType: 'context-aware' 
       try {
         // Always get the latest messages from store to ensure we save the most current state
         const latestMessages = getCurrentMessages();
-        
+
         // If no messages in store, use the passed messages (fallback)
         const messagesToSave = latestMessages.length > 0 ? latestMessages : messages;
-        
+
         if (messagesToSave.length === 0) {
           logger.debug('[useChatSync] No messages to save');
           return; // Nothing to save
         }
-        
+
         logger.debug(`[useChatSync] 💾 Saving ${messagesToSave.length} messages to database for session ${sessionId}`);
         logger.debug('[useChatSync] Messages:', messagesToSave.map(m => ({ id: m.id, role: m.role, content: m.content.substring(0, 30) + '...' })));
-        
+
         // Use retry logic for robustness - handles network failures gracefully
         const response = await fetchWithRetry('/api/chat/messages', {
           method: 'POST',
@@ -280,12 +280,12 @@ export function useChatSync(sessionId: string | null, chatType: 'context-aware' 
               id: msg.id,
               role: msg.role,
               content: msg.content,
-              timestamp: msg.timestamp 
-                ? (msg.timestamp instanceof Date 
-                    ? msg.timestamp.toISOString() 
-                    : typeof msg.timestamp === 'string' 
-                      ? msg.timestamp 
-                      : new Date().toISOString())
+              timestamp: msg.timestamp
+                ? (msg.timestamp instanceof Date
+                  ? msg.timestamp.toISOString()
+                  : typeof msg.timestamp === 'string'
+                    ? msg.timestamp
+                    : new Date().toISOString())
                 : new Date().toISOString(),
               // Include tool call data if present (for future tool call support)
               tool_calls: msg.tool_calls,
@@ -296,7 +296,7 @@ export function useChatSync(sessionId: string | null, chatType: 'context-aware' 
 
         // Parse response once
         const result = await response.json().catch(() => ({}));
-        
+
         if (!response.ok) {
           if (response.status === 401) {
             // Not authenticated - messages stored locally only (this is fine)
@@ -305,7 +305,7 @@ export function useChatSync(sessionId: string | null, chatType: 'context-aware' 
             }
             return;
           }
-          
+
           if (response.status === 404) {
             // Route not found or session not found - this might be a temporary issue
             // Don't throw error, just log and continue (messages are stored locally)
@@ -314,7 +314,7 @@ export function useChatSync(sessionId: string | null, chatType: 'context-aware' 
             }
             return;
           }
-          
+
           if (response.status === 503) {
             // Database connection failed - messages stored locally
             if (process.env.NODE_ENV === 'development') {
@@ -322,10 +322,10 @@ export function useChatSync(sessionId: string | null, chatType: 'context-aware' 
             }
             return;
           }
-          
+
           throw new Error(result.error || `Failed to save messages: ${response.status}`);
         }
-        
+
         // Check response - API returns success with saved count
         if (result.saved === 0) {
           // All messages already existed in database (no new ones to save)
@@ -336,10 +336,10 @@ export function useChatSync(sessionId: string | null, chatType: 'context-aware' 
         }
       } catch (error) {
         // Only log real errors, not network issues or unauthenticated states
-        if (error instanceof Error && 
-            !error.message.includes('fetch') && 
-            !error.message.includes('Failed to fetch') &&
-            !error.message.includes('401')) {
+        if (error instanceof Error &&
+          !error.message.includes('fetch') &&
+          !error.message.includes('Failed to fetch') &&
+          !error.message.includes('401')) {
           logger.error('[useChatSync] Failed to save messages to database:', error);
           toast({
             title: 'Sync error',

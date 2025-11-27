@@ -30,7 +30,7 @@ interface SessionData {
   messageCount: number;
   lastMessage?: {
     id: string;
-    role: 'user' | 'assistant';
+    role: Message['role'];
     content: string;
     timestamp: Date;
   };
@@ -63,46 +63,56 @@ const SessionItem = memo(function SessionItem({
     <div
       className={cn(
         "group relative",
-        "px-3 sm:px-3.5 py-3 sm:py-2.5",
-        "rounded-xl sm:rounded-lg",
-        "cursor-pointer transition-all duration-200",
-        "hover:bg-muted/60 active:bg-muted/80",
+        "px-3 py-3 sm:py-3",
+        "rounded-xl",
+        "cursor-pointer transition-all duration-300 ease-out",
         "border",
         isActive
-          ? "bg-primary/10 border-primary/30 shadow-md shadow-primary/5"
-          : "border-transparent hover:border-border/60 bg-background/50"
+          ? "bg-gradient-to-r from-primary/20 to-primary/10 border-primary/30 shadow-md shadow-primary/5 translate-x-1"
+          : "border-transparent hover:bg-muted/50 hover:border-border/50 bg-transparent hover:translate-x-1"
       )}
       onClick={() => onSelect(session.id)}
     >
-      <div className="flex items-center gap-2.5 sm:gap-2 w-full">
-        {/* Title and indicator */}
-        <div className="flex items-center gap-2.5 sm:gap-2 flex-1 min-w-0">
-          {isActive && (
-            <div className={cn(
-              "h-2 w-2 sm:h-1.5 sm:w-1.5",
-              "rounded-full bg-primary",
-              "animate-pulse shrink-0",
-              "ring-2 ring-primary/20"
-            )} />
+      <div className="flex items-center gap-3 w-full">
+        {/* Icon/Indicator */}
+        <div className={cn(
+          "shrink-0 flex items-center justify-center w-8 h-8 rounded-lg transition-all duration-300",
+          isActive 
+            ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20 scale-110" 
+            : "bg-muted/50 text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary group-hover:scale-110"
+        )}>
+          {isActive ? (
+            <div className="h-2 w-2 rounded-full bg-white animate-pulse" />
+          ) : (
+            <History className="h-4 w-4" />
           )}
-          <div className="flex-1 min-w-0">
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 min-w-0 flex flex-col gap-0.5">
+          <div className="flex items-center justify-between gap-2">
             <p className={cn(
-              "text-sm sm:text-[13px] font-semibold truncate",
-              "leading-tight",
-              isActive ? "text-primary" : "text-foreground"
+              "text-sm font-medium truncate transition-colors",
+              isActive ? "text-primary" : "text-foreground group-hover:text-foreground"
             )}>
               {session.title || (session.messageCount > 0 ? 'New conversation' : 'New chat')}
             </p>
-            {session.messageCount > 0 && (
-              <p className="text-[10px] sm:text-xs text-muted-foreground/70 mt-0.5 truncate">
-                {session.messageCount} {session.messageCount === 1 ? 'message' : 'messages'}
-              </p>
+            {session.updatedAt && (
+              <span className="text-[10px] text-muted-foreground/60 shrink-0">
+                {new Date(session.updatedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+              </span>
             )}
           </div>
+          <p className="text-xs text-muted-foreground/70 truncate">
+            {session.messageCount} {session.messageCount === 1 ? 'message' : 'messages'}
+          </p>
         </div>
         
-        {/* Delete button - always visible with better mobile styling */}
-        <div className="shrink-0 flex items-center justify-center">
+        {/* Delete button - visible on hover or when active on desktop, always on mobile */}
+        <div className={cn(
+          "shrink-0 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-200",
+          isDeleting && "opacity-100"
+        )}>
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button
@@ -110,50 +120,43 @@ const SessionItem = memo(function SessionItem({
                 size="icon"
                 disabled={isDeleting}
                 className={cn(
-                  "min-h-[36px] min-w-[36px] sm:min-h-[32px] sm:min-w-[32px]",
-                  "h-9 w-9 sm:h-8 sm:w-8",
-                  "transition-all duration-200",
-                  "opacity-100", // Always fully visible
-                  "text-destructive hover:text-destructive",
-                  "bg-destructive/15 hover:bg-destructive/20 active:bg-destructive/30", // Combined background states
-                  "rounded-lg sm:rounded-md",
-                  "border-2 border-destructive/50 hover:border-destructive/70",
-                  "shadow-sm hover:shadow-md hover:shadow-destructive/10",
-                  "ring-1 ring-destructive/20 hover:ring-destructive/30",
+                  "h-8 w-8",
+                  "text-muted-foreground hover:text-destructive",
+                  "hover:bg-destructive/10",
+                  "rounded-lg",
+                  "transition-colors",
                   isDeleting && "opacity-60 cursor-not-allowed"
                 )}
                 onClick={(e) => e.stopPropagation()}
-                aria-label="Delete conversation"
-                title="Delete conversation"
               >
                 {isDeleting ? (
-                  <Loader2 className="h-5 w-5 sm:h-4 sm:w-4 animate-spin" />
+                  <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
-                  <Trash2 className="h-5 w-5 sm:h-4 sm:w-4" />
+                  <Trash2 className="h-4 w-4" />
                 )}
               </Button>
             </AlertDialogTrigger>
-          <AlertDialogContent className="sm:max-w-md">
-            <AlertDialogHeader>
-              <AlertDialogTitle>Delete conversation?</AlertDialogTitle>
-              <AlertDialogDescription>
-                This will permanently delete this conversation and all its messages. This action cannot be undone.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter className="flex-col sm:flex-row gap-2 sm:gap-0">
-              <AlertDialogCancel className="w-full sm:w-auto">Cancel</AlertDialogCancel>
-              <AlertDialogAction
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onDelete(session.id);
-                }}
-                className="w-full sm:w-auto bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              >
-                Delete
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+            <AlertDialogContent className="sm:max-w-md">
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete conversation?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will permanently delete this conversation and all its messages. This action cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter className="flex-col sm:flex-row gap-2 sm:gap-0">
+                <AlertDialogCancel className="w-full sm:w-auto">Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDelete(session.id);
+                  }}
+                  className="w-full sm:w-auto bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  Delete
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       </div>
     </div>
@@ -908,95 +911,80 @@ export function ChatHistoryClient({ chatType, initialSessions = [], onSessionSel
   }
 
   return (
-    <div className="h-full flex flex-col bg-background">
+    <div className="h-full flex flex-col bg-muted/10">
       {/* Header */}
-      <div className="px-4 sm:px-5 py-4 sm:py-5 border-b border-border/50 bg-background/95 backdrop-blur-sm shrink-0">
+      <div className="px-4 py-4 border-b border-border/40 bg-background/80 backdrop-blur-md sticky top-0 z-10">
         <div className="flex items-center justify-between gap-3">
           <div className="flex-1 min-w-0">
-            <h3 className="text-base sm:text-lg font-bold text-foreground leading-tight">Conversations</h3>
-            <p className="text-xs sm:text-sm text-muted-foreground mt-1 truncate">
-              {chatType === 'context-aware' ? 'Recipe chats' : 'Meal tracking chats'}
+            <h3 className="text-sm font-semibold text-foreground leading-none tracking-tight">History</h3>
+            <p className="text-xs text-muted-foreground mt-1 truncate font-medium">
+              {chatType === 'context-aware' ? 'Recipe Assistant' : 'Meal Tracker'}
             </p>
           </div>
-          <div className="flex items-center gap-1.5 sm:gap-1 shrink-0">
+          <div className="flex items-center gap-1 shrink-0">
             {sessions.length > 0 && (
               <Button
                 variant="ghost"
-                size="sm"
+                size="icon"
                 onClick={() => handleClearAllConversations({ emptyOnly: true, noTitleOnly: true })}
-                className={cn(
-                  "h-9 w-9 sm:h-8 sm:w-8 p-0",
-                  "hover:bg-destructive/15 hover:text-destructive",
-                  "active:bg-destructive/25",
-                  "border border-destructive/30 hover:border-destructive/50",
-                  "rounded-lg",
-                  "transition-all duration-200"
-                )}
-                aria-label="Clear empty conversations without titles"
+                className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
+                aria-label="Clear empty conversations"
                 disabled={!isAuthenticated || isClearingAll}
                 title="Clear empty conversations"
               >
                 {isClearingAll ? (
-                  <Loader2 className="h-5 w-5 sm:h-4 sm:w-4 animate-spin" />
+                  <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
-                  <Trash className="h-5 w-5 sm:h-4 sm:w-4" />
+                  <Trash className="h-4 w-4" />
                 )}
               </Button>
             )}
             <Button
-              variant="ghost"
-              size="sm"
+              variant="default"
+              size="icon"
               onClick={handleNewChat}
-              className={cn(
-                "h-9 w-9 sm:h-8 sm:w-8 p-0",
-                "hover:bg-primary/15 hover:text-primary",
-                "active:bg-primary/25",
-                "border border-primary/30 hover:border-primary/50",
-                "rounded-lg",
-                "transition-all duration-200",
-                "shadow-sm hover:shadow-md"
-              )}
+              className="h-8 w-8 rounded-lg shadow-sm hover:shadow transition-all bg-primary text-primary-foreground hover:bg-primary/90"
               aria-label="New chat"
               disabled={!isAuthenticated}
               title="New chat"
             >
-              <Plus className="h-5 w-5 sm:h-4 sm:w-4" />
+              <Plus className="h-4 w-4" />
             </Button>
           </div>
         </div>
       </div>
 
       {/* Scrollable content */}
-      <ScrollArea className="flex-1 overflow-y-auto overflow-x-hidden">
-        <div className="p-3 sm:p-4 space-y-2 sm:space-y-1.5">
+      <ScrollArea className="flex-1">
+        <div className="p-3 space-y-2">
           {(isLoading || isAuthPending) ? (
-            <div className="flex items-center justify-center py-12 sm:py-16">
-              <div className="flex flex-col items-center gap-3">
-                <Loader2 className="h-6 w-6 sm:h-5 sm:w-5 animate-spin text-primary" />
-                <p className="text-xs sm:text-sm text-muted-foreground">Loading conversations...</p>
-              </div>
+            <div className="flex flex-col items-center justify-center py-12 gap-3 text-muted-foreground/50">
+              <Loader2 className="h-6 w-6 animate-spin" />
+              <p className="text-xs font-medium">Loading history...</p>
             </div>
           ) : displaySessions.length === 0 ? (
-            <div className="text-center py-16 sm:py-20 px-4">
-              <div className="inline-block p-4 sm:p-5 bg-muted/30 rounded-2xl mb-4 sm:mb-5">
-                <History className="h-10 w-10 sm:h-12 sm:w-12 mx-auto text-muted-foreground/50" />
+            <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
+              <div className="w-12 h-12 rounded-2xl bg-muted/50 flex items-center justify-center mb-4">
+                <History className="h-6 w-6 text-muted-foreground/50" />
               </div>
-              <p className="text-sm sm:text-base font-semibold text-foreground mb-2">No conversations yet</p>
-              <p className="text-xs sm:text-sm text-muted-foreground max-w-xs mx-auto leading-relaxed">
-                Start chatting to see your conversation history here
+              <h4 className="text-sm font-medium text-foreground mb-1">No history yet</h4>
+              <p className="text-xs text-muted-foreground max-w-[200px] leading-relaxed">
+                Start a new conversation to see it appear here.
               </p>
             </div>
           ) : (
-            displaySessions.map((session) => (
-              <SessionItem
-                key={session.id}
-                session={session}
-                isActive={currentSessionId === session.id}
-                isDeleting={deletingSessionId === session.id}
-                onSelect={handleSessionSelect}
-                onDelete={handleDeleteSession}
-              />
-            ))
+            <div className="space-y-2">
+              {displaySessions.map((session) => (
+                <SessionItem
+                  key={session.id}
+                  session={session}
+                  isActive={currentSessionId === session.id}
+                  isDeleting={deletingSessionId === session.id}
+                  onSelect={handleSessionSelect}
+                  onDelete={handleDeleteSession}
+                />
+              ))}
+            </div>
           )}
         </div>
       </ScrollArea>

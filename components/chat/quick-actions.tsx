@@ -159,7 +159,7 @@ export function QuickActions({ onActionClick, context = 'general' }: QuickAction
                 className={cn(
                   "relative w-full",
                   isGeneral 
-                    ? "h-auto min-h-[32px] sm:min-h-[34px] px-2 sm:px-2.5 py-1 sm:py-1.5"
+                    ? "h-auto min-h-[44px] sm:min-h-[34px] px-3 sm:px-2.5 py-2 sm:py-1.5" // Mobile: 44px min-height
                     : "h-auto min-h-[44px] sm:min-h-[48px] px-3 sm:px-4 py-2.5 sm:py-3",
                   "flex flex-col items-start justify-center",
                   isGeneral ? "gap-0" : "gap-1",

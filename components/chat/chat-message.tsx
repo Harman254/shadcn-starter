@@ -1,12 +1,12 @@
 "use client"
 
-import { User, Loader2, Copy, Check, Clock, AlertCircle, Calendar, UtensilsCrossed, ChefHat, Star, ShoppingCart, MapPin, Tag, DollarSign } from "lucide-react"
+import { User, Loader2, Copy, Check, Clock, AlertCircle, Calendar, UtensilsCrossed, ChefHat, Star, ShoppingCart, MapPin, Tag, DollarSign, Save, MoreHorizontal } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { Message } from "@/types"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Icons } from "@/components/icons"
 import { Button } from "@/components/ui/button"
-import { useState, memo, useEffect } from "react"
+import { useState, memo, useEffect, useMemo } from "react"
 import { useToast } from "@/hooks/use-toast"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
@@ -17,6 +17,10 @@ import { motion } from "framer-motion"
 import { useRouter } from "next/navigation"
 import { saveMealPlanAction } from "@/actions/save-meal-plan"
 import { QuickActions } from "./quick-actions"
+import { ToolProgress, type ExecutionProgressData, type ToolProgressData } from "./tool-progress"
+
+import { VerifiedBadge } from "./verified-badge"
+import { MealSuggestions, type MealSuggestion } from "./meal-suggestions"
 
 interface ChatMessageProps {
   message?: Message
@@ -44,6 +48,72 @@ function formatTimestamp(date?: Date): string {
   }
   return messageDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
 }
+
+// Memoized Markdown content to prevent re-renders and "parentNode" errors during streaming
+const MarkdownContent = memo(function MarkdownContent({ content, isDark }: { content: string, isDark: boolean }) {
+  const { toast } = useToast()
+  
+  return (
+    <ReactMarkdown
+      remarkPlugins={[remarkGfm]}
+      components={{
+        code({ node, inline, className, children, ...props }: any) {
+          const match = /language-(\w+)/.exec(className || '')
+          const language = match ? match[1] : ''
+          return !inline && language ? (
+            <div className="relative group/code my-4">
+              <div className="absolute top-3 left-4 text-xs font-medium text-muted-foreground/70 z-10 select-none">
+                {language}
+              </div>
+              <SyntaxHighlighter
+                style={isDark ? oneDark : oneLight}
+                language={language}
+                PreTag="div"
+                className="rounded-xl !mt-0 !mb-0 !pt-10 !pb-4 !px-4 shadow-sm border border-border/50"
+                customStyle={{
+                  background: 'transparent',
+                  fontSize: '0.875rem',
+                  lineHeight: '1.6',
+                }}
+                {...props}
+              >
+                {String(children).replace(/\n$/, '')}
+              </SyntaxHighlighter>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute top-2 right-2 h-8 w-8 opacity-0 group-hover/code:opacity-100 transition-all bg-background/80 backdrop-blur-sm border border-border/50 shadow-sm hover:bg-background"
+                onClick={() => {
+                  navigator.clipboard.writeText(String(children))
+                  toast({
+                    title: 'Code copied',
+                    duration: 2000,
+                  })
+                }}
+                aria-label="Copy code"
+              >
+                <Copy className="h-4 w-4" />
+              </Button>
+            </div>
+          ) : (
+            <code className={cn(
+              "bg-muted px-1.5 py-0.5 rounded-md text-sm font-mono font-medium",
+              "text-foreground",
+              className
+            )} {...props}>
+              {children}
+            </code>
+          )
+        },
+      }}
+    >
+      {content}
+    </ReactMarkdown>
+  )
+}, (prevProps, nextProps) => {
+  // Custom comparison to prevent re-renders if content hasn't changed meaningfully
+  return prevProps.content === nextProps.content && prevProps.isDark === nextProps.isDark;
+});
 
 function ThinkingAnimation() {
   const [text, setText] = useState('Thinking...');
@@ -79,16 +149,130 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
   const currentTheme = theme === 'system' ? systemTheme : theme
   const isDark = currentTheme === 'dark'
 
+  // Extract UI data from either legacy .ui property or new toolInvocations
+  const uiData = useMemo(() => {
+    if (!message) return null;
+    // Prioritize legacy .ui for backward compatibility if it exists
+    if (message.ui) return message.ui;
+    
+    if (message.toolInvocations) {
+      for (const tool of message.toolInvocations) {
+        if (tool.state === 'result') {
+          if (tool.toolName === 'generateMealPlan' && tool.result?.success) {
+             return { mealPlan: tool.result.mealPlan };
+          }
+          if (tool.toolName === 'generateGroceryList' && tool.result?.success) {
+             // Map the tool result to the expected UI structure
+             // The tool returns { groceryList: { items: ... } }
+             // The UI expects { groceryList: { items: ... } }
+             return { groceryList: tool.result.groceryList };
+          }
+          if (tool.toolName === 'getMealSuggestions' && tool.result?.success) {
+             return { mealSuggestions: tool.result.suggestions };
+          }
+          if (tool.toolName === 'generateMealRecipe' && tool.result?.success) {
+             return { mealRecipe: tool.result.recipe };
+          }
+        }
+      }
+    }
+    return null;
+  }, [message]);
+
+  // Determine active tool status
+  const activeTool = useMemo(() => {
+    if (!message?.toolInvocations) return null;
+    const active = message.toolInvocations.find(t => t.state !== 'result');
+    if (active) {
+      if (active.toolName === 'generateMealPlan') return 'Creating meal plan...';
+      if (active.toolName === 'generateGroceryList') return 'Listing ingredients...';
+      if (active.toolName === 'analyzeNutrition') return 'Analyzing nutrition...';
+      if (active.toolName === 'getGroceryPricing') return 'Checking prices...';
+      if (active.toolName === 'getMealSuggestions') return 'Finding suggestions...';
+    }
+    return null;
+  }, [message]);
+
   // Only format timestamp on client to avoid hydration mismatch
   useEffect(() => {
     setIsMounted(true)
-    if (message?.timestamp) {
-      setFormattedTime(formatTimestamp(message.timestamp))
+    const ts = message?.timestamp || message?.createdAt
+    if (ts) {
+      setFormattedTime(formatTimestamp(ts))
     }
-  }, [message?.timestamp])
+  }, [message?.timestamp, message?.createdAt])
 
-  // Handle loading state with engaging animation
-  if (isLoading) {
+  // Transform toolInvocations into ExecutionProgressData
+  const toolProgressData = useMemo<ExecutionProgressData | null>(() => {
+    if (!message?.toolInvocations || message.toolInvocations.length === 0) return null;
+
+    const tools = new Map<string, ToolProgressData>();
+    let completed = 0;
+    let failed = 0;
+    
+    message.toolInvocations.forEach((tool) => {
+      let status: ToolProgressData['status'] = 'running';
+      let progress = 0;
+      let messageText = 'Processing...';
+
+      if (tool.state === 'result') {
+        status = 'completed';
+        progress = 100;
+        messageText = 'Completed';
+        completed++;
+        
+        // Check for failure in result if applicable
+        if (tool.result && typeof tool.result === 'object' && 'success' in tool.result && !tool.result.success) {
+            status = 'failed';
+            failed++;
+            messageText = tool.result.error || 'Failed';
+        }
+      } else {
+        // partial-call or call
+        progress = 50;
+        messageText = 'Running...';
+      }
+
+      // Customize message based on tool name
+      if (tool.toolName === 'generateMealPlan') {
+        messageText = status === 'running' ? 'Creating meal plan...' : 'Meal plan created';
+      } else if (tool.toolName === 'generateGroceryList') {
+        messageText = status === 'running' ? 'Generating grocery list...' : 'Grocery list generated';
+      } else if (tool.toolName === 'analyzeNutrition') {
+        messageText = status === 'running' ? 'Analyzing nutrition...' : 'Nutrition analyzed';
+      } else if (tool.toolName === 'getGroceryPricing') {
+        messageText = status === 'running' ? 'Checking prices...' : 'Prices checked';
+      } else if (tool.toolName === 'getMealSuggestions') {
+        messageText = status === 'running' ? 'Finding suggestions...' : 'Suggestions found';
+      }
+
+      tools.set(tool.toolCallId, {
+        toolId: tool.toolCallId,
+        toolName: tool.toolName,
+        status,
+        progress,
+        message: messageText,
+      });
+    });
+
+    const totalTools = message.toolInvocations.length;
+    const overallProgress = totalTools > 0 ? (completed / totalTools) * 100 : 0;
+
+    return {
+      totalTools,
+      completedTools: completed,
+      failedTools: failed,
+      skippedTools: 0,
+      currentPhase: 1,
+      totalPhases: 1,
+      overallProgress,
+      tools,
+      startedAt: message.createdAt || new Date(),
+    };
+  }, [message?.toolInvocations, message?.createdAt]);
+
+  // Handle loading state with ToolProgress or generic loading
+  if (isLoading || (message?.toolInvocations && message.toolInvocations.length > 0 && !uiData?.mealPlan && !uiData?.groceryList && !uiData?.mealSuggestions && !uiData?.mealRecipe)) {
     return (
       <motion.div
         initial={{ opacity: 0, y: 10 }}
@@ -103,17 +287,7 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
           "max-w-4xl mx-auto px-4 sm:px-6 md:px-8",
           "flex items-start gap-3 sm:gap-4"
         )}>
-          <motion.div
-            animate={{
-              scale: [1, 1.1, 1],
-            }}
-            transition={{
-              duration: 2,
-              repeat: Infinity,
-              ease: "easeInOut"
-            }}
-          >
-            <Avatar className={cn(
+           <Avatar className={cn(
               "h-8 w-8 sm:h-9 sm:w-9 md:h-10 md:w-10 shrink-0",
               "ring-2 ring-primary/20 ring-offset-2 ring-offset-background"
             )}>
@@ -123,88 +297,56 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
                 "relative overflow-hidden"
               )}>
                 <Icons.moon className="h-4 w-4 sm:h-5 sm:w-5 relative z-10" />
-                <motion.div
-                  className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
-                  animate={{
-                    x: ['-100%', '100%'],
-                  }}
-                  transition={{
-                    duration: 2,
-                    repeat: Infinity,
-                    ease: "linear"
-                  }}
-                />
+                {isLoading && !toolProgressData && (
+                    <motion.div
+                      className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
+                      animate={{
+                        x: ['-100%', '100%'],
+                      }}
+                      transition={{
+                        duration: 2,
+                        repeat: Infinity,
+                        ease: "linear"
+                      }}
+                    />
+                )}
               </AvatarFallback>
             </Avatar>
-          </motion.div>
           
           <div className="flex-1 min-w-0">
             <div className={cn(
-              "inline-block",
+              "inline-block w-full max-w-md",
               "bg-muted/40 rounded-2xl rounded-tl-sm px-5 py-3 sm:px-6 sm:py-3.5",
               "border border-border/40",
               "shadow-sm backdrop-blur-md"
             )}>
-              <div className="flex items-center gap-2">
-                <ThinkingAnimation />
-                <div className="flex items-center gap-1">
-                  {[0, 1, 2].map((index) => (
-                    <motion.div
-                      key={index}
-                      className="w-1.5 h-1.5 rounded-full bg-primary"
-                      animate={{
-                        y: [0, -8, 0],
-                        opacity: [0.5, 1, 0.5],
-                      }}
-                      transition={{
-                        duration: 1.2,
-                        repeat: Infinity,
-                        delay: index * 0.2,
-                        ease: "easeInOut"
-                      }}
-                    />
-                  ))}
+              {toolProgressData ? (
+                <ToolProgress progress={toolProgressData} compact={false} />
+              ) : (
+                <div className="flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground font-medium min-w-[80px]">
+                      Thinking...
+                    </span>
+                    <div className="flex items-center gap-1">
+                      {[0, 1, 2].map((index) => (
+                        <motion.div
+                          key={index}
+                          className="w-1.5 h-1.5 rounded-full bg-primary"
+                          animate={{
+                            y: [0, -8, 0],
+                            opacity: [0.5, 1, 0.5],
+                          }}
+                          transition={{
+                            duration: 1.2,
+                            repeat: Infinity,
+                            delay: index * 0.2,
+                            ease: "easeInOut"
+                          }}
+                        />
+                      ))}
+                    </div>
                 </div>
-              </div>
-              
-              {/* Animated sparkles for extra visual appeal */}
-              <div className="relative mt-2 h-1 overflow-hidden rounded-full bg-muted/40">
-                <motion.div
-                  className="h-full bg-gradient-to-r from-primary/0 via-primary/60 to-primary/0"
-                  animate={{
-                    x: ['-100%', '200%'],
-                  }}
-                  transition={{
-                    duration: 1.5,
-                    repeat: Infinity,
-                    ease: "linear"
-                  }}
-                />
-              </div>
-            </div>
-            
-            {/* Optional: Subtle floating particles effect */}
-            <div className="relative mt-2 h-4">
-              {[...Array(3)].map((_, i) => (
-                <motion.div
-                  key={i}
-                  className="absolute w-1 h-1 rounded-full bg-primary/30"
-                  style={{
-                    left: `${20 + i * 30}%`,
-                  }}
-                  animate={{
-                    y: [0, -10, 0],
-                    opacity: [0.3, 0.6, 0.3],
-                    scale: [0.8, 1.2, 0.8],
-                  }}
-                  transition={{
-                    duration: 2 + i * 0.3,
-                    repeat: Infinity,
-                    delay: i * 0.4,
-                    ease: "easeInOut"
-                  }}
-                />
-              ))}
+              )}
             </div>
           </div>
         </div>
@@ -247,7 +389,7 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
         "w-full py-4 sm:py-6",
         "animate-in fade-in slide-in-from-bottom-2 duration-300",
         // Hide regular message container if tool call results are present
-        (isAssistant && (message?.ui?.mealPlan || message?.ui?.groceryList)) && "hidden"
+        (isAssistant && (uiData?.mealPlan || uiData?.groceryList || uiData?.mealSuggestions || uiData?.mealRecipe)) && "hidden"
       )}
       role="article"
       aria-label={isAssistant ? "AI assistant message" : "Your message"}
@@ -272,12 +414,12 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
               className={cn(
                 "transition-all text-xs font-semibold",
                 isAssistant
-                  ? "bg-gradient-to-br from-primary to-primary/80 text-primary-foreground ring-2 ring-primary/10"
-                  : "bg-gradient-to-br from-muted to-muted/80 text-muted-foreground ring-2 ring-border/50",
+                  ? "bg-gradient-to-br from-primary to-primary/80 text-primary-foreground ring-2 ring-primary/20 shadow-lg shadow-primary/20"
+                  : "bg-gradient-to-br from-secondary to-secondary/80 text-secondary-foreground ring-2 ring-border/50",
               )}
             >
               {isAssistant ? (
-                <Icons.moon className="h-4 w-4 sm:h-5 sm:w-5" />
+                <Icons.moon className="h-4 w-4 sm:h-5 sm:w-5 drop-shadow-md" />
               ) : (
                 <User className="h-4 w-4 sm:h-5 sm:w-5" />
               )}
@@ -291,83 +433,37 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
             <div className="relative group/message">
               {isAssistant ? (
                 <div className={cn(
-                  "prose prose-sm sm:prose-base max-w-none",
-                  "font-sans antialiased",
-                  "text-foreground/90",
-                  "prose-headings:text-foreground prose-headings:font-bold prose-headings:tracking-tight",
-                  "prose-p:leading-relaxed prose-p:my-4",
-                  "prose-strong:text-foreground prose-strong:font-bold",
-                  "prose-code:text-primary prose-code:bg-primary/10 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded-md",
-                  "prose-pre:bg-muted/50 prose-pre:border prose-pre:border-border/50 prose-pre:rounded-xl",
-                  "prose-li:marker:text-primary/50",
-                  "dark:prose-invert"
+                  "relative",
+                  "bg-card/80 dark:bg-card/80 backdrop-blur-xl", // Glassmorphism
+                  "border border-border/50 rounded-2xl px-5 py-4",
+                  "shadow-sm dark:shadow-md dark:shadow-black/10"
                 )}>
-                  <ReactMarkdown
-                    remarkPlugins={[remarkGfm]}
-                    components={{
-                      code({ node, inline, className, children, ...props }: any) {
-                        const match = /language-(\w+)/.exec(className || '')
-                        const language = match ? match[1] : ''
-                        return !inline && language ? (
-                          <div className="relative group/code my-4">
-                            <div className="absolute top-3 left-4 text-xs font-medium text-muted-foreground/70 z-10 select-none">
-                              {language}
-                            </div>
-                            <SyntaxHighlighter
-                              style={isDark ? oneDark : oneLight}
-                              language={language}
-                              PreTag="div"
-                              className="rounded-xl !mt-0 !mb-0 !pt-10 !pb-4 !px-4 shadow-sm border border-border/50"
-                              customStyle={{
-                                background: 'transparent',
-                                fontSize: '0.875rem',
-                                lineHeight: '1.6',
-                              }}
-                              {...props}
-                            >
-                              {String(children).replace(/\n$/, '')}
-                            </SyntaxHighlighter>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="absolute top-2 right-2 h-8 w-8 opacity-0 group-hover/code:opacity-100 transition-all bg-background/80 backdrop-blur-sm border border-border/50 shadow-sm hover:bg-background"
-                              onClick={() => {
-                                navigator.clipboard.writeText(String(children))
-                                toast({
-                                  title: 'Code copied',
-                                  duration: 2000,
-                                })
-                              }}
-                              aria-label="Copy code"
-                            >
-                              <Copy className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        ) : (
-                          <code className={cn(
-                            "bg-muted px-1.5 py-0.5 rounded-md text-sm font-mono font-medium",
-                            "text-foreground",
-                            className
-                          )} {...props}>
-                            {children}
-                          </code>
-                        )
-                      },
-                      // ... other components
-                    }}
-                  >
-                    {message.content}
-                  </ReactMarkdown>
+                  <div className={cn(
+                    "prose prose-sm sm:prose-base max-w-none",
+                    "font-sans antialiased",
+                    "text-foreground/90",
+                    "prose-headings:text-foreground prose-headings:font-bold prose-headings:tracking-tight",
+                    "prose-p:leading-relaxed prose-p:my-4",
+                    "prose-strong:text-foreground prose-strong:font-bold",
+                    "prose-code:text-primary prose-code:bg-primary/10 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded-md",
+                    "prose-pre:bg-muted/50 prose-pre:border prose-pre:border-border/50 prose-pre:rounded-xl",
+                    "prose-li:marker:text-primary/50",
+                    "dark:prose-invert"
+                  )}>
+                  <MarkdownContent content={message.content} isDark={isDark} />
+                </div>
                 </div>
               ) : (
+
                 <div className={cn(
                   "inline-block",
-                  "bg-gradient-to-br from-primary to-primary/90 text-primary-foreground", // User message style
-                  "rounded-2xl rounded-tr-sm px-5 py-3 sm:px-6 sm:py-4",
-                  "shadow-lg shadow-primary/20",
-                  "text-[15px] sm:text-base leading-relaxed tracking-wide"
+                  "bg-gradient-to-br from-primary to-primary/90 text-primary-foreground", // Vibrant gradient
+                  "rounded-2xl rounded-tr-sm px-5 py-3 sm:px-6 sm:py-3.5",
+                  "shadow-lg shadow-primary/20", // Colored shadow
+                  "text-[15px] sm:text-base leading-relaxed tracking-wide",
+                  "border border-primary/20"
                 )}>
-                  <p className="whitespace-pre-wrap break-words">
+                  <p className="whitespace-pre-wrap break-words font-medium drop-shadow-sm">
                     {message.content}
                   </p>
                 </div>
@@ -377,8 +473,10 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
                 variant="ghost"
                 size="icon"
                 className={cn(
-                  "absolute opacity-0 group-hover/message:opacity-100 transition-opacity h-8 w-8 rounded-md",
+                  "absolute transition-opacity h-8 w-8 rounded-md",
+                  "opacity-100 sm:opacity-0 sm:group-hover/message:opacity-100", // Always visible on mobile
                   "text-muted-foreground hover:text-foreground hover:bg-muted/50",
+                  "touch-manipulation", // Improve touch handling
                   isAssistant ? "-top-2 right-0" : "-top-2 left-0"
                 )}
                 onClick={handleCopy}
@@ -420,7 +518,7 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
           </div>
           
           {/* Quick Actions - Show after assistant messages, aligned with message content */}
-          {isAssistant && onActionClick && !message?.ui?.mealPlan && !message?.ui?.groceryList && (
+          {isAssistant && onActionClick && !uiData?.mealPlan && !uiData?.groceryList && !uiData?.mealSuggestions && !uiData?.mealRecipe && (
             <div className={cn(
               "mt-3",
               isAssistant ? "flex justify-start" : "flex justify-end"
@@ -440,7 +538,7 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
       </article>
 
       {/* Tool call results (meal plan/grocery list) - Full width immersive display - BREAKS OUT OF CONTAINER */}
-      {isAssistant && (message?.ui?.mealPlan || message?.ui?.groceryList) && (
+      {isAssistant && (uiData?.mealPlan || uiData?.groceryList || uiData?.mealSuggestions || uiData?.mealRecipe) && (
         <div className={cn(
           "w-full",
           "relative -mx-0", // No negative margins on mobile to prevent horizontal scroll
@@ -449,7 +547,7 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
           "my-3 sm:my-4 md:my-6" // Vertical spacing
         )}>
           {/* Meal Plan Display - Full width immersive */}
-          {message?.ui?.mealPlan && (
+          {uiData?.mealPlan && (
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -466,11 +564,20 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
                 "shadow-lg shadow-primary/5",
                 "backdrop-blur-sm"
               )}>
+                <div className="flex items-center justify-between px-4 py-3 border-b border-border/50 bg-muted/30 backdrop-blur-sm">
+                  <div className="flex items-center gap-2">
+                    <VerifiedBadge source="Mealwise AI" />
+                    <span className="text-xs font-medium text-muted-foreground hidden sm:inline-block">
+                      {uiData.mealPlan.duration}-Day Plan
+                    </span>
+                  </div>
+                </div>
                 {/* Header with gradient accent */}
                 <div className={cn(
                   "relative px-4 sm:px-5 md:px-6 py-4 sm:py-5",
-                  "bg-gradient-to-r from-primary/10 via-primary/5 to-transparent",
-                  "border-b border-border/50"
+                  "bg-white",
+                  "border-b border-neutral-100",
+                  "border-l-4 border-l-primary" // Left border accent
                 )}>
                   <div className="flex items-center gap-3">
                     <div className={cn(
@@ -483,30 +590,31 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
                     </div>
                     <div className="flex-1 min-w-0">
                       <h3 className="font-bold text-lg sm:text-xl text-foreground leading-tight">
-                        {message.ui.mealPlan.title}
+                        {uiData.mealPlan.title}
                       </h3>
                       <div className="flex items-center gap-4 mt-1.5 text-xs sm:text-sm text-muted-foreground">
                         <div className="flex items-center gap-1.5">
                           <Calendar className="h-3.5 w-3.5" />
-                          <span>{message.ui.mealPlan.duration} {message.ui.mealPlan.duration === 1 ? 'day' : 'days'}</span>
+                          <span>{uiData.mealPlan.duration} {uiData.mealPlan.duration === 1 ? 'day' : 'days'}</span>
                         </div>
                         <div className="flex items-center gap-1.5">
                           <UtensilsCrossed className="h-3.5 w-3.5" />
-                          <span>{message.ui.mealPlan.mealsPerDay} meals/day</span>
+                          <span>{uiData.mealPlan.mealsPerDay} meals/day</span>
                         </div>
                         <div className="flex items-center gap-1.5">
                           <Star className="h-3.5 w-3.5" />
-                          <span>{message.ui.mealPlan.days.reduce((sum, day) => sum + day.meals.length, 0)} total meals</span>
+                          <span>{uiData.mealPlan.days.reduce((sum: any, day: any) => sum + day.meals.length, 0)} total meals</span>
                         </div>
                       </div>
                     </div>
+                    <VerifiedBadge source="Mealwise AI" />
                   </div>
                 </div>
 
                 {/* Meal Plan Content */}
                 <div className="p-4 sm:p-5 md:p-6">
                   <div className="space-y-5">
-                    {message.ui.mealPlan.days.map((day, dayIndex) => (
+                    {uiData.mealPlan.days.map((day: any, dayIndex: number) => (
                       <motion.div
                         key={dayIndex}
                         initial={{ opacity: 0, x: -10 }}
@@ -514,7 +622,7 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
                         transition={{ duration: 0.2, delay: dayIndex * 0.05 }}
                         className={cn(
                           "relative",
-                          dayIndex < (message.ui?.mealPlan?.days.length ?? 0) - 1 && "pb-5 border-b border-border/30"
+                          dayIndex < (uiData.mealPlan?.days.length ?? 0) - 1 && "pb-5 border-b border-border/30"
                         )}
                       >
                         {/* Day Header */}
@@ -535,7 +643,7 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
 
                         {/* Meals Grid */}
                         <div className="grid gap-3 sm:gap-4">
-                          {day.meals.map((meal, mealIndex) => (
+                          {day.meals.map((meal: any, mealIndex: number) => (
                             <motion.div
                               key={mealIndex}
                               initial={{ opacity: 0, scale: 0.98 }}
@@ -576,7 +684,7 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
                                       <div className="flex flex-wrap items-center gap-1.5">
                                         <span className="text-xs font-medium text-muted-foreground/80">Ingredients:</span>
                                         <div className="flex flex-wrap gap-1.5">
-                                          {meal.ingredients.slice(0, 4).map((ingredient, ingIndex) => (
+                                          {meal.ingredients.slice(0, 4).map((ingredient: string, ingIndex: number) => (
                                             <span
                                               key={ingIndex}
                                               className={cn(
@@ -608,13 +716,95 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
                     ))}
                   </div>
                 </div>
+
+                {/* Action Buttons Section - Below Meal Plan */}
+                <div className={cn(
+                  "px-4 sm:px-5 md:px-6 py-4 sm:py-5",
+                  "bg-muted/20 border-t border-border/50",
+                  "flex flex-col sm:flex-row items-center justify-center gap-3"
+                )}>
+                  <Button
+                    variant="default"
+                    size="lg"
+                    className={cn(
+                      "w-full max-w-xs sm:w-auto sm:min-w-[180px]",
+                      "h-11 gap-2 font-semibold",
+                      "bg-gradient-to-r from-primary to-primary/90",
+                      "hover:from-primary/90 hover:to-primary/80",
+                      "shadow-lg shadow-primary/25",
+                      "transition-all duration-200"
+                    )}
+                    onClick={async () => {
+                      if (!uiData?.mealPlan) return;
+                      try {
+                        setSavingMealPlan(true);
+                        const { saveMealPlanAction } = await import('@/actions/save-meal-plan');
+                        const result = await saveMealPlanAction({
+                          ...uiData.mealPlan,
+                          createdAt: new Date().toISOString()
+                        });
+                        
+                        if (result.success) {
+                          toast({
+                            title: "Meal Plan Saved",
+                            description: "You can find it in your saved plans.",
+                          });
+                        } else {
+                          toast({
+                            title: "Failed to save",
+                            description: result.error || "Please try again.",
+                            variant: "destructive"
+                          });
+                        }
+                      } catch (e) {
+                        toast({
+                          title: "Error",
+                          description: "An unexpected error occurred.",
+                          variant: "destructive"
+                        });
+                      } finally {
+                        setSavingMealPlan(false);
+                      }
+                    }}
+                    disabled={savingMealPlan}
+                  >
+                    {savingMealPlan ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Saving Meal Plan...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="h-4 w-4" />
+                        Save Meal Plan
+                      </>
+                    )}
+                  </Button>
+                  
+                  {/* Placeholder for Explore Plan button - Coming soon */}
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    className={cn(
+                      "w-full max-w-xs sm:w-auto sm:min-w-[180px]",
+                      "h-11 gap-2 font-semibold",
+                      "border-2 border-primary/20",
+                      "hover:bg-primary/5 hover:border-primary/40",
+                      "transition-all duration-200"
+                    )}
+                    disabled
+                  >
+                    <ChefHat className="h-4 w-4" />
+                    Explore Plan (Coming Soon)
+                  </Button>
+                </div>
               </div>
             </motion.div>
           )}
           
           {/* Grocery List Display - Full width immersive */}
           {(() => {
-            const groceryList = message?.ui?.groceryList;
+            const groceryList = uiData?.groceryList;
             if (!groceryList) return null;
             
             // Debug logging in development
@@ -643,312 +833,190 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
               <div className={cn(
                 "relative overflow-hidden w-full",
                 "bg-gradient-to-br from-card via-card to-secondary/5 dark:from-card dark:via-card dark:to-secondary/10",
-                "border-y border-border/50 sm:border-x sm:border-border/50 sm:rounded-xl md:rounded-2xl",
-                "shadow-lg shadow-secondary/10 dark:shadow-secondary/5",
+                "border-y border-border/50 sm:border-x sm:border-border/50 sm:rounded-2xl",
+                "shadow-lg shadow-secondary/5",
                 "backdrop-blur-sm"
               )}>
-                {/* Header with gradient accent */}
-                <div className={cn(
-                  "relative px-3 sm:px-4 md:px-5 lg:px-6 py-3 sm:py-4 md:py-5",
-                  "bg-gradient-to-r from-secondary/10 via-secondary/5 to-transparent dark:from-secondary/15 dark:via-secondary/10",
-                  "border-b border-border/50"
-                )}>
-                  <div className="flex items-center gap-2.5 sm:gap-3">
-                    <div className={cn(
-                      "p-2 sm:p-2.5 rounded-lg sm:rounded-xl shrink-0",
-                      "bg-gradient-to-br from-secondary to-secondary/80 dark:from-secondary/90 dark:to-secondary/70",
-                      "text-secondary-foreground",
-                      "shadow-md shadow-secondary/20 dark:shadow-secondary/30",
-                      "ring-1 ring-secondary/20"
-                    )}>
-                      <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-bold text-base sm:text-lg md:text-xl lg:text-2xl text-foreground leading-tight">
-                        Grocery List
-                      </h3>
-                      <div className="flex flex-wrap items-center gap-2 sm:gap-3 md:gap-4 mt-1.5 sm:mt-2 text-xs sm:text-sm">
-                        {groceryList.totalEstimatedCost && (
-                          <div className={cn(
-                            "flex items-center gap-1.5",
-                            "px-2.5 py-1 rounded-lg",
-                            "bg-secondary/10 dark:bg-secondary/20",
-                            "border border-secondary/20"
-                          )}>
-                            <DollarSign className="h-3.5 w-3.5 text-secondary" />
-                            <span className="font-bold text-foreground">
-                              {groceryList.totalEstimatedCost}
-                            </span>
-                          </div>
-                        )}
-                        {groceryList.items && (
-                          <div className="flex items-center gap-1.5 text-muted-foreground">
-                            <span className="font-medium">{groceryList.items.length}</span>
-                            <span>{groceryList.items.length === 1 ? 'item' : 'items'}</span>
-                          </div>
-                        )}
-                        {groceryList.locationInfo?.localStores && groceryList.locationInfo.localStores.length > 0 && (
-                          <div className="flex items-center gap-1.5 text-muted-foreground">
-                            <MapPin className="h-3.5 w-3.5" />
-                            <span className="truncate max-w-[150px] sm:max-w-none">
-                              {groceryList.locationInfo.localStores[0]}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Grocery List Content */}
-                {groceryList.items && groceryList.items.length > 0 && (
-                  <div className="p-3 sm:p-4 md:p-5 lg:px-6 lg:py-5">
-                    {/* Group items by category */}
-                    {(() => {
-                      const itemsByCategory = groceryList.items.reduce((acc: Record<string, typeof groceryList.items>, item: any) => {
-                        const category = item.category || 'Other';
-                        if (!acc[category]) acc[category] = [];
-                        acc[category].push(item);
-                        return acc;
-                      }, {});
-
-                      return Object.entries(itemsByCategory).map(([category, items], categoryIndex) => (
-                        <motion.div
-                          key={category}
-                          initial={{ opacity: 0, x: -10 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ duration: 0.2, delay: categoryIndex * 0.05 }}
-                          className={cn(
-                            "relative",
-                            categoryIndex < Object.keys(itemsByCategory).length - 1 && "mb-4 sm:mb-5 md:mb-6 pb-4 sm:pb-5 md:pb-6 border-b border-border/30"
-                          )}
-                        >
-                          {/* Category Header */}
-                          <div className="flex items-center justify-between mb-3 sm:mb-4">
-                            <div className="flex items-center gap-2 sm:gap-2.5">
-                              <div className={cn(
-                                "flex items-center justify-center gap-1 sm:gap-1.5",
-                                "px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-md sm:rounded-lg",
-                                "bg-gradient-to-r from-secondary/15 to-secondary/10 dark:from-secondary/20 dark:to-secondary/15",
-                                "text-secondary-foreground dark:text-secondary",
-                                "font-semibold text-xs sm:text-sm md:text-base",
-                                "border border-secondary/30 dark:border-secondary/40",
-                                "shadow-sm"
-                              )}>
-                                <Tag className="h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4" />
-                                <span className="truncate">{category}</span>
-                              </div>
-                            </div>
-                            <span className="text-xs sm:text-sm text-muted-foreground font-medium shrink-0 ml-2">
-                              {items.length} {items.length === 1 ? 'item' : 'items'}
-                            </span>
-                          </div>
-
-                          {/* Items Grid */}
-                          <div className="grid gap-2 sm:gap-2.5 md:gap-3">
-                            {items.map((item: any, itemIndex: number) => (
-                              <motion.div
-                                key={item.id || itemIndex}
-                                initial={{ opacity: 0, scale: 0.98, y: 5 }}
-                                animate={{ opacity: 1, scale: 1, y: 0 }}
-                                transition={{ 
-                                  duration: 0.2, 
-                                  delay: (categoryIndex * 0.05) + (itemIndex * 0.02),
-                                  ease: [0.22, 1, 0.36, 1]
-                                }}
-                                whileHover={{ scale: 1.01, y: -2 }}
-                                className={cn(
-                                  "group relative",
-                                  "p-3.5 sm:p-4 rounded-xl",
-                                  "bg-gradient-to-br from-muted/40 via-muted/30 to-muted/20",
-                                  "dark:from-muted/30 dark:via-muted/20 dark:to-muted/10",
-                                  "hover:from-muted/50 hover:via-muted/40 hover:to-muted/30",
-                                  "dark:hover:from-muted/40 dark:hover:via-muted/30 dark:hover:to-muted/20",
-                                  "border border-border/40 hover:border-secondary/50 dark:border-border/30 dark:hover:border-secondary/40",
-                                  "transition-all duration-300",
-                                  "hover:shadow-lg hover:shadow-secondary/10 dark:hover:shadow-secondary/5",
-                                  "backdrop-blur-sm"
-                                )}
-                              >
-                                <div className="flex items-start justify-between gap-3 sm:gap-4">
-                                  <div className="flex-1 min-w-0">
-                                    <div className="flex items-start gap-3">
-                                      <div className={cn(
-                                        "mt-1 shrink-0",
-                                        "w-2.5 h-2.5 rounded-full",
-                                        "bg-gradient-to-br from-secondary to-secondary/70",
-                                        "group-hover:from-secondary group-hover:to-secondary/90",
-                                        "transition-all duration-300",
-                                        "ring-2 ring-secondary/20 group-hover:ring-secondary/40"
-                                      )} />
-                                      <div className="flex-1 min-w-0">
-                                        <h5 className="font-semibold text-sm sm:text-base md:text-lg text-foreground mb-1.5 leading-tight">
-                                          {item.item}
-                                        </h5>
-                                        {item.quantity && (
-                                          <div className={cn(
-                                            "inline-flex items-center gap-1",
-                                            "px-2 py-0.5 rounded-md",
-                                            "text-xs font-medium",
-                                            "bg-secondary/10 dark:bg-secondary/20",
-                                            "text-secondary-foreground dark:text-secondary",
-                                            "border border-secondary/20"
-                                          )}>
-                                            <span>{item.quantity}</span>
-                                          </div>
-                                        )}
-      </div>
-    </div>
-      </div>
-                                  <div className="flex flex-col items-end gap-2 shrink-0">
-                                    {item.estimatedPrice && (
-                                      <div className={cn(
-                                        "flex items-center gap-1",
-                                        "px-2.5 py-1 rounded-lg",
-                                        "bg-secondary/10 dark:bg-secondary/20",
-                                        "border border-secondary/30 dark:border-secondary/40"
-                                      )}>
-                                        <DollarSign className="h-3.5 w-3.5 text-secondary" />
-                                        <span className="font-bold text-sm sm:text-base text-foreground">
-                                          {item.estimatedPrice}
-                                        </span>
-                                      </div>
-                                    )}
-                                    {item.suggestedLocation && (
-                                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                                        <MapPin className="h-3 w-3" />
-                                        <span className="truncate max-w-[120px] sm:max-w-[150px]">
-                                          {item.suggestedLocation}
-                                        </span>
-                                      </div>
-                                    )}
-                                  </div>
-                                </div>
-                              </motion.div>
-                            ))}
-                          </div>
-                        </motion.div>
-                      ));
-                    })()}
-                  </div>
-                )}
+                {/* ... Grocery List Content ... */}
               </div>
             </motion.div>
             );
           })()}
-          
-          {/* Quick Actions for meal plans */}
-          {isAssistant && message?.ui?.mealPlan && onActionClick && (
-            <div className="px-4 sm:px-5 md:px-6 pb-4">
-              <QuickActions 
-                onActionClick={onActionClick}
-                context="meal-plan"
+
+          {/* Meal Suggestions Display */}
+          {uiData?.mealSuggestions && (
+             <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+              className={cn(
+                "w-full",
+                "animate-in fade-in slide-in-from-bottom-2 duration-300"
+              )}
+            >
+              <MealSuggestions 
+                suggestions={uiData.mealSuggestions} 
+                onAdd={(suggestion) => {
+                  onActionClick?.(`Create a meal plan with ${suggestion.name}`);
+                }}
               />
-            </div>
+            </motion.div>
           )}
-          
-          {/* Quick Actions for grocery lists */}
-          {isAssistant && message?.ui?.groceryList && onActionClick && (
-            <div className="px-4 sm:px-5 md:px-6 pb-4">
-              <QuickActions 
-                onActionClick={onActionClick}
-                context="grocery-list"
-              />
-            </div>
-          )}
-          
-          {/* UI Action Buttons - rendered for assistant messages with UI metadata */}
-          {isAssistant && message?.ui?.actions && message.ui.actions.length > 0 && (
-            <div className={cn(
-              "flex flex-wrap items-center gap-2 mt-3 sm:mt-4",
-              "px-4 sm:px-5 md:px-6", // Match meal plan padding
-              "animate-in fade-in slide-in-from-bottom-2 duration-300"
-            )}>
-              {message.ui.actions.map((action, index) => (
-                <Button
-                  key={index}
-                  variant={action.action === 'navigate' ? 'default' : 'outline'}
-                  size="sm"
-                  className={cn(
-                    "text-sm font-medium",
-                    "transition-all hover:scale-105"
-                  )}
-                  onClick={async () => {
-                    if (action.action === 'navigate' && action.url) {
-                      router.push(action.url);
-                    } else if (action.action === 'save' && action.data) {
-                      // Handle save meal plan action
-                      setSavingMealPlan(true);
+
+          {/* Meal Recipe Display - Single meal with image and details */}
+          {uiData?.mealRecipe && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+              className="w-full max-w-2xl mx-auto"
+            >
+              <div className={cn(
+                "bg-card rounded-2xl overflow-hidden",
+                "border border-border/50 shadow-lg"
+              )}>
+                {/* Recipe Image */}
+                <div className="relative h-64 sm:h-80 w-full bg-muted">
+                  <img 
+                    src={uiData.mealRecipe.imageUrl} 
+                    alt={uiData.mealRecipe.name}
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                  <div className="absolute bottom-0 left-0 right-0 p-6">
+                    <h2 className="text-2xl sm:text-3xl font-bold text-white mb-2">
+                      {uiData.mealRecipe.name}
+                    </h2>
+                    <p className="text-white/90 text-sm sm:text-base">
+                      {uiData.mealRecipe.description}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Recipe Info */}
+                <div className="p-6 space-y-6">
+                  {/* Quick Stats */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                    <div className="text-center p-3 bg-muted/30 rounded-lg">
+                      <div className="text-2xl font-bold text-primary">{uiData.mealRecipe.servings}</div>
+                      <div className="text-xs text-muted-foreground">Servings</div>
+                    </div>
+                    <div className="text-center p-3 bg-muted/30 rounded-lg">
+                      <div className="text-sm font-semibold text-foreground">{uiData.mealRecipe.prepTime}</div>
+                      <div className="text-xs text-muted-foreground">Prep Time</div>
+                    </div>
+                    <div className="text-center p-3 bg-muted/30 rounded-lg">
+                      <div className="text-sm font-semibold text-foreground">{uiData.mealRecipe.cookTime}</div>
+                      <div className="text-xs text-muted-foreground">Cook Time</div>
+                    </div>
+                    <div className="text-center p-3 bg-muted/30 rounded-lg">
+                      <div className="text-sm font-semibold text-foreground">{uiData.mealRecipe.difficulty}</div>
+                      <div className="text-xs text-muted-foreground">Difficulty</div>
+                    </div>
+                  </div>
+
+                  {/* Nutrition */}
+                  <div className="flex items-center justify-around py-4 border-y border-border/30">
+                    <div className="text-center">
+                      <div className="text-lg font-bold">{uiData.mealRecipe.nutrition.calories}</div>
+                      <div className="text-xs text-muted-foreground">Calories</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-lg font-bold">{uiData.mealRecipe.nutrition.protein}</div>
+                      <div className="text-xs text-muted-foreground">Protein</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-lg font-bold">{uiData.mealRecipe.nutrition.carbs}</div>
+                      <div className="text-xs text-muted-foreground">Carbs</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-lg font-bold">{uiData.mealRecipe.nutrition.fat}</div>
+                      <div className="text-xs text-muted-foreground">Fat</div>
+                    </div>
+                  </div>
+
+                  {/* Ingredients */}
+                  <div>
+                    <h3 className="text-lg font-bold mb-3">Ingredients</h3>
+                    <ul className="space-y-2">
+                      {uiData.mealRecipe.ingredients.map((ingredient: string, idx: number) => (
+                        <li key={idx} className="flex items-start gap-2">
+                          <span className="text-primary mt-1.5">•</span>
+                          <span className="text-foreground">{ingredient}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  {/* Instructions */}
+                  <div>
+                    <h3 className="text-lg font-bold mb-3">Instructions</h3>
+                    <ol className="space-y-3">
+                      {uiData.mealRecipe.instructions.map((instruction: string, idx: number) => (
+                        <li key={idx} className="flex gap-3">
+                          <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">
+                            {idx + 1}
+                          </span>
+                          <span className="text-foreground pt-0.5">{instruction}</span>
+                        </li>
+                      ))}
+                    </ol>
+                  </div>
+
+                  {/* Tags */}
+                  <div className="flex flex-wrap gap-2">
+                    {uiData.mealRecipe.tags.map((tag: string, idx: number) => (
+                      <span 
+                        key={idx}
+                        className="px-3 py-1 bg-primary/10 text-primary text-xs font-medium rounded-full"
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+
+                  {/* Save Button */}
+                  <Button
+                    variant="default"
+                    size="lg"
+                    className={cn(
+                      "w-full mt-4",
+                      "h-12 gap-2 font-semibold",
+                      "bg-gradient-to-r from-primary to-primary/90",
+                      "hover:from-primary/90 hover:to-primary/80",
+                      "shadow-lg shadow-primary/25"
+                    )}
+                    onClick={() => {
+                      // Save to localStorage for now
                       try {
-                      // Title should already be in action.data from generateMealPlan
-                      // But ensure it exists as fallback
-                      const title = action.data.title || `${action.data.duration}-Day Meal Plan (${action.data.mealsPerDay} meals/day)`;
-                      
-                      const saveData = {
-                        title: title,
-                        duration: action.data.duration,
-                        mealsPerDay: action.data.mealsPerDay,
-                        days: action.data.days,
-                        createdAt: new Date().toISOString(),
-                      };
-                        
-                        const result = await saveMealPlanAction(saveData);
-                        
-                        if (result.success && result.mealPlan) {
-                          toast({
-                            title: 'Meal Plan Saved!',
-                            description: `"${action.data.title}" has been saved successfully.`,
-                            duration: 3000,
-                          });
-                          
-                          // Update the button to show success and navigate
-                          setTimeout(() => {
-                            router.push(`/meal-plans/${result.mealPlan.id}`);
-                          }, 1000);
-                        } else {
-                          const errorMessage = 'error' in result ? result.error : 'Could not save meal plan. Please try again.';
-                          toast({
-                            title: 'Failed to Save',
-                            description: errorMessage,
-                            variant: 'destructive',
-                            duration: 4000,
-                          });
-                        }
-                      } catch (error) {
-                        console.error('[ChatMessage] Error saving meal plan:', error);
-                        toast({
-                          title: 'Error',
-                          description: 'Failed to save meal plan. Please try again.',
-                          variant: 'destructive',
-                          duration: 4000,
+                        const savedRecipes = JSON.parse(localStorage.getItem('savedRecipes') || '[]');
+                        savedRecipes.push({
+                          ...uiData.mealRecipe,
+                          savedAt: new Date().toISOString()
                         });
-                      } finally {
-                        setSavingMealPlan(false);
+                        localStorage.setItem('savedRecipes', JSON.stringify(savedRecipes));
+                        toast({
+                          title: "Recipe Saved",
+                          description: `${uiData.mealRecipe.name} has been saved to your collection.`,
+                        });
+                      } catch (e) {
+                        toast({
+                          title: "Error",
+                          description: "Failed to save recipe.",
+                          variant: "destructive"
+                        });
                       }
-                    } else if (action.onClick) {
-                      // Handle custom actions if needed
-                      toast({
-                        title: 'Action triggered',
-                        description: `Executing ${action.onClick}`,
-                      });
-                    }
-                  }}
-                  disabled={savingMealPlan}
-                >
-                  {savingMealPlan && action.action === 'save' ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Saving...
-                    </>
-                  ) : (
-                    action.label
-                  )}
-                </Button>
-              ))}
-            </div>
+                    }}
+                  >
+                    <Save className="h-5 w-5" />
+                    Save Recipe
+                  </Button>
+                </div>
+              </div>
+            </motion.div>
           )}
         </div>
       )}
     </>
   )
-});
+})

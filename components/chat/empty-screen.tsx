@@ -1,33 +1,45 @@
 'use client';
 
-import { ArrowRight, LogIn, Wand2, ChefHat, UtensilsCrossed, BookOpen } from 'lucide-react';
+import { ArrowRight, LogIn, Wand2, ChefHat, UtensilsCrossed, BookOpen, Coffee, Pizza, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { useState, useEffect } from 'react';
 
 interface EmptyScreenProps {
   onExampleClick: (example: string) => void;
   requireAuth?: boolean;
 }
 
-const exampleMessages = [
+const iconMap = {
+  ChefHat,
+  UtensilsCrossed,
+  BookOpen,
+  Coffee,
+  Pizza,
+};
+
+interface Suggestion {
+  heading: string;
+  message: string;
+  iconName: keyof typeof iconMap;
+}
+
+const defaultSuggestions: Suggestion[] = [
   {
     heading: 'Quick Meal Plan',
     message: 'Generate a quick 1-day meal plan',
-    icon: ChefHat,
-    gradient: 'from-orange-500/10 to-red-500/10',
+    iconName: 'ChefHat',
   },
   {
     heading: 'Kenyan Dishes',
     message: 'Show me some Kenyan dishes',
-    icon: BookOpen,
-    gradient: 'from-blue-500/10 to-purple-500/10',
+    iconName: 'BookOpen',
   },
   {
     heading: '15-Minute Meals',
     message: 'Show me 15-minute meal ideas',
-    icon: UtensilsCrossed,
-    gradient: 'from-green-500/10 to-emerald-500/10',
+    iconName: 'UtensilsCrossed',
   },
 ];
 
@@ -55,6 +67,34 @@ const itemVariants = {
 };
 
 export function EmptyScreen({ onExampleClick, requireAuth = false }: EmptyScreenProps) {
+  const [suggestions, setSuggestions] = useState<Suggestion[]>(defaultSuggestions);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const fetchSuggestions = async () => {
+    setIsLoading(true);
+    try {
+      const response = await fetch('/api/suggestions', {
+        method: 'POST',
+        body: JSON.stringify({ context: '' }),
+      });
+      if (response.ok) {
+        const data = await response.json();
+        if (data.suggestions && Array.isArray(data.suggestions)) {
+          setSuggestions(data.suggestions);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch suggestions:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!requireAuth) {
+      fetchSuggestions();
+    }
+  }, [requireAuth]);
   if (requireAuth) {
     return (
       <motion.div
@@ -172,6 +212,23 @@ export function EmptyScreen({ onExampleClick, requireAuth = false }: EmptyScreen
           </p>
         </motion.div>
 
+        {/* Refresh Button */}
+        <motion.div 
+          variants={itemVariants}
+          className="flex justify-center mb-8"
+        >
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={fetchSuggestions}
+            disabled={isLoading}
+            className="text-muted-foreground hover:text-primary"
+          >
+            <RefreshCw className={cn("h-4 w-4 mr-2", isLoading && "animate-spin")} />
+            Refresh Ideas
+          </Button>
+        </motion.div>
+
         {/* Example Messages */}
         <motion.div
           variants={containerVariants}
@@ -179,8 +236,15 @@ export function EmptyScreen({ onExampleClick, requireAuth = false }: EmptyScreen
           role="group"
           aria-label="Example conversation starters"
         >
-          {exampleMessages.map((example, index) => {
-            const Icon = example.icon;
+          {suggestions.map((example, index) => {
+            const Icon = iconMap[example.iconName] || Coffee;
+            const gradients = [
+              'from-orange-500/10 to-red-500/10',
+              'from-blue-500/10 to-purple-500/10',
+              'from-green-500/10 to-emerald-500/10',
+            ];
+            const gradient = gradients[index % gradients.length];
+
             return (
               <motion.div
                 key={example.heading}
@@ -208,7 +272,7 @@ export function EmptyScreen({ onExampleClick, requireAuth = false }: EmptyScreen
                   <div className={cn(
                     "absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500",
                     "bg-gradient-to-br",
-                    example.gradient
+                    gradient
                   )} />
                   
                   <div className="relative z-10 flex items-center justify-center w-12 h-12 rounded-xl bg-background/80 shadow-sm border border-border/50 group-hover:scale-110 transition-transform duration-300">

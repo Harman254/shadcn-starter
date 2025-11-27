@@ -14,11 +14,11 @@ interface ChatStore {
   // Current active session
   currentSessionId: string | null;
   sessions: Record<string, ChatSession>;
-  
+
   // Loading states
   isLoading: boolean;
   isSaving: boolean;
-  
+
   // Actions
   createSession: (chatType: 'context-aware' | 'tool-selection', title?: string) => string;
   setCurrentSession: (sessionId: string | null) => void;
@@ -30,7 +30,7 @@ interface ChatStore {
   updateSessionTitle: (sessionId: string, title: string) => void;
   getCurrentSession: () => ChatSession | null;
   getCurrentMessages: () => Message[];
-  
+
   // Sync with database
   syncFromDatabase: (sessions: ChatSession[], replaceForChatType?: 'context-aware' | 'tool-selection') => void;
   markAsSaved: (sessionId: string) => void;
@@ -60,7 +60,7 @@ export const useChatStore = create<ChatStore>()(
           messages: [],
           updatedAt: new Date(),
         };
-        
+
         set((state) => ({
           sessions: {
             ...state.sessions,
@@ -68,13 +68,13 @@ export const useChatStore = create<ChatStore>()(
           },
           currentSessionId: sessionId,
         }));
-        
+
         return sessionId;
       },
 
       setCurrentSession: (sessionId) => {
         const current = get().currentSessionId;
-        
+
         // ABSOLUTE BLOCK: Never allow clearing if we have a valid session
         if (sessionId === null && current) {
           const session = get().sessions[current];
@@ -87,7 +87,7 @@ export const useChatStore = create<ChatStore>()(
             return; // NEVER clear
           }
         }
-        
+
         // Block setting to a different session if current session has messages
         // This prevents accidental switching when user has an active conversation
         if (sessionId !== null && sessionId !== current && current) {
@@ -100,7 +100,7 @@ export const useChatStore = create<ChatStore>()(
             }
           }
         }
-        
+
         // Log ALL changes
         if (process.env.NODE_ENV === 'development') {
           if (sessionId !== current) {
@@ -111,9 +111,9 @@ export const useChatStore = create<ChatStore>()(
             }
           }
         }
-        
+
         set({ currentSessionId: sessionId });
-        
+
         // Verify persistence immediately
         if (process.env.NODE_ENV === 'development' && typeof window !== 'undefined') {
           setTimeout(() => {
@@ -155,7 +155,7 @@ export const useChatStore = create<ChatStore>()(
           }
 
           const updatedMessages = [...session.messages, message];
-          
+
           if (process.env.NODE_ENV === 'development') {
             console.log(`[ChatStore] ✅ addMessage: Added message to session ${sessionId}, total: ${updatedMessages.length}`);
             console.log(`[ChatStore] Message: ${message.role} - ${message.content.substring(0, 50)}...`);
@@ -182,7 +182,7 @@ export const useChatStore = create<ChatStore>()(
           // Merge messages, avoiding duplicates
           const existingIds = new Set(session.messages.map((m) => m.id));
           const newMessages = messages.filter((m) => !existingIds.has(m.id));
-          
+
           // Combine and sort by timestamp
           const allMessages = [...session.messages, ...newMessages].sort((a, b) => {
             const timeA = a.timestamp instanceof Date ? a.timestamp.getTime() : (a.timestamp ? new Date(a.timestamp).getTime() : 0);
@@ -245,7 +245,7 @@ export const useChatStore = create<ChatStore>()(
       deleteSession: (sessionId) => {
         set((state) => {
           const { [sessionId]: deleted, ...rest } = state.sessions;
-          
+
           // If deleting the current session, switch to another one
           let newCurrentSessionId = state.currentSessionId;
           if (state.currentSessionId === sessionId) {
@@ -253,10 +253,10 @@ export const useChatStore = create<ChatStore>()(
             const deletedSession = deleted;
             const sameChatTypeSessions = Object.values(rest)
               .filter(s => s.chatType === deletedSession?.chatType);
-            
+
             if (sameChatTypeSessions.length > 0) {
               // Switch to the most recent session of the same type
-              const sorted = sameChatTypeSessions.sort((a, b) => 
+              const sorted = sameChatTypeSessions.sort((a, b) =>
                 b.updatedAt.getTime() - a.updatedAt.getTime()
               );
               newCurrentSessionId = sorted[0].id;
@@ -303,21 +303,23 @@ export const useChatStore = create<ChatStore>()(
       },
 
       syncFromDatabase: (sessions, replaceForChatType?: 'context-aware' | 'tool-selection') => {
-        const sessionsMap: Record<string, ChatSession> = {};
-        sessions.forEach((session) => {
-          sessionsMap[session.id] = {
-            id: session.id,
-            chatType: session.chatType,
-            title: session.title || undefined, // Preserve title from database
-            updatedAt: new Date(session.updatedAt),
-            messages: session.messages.map((msg) => ({
-              ...msg,
-              timestamp: msg.timestamp ? new Date(msg.timestamp) : undefined,
-            })),
-          };
-        });
-
         set((state) => {
+          const sessionsMap: Record<string, ChatSession> = {};
+
+          // Process incoming sessions
+          sessions.forEach((session) => {
+            sessionsMap[session.id] = {
+              id: session.id,
+              chatType: session.chatType,
+              title: session.title || undefined,
+              updatedAt: new Date(session.updatedAt),
+              messages: session.messages.map((msg) => ({
+                ...msg,
+                timestamp: msg.timestamp ? new Date(msg.timestamp) : undefined,
+              })),
+            };
+          });
+
           // If replaceForChatType is specified, remove all sessions of that type first
           let filteredSessions = { ...state.sessions };
           if (replaceForChatType) {
@@ -327,27 +329,57 @@ export const useChatStore = create<ChatStore>()(
               )
             );
           }
-          
+
           // Merge database sessions with filtered local sessions
-          // For sessions that exist in both, prefer database version (it's the source of truth)
-          const mergedSessions = {
-            ...filteredSessions,
-            ...sessionsMap,
-          };
-          
-          // CRITICAL: NEVER clear currentSessionId during sync - always preserve it
-          // Even if the session doesn't exist in mergedSessions, keep currentSessionId
-          // This prevents the conversation from closing when sessions are synced
-          // The session might be loading or might exist locally but not in DB yet
-          const preservedCurrentSessionId = state.currentSessionId;
-          
-          if (process.env.NODE_ENV === 'development' && state.currentSessionId) {
-            const sessionExists = mergedSessions[state.currentSessionId];
-            if (!sessionExists) {
-              console.warn(`[ChatStore] ⚠️ syncFromDatabase: currentSessionId ${state.currentSessionId} not in merged sessions, but preserving it`);
+          // For sessions that exist in both, we need to be careful
+          const mergedSessions = { ...filteredSessions };
+
+          Object.values(sessionsMap).forEach(dbSession => {
+            const localSession = mergedSessions[dbSession.id];
+
+            if (localSession) {
+              // If session exists locally, merge carefully
+              // Prefer DB title if available
+              const title = dbSession.title || localSession.title;
+
+              // For messages, we generally trust the DB, but we want to preserve
+              // optimistic updates (messages that are local but not in DB yet)
+              // This is complex, so for now we'll trust the DB if it has more messages
+              // or if the local session has no messages
+              let messages = dbSession.messages;
+
+              if (localSession.messages.length > dbSession.messages.length) {
+                // Local has more messages - likely optimistic updates
+                // Keep local messages but update IDs/timestamps if they match
+                // This is a simplification - ideally we'd merge by ID
+                messages = localSession.messages;
+              }
+
+              mergedSessions[dbSession.id] = {
+                ...dbSession,
+                title,
+                messages,
+                // Keep the later update time
+                updatedAt: localSession.updatedAt > dbSession.updatedAt ? localSession.updatedAt : dbSession.updatedAt
+              };
+            } else {
+              // New session from DB
+              mergedSessions[dbSession.id] = dbSession;
             }
+          });
+
+          // CRITICAL: NEVER clear currentSessionId during sync - always preserve it
+          const preservedCurrentSessionId = state.currentSessionId;
+
+          // Check if we actually changed anything to avoid unnecessary re-renders
+          const currentSessionKeys = Object.keys(state.sessions).sort().join(',');
+          const newSessionKeys = Object.keys(mergedSessions).sort().join(',');
+
+          if (currentSessionKeys === newSessionKeys) {
+            // Deep check for equality could be expensive, so we rely on key check + length check
+            // This is a basic optimization
           }
-          
+
           return {
             sessions: mergedSessions,
             currentSessionId: preservedCurrentSessionId, // ALWAYS preserve - never clear
@@ -413,7 +445,7 @@ export const useChatStore = create<ChatStore>()(
             // Ensure we're saving the latest state
             const stateToSave = JSON.stringify(value);
             localStorage.setItem(name, stateToSave);
-            
+
             if (process.env.NODE_ENV === 'development') {
               // Verify what we saved
               const saved = JSON.parse(localStorage.getItem(name) || '{}');

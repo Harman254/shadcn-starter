@@ -1,56 +1,56 @@
 export interface OnboardingData {
-    dietaryPreference: string;
-    goal: string;
-    householdSize: number;
-    cuisinePreferences: string[];
-  }
-  export type MealPlanStats = {
-    totalPlanCalories: number
-    avgCaloriesPerDay: number
-  }
-  
-  
-  export type OnboardingStep = 'dietary' | 'goals' | 'household' | 'cuisine';
+  dietaryPreference: string;
+  goal: string;
+  householdSize: number;
+  cuisinePreferences: string[];
+}
+export type MealPlanStats = {
+  totalPlanCalories: number
+  avgCaloriesPerDay: number
+}
 
 
-  export type MealType = "breakfast" | "lunch" | "dinner" | "snack";
+export type OnboardingStep = 'dietary' | 'goals' | 'household' | 'cuisine';
 
-  export type MealPlan = {
-    id: string;
-    userId: string;
-    title: string;
-    duration: number;
-    mealsPerDay: number;
-    createdAt: Date;
-  };
-  
-  export type DayMeal = {
-    id: string;
+
+export type MealType = "breakfast" | "lunch" | "dinner" | "snack";
+
+export type MealPlan = {
+  id: string;
+  userId: string;
+  title: string;
+  duration: number;
+  mealsPerDay: number;
+  createdAt: Date;
+};
+
+export type DayMeal = {
+  id: string;
+  date: Date;
+  mealPlanId: string;
+  mealPlan: MealPlan;
+};
+export type Meal = {
+  id: string;
+  type: MealType;
+  name: string;
+  description: string;
+  ingredients: string[];
+  calories: number;
+  dayMealId: string;
+  dayMeal: DayMeal;
+};
+export type FullMealPlanWithDays = {
+  days: {
     date: Date;
-    mealPlanId: string;
-    mealPlan: MealPlan;
-  };
-  export type Meal = {
-    id: string;
-    type: MealType;
-    name: string;
-    description: string;
-    ingredients: string[];
-    calories: number;
-    dayMealId: string;
-    dayMeal: DayMeal;
-  };
-  export type FullMealPlanWithDays = {
-    days: {
-      date: Date;
-      meals: {
-        name: string;
-        ingredients: string[];
-        description: string;
-      }[];
+    meals: {
+      name: string;
+      ingredients: string[];
+      description: string;
     }[];
-  };
-  
+  }[];
+};
+
 
 export interface UserPreference {
   id: number;
@@ -85,20 +85,31 @@ export type MessageUIAction = {
   data?: Record<string, any>; // Additional data for the action
 };
 
+// Tool invocation structure from Vercel AI SDK
+// Tool invocation structure from Vercel AI SDK
+export type ToolInvocation =
+  | { state: 'partial-call'; toolCallId: string; toolName: string; args: any }
+  | { state: 'call'; toolCallId: string; toolName: string; args: any }
+  | { state: 'result'; toolCallId: string; toolName: string; args: any; result: any };
+
 export type Message = {
   id: string;
-  role: 'user' | 'assistant';
+  role: 'user' | 'assistant' | 'system' | 'data';
   content: string;
-  timestamp?: Date;
+  timestamp?: Date; // Kept for backward compatibility
+  createdAt?: Date; // Vercel AI SDK uses createdAt
   // Message status for user messages (sending, sent, failed)
   status?: MessageStatus;
   // Tool call support for assistant messages
   tool_calls?: ToolCall[]; // Assistant can call tools
   tool_call_id?: string; // User message can be a tool result
+  // Vercel AI SDK tool invocations
+  toolInvocations?: ToolInvocation[];
   // UI metadata for rendering buttons/actions
   ui?: {
     actions?: MessageUIAction[];
     mealPlan?: {
+      id?: string; // Added id
       title: string;
       duration: number;
       mealsPerDay: number;
@@ -114,6 +125,7 @@ export type Message = {
       }>;
     };
     groceryList?: {
+      id?: string; // Added id
       items?: Array<{
         id: string;
         item: string;
@@ -128,6 +140,33 @@ export type Message = {
       };
       totalEstimatedCost?: string;
     };
+    mealSuggestions?: Array<{
+      name: string;
+      calories: number;
+      protein: number;
+      tags: string[];
+      image?: string;
+      description?: string;
+    }>;
+    mealRecipe?: {
+      name: string;
+      description: string;
+      servings: number;
+      prepTime: string;
+      cookTime: string;
+      difficulty: string;
+      cuisine: string;
+      imageUrl: string;
+      ingredients: string[];
+      instructions: string[];
+      nutrition: {
+        calories: number;
+        protein: string;
+        carbs: string;
+        fat: string;
+      };
+      tags: string[];
+    };
   };
 };
 
@@ -137,4 +176,4 @@ export type Message = {
 
 
 
-  // 1Lj8dVPG3L5eqlD2
+// 1Lj8dVPG3L5eqlD2

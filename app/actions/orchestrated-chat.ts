@@ -65,10 +65,12 @@ export async function processOrchestratedChat(
     }
 
     // Convert messages to conversation history format
-    const conversationHistory = input.conversationHistory.map(msg => ({
-      role: msg.role,
-      content: msg.content,
-    }));
+    const conversationHistory = input.conversationHistory
+      .filter(msg => msg.role === 'user' || msg.role === 'assistant')
+      .map(msg => ({
+        role: msg.role as 'user' | 'assistant',
+        content: msg.content,
+      }));
 
     // Process with orchestrated chat flow
     const chatFlow = getOrchestratedChatFlow();
@@ -84,7 +86,7 @@ export async function processOrchestratedChat(
     return result;
   } catch (error) {
     console.error('[OrchestratedChat] Error:', error);
-    
+
     return {
       response: 'I encountered an error processing your request. Please try again.',
       confidence: 'low',

@@ -2,8 +2,32 @@
 
 import { useState, useEffect } from 'react';
 import { Menu, Wand2 } from 'lucide-react';
-import { ChatPanel } from '@/components/chat/chat-panel';
-import { ChatHistoryClient } from '@/components/chat/chat-history-client';
+import dynamic from 'next/dynamic';
+import { Skeleton } from '@/components/ui/skeleton';
+
+// Lazy load heavy components
+const ChatPanel = dynamic(() => import('@/components/chat/chat-panel').then(mod => mod.ChatPanel), {
+  loading: () => (
+    <div className="flex-1 flex items-center justify-center h-full">
+      <div className="flex flex-col items-center gap-4">
+        <div className="h-8 w-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+        <p className="text-sm text-muted-foreground animate-pulse">Loading chat...</p>
+      </div>
+    </div>
+  ),
+  ssr: false // Chat relies heavily on client state
+});
+
+const ChatHistoryClient = dynamic(() => import('@/components/chat/chat-history-client').then(mod => mod.ChatHistoryClient), {
+  loading: () => (
+    <div className="p-4 space-y-4">
+      {[1, 2, 3, 4, 5].map((i) => (
+        <Skeleton key={i} className="h-16 w-full rounded-xl bg-muted/50" />
+      ))}
+    </div>
+  ),
+  ssr: false
+});
 import { Tabs, TabsContent } from '@/components/ui/tabs';
 import { Card } from '@/components/ui/card';
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
@@ -29,7 +53,7 @@ export function ChatPageClient({ preferences = [], preferencesSummary = '' }: Ch
 
   return (
     <div className={cn(
-      "min-h-screen w-full",
+      "h-[100dvh] w-full",
       "bg-gradient-to-br from-background via-background to-primary/5",
       "dark:from-background dark:via-background dark:to-primary/10",
       "flex items-center justify-center",
@@ -39,8 +63,9 @@ export function ChatPageClient({ preferences = [], preferencesSummary = '' }: Ch
     )}>
       {/* Animated background elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/5 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-secondary/5 rounded-full blur-3xl animate-pulse delay-1000" />
+        <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-primary/20 rounded-full blur-[100px] animate-pulse" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-secondary/20 rounded-full blur-[100px] animate-pulse delay-1000" />
+        <div className="absolute top-[40%] left-[60%] w-[300px] h-[300px] bg-accent/10 rounded-full blur-[80px] animate-pulse delay-2000" />
       </div>
 
       <div className={cn(
@@ -62,10 +87,10 @@ export function ChatPageClient({ preferences = [], preferencesSummary = '' }: Ch
         >
           <Card className={cn(
             "h-full flex flex-col",
-            "bg-card/95 dark:bg-card/90",
-            "backdrop-blur-xl backdrop-saturate-150",
-            "border border-border/60",
-            "shadow-xl shadow-black/5 dark:shadow-black/20",
+            "bg-card/80 dark:bg-card/80", // More transparent
+            "backdrop-blur-2xl backdrop-saturate-200", // Stronger blur and saturation
+            "border border-white/20 dark:border-white/10", // Lighter border for glass effect
+            "shadow-2xl shadow-black/10 dark:shadow-black/40",
             "rounded-2xl sm:rounded-3xl",
             "overflow-hidden",
             "transition-all duration-300"
@@ -83,10 +108,10 @@ export function ChatPageClient({ preferences = [], preferencesSummary = '' }: Ch
           transition={{ duration: 0.4, ease: "easeOut" }}
           className={cn(
             "flex-1 flex flex-col h-full",
-            "bg-background/95 dark:bg-background/90",
-            "backdrop-blur-xl backdrop-saturate-150",
-            "border border-border/60",
-            "shadow-xl shadow-black/5 dark:shadow-black/20",
+            "bg-background/60 dark:bg-background/60", // More transparent
+            "backdrop-blur-2xl backdrop-saturate-200", // Stronger blur
+            "border border-white/20 dark:border-white/10",
+            "shadow-2xl shadow-black/10 dark:shadow-black/40",
             "rounded-none sm:rounded-2xl md:rounded-3xl",
             "overflow-hidden",
             "transition-all duration-300",
