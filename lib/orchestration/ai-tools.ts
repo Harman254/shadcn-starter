@@ -534,10 +534,199 @@ IMPORTANT RULES:
     },
 });
 
+// ============================================================================
+// MODIFY MEAL PLAN TOOL
+// ============================================================================
+
+export const modifyMealPlan = tool({
+    description: 'Modify a specific meal in an existing meal plan. Use this when user wants to swap, change, or replace a meal (e.g., "Change Tuesday dinner to tacos", "Swap lunch on day 3").',
+    parameters: z.object({
+        mealPlanId: z.string().describe('The ID of the meal plan to modify.'),
+        day: z.number().describe('The day number to modify (1-based index).'),
+        mealIndex: z.number().optional().describe('The index of the meal to modify (0-based). If not provided, AI will infer from context or modify the first matching meal type.'),
+        newMealDescription: z.string().describe('Description of what the new meal should be (e.g., "Tacos", "Vegetarian Pasta").'),
+    }),
+    execute: async ({ mealPlanId, day, mealIndex, newMealDescription }) => {
+        try {
+            console.log(`[modifyMealPlan] 🔄 Modifying plan ${mealPlanId}, Day ${day}, Request: "${newMealDescription}"`);
+
+            const prisma = (await import('@/lib/prisma')).default;
+
+            // 1. Fetch existing plan
+            const existingPlan = await prisma.mealPlan.findUnique({
+                where: { id: mealPlanId },
+                include: { days: { include: { meals: true } } }
+            });
+
+            if (!existingPlan) {
+                return { success: false, error: 'MEAL_PLAN_NOT_FOUND', message: "Couldn't find that meal plan." };
+            }
+
+            // 2. Validate Day (using 1-based index)
+            const dayIndex = day - 1; // Convert to 0-based index
+            const targetDay = existingPlan.days[dayIndex];
+            if (!targetDay) {
+                return { success: false, error: 'INVALID_DAY', message: `Day ${day} not found in this meal plan. Plan has ${existingPlan.days.length} days.` };
+            }
+
+            // 3. Identify Target Meal
+            // If mealIndex is provided, use it. Otherwise, default to 0 (first meal) or try to find a match if we had meal types.
+            // For now, we'll assume the user/AI logic provides a valid index or we default to the last meal if index is out of bounds, 
+            // but strictly speaking we should try to match "dinner" to the dinner slot.
+            // Since our current data structure is just a list of meals, we rely on the AI to pass the correct index.
+            const targetIndex = mealIndex !== undefined && mealIndex >= 0 && mealIndex < targetDay.meals.length
+                ? mealIndex
+                : 0; // Default to first meal if unspecified/invalid
+
+            const oldMeal = targetDay.meals[targetIndex];
+            if (!oldMeal) {
+                return { success: false, error: 'INVALID_MEAL_INDEX', message: `Meal index ${targetIndex} not found on day ${day}.` };
+            }
+
+            // 4. Generate Replacement Meal
+            const { generateObject } = await import('ai');
+            const { google } = await import('@ai-sdk/google');
+            const { z } = await import('zod');
+
+            const result = await generateObject({
+                model: google('gemini-2.0-flash-exp'),
+                temperature: 0.7,
+                schema: z.object({
+                    name: z.string(),
+                    description: z.string(),
+                    ingredients: z.array(z.string()),
+                    instructions: z.string(),
+                }),
+                prompt: `Generate a single meal replacement.
+                
+Target: Day ${day} of a meal plan.
+Request: "${newMealDescription}"
+Old Meal Context: Was "${oldMeal.name}".
+
+Return a valid JSON object for the new meal.`,
+            });
+
+            if (!result.object) {
+                throw new Error('Failed to generate replacement meal');
+            }
+
+            const newMealData = result.object;
+
+            // 5. Update Database
+            // We need to update the specific Meal record.
+            await prisma.meal.update({
+                where: { id: oldMeal.id },
+                data: {
+                    name: newMealData.name,
+                    description: newMealData.description,
+                    ingredients: newMealData.ingredients,
+                    instructions: newMealData.instructions,
+                }
+            });
+
+            // 6. Return Updated Plan Context
+            // Re-fetch to get the clean state
+            const updatedPlan = await prisma.mealPlan.findUnique({
+                where: { id: mealPlanId },
+                include: { days: { include: { meals: true } } }
+            });
+
+            // Create UI metadata for the updated plan
+            const uiMetadata = {
+                mealPlan: updatedPlan, // Send full updated plan to refresh UI
+                toast: `Updated Day ${day}: ${newMealData.name}`
+            };
+            const uiMetadataEncoded = Buffer.from(JSON.stringify(uiMetadata)).toString('base64');
+
+            return {
+                success: true,
+                message: `✅ Updated Day ${day} to "${newMealData.name}". [UI_METADATA:${uiMetadataEncoded}]`,
+                updatedMeal: newMealData
+            };
+
+        } catch (error) {
+            console.error('[modifyMealPlan] Error:', error);
+            return {
+                success: false,
+                error: 'MODIFICATION_FAILED',
+                message: "Failed to modify the meal plan. Please try again.",
+            };
+        }
+    },
+});
+
+// ============================================================================
+// SEARCH RECIPES TOOL
+// ============================================================================
+
+export const searchRecipes = tool({
+    description: 'Search for recipes based on a query. Use this when user asks to "find", "search", or "suggest" recipes without asking for a full meal plan (e.g., "Find me a spicy chicken pasta recipe", "Vegan breakfast ideas").',
+    parameters: z.object({
+        query: z.string().describe('The search query or description of the recipe(s) to find.'),
+        count: z.number().min(1).max(5).default(3).describe('Number of recipes to return (default 3).'),
+    }),
+    execute: async ({ query, count }) => {
+        try {
+            console.log(`[searchRecipes] 🔍 Searching for "${query}" (Limit: ${count})`);
+
+            const { generateObject } = await import('ai');
+            const { google } = await import('@ai-sdk/google');
+            const { z } = await import('zod');
+
+            const result = await generateObject({
+                model: google('gemini-2.0-flash-exp'),
+                temperature: 0.7,
+                schema: z.object({
+                    recipes: z.array(z.object({
+                        name: z.string(),
+                        description: z.string(),
+                        prepTime: z.string(),
+                        calories: z.number().optional(),
+                        tags: z.array(z.string()),
+                    }))
+                }),
+                prompt: `Generate ${count} distinct recipe options for: "${query}".
+                
+Return valid JSON with a list of recipes.
+Keep descriptions concise (1 sentence).`,
+            });
+
+            if (!result.object?.recipes) {
+                throw new Error('Failed to generate recipes');
+            }
+
+            const recipes = result.object.recipes;
+
+            // Create UI metadata
+            const uiMetadata = {
+                recipeResults: recipes,
+                query: query
+            };
+            const uiMetadataEncoded = Buffer.from(JSON.stringify(uiMetadata)).toString('base64');
+
+            return {
+                success: true,
+                message: `✅ Found ${recipes.length} recipes for "${query}". [UI_METADATA:${uiMetadataEncoded}]`,
+                recipes: recipes
+            };
+
+        } catch (error) {
+            console.error('[searchRecipes] Error:', error);
+            return {
+                success: false,
+                error: 'SEARCH_FAILED',
+                message: "I couldn't find any recipes matching that description. Please try a different search.",
+            };
+        }
+    },
+});
+
 export const tools = {
     generateMealPlan,
     analyzeNutrition,
     getGroceryPricing,
     generateGroceryList,
     generateMealRecipe,
+    modifyMealPlan,
+    searchRecipes,
 };

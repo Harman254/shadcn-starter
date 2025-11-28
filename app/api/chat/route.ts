@@ -379,10 +379,23 @@ IF "nutrition" OR "calories" OR "macros" →
    YES → CALL: analyzeNutrition(mealPlanId)
    NO → ASK: "Which meal plan would you like me to analyze?"
 
-IF "save this plan" OR "keep this" →
-   CHECK: Is there meal plan data in context?
-   YES → CALL: saveMealPlan(mealPlan)
    NO → RESPOND: "I don't see a meal plan to save. Would you like to create one?"
+
+IF "change/swap/replace [MEAL] on [DAY]" OR "I don't like [MEAL]" →
+   CHECK: Is mealPlanId available?
+   YES → CALL: modifyMealPlan(
+     mealPlanId: context.mealPlanId,
+     day: user-specified day number (infer from "Tuesday" -> 2 if plan starts Monday),
+     mealIndex: infer from "dinner" -> 2, "lunch" -> 1, etc.,
+     newMealDescription: user's request (e.g., "tacos", "something vegetarian")
+   )
+   NO → RESPOND: "I need to know which meal plan you're referring to. Can you create one first?"
+
+IF "find/search/suggest recipe for [DISH]" OR "how do I make [DISH]" (without asking for a plan) →
+   CALL: searchRecipes(
+     query: user's request (e.g., "spicy chicken pasta", "vegan breakfast"),
+     count: 3
+   )
 
 IF "meal ideas" OR "suggestions" OR "what should I eat" →
    CALL: getMealSuggestions(
