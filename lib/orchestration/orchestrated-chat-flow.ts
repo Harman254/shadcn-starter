@@ -113,61 +113,81 @@ export class OrchestratedChatFlow {
   /**
    * Process user message with streaming support
    */
-  async processMessageStream(input: OrchestratedChatInput, data: StreamData) {
-    try {
-      const context = await this.contextManager.getContext(input.userId, input.sessionId);
+  /**
+   * Process user message with streaming support
+   * Returns a ReadableStream that streams status updates, tool results, and final text
+   */
+  processMessageStream(input: OrchestratedChatInput): ReadableStream {
+    const encoder = new TextEncoder();
 
-      // 1. Plan
-      data.append({ type: 'status', content: '🤔 Analyzing your request...' });
-      const plan = await this.reasoningEngine.generatePlan(input.message, {
-        ...context,
-        userPreferences: input.userPreferences,
-        location: input.locationData
-      }, tools);
+    // Helper to format data chunks for Vercel AI SDK (2:[data]\n)
+    const formatData = (data: any) => {
+      return encoder.encode(`2:${JSON.stringify([data])}\n`);
+    };
 
-      data.append({ type: 'plan', content: plan as any });
+    // Helper to format error chunks (3:"error"\n)
+    const formatError = (error: string) => {
+      return encoder.encode(`3:${JSON.stringify(error)}\n`);
+    };
 
-      // 2. Execute
-      const toolResults = await this.toolExecutor.executePlan(plan,
-        (step) => {
-          data.append({ type: 'status', content: `⚙️ Executing step: ${step.description}` });
-        },
-        (toolName) => {
-          // Optional: finer grained updates
-        },
-        (result) => {
-          if (result.status === 'success') {
-            // We could stream intermediate results here if needed
+    return new ReadableStream({
+      start: async (controller) => {
+        try {
+          // 1. Initial Status
+          controller.enqueue(formatData({ type: 'status', content: '🤔 Analyzing your request...' }));
+
+          // Load context
+          const context = await this.contextManager.getContext(input.userId, input.sessionId);
+
+          // 2. Plan
+          const plan = await this.reasoningEngine.generatePlan(input.message, {
+            ...context,
+            userPreferences: input.userPreferences,
+            location: input.locationData
+          }, tools);
+
+          controller.enqueue(formatData({ type: 'plan', content: plan }));
+
+          // 3. Execute
+          const toolResults = await this.toolExecutor.executePlan(plan,
+            (step) => {
+              controller.enqueue(formatData({ type: 'status', content: `⚙️ Executing step: ${step.description}` }));
+            }
+          );
+
+          // Store context asynchronously
+          if (input.userId && input.sessionId) {
+            this.contextManager.extractAndStoreEntities(input.userId, input.sessionId, toolResults).catch(console.error);
           }
-        }
-      );
 
-      // Store context
-      if (input.userId && input.sessionId) {
-        // We do this asynchronously to not block the stream start
-        this.contextManager.extractAndStoreEntities(input.userId, input.sessionId, toolResults).catch(console.error);
+          // 4. Synthesize
+          controller.enqueue(formatData({ type: 'status', content: '✍️ Synthesizing response...' }));
+
+          const result = streamText({
+            model: google('gemini-2.0-flash-exp'),
+            system: this.buildSystemPrompt(input, context, false),
+            prompt: this.buildSynthesisPrompt(input.message, toolResults),
+          });
+
+          // Pipe the text stream to our controller
+          // result.toDataStream() returns a stream of formatted chunks (0:"text", etc.)
+          const reader = result.toDataStream().getReader();
+
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            controller.enqueue(value);
+          }
+
+          controller.close();
+
+        } catch (error) {
+          console.error('[OrchestratedChatFlow] Stream Error:', error);
+          controller.enqueue(formatError(error instanceof Error ? error.message : 'An error occurred'));
+          controller.close();
+        }
       }
-
-      // 3. Synthesize
-      data.append({ type: 'status', content: '✍️ Synthesizing response...' });
-
-      const result = streamText({
-        model: google('gemini-2.0-flash-exp'),
-        system: this.buildSystemPrompt(input, context, false),
-        prompt: this.buildSynthesisPrompt(input.message, toolResults),
-        onFinish: () => {
-          data.close();
-        }
-      });
-
-      return result;
-
-    } catch (error) {
-      console.error('[OrchestratedChatFlow] Stream Error:', error);
-      data.append({ type: 'error', content: 'An error occurred during processing.' });
-      data.close();
-      throw error;
-    }
+    });
   }
 
   private buildSynthesisPrompt(userMessage: string, toolResults: Record<string, any>): string {

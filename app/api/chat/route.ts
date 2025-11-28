@@ -99,10 +99,9 @@ export async function POST(req: Request) {
 
         // Initialize Orchestrated Chat Flow
         const chatFlow = getOrchestratedChatFlow();
-        const data = new StreamData();
 
         // Process message with streaming
-        const result = await chatFlow.processMessageStream({
+        const stream = chatFlow.processMessageStream({
             message: lastMessage.content,
             userId: session.user.id,
             sessionId: session.session?.id || session.user.id, // Fallback if session.id missing
@@ -112,9 +111,14 @@ export async function POST(req: Request) {
             })),
             userPreferences: userPreferences,
             locationData: userPreferences.location
-        }, data);
+        });
 
-        return result.toDataStreamResponse({ data });
+        return new Response(stream, {
+            headers: {
+                'Content-Type': 'text/plain; charset=utf-8',
+                'X-Vercel-AI-Data-Stream': 'v1'
+            }
+        });
 
     } catch (error) {
         console.error('Error in chat API:', error);
