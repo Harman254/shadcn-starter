@@ -175,11 +175,16 @@ export const analyzeNutrition = tool({
                 fat: 70 * (mealPlan.days.length || 1),
             };
 
+            const uiMetadata = {
+                nutrition: mockTotalNutrition
+            };
+            const uiMetadataEncoded = Buffer.from(JSON.stringify(uiMetadata)).toString('base64');
+
             return successResponse(
                 {
                     totalNutrition: mockTotalNutrition,
                 },
-                "Nutrition analysis completed."
+                `Nutrition analysis completed. [UI_METADATA:${uiMetadataEncoded}]`
             );
         } catch (error) {
             return errorResponse('Failed to analyze nutrition.', ErrorCode.INTERNAL_ERROR, true);
@@ -200,14 +205,19 @@ export const getGroceryPricing = tool({
         country: z.string().optional().describe('User country'),
     }),
     execute: async ({ mealPlanId, city, country }): Promise<ToolResult> => {
+        const uiMetadata = {
+            prices: [
+                { store: 'Local Store', total: 50.00, currency: '$' },
+                { store: 'Online Grocer', total: 55.00, currency: '$' }
+            ]
+        };
+        const uiMetadataEncoded = Buffer.from(JSON.stringify(uiMetadata)).toString('base64');
+
         return successResponse(
             {
-                prices: [
-                    { store: 'Local Store', total: 50.00, currency: '$' },
-                    { store: 'Online Grocer', total: 55.00, currency: '$' }
-                ]
+                prices: uiMetadata.prices
             },
-            `Pricing for meal plan ${mealPlanId} calculated.`
+            `Pricing for meal plan ${mealPlanId} calculated. [UI_METADATA:${uiMetadataEncoded}]`
         );
     },
 });

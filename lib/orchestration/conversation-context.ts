@@ -112,13 +112,13 @@ export class ConversationContextManager {
             const update: Partial<ConversationEntity> = {};
 
             // Extract meal plan ID if present
-            if (toolResults.generateMealPlan?.mealPlan?.id) {
-                update.mealPlanId = toolResults.generateMealPlan.mealPlan.id;
+            if (toolResults.generateMealPlan?.data?.mealPlan?.id) {
+                update.mealPlanId = toolResults.generateMealPlan.data.mealPlan.id;
             }
 
             // Extract grocery list ID if present
-            if (toolResults.generateGroceryList?.groceryList?.id) {
-                update.groceryListId = toolResults.generateGroceryList.groceryList.id;
+            if (toolResults.generateGroceryList?.data?.groceryList?.id) {
+                update.groceryListId = toolResults.generateGroceryList.data.groceryList.id;
             }
 
             // Store last tool result for reference

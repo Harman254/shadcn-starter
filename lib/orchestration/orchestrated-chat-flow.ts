@@ -4,12 +4,14 @@
  * Features: Intent validation, retry logic, context tracking, comprehensive logging
  */
 
-import { generateText } from 'ai';
+import { streamText, StreamData } from 'ai';
 import { google } from '@ai-sdk/google';
 import { tools } from './ai-tools';
 import { getIntentValidator } from './intent-validator';
 import { getLogger } from './tool-execution-logger';
 import { getContextManager } from './conversation-context';
+import { getReasoningEngine } from './reasoning-engine';
+import { getToolExecutor } from './tool-executor';
 
 // ============================================================================
 // TYPES
@@ -45,227 +47,144 @@ export class OrchestratedChatFlow {
   private validator = getIntentValidator();
   private logger = getLogger();
   private contextManager = getContextManager();
+  private reasoningEngine = getReasoningEngine();
+  private toolExecutor = getToolExecutor();
 
   constructor() { }
 
   /**
-   * Process user message with multi-phase orchestration
+   * Process user message with multi-phase orchestration (Legacy Promise-based)
    */
   async processMessage(input: OrchestratedChatInput): Promise<OrchestratedChatOutput> {
-    const startTime = Date.now();
+    // This is a wrapper around the streaming implementation for backward compatibility
+    // It collects the stream and returns the final result
+    // Note: This loses the streaming benefits but keeps the API consistent for server actions
+
+    // For now, we'll implement a simplified version that just waits for the result
+    // In a real scenario, we'd consume the stream.
+    // But since we are moving to streaming, we might just want to implement the core logic here
+    // and have processMessageStream use it.
+
+    // Let's implement the core logic directly here for non-streaming, 
+    // but reusing the engines.
 
     try {
-      // Phase 1: Analyze Intent
       const context = await this.contextManager.getContext(input.userId, input.sessionId);
-      const intentAnalysis = this.validator.analyzeIntent(input.message, {
-        hasMealPlanId: !!context?.mealPlanId,
-      });
 
-      this.logger.log('info', 'Intent analysis', {
-        intent: intentAnalysis.intent,
-        confidence: intentAnalysis.confidence,
-        expectedTools: intentAnalysis.expectedTools,
-        contextAvailable: !!context,
-      });
+      // 1. Plan
+      const plan = await this.reasoningEngine.generatePlan(input.message, {
+        ...context,
+        userPreferences: input.userPreferences,
+        location: input.locationData
+      }, tools);
 
-      // LAYER 4: PRE-VALIDATION
-      // Check if we have the required context for the detected intent
-      if (intentAnalysis.contextNeeded && intentAnalysis.contextNeeded.length > 0) {
-        const missingContext = intentAnalysis.contextNeeded.filter(key => {
-          if (key === 'mealPlanId') return !context?.mealPlanId;
-          return false;
-        });
+      // 2. Execute
+      const toolResults = await this.toolExecutor.executePlan(plan);
 
-        if (missingContext.length > 0) {
-          this.logger.log('warn', 'Blocked due to missing context', { missingContext });
-
-          // Return early with guidance - do not call AI
-          return {
-            response: this.buildContextMissingResponse(intentAnalysis.intent),
-            confidence: 'high',
-            structuredData: {
-              requiresAction: true,
-              missingContext: missingContext[0],
-              suggestedAction: 'CREATE_MEAL_PLAN',
-            },
-            debug: {
-              intent: intentAnalysis.intent,
-              validationPassed: false,
-            }
-          };
-        }
-      }
-
-      // Phase 2: Initial AI Call
-      const initialResult = await this.executeAICall(input, context, false);
-
-      // Phase 3: Validation
-      const actualTools = initialResult.toolResults
-        ? Object.keys(initialResult.toolResults)
-        : [];
-
-      const validation = this.validator.validateToolExecution(
-        intentAnalysis.expectedTools,
-        actualTools
-      );
-
-      this.logger.logValidation({
-        timestamp: new Date(),
-        userMessage: input.message,
-        expectedTools: intentAnalysis.expectedTools,
-        actualTools,
-        passed: validation.passed,
-        reason: validation.reason,
-      });
-
-      // Phase 4: Retry if needed
-      let finalResult = initialResult;
-      let retried = false;
-
-      if (this.validator.shouldRetry(validation, intentAnalysis.confidence)) {
-        this.logger.logRetry({
-          timestamp: new Date(),
-          reason: validation.reason || 'Tools not called',
-          attempt: 1,
-          toolsExpected: intentAnalysis.expectedTools,
-        });
-
-        retried = true;
-        finalResult = await this.executeAICall(input, context, true, intentAnalysis.expectedTools);
-      }
-
-      // Store context if we have userId and sessionId
-      if (input.userId && input.sessionId && finalResult.toolResults) {
-        await this.contextManager.extractAndStoreEntities(
-          input.userId,
-          input.sessionId,
-          finalResult.toolResults
-        );
-      }
-
-      const duration = Date.now() - startTime;
-      this.logger.log('info', 'Orchestration complete', {
-        duration: `${duration}ms`,
-        toolsCalled: actualTools.length,
-        retried,
-        validationPassed: validation.passed,
-      });
-
-      return {
-        ...finalResult,
-        debug: {
-          intent: intentAnalysis.intent,
-          retried,
-          validationPassed: validation.passed,
-        },
-      };
-    } catch (error) {
-      this.logger.log('error', 'Orchestration failed', { error });
-      console.error('[OrchestratedChatFlow] Error:', error);
-
-      return {
-        response: "I'm sorry, I encountered an error while processing your request. Please try again.",
-        confidence: 'low',
-      };
-    }
-  }
-
-  /**
-   * Build response when required context is missing
-   */
-  private buildContextMissingResponse(intent: string): string {
-    switch (intent) {
-      case 'GROCERY_LIST_REQUIRED':
-        return "I'd love to help you with a grocery list! However, I need a meal plan first to know what ingredients to include. Would you like me to create a meal plan for you?";
-      case 'NUTRITION_ANALYSIS_REQUIRED':
-        return "I can analyze nutrition for you, but I need a meal plan first. Would you like to create a meal plan?";
-      case 'PRICING_REQUIRED':
-        return "I can check grocery prices, but I need a meal plan first to know what to price. Shall we create a meal plan?";
-      default:
-        return "I need more information to complete this request. It seems I'm missing some context.";
-    }
-  }
-
-  /**
-   * Execute AI call with tools
-   */
-  private async executeAICall(
-    input: OrchestratedChatInput,
-    context: any,
-    isRetry: boolean,
-    forcedTools?: string[]
-  ): Promise<OrchestratedChatOutput> {
-    const systemPrompt = this.buildSystemPrompt(input, context, isRetry, forcedTools);
-
-    const messages = [
-      ...input.conversationHistory.map(msg => ({
-        role: msg.role,
-        content: msg.content,
-      })),
-      { role: 'user', content: input.message }
-    ];
-
-    const startTime = Date.now();
-
-    try {
-      const { text, toolResults } = await generateText({
+      // 3. Synthesize
+      // We use generateText here instead of streamText
+      const { generateText } = await import('ai');
+      const { text } = await generateText({
         model: google('gemini-2.0-flash-exp'),
-        system: systemPrompt,
-        messages: messages as any,
-        tools: tools,
-        maxSteps: 5,
+        system: this.buildSystemPrompt(input, context, false),
+        prompt: this.buildSynthesisPrompt(input.message, toolResults),
       });
 
-      const duration = Date.now() - startTime;
-
-      // Log each tool execution
-      if (toolResults) {
-        toolResults.forEach(tr => {
-          this.logger.logToolExecution({
-            timestamp: new Date(),
-            toolName: tr.toolName,
-            input: tr.args,
-            output: tr.result,
-            success: tr.result?.success !== false,
-            duration,
-          });
-        });
-      }
-
-      // Extract structured data
-      let structuredData: any = {};
-      let aggregatedToolResults: Record<string, any> = {};
-
-      if (toolResults && toolResults.length > 0) {
-        toolResults.forEach(tr => {
-          aggregatedToolResults[tr.toolName] = tr.result;
-
-          if (tr.toolName === 'generateMealPlan' && tr.result.success) {
-            structuredData.mealPlan = tr.result.mealPlan;
-          }
-          if (tr.toolName === 'generateGroceryList' && tr.result.success) {
-            structuredData.groceryList = tr.result.groceryList;
-          }
-          if (tr.toolName === 'getGroceryPricing' && tr.result.success) {
-            structuredData.prices = tr.result.prices;
-          }
-          if (tr.toolName === 'analyzeNutrition' && tr.result.success) {
-            structuredData.nutrition = tr.result.totalNutrition;
-          }
-        });
+      // Store context
+      if (input.userId && input.sessionId) {
+        await this.contextManager.extractAndStoreEntities(input.userId, input.sessionId, toolResults);
       }
 
       return {
         response: text,
-        structuredData,
-        suggestions: [],
-        toolResults: aggregatedToolResults,
-        confidence: 'high',
+        toolResults,
+        confidence: 'high'
       };
+
     } catch (error) {
-      this.logger.log('error', 'AI call failed', { error, isRetry });
+      console.error('[OrchestratedChatFlow] Error:', error);
+      return {
+        response: "I'm sorry, I encountered an error. Please try again.",
+        confidence: 'low'
+      };
+    }
+  }
+
+  /**
+   * Process user message with streaming support
+   */
+  async processMessageStream(input: OrchestratedChatInput, data: StreamData) {
+    try {
+      const context = await this.contextManager.getContext(input.userId, input.sessionId);
+
+      // 1. Plan
+      data.append({ type: 'status', content: '🤔 Analyzing your request...' });
+      const plan = await this.reasoningEngine.generatePlan(input.message, {
+        ...context,
+        userPreferences: input.userPreferences,
+        location: input.locationData
+      }, tools);
+
+      data.append({ type: 'plan', content: plan as any });
+
+      // 2. Execute
+      const toolResults = await this.toolExecutor.executePlan(plan,
+        (step) => {
+          data.append({ type: 'status', content: `⚙️ Executing step: ${step.description}` });
+        },
+        (toolName) => {
+          // Optional: finer grained updates
+        },
+        (result) => {
+          if (result.status === 'success') {
+            // We could stream intermediate results here if needed
+          }
+        }
+      );
+
+      // Store context
+      if (input.userId && input.sessionId) {
+        // We do this asynchronously to not block the stream start
+        this.contextManager.extractAndStoreEntities(input.userId, input.sessionId, toolResults).catch(console.error);
+      }
+
+      // 3. Synthesize
+      data.append({ type: 'status', content: '✍️ Synthesizing response...' });
+
+      const result = streamText({
+        model: google('gemini-2.0-flash-exp'),
+        system: this.buildSystemPrompt(input, context, false),
+        prompt: this.buildSynthesisPrompt(input.message, toolResults),
+        onFinish: () => {
+          data.close();
+        }
+      });
+
+      return result;
+
+    } catch (error) {
+      console.error('[OrchestratedChatFlow] Stream Error:', error);
+      data.append({ type: 'error', content: 'An error occurred during processing.' });
+      data.close();
       throw error;
     }
+  }
+
+  private buildSynthesisPrompt(userMessage: string, toolResults: Record<string, any>): string {
+    return `
+      USER MESSAGE: "${userMessage}"
+      
+      TOOL RESULTS:
+      ${JSON.stringify(toolResults, null, 2)}
+      
+      INSTRUCTIONS:
+      - Synthesize a helpful, natural language response based on the tool results.
+      - If a meal plan was generated, summarize it enthusiastically.
+      - If a grocery list was generated, mention the total cost and store count.
+      - If nutrition was analyzed, give the key stats.
+      - Be concise but friendly.
+      - Use markdown for formatting.
+      `;
   }
 
   /**
@@ -282,21 +201,6 @@ Your goal is to help users plan meals, analyze nutrition, check grocery prices, 
 
 CRITICAL RULE: When users request specific actions, you MUST use the corresponding tools. DO NOT just describe what you would do - actually call the tool.`;
 
-    const examples = `
-EXAMPLES OF CORRECT BEHAVIOR:
-
-User: "Plan a 3 day keto meal"
-→ YOU MUST: Call generateMealPlan(duration=3, mealsPerDay=3)
-→ WRONG: Responding "I can help you plan a keto meal..." without calling the tool
-
-User: "Give me a grocery list"
-→ YOU MUST: Call generateGroceryList(mealPlanId="${context?.mealPlanId || '<from previous>'}")
-→ WRONG: Listing items without using the tool
-
-User: "How many calories?"
-→ YOU MUST: Call analyzeNutrition(mealPlanId="${context?.mealPlanId || '<from previous>'}")
-→ WRONG: Estimating calories without the tool`;
-
     const contextInfo = `
 CURRENT CONTEXT:
 - User Preferences: ${JSON.stringify(input.userPreferences || {})}
@@ -304,37 +208,9 @@ CURRENT CONTEXT:
 ${context?.mealPlanId ? `- Previous Meal Plan ID: ${context.mealPlanId} (USE THIS for follow-up requests!)` : '- No active meal plan'}
 ${context?.groceryListId ? `- Previous Grocery List ID: ${context.groceryListId}` : ''}`;
 
-    const criticalRules = `
-🚫 CRITICAL RULES - NEVER VIOLATE THESE:
-
-1. GROCERY LIST REQUIRES MEAL PLAN:
-   ❌ WRONG: User asks "give me groceries" → You call generateMealPlan
-   ✅ RIGHT: User asks "give me groceries" → You return error explaining meal plan needed first
-   
-2. CONTEXT-DEPENDENT TOOLS:
-   - generateGroceryList: REQUIRES mealPlanId (currently: ${context?.mealPlanId || 'MISSING ❌'})
-   - analyzeNutrition: REQUIRES mealPlanId (currently: ${context?.mealPlanId || 'MISSING ❌'})
-   - getGroceryPricing: REQUIRES mealPlanId (currently: ${context?.mealPlanId || 'MISSING ❌'})
-   
-3. WHEN CONTEXT IS MISSING:
-   - DO NOT attempt to generate a meal plan as a workaround
-   - DO return a clear error message
-   - DO guide the user to create the required context first`;
-
-    const retryWarning = isRetry ? `
-⚠️ RETRY ATTEMPT - YOU DID NOT CALL THE REQUIRED TOOLS IN YOUR PREVIOUS RESPONSE!
-${forcedTools ? `YOU MUST CALL THESE TOOLS NOW: ${forcedTools.join(', ')}` : ''}
-This is your last chance to use tools correctly before returning an error to the user.` : '';
-
     return `${basePrompt}
 
-${criticalRules}
-
-${examples}
-
 ${contextInfo}
-
-${retryWarning}
 
 AVAILABLE TOOLS:
 - generateMealPlan: Create a meal plan (parameters: duration, mealsPerDay, preferences)
