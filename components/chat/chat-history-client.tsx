@@ -93,6 +93,7 @@ const SessionItem = memo(function SessionItem({
           <div className="flex items-center justify-between gap-2">
             <p className={cn(
               "text-sm font-medium truncate transition-colors",
+              "max-w-[180px] sm:max-w-none", // Force truncation on mobile to ensure delete button visibility
               isActive ? "text-primary" : "text-foreground group-hover:text-foreground"
             )}>
               {session.title || (session.messageCount > 0 ? 'New conversation' : 'New chat')}
