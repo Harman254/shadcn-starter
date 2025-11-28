@@ -174,127 +174,80 @@ export function EmptyScreen({ onExampleClick, requireAuth = false }: EmptyScreen
       initial="hidden"
       animate="visible"
       className={cn(
-        "h-full flex items-center justify-center",
+        "h-full flex flex-col items-center justify-center",
         "overflow-y-auto overflow-x-hidden",
-        "overflow-scroll-smooth" // Smooth scrolling on mobile
+        "px-4 pb-20" // Add padding bottom to account for chat input
       )}
       role="region"
       aria-labelledby="empty-title"
     >
-      <div className="max-w-3xl w-full mx-auto px-4 sm:px-6 md:px-8 py-8 sm:py-12 md:py-16">
+      <div className="max-w-2xl w-full mx-auto flex flex-col items-center text-center space-y-8">
         {/* Header */}
         <motion.div
           variants={itemVariants}
-          className="text-center mb-8 sm:mb-10 md:mb-12"
+          className="space-y-4"
         >
           <motion.div
             initial={{ scale: 0, rotate: -180 }}
             animate={{ scale: 1, rotate: 0 }}
             transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-            className="inline-block p-3 sm:p-4 mb-4 sm:mb-6 bg-gradient-to-br from-primary/20 to-primary/10 rounded-2xl border border-primary/20"
+            className="inline-flex items-center justify-center p-4 bg-primary/10 rounded-full mb-2 ring-1 ring-primary/20"
           >
-            <Wand2 className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
+            <Wand2 className="h-8 w-8 text-primary" />
           </motion.div>
           
           <h2 
             id="empty-title" 
-            className={cn(
-              "text-3xl sm:text-4xl md:text-5xl lg:text-6xl",
-              "font-bold text-foreground mb-3 sm:mb-4",
-              "tracking-tight leading-tight",
-              "bg-gradient-to-r from-foreground via-foreground to-foreground/70 bg-clip-text"
-            )}
+            className="text-3xl sm:text-4xl font-bold tracking-tight text-foreground"
           >
-            Welcome! 👋
+            What are we cooking?
           </h2>
-          <p className="text-muted-foreground text-base sm:text-lg md:text-xl mt-2 max-w-2xl mx-auto tracking-tight leading-relaxed">
-            I&apos;m your AI kitchen assistant. I can help you plan meals, find recipes, create grocery lists, and answer cooking questions. What would you like to do?
+          <p className="text-muted-foreground text-base sm:text-lg max-w-md mx-auto leading-relaxed">
+            I can help you plan meals, find recipes, or create a grocery list for your next shop.
           </p>
         </motion.div>
 
-        {/* Refresh Button */}
-        <motion.div 
-          variants={itemVariants}
-          className="flex justify-center mb-8"
-        >
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={fetchSuggestions}
-            disabled={isLoading}
-            className="text-muted-foreground hover:text-primary"
-          >
-            <RefreshCw className={cn("h-4 w-4 mr-2", isLoading && "animate-spin")} />
-            Refresh Ideas
-          </Button>
-        </motion.div>
-
-        {/* Example Messages */}
+        {/* Example Messages - Redesigned as Chips */}
         <motion.div
           variants={containerVariants}
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 w-full max-w-5xl mx-auto"
+          className="flex flex-wrap justify-center gap-2 w-full max-w-xl"
           role="group"
           aria-label="Example conversation starters"
         >
           {suggestions.map((example, index) => {
             const Icon = iconMap[example.iconName] || Coffee;
-            const gradients = [
-              'from-orange-500/10 to-red-500/10',
-              'from-blue-500/10 to-purple-500/10',
-              'from-green-500/10 to-emerald-500/10',
-            ];
-            const gradient = gradients[index % gradients.length];
-
             return (
-              <motion.div
+              <motion.button
                 key={example.heading}
                 variants={itemVariants}
-                whileHover={{ scale: 1.02, y: -4 }}
+                whileHover={{ scale: 1.02, y: -2 }}
                 whileTap={{ scale: 0.98 }}
-                className="h-full"
+                onClick={() => onExampleClick(example.message)}
+                className={cn(
+                  "flex items-center gap-2 px-4 py-2.5",
+                  "bg-card/50 hover:bg-card border border-border/50 hover:border-primary/30",
+                  "rounded-full shadow-sm hover:shadow-md",
+                  "transition-all duration-200",
+                  "text-sm font-medium text-foreground/80 hover:text-primary"
+                )}
               >
-                <Button
-                  variant="outline"
-                  className={cn(
-                    "h-full w-full p-6",
-                    "flex flex-col items-start gap-4",
-                    "bg-card/50 dark:bg-card/20",
-                    "backdrop-blur-sm",
-                    "border-border/50",
-                    "hover:bg-accent/50 hover:border-primary/20",
-                    "transition-all duration-300",
-                    "rounded-2xl",
-                    "shadow-sm hover:shadow-md",
-                    "relative overflow-hidden group"
-                  )}
-                  onClick={() => onExampleClick(example.message)}
-                >
-                  <div className={cn(
-                    "absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500",
-                    "bg-gradient-to-br",
-                    gradient
-                  )} />
-                  
-                  <div className="relative z-10 flex items-center justify-center w-12 h-12 rounded-xl bg-background/80 shadow-sm border border-border/50 group-hover:scale-110 transition-transform duration-300">
-                    <Icon className="h-6 w-6 text-primary" />
-                  </div>
-                  
-                  <div className="relative z-10 text-left space-y-2">
-                    <h3 className="font-semibold text-lg text-foreground group-hover:text-primary transition-colors">
-                      {example.heading}
-                    </h3>
-                    <p className="text-sm text-muted-foreground leading-relaxed line-clamp-2">
-                      {example.message}
-                    </p>
-                  </div>
-                  
-                  <div className="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transform translate-x-2 group-hover:translate-x-0 transition-all duration-300">
-                    <ArrowRight className="h-5 w-5 text-primary" />
-                  </div>
-                </Button>
-              </motion.div>
+                <Icon className="h-4 w-4 opacity-70" />
+                <span>{example.heading}</span>
+              </motion.button>
             );
           })}
+          
+          <motion.button
+            variants={itemVariants}
+            whileHover={{ scale: 1.05, rotate: 180 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={fetchSuggestions}
+            disabled={isLoading}
+            className="flex items-center justify-center w-10 h-10 rounded-full border border-dashed border-border hover:border-primary/50 hover:bg-primary/5 transition-colors"
+            aria-label="Refresh suggestions"
+          >
+            <RefreshCw className={cn("h-4 w-4 text-muted-foreground", isLoading && "animate-spin")} />
+          </motion.button>
         </motion.div>
       </div>
     </motion.div>

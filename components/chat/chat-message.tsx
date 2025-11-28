@@ -600,7 +600,7 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
                           </span>
                           <span className="w-1 h-1 rounded-full bg-white/60" />
                           <span className="flex items-center gap-1">
-                            <Utensils className="h-3.5 w-3.5" />
+                            <UtensilsCrossed className="h-3.5 w-3.5" />
                             {uiData.mealPlan.mealsPerDay} Meals/Day
                           </span>
                         </div>
