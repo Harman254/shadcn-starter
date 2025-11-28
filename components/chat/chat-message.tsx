@@ -342,7 +342,7 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
         )}
       >
         <div className={cn(
-          "max-w-4xl mx-auto px-4 sm:px-6 md:px-8",
+          "max-w-3xl mx-auto px-4 sm:px-6",
           "flex items-start gap-3 sm:gap-4"
         )}>
            <Avatar className={cn(
@@ -454,17 +454,17 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
       data-message-id={message?.id}
     >
       <div className={cn(
-        "max-w-4xl mx-auto px-4 sm:px-6 md:px-8",
+        "max-w-3xl mx-auto px-4 sm:px-6",
         isAssistant ? "flex justify-start" : "flex justify-end"
       )}>
         <div className={cn(
           "flex items-start gap-3 sm:gap-4",
-          "max-w-[90%] sm:max-w-[85%] md:max-w-[80%]",
+          "max-w-[90%] sm:max-w-[85%]",
           isAssistant ? "flex-row" : "flex-row-reverse"
         )}>
           <Avatar
             className={cn(
-              "h-8 w-8 sm:h-10 sm:w-10 shrink-0 transition-transform hover:scale-105",
+              "h-8 w-8 sm:h-9 sm:w-9 shrink-0 transition-transform hover:scale-105",
               "border border-border/50 shadow-sm"
             )}
           >
@@ -472,12 +472,12 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
               className={cn(
                 "transition-all text-xs font-semibold",
                 isAssistant
-                  ? "bg-gradient-to-br from-primary to-primary/80 text-primary-foreground ring-2 ring-primary/20 shadow-lg shadow-primary/20"
-                  : "bg-gradient-to-br from-secondary to-secondary/80 text-secondary-foreground ring-2 ring-border/50",
+                  ? "bg-primary/10 text-primary ring-1 ring-primary/20"
+                  : "bg-muted text-muted-foreground ring-1 ring-border/50",
               )}
             >
               {isAssistant ? (
-                <Icons.moon className="h-4 w-4 sm:h-5 sm:w-5 drop-shadow-md" />
+                <Icons.moon className="h-4 w-4 sm:h-5 sm:w-5" />
               ) : (
                 <User className="h-4 w-4 sm:h-5 sm:w-5" />
               )}
@@ -492,16 +492,16 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
               {isAssistant ? (
                 <div className={cn(
                   "relative",
-                  "bg-card/80 dark:bg-card/80 backdrop-blur-xl", // Glassmorphism
-                  "border border-border/50 rounded-2xl px-5 py-4",
-                  "shadow-sm dark:shadow-md dark:shadow-black/10"
+                  "bg-card", // Cleaner background
+                  "border border-border/40 rounded-2xl rounded-tl-sm px-5 py-4",
+                  "shadow-sm"
                 )}>
                   <div className={cn(
                     "prose prose-sm sm:prose-base max-w-none",
                     "font-sans antialiased",
                     "text-foreground/90",
                     "prose-headings:text-foreground prose-headings:font-bold prose-headings:tracking-tight",
-                    "prose-p:leading-relaxed prose-p:my-4",
+                    "prose-p:leading-relaxed prose-p:my-3",
                     "prose-strong:text-foreground prose-strong:font-bold",
                     "prose-code:text-primary prose-code:bg-primary/10 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded-md",
                     "prose-pre:bg-muted/50 prose-pre:border prose-pre:border-border/50 prose-pre:rounded-xl",
@@ -515,13 +515,12 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
 
                 <div className={cn(
                   "inline-block",
-                  "bg-gradient-to-br from-primary to-primary/90 text-primary-foreground", // Vibrant gradient
+                  "bg-primary text-primary-foreground", // Solid primary color for better contrast/clean look
                   "rounded-2xl rounded-tr-sm px-5 py-3 sm:px-6 sm:py-3.5",
-                  "shadow-lg shadow-primary/20", // Colored shadow
+                  "shadow-md shadow-primary/10",
                   "text-[15px] sm:text-base leading-relaxed tracking-wide",
-                  "border border-primary/20"
                 )}>
-                  <p className="whitespace-pre-wrap break-words font-medium drop-shadow-sm">
+                  <p className="whitespace-pre-wrap break-words font-medium">
                     {message.content}
                   </p>
                 </div>
@@ -532,9 +531,8 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
                 size="icon"
                 className={cn(
                   "absolute transition-opacity h-8 w-8 rounded-md",
-                  "opacity-100 sm:opacity-0 sm:group-hover/message:opacity-100", // Always visible on mobile
+                  "opacity-0 group-hover/message:opacity-100",
                   "text-muted-foreground hover:text-foreground hover:bg-muted/50",
-                  "touch-manipulation", // Improve touch handling
                   isAssistant ? "-top-2 right-0" : "-top-2 left-0"
                 )}
                 onClick={handleCopy}
@@ -582,7 +580,7 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
               isAssistant ? "flex justify-start" : "flex justify-end"
             )}>
               <div className={cn(
-                "max-w-[85%] sm:max-w-[80%] md:max-w-[75%]",
+                "max-w-full",
                 "w-full"
               )}>
                 <QuickActions 
@@ -598,11 +596,9 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
       {/* Tool call results (meal plan/grocery list) - Full width immersive display - BREAKS OUT OF CONTAINER */}
       {isAssistant && (uiData?.mealPlan || uiData?.groceryList || uiData?.mealSuggestions || uiData?.mealRecipe) && (
         <div className={cn(
-          "w-full",
-          "relative -mx-0", // No negative margins on mobile to prevent horizontal scroll
-          "sm:-mx-3 md:-mx-4 lg:-mx-6", // Negative margins on larger screens
-          "px-0 sm:px-3 md:px-4 lg:px-6", // Restore padding for content
-          "my-3 sm:my-4 md:my-6" // Vertical spacing
+          "w-full max-w-3xl mx-auto", // Constrain to same width
+          "px-0 sm:px-0", // Remove padding for immersive feel
+          "my-4 sm:my-6" // Vertical spacing
         )}>
           {/* Meal Plan Display - Full width immersive */}
           {uiData?.mealPlan && (

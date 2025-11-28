@@ -181,7 +181,7 @@ export function EmptyScreen({ onExampleClick, requireAuth = false }: EmptyScreen
       role="region"
       aria-labelledby="empty-title"
     >
-      <div className="max-w-2xl w-full mx-auto flex flex-col items-center text-center space-y-8">
+      <div className="max-w-3xl w-full mx-auto flex flex-col items-center text-center space-y-8">
         {/* Header */}
         <motion.div
           variants={itemVariants}

@@ -73,7 +73,8 @@ export function ChatPageClient({ preferences = [], preferencesSummary = '' }: Ch
           "flex items-center justify-between",
           "safe-area-top"
         )}>
-          <div className="flex items-center gap-3">
+          <div className="w-full max-w-3xl mx-auto flex items-center justify-between">
+            <div className="flex items-center gap-3">
             {/* Mobile Menu Button */}
             <Sheet open={historyOpen} onOpenChange={setHistoryOpen}>
               <SheetTrigger asChild>
@@ -102,6 +103,7 @@ export function ChatPageClient({ preferences = [], preferencesSummary = '' }: Ch
                 <Wand2 className="h-4 w-4 text-primary" />
               </div>
               <h1 className="font-semibold text-lg hidden sm:block">Mealwise Chat</h1>
+            </div>
             </div>
           </div>
         </div>

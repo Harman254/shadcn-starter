@@ -69,7 +69,7 @@ export function ChatInput({ onSubmit, isLoading, disabled = false }: ChatInputPr
       {/* Gradient fade overlay */}
       <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-background via-background/90 to-transparent pointer-events-none" />
       
-      <div className="relative max-w-4xl mx-auto px-4 pb-safe-4 sm:pb-6">
+      <div className="relative max-w-3xl mx-auto px-4 pb-safe-4 sm:pb-6">
         <form onSubmit={handleSubmit} className="relative flex items-end gap-2">
           <motion.div
             className={cn(
