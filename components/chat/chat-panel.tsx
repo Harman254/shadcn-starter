@@ -104,7 +104,7 @@ export function ChatPanel({
   });
 
   // Vercel AI SDK useChat
-  const { messages, input, handleInputChange, handleSubmit, isLoading, setMessages, append, reload } = useChat({
+  const { messages, input, handleInputChange, handleSubmit, isLoading, setMessages, append, reload, data } = useChat({
     api: '/api/chat',
     id: finalSessionId,
     initialMessages: storeMessages,
@@ -235,6 +235,7 @@ export function ChatPanel({
           <ChatMessages 
             messages={messages} 
             isLoading={isLoading}
+            data={data}
           />
         )}
       </div>

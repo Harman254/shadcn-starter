@@ -26,6 +26,7 @@ interface ChatMessageProps {
   message?: Message
   isLoading?: boolean
   onActionClick?: (message: string) => void
+  data?: any[]
 }
 
 function formatTimestamp(date?: Date): string {
@@ -194,7 +195,7 @@ function WhatsAppIcon(props: React.ComponentProps<"svg">) {
 }
 
 
-export const ChatMessage = memo(function ChatMessage({ message, isLoading, onActionClick }: ChatMessageProps) {
+export const ChatMessage = memo(function ChatMessage({ message, isLoading, onActionClick, data }: ChatMessageProps) {
   // All hooks must be called at the top level, before any conditional returns
   const [copied, setCopied] = useState(false)
   const [formattedTime, setFormattedTime] = useState('')
@@ -250,6 +251,20 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
     }
     return null;
   }, [message]);
+
+  // Determine active status from streaming data
+  const statusMessage = useMemo(() => {
+    if (!data || data.length === 0) return 'Thinking...';
+    
+    // Find the last status update
+    for (let i = data.length - 1; i >= 0; i--) {
+      const item = data[i];
+      if (item && typeof item === 'object' && item.type === 'status') {
+        return item.content;
+      }
+    }
+    return 'Thinking...';
+  }, [data]);
 
   // Only format timestamp on client to avoid hydration mismatch
   useEffect(() => {
@@ -382,8 +397,8 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
                 <ToolProgress progress={toolProgressData} compact={false} />
               ) : (
                 <div className="flex items-center gap-2">
-                    <span className="text-sm text-muted-foreground font-medium min-w-[80px]">
-                      Thinking...
+                    <span className="text-sm text-muted-foreground font-medium min-w-[80px] animate-pulse">
+                      {statusMessage}
                     </span>
                     <div className="flex items-center gap-1">
                       {[0, 1, 2].map((index) => (
