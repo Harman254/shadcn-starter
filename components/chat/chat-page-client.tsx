@@ -52,166 +52,75 @@ export function ChatPageClient({ preferences = [], preferencesSummary = '' }: Ch
   }, []);
 
   return (
-    <div className={cn(
-      "h-[100dvh] w-full",
-      "bg-gradient-to-br from-background via-background to-primary/5",
-      "dark:from-background dark:via-background dark:to-primary/10",
-      "flex items-center justify-center",
-      "p-0 sm:p-3 md:p-4 lg:p-6",
-      "font-[Inter] antialiased",
-      "relative overflow-hidden"
-    )}>
-      {/* Animated background elements */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-primary/20 rounded-full blur-[100px] animate-pulse" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-secondary/20 rounded-full blur-[100px] animate-pulse delay-1000" />
-        <div className="absolute top-[40%] left-[60%] w-[300px] h-[300px] bg-accent/10 rounded-full blur-[80px] animate-pulse delay-2000" />
+    <div className="flex h-[100dvh] w-full bg-background overflow-hidden">
+      {/* Left Sidebar - Chat History (Desktop) */}
+      <div className={cn(
+        "hidden lg:flex w-[300px] xl:w-[350px] border-r border-border/50 bg-muted/10",
+        "flex-col h-full"
+      )}>
+        <ChatHistoryClient 
+          chatType={activeTab === 'meal-log' ? 'context-aware' : 'context-aware'} 
+        />
       </div>
 
-      <div className={cn(
-        "relative z-10 w-full",
-        "max-w-[1800px]",
-        "h-[100dvh] sm:h-[calc(100dvh-24px)] md:h-[calc(100dvh-32px)] lg:h-[calc(100dvh-48px)]",
-        "flex flex-col lg:flex-row gap-0 sm:gap-3 md:gap-4 lg:gap-6"
-      )}>
-        {/* Left Sidebar - Chat History (Desktop) */}
-        <motion.div
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.3, ease: "easeOut" }}
-          className={cn(
-            "hidden lg:flex lg:w-[380px] xl:w-[420px]",
-            "flex-col h-full",
-            "animate-in fade-in slide-in-from-left-4 duration-300"
-          )}
-        >
-          <Card className={cn(
-            "h-full flex flex-col",
-            "bg-card/80 dark:bg-card/80", // More transparent
-            "backdrop-blur-2xl backdrop-saturate-200", // Stronger blur and saturation
-            "border border-white/20 dark:border-white/10", // Lighter border for glass effect
-            "shadow-2xl shadow-black/10 dark:shadow-black/40",
-            "rounded-2xl sm:rounded-3xl",
-            "overflow-hidden",
-            "transition-all duration-300"
-          )}>
-          <ChatHistoryClient 
-            chatType={activeTab === 'meal-log' ? 'context-aware' : 'context-aware'} 
-          />
-        </Card>
-        </motion.div>
-
-        {/* Main Chat Area */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, ease: "easeOut" }}
-          className={cn(
-            "flex-1 flex flex-col h-full",
-            "bg-background/60 dark:bg-background/60", // More transparent
-            "backdrop-blur-2xl backdrop-saturate-200", // Stronger blur
-            "border border-white/20 dark:border-white/10",
-            "shadow-2xl shadow-black/10 dark:shadow-black/40",
-            "rounded-none sm:rounded-2xl md:rounded-3xl",
-            "overflow-hidden",
-            "transition-all duration-300",
-            "relative"
-          )}>
-          {/* Decorative gradient overlay */}
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-secondary/5 pointer-events-none opacity-50" />
-          
-          {/* Header */}
-          <div className={cn(
-            "sticky top-0 z-20", // Changed from relative to sticky
-            "px-4 sm:px-5 md:px-6 lg:px-8",
-            "py-3.5 sm:py-4",
-            "border-b border-border/50",
-            "bg-background/80 dark:bg-background/70",
-            "backdrop-blur-sm",
-            "shrink-0",
-            "flex items-center justify-between",
-            "safe-area-top"
-          )}>
-            <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
-                {/* Mobile Menu Button & Drawer */}
-                <Sheet open={historyOpen} onOpenChange={setHistoryOpen}>
-                  <SheetTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                    className={cn(
-                      "lg:hidden shrink-0 relative z-50",
-                      "h-10 w-10 md:h-10 md:w-10",
-                      "rounded-xl",
-                      "hover:bg-muted/80",
-                      "transition-all duration-200",
-                      "hover:scale-105 active:scale-95",
-                      "touch-manipulation" // Better touch handling
-                    )}
-                    aria-label="Open chat history"
-                    >
-                      <Menu className="h-5 w-5" />
-                    </Button>
-                  </SheetTrigger>
-                <SheetContent 
-                  side="left" 
-                  className={cn(
-                    "w-[360px] sm:w-[400px] p-0 overflow-hidden",
-                    "bg-card/95 dark:bg-card/90",
-                    "backdrop-blur-xl",
-                    "border-r border-border/60"
-                  )}
+      {/* Main Chat Area */}
+      <div className="flex-1 flex flex-col h-full min-w-0 bg-background relative">
+        {/* Header */}
+        <div className={cn(
+          "sticky top-0 z-20",
+          "px-4 py-3 border-b border-border/50",
+          "bg-background/80 backdrop-blur-md",
+          "flex items-center justify-between",
+          "safe-area-top"
+        )}>
+          <div className="flex items-center gap-3">
+            {/* Mobile Menu Button */}
+            <Sheet open={historyOpen} onOpenChange={setHistoryOpen}>
+              <SheetTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="lg:hidden shrink-0 h-10 w-10"
+                  aria-label="Open chat history"
                 >
-                    <SheetHeader className="sr-only">
-                      <SheetTitle>Chat History</SheetTitle>
-                      <SheetDescription>View and manage your conversation history</SheetDescription>
-                    </SheetHeader>
-                    <div className="h-full flex flex-col">
-                      <ChatHistoryClient 
-                        chatType={activeTab === 'meal-log' ? 'context-aware' : 'context-aware'}
-                      onSessionSelect={() => setHistoryOpen(false)}
-                      />
-                    </div>
-                  </SheetContent>
-                </Sheet>
+                  <Menu className="h-5 w-5" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="w-[300px] p-0">
+                <SheetHeader className="sr-only">
+                  <SheetTitle>Chat History</SheetTitle>
+                </SheetHeader>
+                <ChatHistoryClient 
+                  chatType={activeTab === 'meal-log' ? 'context-aware' : 'context-aware'}
+                  onSessionSelect={() => setHistoryOpen(false)}
+                />
+              </SheetContent>
+            </Sheet>
 
-              {/* Title */}
-              <div className="flex items-center gap-2 min-w-0">
-                <div className={cn(
-                  "p-1.5 sm:p-2 rounded-xl",
-                  "bg-gradient-to-br from-primary/10 to-primary/5",
-                  "border border-primary/20"
-                )}>
-                  <Wand2 className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
-                </div>
-                <h1 className={cn(
-                  "text-base sm:text-lg font-semibold text-foreground",
-                  "truncate",
-                  "hidden sm:block"
-                )}>
-                  Mealwise Chat
-                </h1>
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 bg-primary/10 rounded-lg">
+                <Wand2 className="h-4 w-4 text-primary" />
               </div>
+              <h1 className="font-semibold text-lg hidden sm:block">Mealwise Chat</h1>
             </div>
           </div>
+        </div>
 
-          {/* Chat Panel Integration */}
+        {/* Chat Content */}
+        <div className="flex-1 min-h-0 relative">
           <Tabs 
             value={activeTab} 
             onValueChange={setActiveTab} 
-            className="flex-1 flex flex-col min-h-0 overflow-hidden w-full relative z-10"
+            className="h-full flex flex-col"
           >
             <TabsContent 
               value="meal-log" 
-              className={cn(
-                "flex-1 m-0 flex flex-col min-h-0 overflow-hidden w-full h-full",
-                "data-[state=active]:animate-in data-[state=active]:fade-in data-[state=active]:duration-300"
-              )}
+              className="flex-1 m-0 h-full"
             >
               <ChatPanel chatType="context-aware" preferencesSummary={preferencesSummary} />
             </TabsContent>
           </Tabs>
-        </motion.div>
+        </div>
       </div>
     </div>
   );

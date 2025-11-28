@@ -5,7 +5,7 @@ import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
 import prisma from '@/lib/prisma';
 
-export const maxDuration = 30;
+export const maxDuration = 60;
 
 /**
  * User preferences from database
@@ -324,7 +324,7 @@ ADAPTIVE TOOL SELECTION STRATEGY
 
 IF "create/make/generate meal plan" WITHOUT specific dietary instruction → 
    CALL: generateMealPlan(
-     duration: user-specified or 7,
+     duration: user-specified or 3,
      mealsPerDay: user-specified or 3,
      preferences: MERGE saved dietary + saved cuisines + user overrides,
      chatMessages: LAST 3-5 CONVERSATION MESSAGES (CRITICAL - ensures specific foods are captured)
