@@ -155,6 +155,24 @@ export class OrchestratedChatFlow {
             }
           );
 
+          // Extract UI_METADATA from tool results
+          let collectedUIData: any = null;
+          for (const [toolName, result] of Object.entries(toolResults)) {
+            if (result && typeof result.message === 'string') {
+              const uiMetadataMatch = result.message.match(/\[UI_METADATA:([^\]]+)\]/);
+              if (uiMetadataMatch) {
+                try {
+                  const decoded = Buffer.from(uiMetadataMatch[1], 'base64').toString('utf-8');
+                  collectedUIData = JSON.parse(decoded);
+                  console.log('[OrchestratedChatFlow] ✅ Extracted UI data:', collectedUIData);
+                  break;
+                } catch (e) {
+                  console.error('[OrchestratedChatFlow] Failed to parse UI_METADATA:', e);
+                }
+              }
+            }
+          }
+
           // Store context asynchronously
           if (input.userId && input.sessionId) {
             this.contextManager.extractAndStoreEntities(input.userId, input.sessionId, toolResults).catch(console.error);
@@ -179,6 +197,18 @@ export class OrchestratedChatFlow {
             controller.enqueue(value);
           }
 
+          // Send UI data as a hidden HTML comment at the end of the message
+          // This ensures it travels with the text and is persisted in history
+          if (collectedUIData) {
+            console.log('[OrchestratedChatFlow] 📤 Embedding UI data in message content');
+            const base64Data = Buffer.from(JSON.stringify(collectedUIData)).toString('base64');
+            const hiddenBlock = `\n\n<!-- UI_DATA_START:${base64Data}:UI_DATA_END -->`;
+
+            // CRITICAL: Must format as Vercel AI SDK text chunk (0:"text")
+            // Otherwise it breaks the stream parsing
+            controller.enqueue(encoder.encode(`0:${JSON.stringify(hiddenBlock)}\n`));
+          }
+
           controller.close();
 
         } catch (error) {
@@ -191,19 +221,37 @@ export class OrchestratedChatFlow {
   }
 
   private buildSynthesisPrompt(userMessage: string, toolResults: Record<string, any>): string {
+    // Extract clean messages without UI_METADATA
+    const cleanMessages = Object.entries(toolResults)
+      .map(([tool, result]) => {
+        if (result && typeof result.message === 'string') {
+          return result.message.replace(/\s*\[UI_METADATA:[^\]]+\]/, '');
+        }
+        return '';
+      })
+      .filter(Boolean);
+
+    const hasResults = cleanMessages.length > 0;
+
     return `
       USER MESSAGE: "${userMessage}"
       
-      TOOL RESULTS:
-      ${JSON.stringify(toolResults, null, 2)}
+      TOOL EXECUTION SUMMARY:
+      ${hasResults ? cleanMessages.join('\n') : 'No tools were executed.'}
       
-      INSTRUCTIONS:
-      - Synthesize a helpful, natural language response based on the tool results.
-      - If a meal plan was generated, summarize it enthusiastically.
-      - If a grocery list was generated, mention the total cost and store count.
-      - If nutrition was analyzed, give the key stats.
-      - Be concise but friendly.
-      - Use markdown for formatting.
+      CRITICAL INSTRUCTIONS:
+      ${hasResults ? `
+      - The UI is ALREADY showing the full data (meal plan cards, grocery lists, etc.)
+      - Your job is to write a SHORT, friendly acknowledgment (1-2 sentences MAX)
+      - DO NOT describe what's in the meal plan - the user can see it in the UI
+      - DO NOT list meals, ingredients, or prices - they're already displayed
+      - Just say something like "I've created your meal plan! Enjoy!" or "Here's your grocery list!"
+      - Keep it enthusiastic but VERY brief
+      ` : `
+      - No tools were executed, so NO data is being shown to the user.
+      - You should apologize and explain that you couldn't complete the specific action, or ask for clarification.
+      - Do NOT claim to have created anything.
+      `}
       `;
   }
 

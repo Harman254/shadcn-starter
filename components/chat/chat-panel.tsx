@@ -116,15 +116,46 @@ export function ChatPanel({
     onFinish: async (message) => {
       if (!finalSessionId) return;
       
-      // Sync assistant message to store
-      // Note: useChat's message type is slightly different, but compatible enough for storage
-      // We might need to map it if strict typing is enforced
+      // Extract UI data from the stream data
+      let uiData: any = null;
+      if (data && data.length > 0) {
+        console.log('[ChatPanel] Stream data received. Length:', data.length);
+        console.log('[ChatPanel] Full data array:', JSON.stringify(data, null, 2));
+        
+        // Find ui_data events in the stream data
+        for (const item of data) {
+          console.log('[ChatPanel] Checking item:', item, 'Type:', item?.type);
+          if (item && typeof item === 'object' && item.type === 'ui_data') {
+            console.log('[ChatPanel] ✅ Found UI data:', item.content);
+            uiData = item.content;
+            
+            // Trigger toast if present in UI data (e.g. for modifyMealPlan)
+            if (uiData?.toast) {
+              toast({
+                title: 'Success',
+                description: uiData.toast,
+              });
+            }
+            
+            break; // Use the first (or last) ui_data we find
+          }
+        }
+        
+        if (!uiData) {
+          console.log('[ChatPanel] ⚠️ No ui_data found in stream data');
+        }
+      } else {
+        console.log('[ChatPanel] ⚠️ No stream data received or empty array');
+      }
+      
+      // Sync assistant message to store WITH UI data
       const assistantMsg: Message = {
         id: message.id,
         role: 'assistant',
         content: message.content,
         timestamp: message.createdAt || new Date(),
         toolInvocations: message.toolInvocations,
+        ui: uiData, // Attach the UI data here!
       };
       
       addMessage(finalSessionId, assistantMsg);

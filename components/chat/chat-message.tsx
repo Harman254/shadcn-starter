@@ -208,12 +208,30 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
   const currentTheme = theme === 'system' ? systemTheme : theme
   const isDark = currentTheme === 'dark'
 
-  // Extract UI data from either legacy .ui property or new toolInvocations
+  // Extract UI data from either legacy .ui property, embedded content, or toolInvocations
   const uiData = useMemo(() => {
     if (!message) return null;
-    // Prioritize legacy .ui for backward compatibility if it exists
+    
+    // 1. Prioritize direct .ui property (from ChatPanel)
     if (message.ui) return message.ui;
     
+    // 2. Check for embedded UI data in the message content
+    // Format: <!-- UI_DATA_START:BASE64_JSON:UI_DATA_END -->
+    if (message.content) {
+      const match = message.content.match(/<!-- UI_DATA_START:([^:]+):UI_DATA_END -->/);
+      if (match && match[1]) {
+        try {
+          const decoded = Buffer.from(match[1], 'base64').toString('utf-8');
+          const parsed = JSON.parse(decoded);
+          console.log('[ChatMessage] Extracted embedded UI data:', parsed);
+          return parsed;
+        } catch (e) {
+          console.error('[ChatMessage] Failed to parse embedded UI data:', e);
+        }
+      }
+    }
+    
+    // 3. Fallback to toolInvocations (legacy)
     if (message.toolInvocations) {
       for (const tool of message.toolInvocations) {
         if (tool.state === 'result') {
@@ -221,9 +239,6 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
              return { mealPlan: tool.result.mealPlan };
           }
           if (tool.toolName === 'generateGroceryList' && tool.result?.success) {
-             // Map the tool result to the expected UI structure
-             // The tool returns { groceryList: { items: ... } }
-             // The UI expects { groceryList: { items: ... } }
              return { groceryList: tool.result.groceryList };
           }
           if (tool.toolName === 'getMealSuggestions' && tool.result?.success) {
@@ -231,6 +246,15 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
           }
           if (tool.toolName === 'generateMealRecipe' && tool.result?.success) {
              return { mealRecipe: tool.result.recipe };
+          }
+          if (tool.toolName === 'analyzeNutrition' && tool.result?.success) {
+             return { nutrition: tool.result.totalNutrition };
+          }
+          if (tool.toolName === 'getGroceryPricing' && tool.result?.success) {
+             return { prices: tool.result.prices };
+          }
+          if (tool.toolName === 'searchRecipes' && tool.result?.success) {
+             return { recipeResults: tool.result.recipes, query: tool.result.query };
           }
         }
       }
@@ -248,6 +272,7 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
       if (active.toolName === 'analyzeNutrition') return 'Analyzing nutrition...';
       if (active.toolName === 'getGroceryPricing') return 'Checking prices...';
       if (active.toolName === 'getMealSuggestions') return 'Finding suggestions...';
+      if (active.toolName === 'searchRecipes') return 'Searching recipes...';
     }
     return null;
   }, [message]);
@@ -345,7 +370,7 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
   }, [message?.toolInvocations, message?.createdAt]);
 
   // Handle loading state with ToolProgress or generic loading
-  if (isLoading || (message?.toolInvocations && message.toolInvocations.length > 0 && !uiData?.mealPlan && !uiData?.groceryList && !uiData?.mealSuggestions && !uiData?.mealRecipe)) {
+  if (isLoading || (message?.toolInvocations && message.toolInvocations.length > 0 && !uiData?.mealPlan && !uiData?.groceryList && !uiData?.mealSuggestions && !uiData?.mealRecipe && !uiData?.nutrition && !uiData?.prices && !uiData?.recipeResults)) {
     return (
       <motion.div
         initial={{ opacity: 0, y: 10 }}
@@ -462,7 +487,7 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
         "w-full py-4 sm:py-6",
         "animate-in fade-in slide-in-from-bottom-2 duration-300",
         // Hide regular message container if tool call results are present
-        (isAssistant && (uiData?.mealPlan || uiData?.groceryList || uiData?.mealSuggestions || uiData?.mealRecipe)) && "hidden"
+        (isAssistant && (uiData?.mealPlan || uiData?.groceryList || uiData?.mealSuggestions || uiData?.mealRecipe || uiData?.nutrition || uiData?.prices || uiData?.recipeResults)) && "hidden"
       )}
       role="article"
       aria-label={isAssistant ? "AI assistant message" : "Your message"}
@@ -1197,6 +1222,131 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
                   )}
                 </div>
               </div>
+            </motion.div>
+          )}
+          {/* Nutrition Analysis Display */}
+          {uiData?.nutrition && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+              className="w-full max-w-2xl mx-auto"
+            >
+              <div className={cn(
+                "bg-card rounded-2xl overflow-hidden",
+                "border border-border/50 shadow-lg",
+                "p-6"
+              )}>
+                <div className="flex items-center gap-2 mb-6">
+                   <div className="p-2 bg-primary/10 rounded-lg text-primary">
+                     <UtensilsCrossed className="h-5 w-5" />
+                   </div>
+                   <h3 className="text-xl font-bold">Nutrition Analysis</h3>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                  <div className="text-center p-4 bg-muted/30 rounded-xl border border-border/50">
+                    <div className="text-2xl font-bold text-primary">{uiData.nutrition.calories}</div>
+                    <div className="text-sm text-muted-foreground font-medium mt-1">Calories</div>
+                  </div>
+                  <div className="text-center p-4 bg-muted/30 rounded-xl border border-border/50">
+                    <div className="text-xl font-bold text-foreground">{uiData.nutrition.protein}g</div>
+                    <div className="text-sm text-muted-foreground font-medium mt-1">Protein</div>
+                  </div>
+                  <div className="text-center p-4 bg-muted/30 rounded-xl border border-border/50">
+                    <div className="text-xl font-bold text-foreground">{uiData.nutrition.carbs}g</div>
+                    <div className="text-sm text-muted-foreground font-medium mt-1">Carbs</div>
+                  </div>
+                  <div className="text-center p-4 bg-muted/30 rounded-xl border border-border/50">
+                    <div className="text-xl font-bold text-foreground">{uiData.nutrition.fat}g</div>
+                    <div className="text-sm text-muted-foreground font-medium mt-1">Fat</div>
+                  </div>
+                </div>
+                
+                <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-950/20 rounded-xl border border-blue-100 dark:border-blue-900/50 flex gap-3">
+                  <AlertCircle className="h-5 w-5 text-blue-600 dark:text-blue-400 shrink-0" />
+                  <p className="text-sm text-blue-700 dark:text-blue-300">
+                    This analysis is an estimate based on standard ingredients. Actual values may vary depending on specific brands and portion sizes.
+                  </p>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {/* Grocery Pricing Display */}
+          {uiData?.prices && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+              className="w-full max-w-xl mx-auto"
+            >
+              <div className={cn(
+                "bg-card rounded-2xl overflow-hidden",
+                "border border-border/50 shadow-lg",
+                "p-6"
+              )}>
+                <div className="flex items-center gap-2 mb-6">
+                   <div className="p-2 bg-green-100 dark:bg-green-900/20 rounded-lg text-green-600 dark:text-green-400">
+                     <DollarSign className="h-5 w-5" />
+                   </div>
+                   <h3 className="text-xl font-bold">Estimated Costs</h3>
+                </div>
+
+                <div className="space-y-3">
+                  {uiData.prices.map((price: any, idx: number) => (
+                    <div key={idx} className="flex items-center justify-between p-4 bg-muted/30 rounded-xl border border-border/50 hover:border-primary/30 transition-colors">
+                      <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-full bg-white dark:bg-muted flex items-center justify-center border border-border/50 shadow-sm">
+                          <ShoppingCart className="h-5 w-5 text-muted-foreground" />
+                        </div>
+                        <div>
+                          <div className="font-semibold">{price.store}</div>
+                          <div className="text-xs text-muted-foreground">Local Store</div>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-lg font-bold text-primary">
+                          {price.currency}{price.total.toFixed(2)}
+                        </div>
+                        <div className="text-xs text-green-600 dark:text-green-400 font-medium">
+                          In Stock
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                
+                <Button className="w-full mt-6" variant="outline" onClick={() => onActionClick?.("Generate a grocery list for these items")}>
+                  Generate Shopping List
+                </Button>
+              </div>
+            </motion.div>
+          )}
+
+          {/* Recipe Search Results Display */}
+          {uiData?.recipeResults && (
+             <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+              className={cn(
+                "w-full",
+                "animate-in fade-in slide-in-from-bottom-2 duration-300"
+              )}
+            >
+              <div className="mb-4 px-1">
+                <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
+                  <ChefHat className="h-5 w-5 text-primary" />
+                  Found {uiData.recipeResults.length} recipes for "{uiData.query}"
+                </h3>
+              </div>
+              <MealSuggestions 
+                suggestions={uiData.recipeResults} 
+                onAdd={(suggestion) => {
+                  onActionClick?.(`Show me the recipe for ${suggestion.name}`);
+                }}
+              />
             </motion.div>
           )}
         </div>

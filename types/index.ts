@@ -167,6 +167,27 @@ export type Message = {
       };
       tags: string[];
     };
+    nutrition?: {
+      calories: number;
+      protein: string;
+      carbs: string;
+      fat: string;
+    };
+    prices?: Array<{
+      store: string;
+      total: number;
+      currency: string;
+    }>;
+    recipeResults?: Array<{
+      name: string;
+      calories: number;
+      protein: number;
+      tags: string[];
+      image?: string;
+      description?: string;
+    }>;
+    query?: string;
+    toast?: string;
   };
 };
 

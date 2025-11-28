@@ -40,8 +40,24 @@ export class ToolExecutor {
                     // or we need a more sophisticated resolver here.
                     // For now, we assume the ReasoningEngine generates correct args or we rely on ContextManager.
 
+                    console.log('[ToolExecutor] Executing tool:', call.toolName, 'with args:', call.args);
+
+                    // Handle optional args - default to empty object, and convert string args to proper types
+                    const args = call.args || {};
+
+                    // Convert string args to proper types (numbers, booleans, etc.)
+                    const convertedArgs: any = {};
+                    for (const [key, value] of Object.entries(args)) {
+                        // Try to parse numbers
+                        if (typeof value === 'string' && !isNaN(Number(value))) {
+                            convertedArgs[key] = Number(value);
+                        } else {
+                            convertedArgs[key] = value;
+                        }
+                    }
+
                     // Execute tool
-                    const result = await tool.execute(call.args, {
+                    const result = await tool.execute(convertedArgs, {
                         toolCallId: 'exec-' + Date.now(),
                         messages: [] // We might need to pass messages if tools rely on them
                     });

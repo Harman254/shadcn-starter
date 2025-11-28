@@ -163,7 +163,9 @@ export class ConversationContextManager {
                 }
             });
         } catch (error) {
-            console.error('[ConversationContext] Error cleaning up expired contexts:', error);
+            // Log as warning instead of error for background cleanup tasks
+            // This prevents alarming logs when DB is temporarily unreachable (e.g. Neon pausing)
+            console.warn('[ConversationContext] Warning: Failed to cleanup expired contexts (DB might be unreachable):', error instanceof Error ? error.message : error);
         }
     }
 }

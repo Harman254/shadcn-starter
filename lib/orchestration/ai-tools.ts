@@ -53,7 +53,7 @@ export const generateMealPlan = tool({
             const { z } = await import('zod');
 
             const result = await generateObject({
-                model: google('gemini-2.0-flash-exp'),
+                model: google('gemini-2.0-flash'),
                 temperature: 0.7, // Higher temperature for variety
                 schema: z.object({
                     title: z.string().describe('A catchy title for this meal plan'),
@@ -313,7 +313,7 @@ export const generateGroceryList = tool({
             const { z } = await import('zod');
 
             const result = await generateObject({
-                model: google('gemini-2.0-flash-exp'),
+                model: google('gemini-2.0-flash'),
                 temperature: 0.2,
                 schema: z.object({
                     groceryList: z.array(z.object({
@@ -417,7 +417,7 @@ export const generateMealRecipe = tool({
             const { google } = await import('@ai-sdk/google');
 
             const { text } = await generateText({
-                model: google('gemini-2.0-flash-exp'),
+                model: google('gemini-2.0-flash'),
                 prompt: `You are a professional chef creating a detailed recipe.
 
 Generate a recipe for: "${mealName}"
@@ -594,7 +594,7 @@ export const modifyMealPlan = tool({
             const { z } = await import('zod');
 
             const result = await generateObject({
-                model: google('gemini-2.0-flash-exp'),
+                model: google('gemini-2.0-flash'),
                 temperature: 0.7,
                 schema: z.object({
                     name: z.string(),
@@ -674,7 +674,7 @@ export const searchRecipes = tool({
             const { z } = await import('zod');
 
             const result = await generateObject({
-                model: google('gemini-2.0-flash-exp'),
+                model: google('gemini-2.0-flash'),
                 temperature: 0.7,
                 schema: z.object({
                     recipes: z.array(z.object({
