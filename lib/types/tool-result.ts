@@ -5,6 +5,7 @@ export enum ErrorCode {
     UNAUTHORIZED = 'UNAUTHORIZED',
     GENERATION_FAILED = 'GENERATION_FAILED',
     INVALID_INPUT = 'INVALID_INPUT',
+    MODIFICATION_FAILED = 'MODIFICATION_FAILED',
 }
 
 export interface ToolResult<T = any> {

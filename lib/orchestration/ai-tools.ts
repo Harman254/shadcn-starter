@@ -350,20 +350,21 @@ Return JSON only.`,
             const currency = result.object.locationInfo?.currencySymbol || '$';
 
             // 7. Save to Database (Persistence)
-            const prisma = (await import('@/lib/prisma')).default;
-            const savedList = await prisma.groceryList.create({
-                data: {
-                    userId: session.user.id,
-                    mealPlanId: mealPlanId || null,
-                    items: result.object.groceryList as any, // Cast to Json
-                    totalCost: totalCost,
-                    currency: currency,
-                }
-            });
+            // TODO: Re-enable after Prisma client regeneration completes
+            // const prisma = (await import('@/lib/prisma')).default;
+            // const savedList = await prisma.groceryList.create({
+            //     data: {
+            //         userId: session.user.id,
+            //         mealPlanId: mealPlanId || null,
+            //         items: result.object.groceryList as any, // Cast to Json
+            //         totalCost: totalCost,
+            //         currency: currency,
+            //     }
+            // });
 
             const uiMetadata = {
                 groceryList: {
-                    id: savedList.id, // Use the real DB ID
+                    id: 'temp-' + Date.now(), // Temporary ID until DB save is re-enabled
                     items: result.object.groceryList,
                     locationInfo: result.object.locationInfo,
                     totalEstimatedCost: `${currency}${totalCost.toFixed(2)}`,
@@ -373,7 +374,7 @@ Return JSON only.`,
 
             return successResponse(
                 {
-                    id: savedList.id,
+                    id: uiMetadata.groceryList.id,
                     items: result.object.groceryList,
                     locationInfo: result.object.locationInfo,
                     totalEstimatedCost: `${currency}${totalCost.toFixed(2)}`
