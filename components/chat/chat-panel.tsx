@@ -17,6 +17,7 @@ import { ToolProgress, type ExecutionProgressData } from './tool-progress';
 import { logger } from '@/utils/logger';
 import { fetchWithRetry } from '@/utils/api-retry';
 import { useChat } from '@ai-sdk/react';
+import { Button } from '@/components/ui/button';
 
 // Cache empty arrays outside component to ensure stable references
 const EMPTY_MESSAGES: Message[] = [];
@@ -103,7 +104,7 @@ export function ChatPanel({
   });
 
   // Vercel AI SDK useChat
-  const { messages, input, handleInputChange, handleSubmit, isLoading, setMessages, append } = useChat({
+  const { messages, input, handleInputChange, handleSubmit, isLoading, setMessages, append, reload } = useChat({
     api: '/api/chat',
     id: finalSessionId,
     initialMessages: storeMessages,
@@ -152,10 +153,21 @@ export function ChatPanel({
       }
     },
     onError: (error) => {
+      console.error('[ChatPanel] useChat error:', error);
       toast({
-        title: 'Error',
-        description: 'Failed to send message. Please try again.',
+        title: 'Message failed',
+        description: 'There was an issue connecting to the AI. Please try again.',
         variant: 'destructive',
+        action: (
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => reload()}
+            className="bg-white/20 hover:bg-white/30 text-white border-transparent"
+          >
+            Retry
+          </Button>
+        ),
       });
     }
   });
@@ -206,7 +218,18 @@ export function ChatPanel({
       <div className="flex-1 overflow-y-auto overflow-x-hidden pb-4 sm:pb-6">
         {messages.length === 0 ? (
           <EmptyScreen onExampleClick={(val) => {
-             handleInputChange({ target: { value: val } } as React.ChangeEvent<HTMLInputElement>);
+             if (!isAuthenticated) {
+                openAuthModal('sign-in');
+                return;
+             }
+             const userMsg: Message = {
+                id: crypto.randomUUID(),
+                role: 'user',
+                content: val,
+                timestamp: new Date(),
+             };
+             addMessage(finalSessionId, userMsg);
+             append({ role: 'user', content: val });
           }} />
         ) : (
           <ChatMessages 
