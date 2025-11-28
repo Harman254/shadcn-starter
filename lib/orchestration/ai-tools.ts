@@ -312,6 +312,7 @@ export const generateGroceryList = tool({
             // 5. Generate List with AI SDK
             const { generateObject } = await import('ai');
             const { google } = await import('@ai-sdk/google');
+            const { z } = await import('zod'); // Explicitly import zod
 
             const result = await generateObject({
                 model: google('gemini-2.0-flash-exp'),

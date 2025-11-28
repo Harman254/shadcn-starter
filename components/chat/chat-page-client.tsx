@@ -122,7 +122,7 @@ export function ChatPageClient({ preferences = [], preferencesSummary = '' }: Ch
           
           {/* Header */}
           <div className={cn(
-            "relative z-10",
+            "sticky top-0 z-20", // Changed from relative to sticky
             "px-4 sm:px-5 md:px-6 lg:px-8",
             "py-3.5 sm:py-4",
             "border-b border-border/50",
@@ -130,7 +130,7 @@ export function ChatPageClient({ preferences = [], preferencesSummary = '' }: Ch
             "backdrop-blur-sm",
             "shrink-0",
             "flex items-center justify-between",
-            "safe-area-top" // Support for notched devices
+            "safe-area-top"
           )}>
             <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
                 {/* Mobile Menu Button & Drawer */}

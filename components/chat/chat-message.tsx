@@ -580,31 +580,50 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
                   "border-b border-neutral-100",
                   "border-l-4 border-l-primary" // Left border accent
                 )}>
-                  <div className="flex items-center gap-3">
-                    <div className={cn(
-                      "p-2 rounded-xl",
-                      "bg-gradient-to-br from-primary to-primary/80",
-                      "text-primary-foreground",
-                      "shadow-md shadow-primary/20"
-                    )}>
-                      <ChefHat className="h-5 w-5" />
+                  <div className="flex flex-col">
+                    {/* Header Image */}
+                    <div className="relative h-32 sm:h-40 w-full overflow-hidden">
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent z-10" />
+                      <img 
+                        src="https://images.unsplash.com/photo-1498837167922-ddd27525d352?q=80&w=2670&auto=format&fit=crop" 
+                        alt="Meal Plan" 
+                        className="w-full h-full object-cover transform hover:scale-105 transition-transform duration-500"
+                      />
+                      <div className="absolute bottom-3 left-4 sm:left-6 z-20">
+                        <h4 className="text-lg sm:text-xl font-bold text-white leading-tight shadow-sm">
+                          {uiData.mealPlan.title}
+                        </h4>
+                        <div className="flex items-center gap-2 text-white/90 text-xs sm:text-sm mt-1">
+                          <span className="flex items-center gap-1">
+                            <Calendar className="h-3.5 w-3.5" />
+                            {uiData.mealPlan.duration} Days
+                          </span>
+                          <span className="w-1 h-1 rounded-full bg-white/60" />
+                          <span className="flex items-center gap-1">
+                            <Utensils className="h-3.5 w-3.5" />
+                            {uiData.mealPlan.mealsPerDay} Meals/Day
+                          </span>
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-bold text-lg sm:text-xl text-foreground leading-tight">
-                        {uiData.mealPlan.title}
-                      </h3>
-                      <div className="flex items-center gap-4 mt-1.5 text-xs sm:text-sm text-muted-foreground">
-                        <div className="flex items-center gap-1.5">
-                          <Calendar className="h-3.5 w-3.5" />
-                          <span>{uiData.mealPlan.duration} {uiData.mealPlan.duration === 1 ? 'day' : 'days'}</span>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          <UtensilsCrossed className="h-3.5 w-3.5" />
-                          <span>{uiData.mealPlan.mealsPerDay} meals/day</span>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          <Star className="h-3.5 w-3.5" />
-                          <span>{uiData.mealPlan.days.reduce((sum: any, day: any) => sum + day.meals.length, 0)} total meals</span>
+
+                    {/* Content Container */}
+                    <div className="px-4 sm:px-6 py-4">
+                      {/* Days Grid */}
+                      <div className="grid gap-6">
+                        <div className="flex items-center gap-4 mt-1.5 text-xs sm:text-sm text-muted-foreground">
+                          <div className="flex items-center gap-1.5">
+                            <Calendar className="h-3.5 w-3.5" />
+                            <span>{uiData.mealPlan.duration} {uiData.mealPlan.duration === 1 ? 'day' : 'days'}</span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <UtensilsCrossed className="h-3.5 w-3.5" />
+                            <span>{uiData.mealPlan.mealsPerDay} meals/day</span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <Star className="h-3.5 w-3.5" />
+                            <span>{uiData.mealPlan.days.reduce((sum: any, day: any) => sum + day.meals.length, 0)} total meals</span>
+                          </div>
                         </div>
                       </div>
                     </div>

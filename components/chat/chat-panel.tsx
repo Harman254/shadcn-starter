@@ -203,11 +203,10 @@ export function ChatPanel({
 
   return (
     <div className="flex flex-col h-full w-full relative">
-      <div className="flex-1 overflow-y-auto overflow-x-hidden pb-32 sm:pb-36">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden pb-4 sm:pb-6">
         {messages.length === 0 ? (
           <EmptyScreen onExampleClick={(val) => {
              handleInputChange({ target: { value: val } } as React.ChangeEvent<HTMLInputElement>);
-             // Optional: auto-submit
           }} />
         ) : (
           <ChatMessages 
@@ -217,7 +216,7 @@ export function ChatPanel({
         )}
       </div>
       
-      <div className="relative">
+      <div className="shrink-0 z-20 bg-background/50 backdrop-blur-sm">
          <ChatInput 
            onSubmit={(val) => {
              // ChatInput calls onSubmit with the value
