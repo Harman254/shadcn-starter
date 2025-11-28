@@ -5,6 +5,7 @@ import { getNutritionClient } from './api-clients/nutrition-api';
 import { getPricingClient } from './api-clients/grocery-pricing-api';
 import { generateGroceryListCore } from '@/ai/flows/chat/dynamic-select-tools';
 import prisma from '@/lib/prisma';
+import { ToolResult, ErrorCode, successResponse, errorResponse } from '@/lib/types/tool-result';
 
 // ============================================================================
 // MEAL PLAN GENERATION TOOL
@@ -21,7 +22,7 @@ export const generateMealPlan = tool({
             content: z.string()
         })).optional().describe('Recent chat messages to understand context and specific requests'),
     }),
-    execute: async ({ duration, mealsPerDay, preferences, chatMessages }) => {
+    execute: async ({ duration, mealsPerDay, preferences, chatMessages }): Promise<ToolResult> => {
         try {
             console.log('[generateMealPlan] 🍳 Generating plan with AI SDK. Duration:', duration, 'Context:', chatMessages?.length || 0, 'msgs');
 
@@ -31,11 +32,7 @@ export const generateMealPlan = tool({
             const session = await auth.api.getSession({ headers: await headers() });
 
             if (!session?.user?.id) {
-                return {
-                    success: false,
-                    error: 'UNAUTHORIZED',
-                    message: 'You must be logged in to generate a meal plan.',
-                };
+                return errorResponse('You must be logged in to generate a meal plan.', ErrorCode.UNAUTHORIZED);
             }
 
             // Fetch full preferences for context if not passed explicitly
@@ -117,18 +114,16 @@ Return a valid JSON object.`,
             // 4. Return Success Response
             const totalMeals = mealPlanData.days.reduce((sum, day) => sum + day.meals.length, 0);
 
-            return {
-                success: true,
-                mealPlan: mealPlanData,
-                message: `✅ Generated ${duration}-day meal plan: "${mealPlanData.title}". Includes ${totalMeals} meals. [UI_METADATA:${uiMetadataEncoded}]`,
-            };
+            return successResponse(
+                {
+                    mealPlan: mealPlanData,
+                },
+                `✅ Generated ${duration}-day meal plan: "${mealPlanData.title}". Includes ${totalMeals} meals. [UI_METADATA:${uiMetadataEncoded}]`
+            );
 
         } catch (error) {
             console.error('[generateMealPlan] Error:', error);
-            return {
-                success: false,
-                error: error instanceof Error ? error.message : 'Unknown error',
-            };
+            return errorResponse(error instanceof Error ? error.message : 'Unknown error', ErrorCode.GENERATION_FAILED, true);
         }
     },
 });
@@ -142,7 +137,7 @@ export const analyzeNutrition = tool({
     parameters: z.object({
         mealPlanId: z.string().describe('The ID of the meal plan to analyze.'),
     }),
-    execute: async ({ mealPlanId }) => {
+    execute: async ({ mealPlanId }): Promise<ToolResult> => {
         try {
             const mealPlan = await prisma.mealPlan.findUnique({
                 where: { id: mealPlanId },
@@ -150,7 +145,7 @@ export const analyzeNutrition = tool({
             });
 
             if (!mealPlan) {
-                return { success: false, error: 'Meal plan not found.' };
+                return errorResponse('Meal plan not found.', ErrorCode.RESOURCE_NOT_FOUND);
             }
 
             const nutritionClient = getNutritionClient();
@@ -180,13 +175,14 @@ export const analyzeNutrition = tool({
                 fat: 70 * (mealPlan.days.length || 1),
             };
 
-            return {
-                success: true,
-                message: "Nutrition analysis completed.",
-                totalNutrition: mockTotalNutrition,
-            };
+            return successResponse(
+                {
+                    totalNutrition: mockTotalNutrition,
+                },
+                "Nutrition analysis completed."
+            );
         } catch (error) {
-            return { success: false, error: 'Failed to analyze nutrition.' };
+            return errorResponse('Failed to analyze nutrition.', ErrorCode.INTERNAL_ERROR, true);
         }
     }
 });
@@ -203,15 +199,16 @@ export const getGroceryPricing = tool({
         city: z.string().optional().describe('User city for local pricing'),
         country: z.string().optional().describe('User country'),
     }),
-    execute: async ({ mealPlanId, city, country }) => {
-        return {
-            success: true,
-            message: `Pricing for meal plan ${mealPlanId} calculated.`,
-            prices: [
-                { store: 'Local Store', total: 50.00, currency: '$' },
-                { store: 'Online Grocer', total: 55.00, currency: '$' }
-            ]
-        };
+    execute: async ({ mealPlanId, city, country }): Promise<ToolResult> => {
+        return successResponse(
+            {
+                prices: [
+                    { store: 'Local Store', total: 50.00, currency: '$' },
+                    { store: 'Online Grocer', total: 55.00, currency: '$' }
+                ]
+            },
+            `Pricing for meal plan ${mealPlanId} calculated.`
+        );
     },
 });
 
@@ -241,7 +238,7 @@ export const generateGroceryList = tool({
         recipeName: z.string().optional().describe('Name of the recipe to create grocery list for (if source is recipe)'),
         ingredients: z.array(z.string()).optional().describe('List of ingredients from the recipe (if source is recipe)'),
     }),
-    execute: async ({ source, mealPlanId, mealPlan, recipeName, ingredients }) => {
+    execute: async ({ source, mealPlanId, mealPlan, recipeName, ingredients }): Promise<ToolResult> => {
         try {
             console.log('[generateGroceryList] 🛒 Source:', source);
 
@@ -251,14 +248,10 @@ export const generateGroceryList = tool({
             const session = await auth.api.getSession({ headers: await headers() });
 
             if (!session?.user?.id) {
-                return {
-                    success: false,
-                    error: 'UNAUTHORIZED',
-                    message: 'You must be logged in to generate a grocery list.',
-                };
+                return errorResponse('You must be logged in to generate a grocery list.', ErrorCode.UNAUTHORIZED);
             }
 
-            // 2. Get User Location (Parallelizable if we didn't need session first, but fast enough)
+            // 2. Get User Location
             const { getLocationDataWithCaching } = await import('@/lib/location');
             const locationData = await getLocationDataWithCaching(session.user.id, session.session.id);
 
@@ -280,7 +273,7 @@ export const generateGroceryList = tool({
                 });
 
                 if (!dbMealPlan) {
-                    return { success: false, error: 'MEAL_PLAN_NOT_FOUND', message: "Couldn't find that meal plan." };
+                    return errorResponse("Couldn't find that meal plan.", ErrorCode.RESOURCE_NOT_FOUND);
                 }
                 allIngredients = dbMealPlan.days.flatMap(d => d.meals.flatMap(m => m.ingredients));
                 planTitle = dbMealPlan.title;
@@ -291,19 +284,14 @@ export const generateGroceryList = tool({
                 planTitle = mealPlan.title || 'Your meal plan';
             }
             else {
-                return { success: false, error: 'INVALID_INPUT', message: "Missing meal plan or recipe data." };
+                return errorResponse("Missing meal plan or recipe data.", ErrorCode.INVALID_INPUT);
             }
 
             if (allIngredients.length === 0) {
-                return { success: false, error: 'NO_INGREDIENTS', message: "No ingredients found to generate list." };
+                return errorResponse("No ingredients found to generate list.", ErrorCode.INVALID_INPUT);
             }
 
-            // 4. Pre-process: Consolidate Ingredients in Code (Critical Optimization)
-            // Instead of asking AI to count "2 onions" + "1 onion", we pass a raw list and ask it to summarize.
-            // But even better: we can deduplicate strings if they are exact matches.
-            // For now, we'll pass the raw list but formatted clearly, and ask AI to do the semantic consolidation
-            // (e.g. "chopped onions" + "onion" -> "Onions: 2").
-            // We limit the list size to prevent token overflow.
+            // 4. Pre-process: Consolidate Ingredients
             const ingredientCount = allIngredients.length;
             const consolidatedListPrompt = allIngredients.map(i => `- ${i}`).join('\n');
 
@@ -312,11 +300,10 @@ export const generateGroceryList = tool({
             // 5. Generate List with AI SDK
             const { generateObject } = await import('ai');
             const { google } = await import('@ai-sdk/google');
-            const { z } = await import('zod'); // Explicitly import zod
+            const { z } = await import('zod');
 
             const result = await generateObject({
                 model: google('gemini-2.0-flash-exp'),
-                // Lower temperature for more deterministic/functional output
                 temperature: 0.2,
                 schema: z.object({
                     groceryList: z.array(z.object({
@@ -354,15 +341,29 @@ Return JSON only.`,
                 throw new Error('AI returned empty grocery list');
             }
 
-            // 6. Calculate Totals & Return
+            // 6. Calculate Totals
             const totalCost = result.object.groceryList.reduce((sum, item) => {
                 const price = parseFloat(item.estimatedPrice.replace(/[^0-9.]/g, '')) || 0;
                 return sum + price;
             }, 0);
 
             const currency = result.object.locationInfo?.currencySymbol || '$';
+
+            // 7. Save to Database (Persistence)
+            const prisma = (await import('@/lib/prisma')).default;
+            const savedList = await prisma.groceryList.create({
+                data: {
+                    userId: session.user.id,
+                    mealPlanId: mealPlanId || null,
+                    items: result.object.groceryList as any, // Cast to Json
+                    totalCost: totalCost,
+                    currency: currency,
+                }
+            });
+
             const uiMetadata = {
                 groceryList: {
+                    id: savedList.id, // Use the real DB ID
                     items: result.object.groceryList,
                     locationInfo: result.object.locationInfo,
                     totalEstimatedCost: `${currency}${totalCost.toFixed(2)}`,
@@ -370,31 +371,25 @@ Return JSON only.`,
             };
             const uiMetadataEncoded = Buffer.from(JSON.stringify(uiMetadata)).toString('base64');
 
-            return {
-                success: true,
-                message: `✅ Generated grocery list for ${planTitle}! ${result.object.groceryList.length} items, approx ${currency}${totalCost.toFixed(2)}. [UI_METADATA:${uiMetadataEncoded}]`,
-                groceryList: {
-                    id: 'generated-list',
+            return successResponse(
+                {
+                    id: savedList.id,
                     items: result.object.groceryList,
                     locationInfo: result.object.locationInfo,
                     totalEstimatedCost: `${currency}${totalCost.toFixed(2)}`
-                }
-            };
+                },
+                `✅ Generated and saved grocery list for ${planTitle}! ${result.object.groceryList.length} items, approx ${currency}${totalCost.toFixed(2)}. [UI_METADATA:${uiMetadataEncoded}]`
+            );
 
         } catch (error) {
             console.error('[generateGroceryList] Error:', error);
-            // Return a user-friendly error message instead of crashing
-            return {
-                success: false,
-                error: 'GENERATION_FAILED',
-                message: "I had trouble generating the grocery list. Please try again in a moment.",
-            };
+            return errorResponse("I had trouble generating the grocery list. Please try again in a moment.", ErrorCode.GENERATION_FAILED, true);
         }
     },
 });
 
 // ============================================================================
-// GENERATE MEAL RECIPE TOOL (Skeleton/Placeholder Version)
+// GENERATE MEAL RECIPE TOOL
 // ============================================================================
 
 export const generateMealRecipe = tool({
@@ -402,7 +397,7 @@ export const generateMealRecipe = tool({
     parameters: z.object({
         mealName: z.string().describe('The name or description of the meal/dish the user wants to make (e.g., "tilapia and rice", "ugali omena")'),
     }),
-    execute: async ({ mealName }) => {
+    execute: async ({ mealName }): Promise<ToolResult> => {
         try {
             console.log('[generateMealRecipe] 🍳 Generating AI recipe for:', mealName);
 
@@ -484,11 +479,13 @@ IMPORTANT RULES:
             // Encode UI metadata as base64
             const uiMetadataEncoded = Buffer.from(JSON.stringify(uiMetadata)).toString('base64');
 
-            return {
-                success: true,
-                recipe: recipeWithImage,
-                message: `✨ Here's an authentic recipe for ${recipe.name}! Serves ${recipe.servings}, takes about ${recipe.prepTime} prep + ${recipe.cookTime} cooking. [UI_METADATA:${uiMetadataEncoded}]`,
-            };
+            return successResponse(
+                {
+                    recipe: recipeWithImage,
+                },
+                `✨ Here's an authentic recipe for ${recipe.name}! Serves ${recipe.servings}, takes about ${recipe.prepTime} prep + ${recipe.cookTime} cooking. [UI_METADATA:${uiMetadataEncoded}]`
+            );
+
         } catch (error) {
             console.error('[generateMealRecipe] Error:', error);
 
@@ -525,11 +522,12 @@ IMPORTANT RULES:
             const uiMetadata = { mealRecipe: recipe };
             const uiMetadataEncoded = Buffer.from(JSON.stringify(uiMetadata)).toString('base64');
 
-            return {
-                success: true,
-                recipe: recipe,
-                message: `✨ Here's a recipe for ${recipe.name}! (Note: Using basic template due to generation error) [UI_METADATA:${uiMetadataEncoded}]`,
-            };
+            return successResponse(
+                {
+                    recipe: recipe,
+                },
+                `✨ Here's a recipe for ${recipe.name}! (Note: Using basic template due to generation error) [UI_METADATA:${uiMetadataEncoded}]`
+            );
         }
     },
 });
@@ -546,7 +544,7 @@ export const modifyMealPlan = tool({
         mealIndex: z.number().optional().describe('The index of the meal to modify (0-based). If not provided, AI will infer from context or modify the first matching meal type.'),
         newMealDescription: z.string().describe('Description of what the new meal should be (e.g., "Tacos", "Vegetarian Pasta").'),
     }),
-    execute: async ({ mealPlanId, day, mealIndex, newMealDescription }) => {
+    execute: async ({ mealPlanId, day, mealIndex, newMealDescription }): Promise<ToolResult> => {
         try {
             console.log(`[modifyMealPlan] 🔄 Modifying plan ${mealPlanId}, Day ${day}, Request: "${newMealDescription}"`);
 
@@ -559,28 +557,24 @@ export const modifyMealPlan = tool({
             });
 
             if (!existingPlan) {
-                return { success: false, error: 'MEAL_PLAN_NOT_FOUND', message: "Couldn't find that meal plan." };
+                return errorResponse("Couldn't find that meal plan.", ErrorCode.RESOURCE_NOT_FOUND);
             }
 
             // 2. Validate Day (using 1-based index)
             const dayIndex = day - 1; // Convert to 0-based index
             const targetDay = existingPlan.days[dayIndex];
             if (!targetDay) {
-                return { success: false, error: 'INVALID_DAY', message: `Day ${day} not found in this meal plan. Plan has ${existingPlan.days.length} days.` };
+                return errorResponse(`Day ${day} not found in this meal plan. Plan has ${existingPlan.days.length} days.`, ErrorCode.INVALID_INPUT);
             }
 
             // 3. Identify Target Meal
-            // If mealIndex is provided, use it. Otherwise, default to 0 (first meal) or try to find a match if we had meal types.
-            // For now, we'll assume the user/AI logic provides a valid index or we default to the last meal if index is out of bounds, 
-            // but strictly speaking we should try to match "dinner" to the dinner slot.
-            // Since our current data structure is just a list of meals, we rely on the AI to pass the correct index.
             const targetIndex = mealIndex !== undefined && mealIndex >= 0 && mealIndex < targetDay.meals.length
                 ? mealIndex
                 : 0; // Default to first meal if unspecified/invalid
 
             const oldMeal = targetDay.meals[targetIndex];
             if (!oldMeal) {
-                return { success: false, error: 'INVALID_MEAL_INDEX', message: `Meal index ${targetIndex} not found on day ${day}.` };
+                return errorResponse(`Meal index ${targetIndex} not found on day ${day}.`, ErrorCode.INVALID_INPUT);
             }
 
             // 4. Generate Replacement Meal
@@ -613,7 +607,6 @@ Return a valid JSON object for the new meal.`,
             const newMealData = result.object;
 
             // 5. Update Database
-            // We need to update the specific Meal record.
             await prisma.meal.update({
                 where: { id: oldMeal.id },
                 data: {
@@ -625,7 +618,6 @@ Return a valid JSON object for the new meal.`,
             });
 
             // 6. Return Updated Plan Context
-            // Re-fetch to get the clean state
             const updatedPlan = await prisma.mealPlan.findUnique({
                 where: { id: mealPlanId },
                 include: { days: { include: { meals: true } } }
@@ -638,19 +630,16 @@ Return a valid JSON object for the new meal.`,
             };
             const uiMetadataEncoded = Buffer.from(JSON.stringify(uiMetadata)).toString('base64');
 
-            return {
-                success: true,
-                message: `✅ Updated Day ${day} to "${newMealData.name}". [UI_METADATA:${uiMetadataEncoded}]`,
-                updatedMeal: newMealData
-            };
+            return successResponse(
+                {
+                    updatedMeal: newMealData,
+                },
+                `✅ Updated Day ${day} to "${newMealData.name}". [UI_METADATA:${uiMetadataEncoded}]`
+            );
 
         } catch (error) {
             console.error('[modifyMealPlan] Error:', error);
-            return {
-                success: false,
-                error: 'MODIFICATION_FAILED',
-                message: "Failed to modify the meal plan. Please try again.",
-            };
+            return errorResponse("Failed to modify the meal plan. Please try again.", ErrorCode.MODIFICATION_FAILED, true);
         }
     },
 });
@@ -665,7 +654,7 @@ export const searchRecipes = tool({
         query: z.string().describe('The search query or description of the recipe(s) to find.'),
         count: z.number().min(1).max(5).default(3).describe('Number of recipes to return (default 3).'),
     }),
-    execute: async ({ query, count }) => {
+    execute: async ({ query, count }): Promise<ToolResult> => {
         try {
             console.log(`[searchRecipes] 🔍 Searching for "${query}" (Limit: ${count})`);
 
@@ -704,19 +693,16 @@ Keep descriptions concise (1 sentence).`,
             };
             const uiMetadataEncoded = Buffer.from(JSON.stringify(uiMetadata)).toString('base64');
 
-            return {
-                success: true,
-                message: `✅ Found ${recipes.length} recipes for "${query}". [UI_METADATA:${uiMetadataEncoded}]`,
-                recipes: recipes
-            };
+            return successResponse(
+                {
+                    recipes: recipes,
+                },
+                `✅ Found ${recipes.length} recipes for "${query}". [UI_METADATA:${uiMetadataEncoded}]`
+            );
 
         } catch (error) {
             console.error('[searchRecipes] Error:', error);
-            return {
-                success: false,
-                error: 'SEARCH_FAILED',
-                message: "I couldn't find any recipes matching that description. Please try a different search.",
-            };
+            return errorResponse("I couldn't find any recipes matching that description. Please try a different search.", ErrorCode.GENERATION_FAILED, true);
         }
     },
 });

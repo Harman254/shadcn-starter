@@ -249,3 +249,17 @@ model ConversationContext {
   @@index([expiresAt]) // For cleanup queries
   @@map("conversation_context")
 }
+
+model GroceryList {
+  id          String   @id @default(cuid())
+  userId      String
+  mealPlanId  String?  // Optional link to meal plan
+  items       Json     // Array of { item, quantity, price, category }
+  totalCost   Float
+  currency    String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("grocery_list")
+}
