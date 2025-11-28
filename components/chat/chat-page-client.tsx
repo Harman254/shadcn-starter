@@ -140,12 +140,13 @@ export function ChatPageClient({ preferences = [], preferencesSummary = '' }: Ch
                       variant="ghost"
                       size="icon"
                     className={cn(
-                      "lg:hidden shrink-0",
-                      "h-9 w-9 sm:h-10 sm:w-10",
+                      "lg:hidden shrink-0 relative z-50",
+                      "h-10 w-10 md:h-10 md:w-10",
                       "rounded-xl",
                       "hover:bg-muted/80",
                       "transition-all duration-200",
-                      "hover:scale-105 active:scale-95"
+                      "hover:scale-105 active:scale-95",
+                      "touch-manipulation" // Better touch handling
                     )}
                     aria-label="Open chat history"
                     >

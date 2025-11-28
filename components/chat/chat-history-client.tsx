@@ -921,29 +921,49 @@ export function ChatHistoryClient({ chatType, initialSessions = [], onSessionSel
               {chatType === 'context-aware' ? 'Recipe Assistant' : 'Meal Tracker'}
             </p>
           </div>
-          <div className="flex items-center gap-1 shrink-0">
+          <div className="flex items-center gap-1.5 shrink-0">
             {sessions.length > 0 && (
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => handleClearAllConversations({ emptyOnly: true, noTitleOnly: true })}
-                className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
-                aria-label="Clear empty conversations"
-                disabled={!isAuthenticated || isClearingAll}
-                title="Clear empty conversations"
-              >
-                {isClearingAll ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Trash className="h-4 w-4" />
-                )}
-              </Button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-9 w-9 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors touch-manipulation"
+                    aria-label="Clear empty conversations"
+                    disabled={!isAuthenticated || isClearingAll}
+                    title="Clear empty conversations"
+                  >
+                    {isClearingAll ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Trash className="h-4 w-4" />
+                    )}
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent className="w-[90vw] max-w-md">
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Clear empty conversations?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This will delete all conversations without messages. This action cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+                    <AlertDialogCancel className="w-full sm:w-auto">Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={() => handleClearAllConversations({ emptyOnly: true, noTitleOnly: true })}
+                      className="w-full sm:w-auto bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    >
+                      Clear All
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             )}
             <Button
               variant="default"
               size="icon"
               onClick={handleNewChat}
-              className="h-8 w-8 rounded-lg shadow-sm hover:shadow transition-all bg-primary text-primary-foreground hover:bg-primary/90"
+              className="h-9 w-9 rounded-lg shadow-sm hover:shadow transition-all bg-primary text-primary-foreground hover:bg-primary/90 touch-manipulation"
               aria-label="New chat"
               disabled={!isAuthenticated}
               title="New chat"

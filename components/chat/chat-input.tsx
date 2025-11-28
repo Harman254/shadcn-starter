@@ -65,11 +65,11 @@ export function ChatInput({ onSubmit, isLoading, disabled = false }: ChatInputPr
   const hasValue = value.trim().length > 0
 
   return (
-    <div className="w-full absolute bottom-0 left-0 right-0 z-50 pointer-events-none safe-area-bottom pb-2">
+    <div className="w-full sticky bottom-0 left-0 right-0 z-50 safe-area-bottom">
       {/* Gradient fade overlay */}
       <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-background via-background/90 to-transparent pointer-events-none" />
       
-      <div className="relative max-w-4xl mx-auto px-4 pb-4 sm:pb-6 pointer-events-auto">
+      <div className="relative max-w-4xl mx-auto px-4 pb-safe-4 sm:pb-6">
         <form onSubmit={handleSubmit} className="relative flex items-end gap-2">
           <motion.div
             className={cn(
@@ -78,7 +78,7 @@ export function ChatInput({ onSubmit, isLoading, disabled = false }: ChatInputPr
               "border border-white/20 dark:border-white/10",
               "rounded-[24px] sm:rounded-[28px]",
               "shadow-2xl shadow-black/10 dark:shadow-black/40",
-              "transition-all duration-300 cubic-bezier(0.4, 0, 0.2, 1)",
+              "transition-all duration-300 cubic-bezier(0, 4, 0.2, 1)",
               isFocused 
                 ? "ring-2 ring-primary/30 border-primary/50 shadow-2xl shadow-primary/20 scale-[1.01] -translate-y-1" 
                 : "hover:border-primary/30 hover:shadow-xl hover:shadow-primary/5",

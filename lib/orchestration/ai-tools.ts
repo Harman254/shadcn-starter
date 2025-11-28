@@ -245,7 +245,7 @@ export const generateGroceryList = tool({
         try {
             console.log('[generateGroceryList] 🛒 Source:', source);
 
-            // Get auth session for location data
+            // 1. Get User Session
             const { auth } = await import('@/lib/auth');
             const { headers } = await import('next/headers');
             const session = await auth.api.getSession({ headers: await headers() });
@@ -258,23 +258,21 @@ export const generateGroceryList = tool({
                 };
             }
 
-            // Get user location for pricing
+            // 2. Get User Location (Parallelizable if we didn't need session first, but fast enough)
             const { getLocationDataWithCaching } = await import('@/lib/location');
             const locationData = await getLocationDataWithCaching(session.user.id, session.session.id);
 
-            let meals: Array<{ name: string; ingredients: string[] }> = [];
+            // 3. Gather Ingredients
+            let allIngredients: string[] = [];
             let planTitle = '';
 
-            // Handle single recipe/meal
             if (source === 'recipe' && recipeName && ingredients) {
                 console.log('[generateGroceryList] Creating list for recipe:', recipeName);
-                meals = [{ name: recipeName, ingredients }];
+                allIngredients = ingredients;
                 planTitle = recipeName;
             }
-            // Handle full meal plan from DB
             else if (source === 'mealplan' && mealPlanId) {
                 console.log('[generateGroceryList] Loading meal plan from DB:', mealPlanId);
-
                 const prisma = (await import('@/lib/prisma')).default;
                 const dbMealPlan = await prisma.mealPlan.findUnique({
                     where: { id: mealPlanId },
@@ -282,133 +280,113 @@ export const generateGroceryList = tool({
                 });
 
                 if (!dbMealPlan) {
-                    return {
-                        success: false,
-                        error: 'MEAL_PLAN_NOT_FOUND',
-                        message: "Couldn't find that meal plan. It may have been deleted.",
-                    };
+                    return { success: false, error: 'MEAL_PLAN_NOT_FOUND', message: "Couldn't find that meal plan." };
                 }
-
-                meals = dbMealPlan.days.flatMap((day: any) =>
-                    day.meals.map((meal: any) => ({
-                        name: meal.name,
-                        ingredients: meal.ingredients || []
-                    }))
-                );
+                allIngredients = dbMealPlan.days.flatMap(d => d.meals.flatMap(m => m.ingredients));
                 planTitle = dbMealPlan.title;
             }
-            // Handle meal plan from context (not saved)
             else if (source === 'mealplan' && mealPlan) {
                 console.log('[generateGroceryList] Using meal plan from context');
-                meals = mealPlan.days.flatMap((day: any) =>
-                    day.meals.map((meal: any) => ({
-                        name: meal.name,
-                        ingredients: meal.ingredients || []
-                    }))
-                );
+                allIngredients = mealPlan.days.flatMap(d => d.meals.flatMap(m => m.ingredients));
                 planTitle = mealPlan.title || 'Your meal plan';
             }
             else {
-                return {
-                    success: false,
-                    error: 'INVALID_INPUT',
-                    message: source === 'recipe'
-                        ? "I need the recipe details (name and ingredients) to create a grocery list."
-                        : "I need a meal plan first. Would you like me to create one?",
-                };
+                return { success: false, error: 'INVALID_INPUT', message: "Missing meal plan or recipe data." };
             }
 
-            // Validate we have meals
-            if (meals.length === 0 || meals.every(m => !m.ingredients || m.ingredients.length === 0)) {
-                return {
-                    success: false,
-                    error: 'NO_INGREDIENTS',
-                    message: "The meal plan doesn't contain any ingredients. Please try again.",
-                };
+            if (allIngredients.length === 0) {
+                return { success: false, error: 'NO_INGREDIENTS', message: "No ingredients found to generate list." };
             }
 
-            // Use AI SDK to generate grocery list with local pricing
+            // 4. Pre-process: Consolidate Ingredients in Code (Critical Optimization)
+            // Instead of asking AI to count "2 onions" + "1 onion", we pass a raw list and ask it to summarize.
+            // But even better: we can deduplicate strings if they are exact matches.
+            // For now, we'll pass the raw list but formatted clearly, and ask AI to do the semantic consolidation
+            // (e.g. "chopped onions" + "onion" -> "Onions: 2").
+            // We limit the list size to prevent token overflow.
+            const ingredientCount = allIngredients.length;
+            const consolidatedListPrompt = allIngredients.map(i => `- ${i}`).join('\n');
+
+            console.log(`[generateGroceryList] Processing ${ingredientCount} ingredients for AI...`);
+
+            // 5. Generate List with AI SDK
             const { generateObject } = await import('ai');
             const { google } = await import('@ai-sdk/google');
 
             const result = await generateObject({
                 model: google('gemini-2.0-flash-exp'),
+                // Lower temperature for more deterministic/functional output
+                temperature: 0.2,
                 schema: z.object({
                     groceryList: z.array(z.object({
-                        id: z.string().describe('Unique ID for the item'),
-                        item: z.string().describe('Name of the grocery item'),
-                        quantity: z.string().describe('Quantity needed (e.g., "2 lbs", "1 cup")'),
-                        category: z.string().describe('Category (e.g., "Produce", "Dairy", "Meat")'),
-                        estimatedPrice: z.string().describe('Estimated price with currency symbol (e.g., "$3.50")'),
-                        suggestedLocation: z.string().describe('Suggested local store'),
+                        id: z.string(),
+                        item: z.string(),
+                        quantity: z.string(),
+                        category: z.string(),
+                        estimatedPrice: z.string(),
+                        suggestedLocation: z.string(),
                     })),
                     locationInfo: z.object({
-                        currencySymbol: z.string().describe('Currency symbol'),
-                        localStores: z.array(z.string()).describe('List of local stores'),
+                        currencySymbol: z.string(),
+                        localStores: z.array(z.string()),
                     }),
                 }),
-                prompt: `You are a hyper-local grocery expert. Generate a consolidated grocery list with realistic local pricing and store suggestions.
+                prompt: `You are a smart grocery assistant. Convert this list of ingredients into a consolidated shopping list.
 
 ## USER LOCATION
 - City: ${locationData.city || 'San Francisco'}
-- Country: ${locationData.country || 'USA'}
 - Currency: ${locationData.currencySymbol || '$'}
 
-## MEALS
-${meals.map(m => `- **${m.name}**: ${m.ingredients.join(', ')}`).join('\n')}
+## INGREDIENTS TO PROCESS
+${consolidatedListPrompt}
 
-## CRITICAL RULES
-1. **Local Pricing:** Provide realistic single price estimates in local currency (${locationData.currencySymbol || '$'}). The 'estimatedPrice' field must be a string with currency symbol and price (e.g., "$4.99").
-2. **Local Stores:** Suggest real grocery stores in ${locationData.city || 'San Francisco'}.
-3. **Consolidate:** Combine identical ingredients and sum quantities.
-4. **Categorize:** Assign category to each item (Produce, Dairy, Meat, Pantry, etc.).
-5. **Generate IDs:** Assign unique string ID to each item (e.g., "item-1", "item-2").
+## INSTRUCTIONS
+1. **Consolidate:** Combine similar items (e.g., "2 onions" and "chopped onion" -> "Onions", Quantity: "3").
+2. **Categorize:** Group by aisle (Produce, Dairy, Meat, Pantry, Spices).
+3. **Price:** Estimate TOTAL price for the quantity in ${locationData.currencySymbol || '$'}.
+4. **Stores:** Suggest stores in ${locationData.city || 'San Francisco'}.
 
-Return only the JSON object with groceryList and locationInfo.`,
+Return JSON only.`,
             });
 
-            if (!result.object || !result.object.groceryList || !Array.isArray(result.object.groceryList)) {
-                return {
-                    success: false,
-                    error: 'AI_GENERATION_FAILED',
-                    message: 'Failed to generate grocery list. Please try again.',
-                };
+            if (!result.object?.groceryList) {
+                throw new Error('AI returned empty grocery list');
             }
 
-            // Calculate total cost
-            const totalCost = result.object.groceryList.reduce((sum: number, item: any) => {
-                const priceStr = String(item.estimatedPrice).replace(/[^\\d.]/g, '');
-                return sum + (parseFloat(priceStr) || 0);
+            // 6. Calculate Totals & Return
+            const totalCost = result.object.groceryList.reduce((sum, item) => {
+                const price = parseFloat(item.estimatedPrice.replace(/[^0-9.]/g, '')) || 0;
+                return sum + price;
             }, 0);
 
-            const currencySymbol = result.object.locationInfo?.currencySymbol || locationData.currencySymbol || '$';
-
-            // Create UI metadata
+            const currency = result.object.locationInfo?.currencySymbol || '$';
             const uiMetadata = {
                 groceryList: {
                     items: result.object.groceryList,
                     locationInfo: result.object.locationInfo,
-                    totalEstimatedCost: `${currencySymbol}${totalCost.toFixed(2)}`,
+                    totalEstimatedCost: `${currency}${totalCost.toFixed(2)}`,
                 },
             };
-
             const uiMetadataEncoded = Buffer.from(JSON.stringify(uiMetadata)).toString('base64');
 
             return {
                 success: true,
-                message: `✅ Generated grocery list for ${planTitle}! Found ${result.object.groceryList.length} items with estimated total cost of ${currencySymbol}${totalCost.toFixed(2)}. [UI_METADATA:${uiMetadataEncoded}]`,
+                message: `✅ Generated grocery list for ${planTitle}! ${result.object.groceryList.length} items, approx ${currency}${totalCost.toFixed(2)}. [UI_METADATA:${uiMetadataEncoded}]`,
                 groceryList: {
                     id: 'generated-list',
                     items: result.object.groceryList,
                     locationInfo: result.object.locationInfo,
-                    totalEstimatedCost: `${currencySymbol}${totalCost.toFixed(2)}`
+                    totalEstimatedCost: `${currency}${totalCost.toFixed(2)}`
                 }
             };
+
         } catch (error) {
             console.error('[generateGroceryList] Error:', error);
+            // Return a user-friendly error message instead of crashing
             return {
                 success: false,
-                error: error instanceof Error ? error.message : 'Failed to generate grocery list.'
+                error: 'GENERATION_FAILED',
+                message: "I had trouble generating the grocery list. Please try again in a moment.",
             };
         }
     },

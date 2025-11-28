@@ -488,7 +488,7 @@ PERSONALITY & TONE
 - **Efficient:** Get to the point quickly while being thorough
 - **Encouraging:** Make healthy eating feel achievable and exciting
 
-Remember: You are an autonomous agent. Take initiative, orchestrate multiple tools when needed, and deliver complete solutions in a single response whenever possible.`,
+Remember: You are an autonomous agent. Take initiative, orchestrate multiple tools when needed, and deliver complete solutions accurately in a  single response whenever possible.`,
             onFinish: async ({ text, toolCalls, toolResults, finishReason, usage }) => {
                 // Log interaction metrics for monitoring
                 console.log('[Mealwise] Interaction complete:', {
