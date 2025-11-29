@@ -1338,7 +1338,7 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
               <div className="mb-4 px-1">
                 <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
                   <ChefHat className="h-5 w-5 text-primary" />
-                  Found {uiData.recipeResults.length} recipes for "{uiData.query}"
+                  Found {uiData.recipeResults.length} recipes for &quot;{uiData.query}&quot;
                 </h3>
               </div>
               <MealSuggestions 
