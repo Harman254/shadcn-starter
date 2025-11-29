@@ -281,7 +281,8 @@ export class OrchestratedChatFlow {
       - If there are ERRORS in the summary, apologize specifically for that part (e.g. "I couldn't get the prices, but here is the plan.")
       - Keep it enthusiastic but VERY brief
       ` : `
-      - No tools were executed. This means the user likely asked a general question or just said hello.
+      - No tools were executed. This means the user likely asked a general question, just said hello, or is following up on a previous message.
+      - CHECK THE CONVERSATION HISTORY. If the user says "??" or "Hello?", they might be waiting for a response to their previous message.
       - Answer the user's question directly and helpfully.
       - Be conversational, friendly, and engaging.
       - If they asked about the app's capabilities, explain that you can help with meal planning, grocery lists, and nutrition.
@@ -301,8 +302,10 @@ export class OrchestratedChatFlow {
   ): string {
     const basePrompt = `You are an expert AI assistant for a meal planning application.
 Your goal is to help users plan meals, analyze nutrition, check grocery prices, and generate grocery lists.
+You are also a knowledgeable culinary expert who can discuss food, recipes, ingredients, and cooking techniques freely.
 
-CRITICAL RULE: When users request specific actions, you MUST use the corresponding tools. DO NOT just describe what you would do - actually call the tool.`;
+CRITICAL RULE: When users request specific actions (planning, list generation, analysis), you MUST use the corresponding tools.
+HOWEVER, if the user asks a general question (e.g., "What is Ugali?", "How do I cook rice?"), you should ANSWER DIRECTLY without using tools.`;
 
     const contextInfo = `
 CURRENT CONTEXT:

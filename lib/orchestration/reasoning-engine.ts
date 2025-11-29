@@ -69,7 +69,7 @@ export class ReasoningEngine {
         - If the user asks for a grocery list, call 'generateGroceryList'.
         - If the user asks for nutrition, call 'analyzeNutrition'.
         - If the user asks for pricing, call 'getGroceryPricing'.
-        - **Small Talk**: If the user message is just a greeting, thanks, or general question (e.g. "Hi", "How are you?", "Thanks"), return an EMPTY array for 'steps'. Do NOT call any tools.
+        - **General Chat / Info**: If the user asks a general question, requests information, or engages in small talk (e.g. "Hi", "What is Ugali?", "Talk to me about..."), return an EMPTY array for 'steps'. Do NOT call any tools. The synthesis layer will answer.
         - ALWAYS provide tool arguments as a valid JSON string.
         - For tool arguments, convert numbers to strings (e.g., duration: "1", mealsPerDay: "3")
         - DEFAULT to 1-day meal plans (duration: "1") unless user explicitly requests more days.
