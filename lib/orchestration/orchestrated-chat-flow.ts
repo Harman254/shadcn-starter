@@ -22,8 +22,8 @@ export interface OrchestratedChatInput {
   userId?: string;
   sessionId?: string;
   conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }>;
-  userPreferences?: any;
-  locationData?: any;
+  userPreferences?: any | Promise<any>;
+  locationData?: any | Promise<any>;
 }
 
 export interface OrchestratedChatOutput {
@@ -145,14 +145,18 @@ export class OrchestratedChatFlow {
           // 1. Initial Status
           controller.enqueue(formatData({ type: 'status', content: '🤔 Analyzing your request...' }));
 
-          // Load context
-          const context = await this.contextManager.getContext(input.userId, input.sessionId);
+          // Load context and preferences in parallel
+          const [context, resolvedPreferences, resolvedLocation] = await Promise.all([
+            this.contextManager.getContext(input.userId, input.sessionId),
+            Promise.resolve(input.userPreferences),
+            Promise.resolve(input.locationData)
+          ]);
 
           // 2. Plan
           const plan = await this.reasoningEngine.generatePlan(input.message, {
             ...context,
-            userPreferences: input.userPreferences,
-            location: input.locationData
+            userPreferences: resolvedPreferences,
+            location: resolvedLocation
           }, tools);
 
           controller.enqueue(formatData({ type: 'plan', content: plan }));
@@ -169,7 +173,8 @@ export class OrchestratedChatFlow {
             },
             undefined,
             undefined,
-            fullHistory // Pass FULL history including current message
+            fullHistory, // Pass FULL history including current message
+            context // Pass context for tool execution
           );
 
           // Extract UI_METADATA from tool results

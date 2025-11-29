@@ -94,8 +94,8 @@ export async function POST(req: Request) {
         const { messages } = await req.json();
         const lastMessage = messages[messages.length - 1];
 
-        // Fetch user preferences
-        const userPreferences = await fetchUserPreferences(session.user.id);
+        // Fetch user preferences (Promise)
+        const userPreferencesPromise = fetchUserPreferences(session.user.id);
 
         // Initialize Orchestrated Chat Flow
         const chatFlow = getOrchestratedChatFlow();
@@ -109,8 +109,8 @@ export async function POST(req: Request) {
                 role: m.role,
                 content: m.content
             })),
-            userPreferences: userPreferences,
-            locationData: userPreferences.location
+            userPreferences: userPreferencesPromise,
+            locationData: userPreferencesPromise.then(p => p.location)
         });
 
         return new Response(stream, {

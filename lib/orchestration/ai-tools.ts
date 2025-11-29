@@ -293,6 +293,20 @@ export const generateGroceryList = tool({
                 allIngredients = mealPlan.days.flatMap(d => d.meals.flatMap(m => m.ingredients));
                 planTitle = mealPlan.title || 'Your meal plan';
             }
+            // Fallback: Check injected context for last generated meal plan
+            else if (source === 'mealplan' && !mealPlanId && !mealPlan) {
+                // @ts-ignore - context is injected by ToolExecutor
+                const context = arguments[1]?.context;
+                const lastMealPlan = context?.lastToolResult?.generateMealPlan?.data?.mealPlan;
+
+                if (lastMealPlan) {
+                    console.log('[generateGroceryList] 💡 Found meal plan in conversation context!');
+                    allIngredients = lastMealPlan.days.flatMap((d: any) => d.meals.flatMap((m: any) => m.ingredients));
+                    planTitle = lastMealPlan.title || 'Your meal plan';
+                } else {
+                    return errorResponse("Missing meal plan data. Please generate a meal plan first.", ErrorCode.INVALID_INPUT);
+                }
+            }
             else {
                 return errorResponse("Missing meal plan or recipe data.", ErrorCode.INVALID_INPUT);
             }

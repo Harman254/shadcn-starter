@@ -18,7 +18,8 @@ export class ToolExecutor {
         onStepStart?: (step: ExecutionStep) => void,
         onToolStart?: (toolName: string) => void,
         onToolFinish?: (result: ToolExecutionResult) => void,
-        chatMessages: Array<{ role: 'user' | 'assistant'; content: string }> = []
+        chatMessages: Array<{ role: 'user' | 'assistant'; content: string }> = [],
+        context: any = {}
     ): Promise<Record<string, any>> {
         const aggregatedResults: Record<string, any> = {};
 
@@ -68,8 +69,9 @@ export class ToolExecutor {
                     // Execute tool
                     const result = await tool.execute(convertedArgs, {
                         toolCallId: 'exec-' + Date.now(),
-                        messages: chatMessages as any // Pass messages to Vercel AI SDK context as well
-                    });
+                        messages: chatMessages as any, // Pass messages to Vercel AI SDK context
+                        context: context // Pass full context including lastToolResult
+                    } as any);
 
                     const executionResult: ToolExecutionResult = {
                         stepId: step.id,
