@@ -58,6 +58,24 @@ export class ReasoningEngine {
         1. **Parallel Execution**: Group independent tool calls into the same step.
            - Example: "Analyze nutrition" and "Get pricing" can run together if they both rely on an existing meal plan.
         2. **Dependencies**: If a tool needs output from another (e.g., generateGroceryList needs a mealPlanId from generateMealPlan), put them in sequential steps.
+        3. **Efficiency**: Minimize the number of steps.
+        4. **Context Awareness**: Use the provided context (mealPlanId, preferences) ONLY if the user doesn't specify otherwise.
+        5. **User Overrides**: If the user specifies ANY preference (e.g. "keto", "ugali", "3 days"), it MUST override the saved context/preferences.
+           - Example: If context has "Kenyan" but user asks for "Ugandan", use "Ugandan".
+           - Example: If context has "7 days" but user asks for "1 day", use "1".
+        
+        CRITICAL:
+        - If the user asks for a meal plan, call 'generateMealPlan'.
+        - If the user asks for a grocery list, call 'generateGroceryList'.
+        - If the user asks for nutrition, call 'analyzeNutrition'.
+        - If the user asks for pricing, call 'getGroceryPricing'.
+        - **Small Talk**: If the user message is just a greeting, thanks, or general question (e.g. "Hi", "How are you?", "Thanks"), return an EMPTY array for 'steps'. Do NOT call any tools.
+        - ALWAYS provide tool arguments as a valid JSON string.
+        - For tool arguments, convert numbers to strings (e.g., duration: "1", mealsPerDay: "3")
+        - DEFAULT to 1-day meal plans (duration: "1") unless user explicitly requests more days.
+        
+        Return a JSON object with the plan.`
+            });
 
             console.log('[ReasoningEngine] Generated plan raw:', JSON.stringify(object, null, 2));
             console.log('[ReasoningEngine] Token Usage:', usage);
