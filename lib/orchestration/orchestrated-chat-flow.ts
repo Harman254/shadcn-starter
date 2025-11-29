@@ -132,6 +132,15 @@ export class OrchestratedChatFlow {
 
     return new ReadableStream({
       start: async (controller) => {
+        // Keep-alive interval to prevent timeouts during long reasoning/execution
+        const keepAliveInterval = setInterval(() => {
+          try {
+            controller.enqueue(formatData({ type: 'status', content: 'Thinking...' }));
+          } catch (e) {
+            clearInterval(keepAliveInterval);
+          }
+        }, 2000);
+
         try {
           // 1. Initial Status
           controller.enqueue(formatData({ type: 'status', content: '🤔 Analyzing your request...' }));
@@ -184,6 +193,9 @@ export class OrchestratedChatFlow {
           // 4. Synthesize
           controller.enqueue(formatData({ type: 'status', content: '✍️ Synthesizing response...' }));
 
+          // Clear keep-alive before streaming text to avoid interleaving issues
+          clearInterval(keepAliveInterval);
+
           const result = streamText({
             model: google('gemini-2.0-flash-exp'),
             system: this.buildSystemPrompt(input, context, false),
@@ -215,6 +227,7 @@ export class OrchestratedChatFlow {
           controller.close();
 
         } catch (error) {
+          clearInterval(keepAliveInterval);
           console.error('[OrchestratedChatFlow] Stream Error:', error);
           controller.enqueue(formatError(error instanceof Error ? error.message : 'An error occurred'));
           controller.close();
