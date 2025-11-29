@@ -158,13 +158,18 @@ export class OrchestratedChatFlow {
           controller.enqueue(formatData({ type: 'plan', content: plan }));
 
           // 3. Execute
+          const fullHistory = [
+            ...input.conversationHistory,
+            { role: 'user' as const, content: input.message }
+          ];
+
           const toolResults = await this.toolExecutor.executePlan(plan,
             (step) => {
               controller.enqueue(formatData({ type: 'status', content: `⚙️ Executing step: ${step.description}` }));
             },
             undefined,
             undefined,
-            input.conversationHistory // Pass chat history for context injection
+            fullHistory // Pass FULL history including current message
           );
 
           // Extract UI_METADATA from tool results
@@ -238,22 +243,28 @@ export class OrchestratedChatFlow {
 
   private buildSynthesisPrompt(userMessage: string, toolResults: Record<string, any>): string {
     // Extract clean messages without UI_METADATA
-    const cleanMessages = Object.entries(toolResults)
+    const toolMessages = Object.entries(toolResults)
       .map(([tool, result]) => {
-        if (result && typeof result.message === 'string') {
-          return result.message.replace(/\s*\[UI_METADATA:[^\]]+\]/, '');
+        if (result) {
+          if (result.status === 'error') {
+            return `Tool '${tool}' FAILED: ${result.error || 'Unknown error'}`;
+          }
+          if (typeof result.message === 'string') {
+            return result.message.replace(/\s*\[UI_METADATA:[^\]]+\]/, '');
+          }
         }
         return '';
       })
       .filter(Boolean);
 
-    const hasResults = cleanMessages.length > 0;
+    const hasResults = toolMessages.length > 0;
+    const hasErrors = toolMessages.some(m => m.includes('FAILED'));
 
     return `
       USER MESSAGE: "${userMessage}"
       
       TOOL EXECUTION SUMMARY:
-      ${hasResults ? cleanMessages.join('\n') : 'No tools were executed.'}
+      ${hasResults ? toolMessages.join('\n') : 'No tools were executed.'}
       
       CRITICAL INSTRUCTIONS:
       ${hasResults ? `
@@ -262,6 +273,7 @@ export class OrchestratedChatFlow {
       - DO NOT describe what's in the meal plan - the user can see it in the UI
       - DO NOT list meals, ingredients, or prices - they're already displayed
       - Just say something like "I've created your meal plan! Enjoy!" or "Here's your grocery list!"
+      - If there are ERRORS in the summary, apologize specifically for that part (e.g. "I couldn't get the prices, but here is the plan.")
       - Keep it enthusiastic but VERY brief
       ` : `
       - No tools were executed. This means the user likely asked a general question or just said hello.
