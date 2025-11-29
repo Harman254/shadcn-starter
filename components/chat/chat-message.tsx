@@ -989,11 +989,59 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
                 "shadow-lg shadow-secondary/5",
                 "backdrop-blur-sm"
               )}>
-                {/* ... Grocery List Content ... */}
-                <div className="p-4 sm:p-5 md:p-6">
-                  {/* ... existing grocery list content ... */}
-                  {/* This part is hidden in the view but we assume it renders the list */}
-                  {/* We just need to append the chips at the bottom of the container */}
+                {/* Header with Total Cost */}
+                <div className="px-4 sm:px-5 md:px-6 py-4 border-b border-border/50 bg-muted/30 backdrop-blur-sm flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <ShoppingCart className="h-5 w-5 text-primary" />
+                    <span className="font-semibold text-foreground">Shopping List</span>
+                  </div>
+                  {groceryList.totalEstimatedCost && (
+                    <div className="flex items-center gap-2 bg-background/80 px-3 py-1.5 rounded-full border border-border/50 shadow-sm">
+                      <span className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Est. Total</span>
+                      <span className="font-bold text-primary">{groceryList.totalEstimatedCost}</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Grocery List Items */}
+                <div className="p-4 sm:p-5 md:p-6 space-y-6">
+                  {/* Group by Category */}
+                  {(Object.entries(
+                    groceryList.items.reduce((acc: any, item: any) => {
+                      const cat = item.category || 'General';
+                      if (!acc[cat]) acc[cat] = [];
+                      acc[cat].push(item);
+                      return acc;
+                    }, {})
+                  ) as [string, any[]][]).map(([category, items], catIdx: number) => (
+                    <div key={catIdx} className="space-y-3">
+                      <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider pl-1 flex items-center gap-2">
+                        <span className="w-1.5 h-1.5 rounded-full bg-primary/40" />
+                        {category}
+                      </h4>
+                      <div className="grid gap-2 sm:grid-cols-2">
+                        {items.map((item: any, itemIdx: number) => (
+                          <div 
+                            key={itemIdx}
+                            className="flex items-center justify-between p-3 rounded-xl bg-muted/30 border border-border/40 hover:border-primary/30 hover:bg-muted/50 transition-all duration-200 group"
+                          >
+                            <div className="flex items-center gap-3 min-w-0">
+                              <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-background border border-border/50 text-xs font-bold text-foreground shadow-sm group-hover:scale-105 transition-transform">
+                                {item.quantity.replace(/[^0-9.]/g, '') || '1'}
+                              </div>
+                              <div className="min-w-0">
+                                <div className="font-medium text-sm text-foreground truncate">{item.item}</div>
+                                <div className="text-xs text-muted-foreground truncate">{item.suggestedLocation}</div>
+                              </div>
+                            </div>
+                            <div className="font-semibold text-sm text-primary whitespace-nowrap pl-2">
+                              {item.estimatedPrice}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
                 </div>
 
                 {/* Smart Action Chips for Grocery List */}
