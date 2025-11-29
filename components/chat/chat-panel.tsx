@@ -124,10 +124,10 @@ export function ChatPanel({
         
         // Find ui_data events in the stream data
         for (const item of data) {
-          console.log('[ChatPanel] Checking item:', item, 'Type:', item?.type);
-          if (item && typeof item === 'object' && item.type === 'ui_data') {
-            console.log('[ChatPanel] ✅ Found UI data:', item.content);
-            uiData = item.content;
+          console.log('[ChatPanel] Checking item:', item, 'Type:', (item as any)?.type);
+          if (item && typeof item === 'object' && (item as any).type === 'ui_data') {
+            console.log('[ChatPanel] ✅ Found UI data:', (item as any).content);
+            uiData = (item as any).content;
             
             // Trigger toast if present in UI data (e.g. for modifyMealPlan)
             if (uiData?.toast) {
