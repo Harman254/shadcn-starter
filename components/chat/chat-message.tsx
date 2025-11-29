@@ -989,11 +989,154 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
                 "shadow-lg shadow-secondary/5",
                 "backdrop-blur-sm"
               )}>
-                {/* ... Grocery List Content ... */}
+                {/* Grocery List Header */}
+                <div className="flex items-center justify-between px-4 py-3 border-b border-border/50 bg-muted/30 backdrop-blur-sm">
+                  <div className="flex items-center gap-2">
+                    <VerifiedBadge source="Mealwise AI" />
+                    <span className="text-xs font-medium text-muted-foreground hidden sm:inline-block">
+                      {groceryList.items?.length || 0} Items
+                    </span>
+                  </div>
+                </div>
+
+                {/* Grocery List Content */}
                 <div className="p-4 sm:p-5 md:p-6">
-                  {/* ... existing grocery list content ... */}
-                  {/* This part is hidden in the view but we assume it renders the list */}
-                  {/* We just need to append the chips at the bottom of the container */}
+                  {/* Location and Cost Summary */}
+                  <div className={cn(
+                    "mb-5 p-4 rounded-xl",
+                    "bg-gradient-to-br from-secondary/10 to-secondary/5",
+                    "border border-border/30"
+                  )}>
+                    <div className="flex items-center justify-between flex-wrap gap-3">
+                      <div className="flex items-center gap-2 text-sm">
+                        <MapPin className="h-4 w-4 text-primary" />
+                        <span className="font-medium text-foreground">
+                          {groceryList.locationInfo?.currencySymbol || '$'} Prices for your area
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-muted-foreground">Total Estimate:</span>
+                        <span className="text-lg font-bold text-primary">
+                          {groceryList.totalEstimatedCost || '$0.00'}
+                        </span>
+                      </div>
+                    </div>
+                    {groceryList.locationInfo?.localStores && groceryList.locationInfo.localStores.length > 0 && (
+                      <div className="mt-3 pt-3 border-t border-border/20">
+                        <p className="text-xs text-muted-foreground mb-2">Suggested stores:</p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {groceryList.locationInfo.localStores.slice(0, 3).map((store: string, index: number) => (
+                            <span 
+                              key={index}
+                              className={cn(
+                                "inline-flex items-center px-2 py-1 rounded-md text-xs font-medium",
+                                "bg-background border border-border/50 text-muted-foreground"
+                              )}
+                            >
+                              {store}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Grocery Items - Grouped by Category */}
+                  {(() => {
+                    const items = groceryList.items || [];
+                    if (items.length === 0) {
+                      return (
+                        <div className="text-center py-8 text-muted-foreground">
+                          No items in the grocery list
+                        </div>
+                      );
+                    }
+
+                    // Group items by category
+                    const groupedItems = items.reduce((acc: Record<string, any[]>, item: any) => {
+                      const category = item.category || 'Other';
+                      if (!acc[category]) acc[category] = [];
+                      acc[category].push(item);
+                      return acc;
+                    }, {});
+
+                    return (
+                      <div className="space-y-5">
+                        {(Object.entries(groupedItems) as [string, any[]][]).map(([category, categoryItems], categoryIndex: number) => (
+                          <motion.div
+                            key={category}
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.2, delay: categoryIndex * 0.05 }}
+                            className="space-y-3"
+                          >
+                            {/* Category Header */}
+                            <div className="flex items-center gap-2">
+                              <Tag className="h-4 w-4 text-primary" />
+                              <h4 className="font-semibold text-base text-foreground">
+                                {category}
+                              </h4>
+                              <span className="text-xs text-muted-foreground">
+                                ({categoryItems.length} {categoryItems.length === 1 ? 'item' : 'items'})
+                              </span>
+                            </div>
+
+                            {/* Items in Category */}
+                            <div className="grid gap-2">
+                              {categoryItems.map((item: any, itemIndex: number) => (
+                                <motion.div
+                                  key={item.id || itemIndex}
+                                  initial={{ opacity: 0, x: -10 }}
+                                  animate={{ opacity: 1, x: 0 }}
+                                  transition={{ duration: 0.2, delay: (categoryIndex * 0.05) + (itemIndex * 0.02) }}
+                                  className={cn(
+                                    "group relative p-3 rounded-lg",
+                                    "bg-background hover:bg-muted/40",
+                                    "border border-border/30 hover:border-primary/30",
+                                    "transition-all duration-200"
+                                  )}
+                                >
+                                  <div className="flex items-center justify-between gap-3">
+                                    <div className="flex-1 min-w-0">
+                                      <div className="flex items-center gap-2">
+                                        <div className={cn(
+                                          "w-1.5 h-1.5 rounded-full shrink-0",
+                                          "bg-primary/60 group-hover:bg-primary",
+                                          "transition-colors duration-200"
+                                        )} />
+                                        <h5 className="font-medium text-sm text-foreground">
+                                          {item.item}
+                                        </h5>
+                                        <span className={cn(
+                                          "px-2 py-0.5 rounded text-xs font-medium shrink-0",
+                                          "bg-primary/10 text-primary border border-primary/20"
+                                        )}>
+                                          {item.quantity}
+                                        </span>
+                                      </div>
+                                      {item.suggestedLocation && (
+                                        <p className="text-xs text-muted-foreground mt-1 ml-3.5">
+                                          Available at: {item.suggestedLocation}
+                                        </p>
+                                      )}
+                                    </div>
+                                    <div className="shrink-0 text-right">
+                                      <div className="flex items-center gap-1">
+                                        <DollarSign className="h-3 w-3 text-muted-foreground" />
+                                        <span className="font-semibold text-sm text-foreground">
+                                          {item.estimatedPrice}
+                                        </span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </motion.div>
+                              ))}
+                            </div>
+                          </motion.div>
+                        ))}
+                      </div>
+                    );
+                  })()}
                 </div>
 
                 {/* Smart Action Chips for Grocery List */}

@@ -67,6 +67,8 @@ export class ReasoningEngine {
         CRITICAL:
         - If the user asks for a meal plan, call 'generateMealPlan'.
         - If the user asks for a grocery list, call 'generateGroceryList'.
+          * If lastToolResult contains a meal plan from 'generateMealPlan', pass '{"source": "mealplan", "fromContext": "true"}' as args.
+          * If context.mealPlanId exists, pass '{"source": "mealplan", "mealPlanId": "<ID>"}' as args.
         - If the user asks for nutrition, call 'analyzeNutrition'.
         - If the user asks for pricing, call 'getGroceryPricing'.
         - **General Chat / Info**: If the user asks a general question, requests information, or engages in small talk (e.g. "Hi", "What is Ugali?", "Talk to me about..."), return an EMPTY array for 'steps'. Do NOT call any tools. The synthesis layer will answer.

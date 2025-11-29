@@ -74,6 +74,45 @@ const SessionItem = memo(function SessionItem({
       onClick={() => onSelect(session.id)}
     >
       <div className="flex items-center gap-3 w-full">
+        {/* Delete button - FIRST element with confirmation */}
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              disabled={isDeleting}
+              className="h-7 w-7 shrink-0 text-destructive hover:bg-destructive/10"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {isDeleting ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Trash2 className="h-4 w-4" />
+              )}
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent className="sm:max-w-md">
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete conversation?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will permanently delete this conversation and all its messages. This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter className="flex-col sm:flex-row gap-2 sm:gap-0">
+              <AlertDialogCancel className="w-full sm:w-auto">Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete(session.id);
+                }}
+                className="w-full sm:w-auto bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
         {/* Icon/Indicator */}
         <div className={cn(
           "shrink-0 flex items-center justify-center w-8 h-8 rounded-lg transition-all duration-300",
@@ -90,14 +129,14 @@ const SessionItem = memo(function SessionItem({
 
         {/* Content */}
         <div className="flex-1 min-w-0 flex flex-col gap-0.5">
-          <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
             <p className={cn(
-              "text-sm font-medium truncate transition-colors",
-              "max-w-[180px] sm:max-w-none", // Force truncation on mobile to ensure delete button visibility
+              "text-sm font-medium truncate transition-colors flex-1 min-w-0",
               isActive ? "text-primary" : "text-foreground group-hover:text-foreground"
             )}>
               {session.title || (session.messageCount > 0 ? 'New conversation' : 'New chat')}
             </p>
+
             {session.updatedAt && (
               <span className="text-[10px] text-muted-foreground/60 shrink-0">
                 {new Date(session.updatedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
@@ -107,57 +146,6 @@ const SessionItem = memo(function SessionItem({
           <p className="text-xs text-muted-foreground/70 truncate">
             {session.messageCount} {session.messageCount === 1 ? 'message' : 'messages'}
           </p>
-        </div>
-        
-        {/* Delete button - visible on hover or when active on desktop, always on mobile */}
-        <div className={cn(
-          "shrink-0 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-200",
-          isDeleting && "opacity-100"
-        )}>
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                disabled={isDeleting}
-                className={cn(
-                  "h-8 w-8",
-                  "text-muted-foreground hover:text-destructive",
-                  "hover:bg-destructive/10",
-                  "rounded-lg",
-                  "transition-colors",
-                  isDeleting && "opacity-60 cursor-not-allowed"
-                )}
-                onClick={(e) => e.stopPropagation()}
-              >
-                {isDeleting ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Trash2 className="h-4 w-4" />
-                )}
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent className="sm:max-w-md">
-              <AlertDialogHeader>
-                <AlertDialogTitle>Delete conversation?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  This will permanently delete this conversation and all its messages. This action cannot be undone.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter className="flex-col sm:flex-row gap-2 sm:gap-0">
-                <AlertDialogCancel className="w-full sm:w-auto">Cancel</AlertDialogCancel>
-                <AlertDialogAction
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onDelete(session.id);
-                  }}
-                  className="w-full sm:w-auto bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                >
-                  Delete
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
         </div>
       </div>
     </div>

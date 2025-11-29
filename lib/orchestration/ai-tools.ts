@@ -231,6 +231,7 @@ export const generateGroceryList = tool({
     parameters: z.object({
         source: z.enum(['mealplan', 'recipe']).describe('Whether generating from a meal plan or single recipe'),
         mealPlanId: z.string().optional().describe('ID of saved meal plan (if source is mealplan)'),
+        fromContext: z.string().optional().describe('Set to "true" to use the meal plan from conversation context'),
         mealPlan: z.object({
             title: z.string().optional(),
             duration: z.number(),
@@ -248,7 +249,7 @@ export const generateGroceryList = tool({
         recipeName: z.string().optional().describe('Name of the recipe to create grocery list for (if source is recipe)'),
         ingredients: z.array(z.string()).optional().describe('List of ingredients from the recipe (if source is recipe)'),
     }),
-    execute: async ({ source, mealPlanId, mealPlan, recipeName, ingredients }): Promise<ToolResult> => {
+    execute: async ({ source, mealPlanId, mealPlan, recipeName, ingredients, fromContext }, options): Promise<ToolResult> => {
         try {
             console.log('[generateGroceryList] 🛒 Source:', source);
 
@@ -294,16 +295,25 @@ export const generateGroceryList = tool({
                 planTitle = mealPlan.title || 'Your meal plan';
             }
             // Fallback: Check injected context for last generated meal plan
-            else if (source === 'mealplan' && !mealPlanId && !mealPlan) {
-                // @ts-ignore - context is injected by ToolExecutor
-                const context = arguments[1]?.context;
+            else if (source === 'mealplan' && (fromContext === 'true' || (!mealPlanId && !mealPlan))) {
+                console.log('[generateGroceryList] 🔍 Looking for meal plan in context...');
+                // @ts-ignore - context is injected by ToolExecutor via options
+                const context = (options as any)?.context;
                 const lastMealPlan = context?.lastToolResult?.generateMealPlan?.data?.mealPlan;
+
+                console.log('[generateGroceryList] Context check:', {
+                    hasContext: !!context,
+                    hasLastToolResult: !!context?.lastToolResult,
+                    hasGenerateMealPlan: !!context?.lastToolResult?.generateMealPlan,
+                    hasMealPlan: !!lastMealPlan
+                });
 
                 if (lastMealPlan) {
                     console.log('[generateGroceryList] 💡 Found meal plan in conversation context!');
                     allIngredients = lastMealPlan.days.flatMap((d: any) => d.meals.flatMap((m: any) => m.ingredients));
                     planTitle = lastMealPlan.title || 'Your meal plan';
                 } else {
+                    console.error('[generateGroceryList] ❌ No meal plan found in context');
                     return errorResponse("Missing meal plan data. Please generate a meal plan first.", ErrorCode.INVALID_INPUT);
                 }
             }

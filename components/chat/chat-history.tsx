@@ -65,18 +65,54 @@ const SessionItem = memo(function SessionItem({
       )}
       onClick={() => onSelect(session.id)}
     >
-      <div className="flex items-start justify-between gap-3 w-full">
-        <div className="flex-1 min-w-0 pr-2">
+      <div className="flex items-start gap-3 w-full">
+        {/* Delete button - FIRST element with confirmation */}
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6 shrink-0 text-destructive hover:bg-destructive/10 mt-0.5"
+              onClick={(e) => e.stopPropagation()}
+              aria-label="Delete conversation"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete chat session?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will permanently delete this conversation and all its messages. This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete(session.id);
+                }}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        <div className="flex-1 min-w-0">
           {/* Title with active indicator */}
           <div className="flex items-center gap-2 mb-1">
             <p className={cn(
-              "text-xs font-medium truncate",
+              "text-xs font-medium truncate flex-1 min-w-0",
               isActive ? "text-primary" : "text-foreground"
             )}>
               {session.title || (messageCount > 0 ? 'New conversation' : 'New chat')}
             </p>
+
             {isActive && (
-              <div className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+              <div className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse shrink-0" />
             )}
           </div>
 
@@ -115,48 +151,6 @@ const SessionItem = memo(function SessionItem({
               <span className="text-primary text-[10px] font-medium">New</span>
             )}
           </div>
-        </div>
-        
-        {/* Delete button - always visible */}
-        <div className="shrink-0">
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className={cn(
-                  "h-7 w-7 transition-all",
-                  "text-muted-foreground hover:text-destructive",
-                  "hover:bg-destructive/10 active:bg-destructive/20",
-                  "bg-muted/30 border border-border/50 rounded-md"
-                )}
-                onClick={(e) => e.stopPropagation()}
-                aria-label="Delete conversation"
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Delete chat session?</AlertDialogTitle>
-              <AlertDialogDescription>
-                This will permanently delete this conversation and all its messages. This action cannot be undone.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onDelete(session.id);
-                }}
-                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              >
-                Delete
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
         </div>
       </div>
     </div>
