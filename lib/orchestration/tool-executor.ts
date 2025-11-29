@@ -17,7 +17,8 @@ export class ToolExecutor {
         plan: ExecutionPlan,
         onStepStart?: (step: ExecutionStep) => void,
         onToolStart?: (toolName: string) => void,
-        onToolFinish?: (result: ToolExecutionResult) => void
+        onToolFinish?: (result: ToolExecutionResult) => void,
+        chatMessages: Array<{ role: 'user' | 'assistant'; content: string }> = []
     ): Promise<Record<string, any>> {
         const aggregatedResults: Record<string, any> = {};
 
@@ -56,10 +57,18 @@ export class ToolExecutor {
                         }
                     }
 
+                    // Inject chatMessages if the tool accepts it (check tool definition or just pass it)
+                    // Note: We blindly pass it if the tool schema allows 'chatMessages', 
+                    // but since we're using Vercel AI SDK tools, we can pass extra args and they might be ignored if not in schema.
+                    // However, to be safe and explicit, let's add it to convertedArgs if not already present.
+                    if (!convertedArgs.chatMessages && chatMessages.length > 0) {
+                        convertedArgs.chatMessages = chatMessages;
+                    }
+
                     // Execute tool
                     const result = await tool.execute(convertedArgs, {
                         toolCallId: 'exec-' + Date.now(),
-                        messages: [] // We might need to pass messages if tools rely on them
+                        messages: chatMessages as any // Pass messages to Vercel AI SDK context as well
                     });
 
                     const executionResult: ToolExecutionResult = {

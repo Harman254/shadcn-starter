@@ -152,7 +152,10 @@ export class OrchestratedChatFlow {
           const toolResults = await this.toolExecutor.executePlan(plan,
             (step) => {
               controller.enqueue(formatData({ type: 'status', content: `⚙️ Executing step: ${step.description}` }));
-            }
+            },
+            undefined,
+            undefined,
+            input.conversationHistory // Pass chat history for context injection
           );
 
           // Extract UI_METADATA from tool results
@@ -248,9 +251,11 @@ export class OrchestratedChatFlow {
       - Just say something like "I've created your meal plan! Enjoy!" or "Here's your grocery list!"
       - Keep it enthusiastic but VERY brief
       ` : `
-      - No tools were executed, so NO data is being shown to the user.
-      - You should apologize and explain that you couldn't complete the specific action, or ask for clarification.
-      - Do NOT claim to have created anything.
+      - No tools were executed. This means the user likely asked a general question or just said hello.
+      - Answer the user's question directly and helpfully.
+      - Be conversational, friendly, and engaging.
+      - If they asked about the app's capabilities, explain that you can help with meal planning, grocery lists, and nutrition.
+      - Do NOT apologize unless there was an actual error.
       `}
       `;
   }
