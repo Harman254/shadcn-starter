@@ -246,7 +246,7 @@ export function ChatPanel({
 
   return (
     <div className="flex flex-col h-full w-full relative">
-      <div className="flex-1 overflow-y-auto overflow-x-hidden pb-4 sm:pb-6">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden pb-32 sm:pb-36">
         {messages.length === 0 ? (
           <EmptyScreen onExampleClick={(val) => {
              if (!isAuthenticated) {
@@ -271,7 +271,7 @@ export function ChatPanel({
         )}
       </div>
       
-      <div className="shrink-0 z-20 bg-background/50 backdrop-blur-sm">
+      <div className="fixed bottom-0 left-0 right-0 z-20 bg-background/95 backdrop-blur-md border-t border-border/50 shadow-lg">
          <ChatInput 
            onSubmit={(val) => {
              // ChatInput calls onSubmit with the value
