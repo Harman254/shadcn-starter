@@ -133,12 +133,14 @@ Return a valid JSON object.`,
 // ============================================================================
 
 export const analyzeNutrition = tool({
-    description: 'Analyze the nutrition of a specific meal plan by ID.',
+    description: 'Analyze the nutrition of a specific meal plan by ID using AI-powered analysis.',
     parameters: z.object({
         mealPlanId: z.string().describe('The ID of the meal plan to analyze.'),
     }),
     execute: async ({ mealPlanId }): Promise<ToolResult> => {
         try {
+            console.log('[analyzeNutrition] 🔬 Analyzing nutrition for meal plan:', mealPlanId);
+
             const mealPlan = await prisma.mealPlan.findUnique({
                 where: { id: mealPlanId },
                 include: { days: { include: { meals: true } } }
@@ -148,45 +150,107 @@ export const analyzeNutrition = tool({
                 return errorResponse('Meal plan not found.', ErrorCode.RESOURCE_NOT_FOUND);
             }
 
-            const nutritionClient = getNutritionClient();
-            const allIngredients: string[] = [];
-
-            // Extract ingredients
+            // Extract all meals for analysis
+            const allMeals: Array<{ day: number; name: string; ingredients: string[] }> = [];
             if (mealPlan.days) {
                 mealPlan.days.forEach((day: any) => {
                     if (day.meals) {
                         day.meals.forEach((meal: any) => {
-                            if (meal.ingredients && Array.isArray(meal.ingredients)) {
-                                allIngredients.push(...meal.ingredients);
-                            }
+                            allMeals.push({
+                                day: day.day,
+                                name: meal.name,
+                                ingredients: meal.ingredients || []
+                            });
                         });
                     }
                 });
             }
 
-            // Mocking the nutrition calculation for now as we don't have the full logic ported
-            // In a real scenario, we would call nutritionClient.getBatchNutritionData(allIngredients)
-            // and aggregate the results.
+            if (allMeals.length === 0) {
+                return errorResponse('No meals found in this meal plan.', ErrorCode.INVALID_INPUT);
+            }
 
-            const mockTotalNutrition = {
-                calories: 2000 * (mealPlan.days.length || 1),
-                protein: 150 * (mealPlan.days.length || 1),
-                carbs: 250 * (mealPlan.days.length || 1),
-                fat: 70 * (mealPlan.days.length || 1),
-            };
+            // Use AI SDK to analyze nutrition
+            const { generateObject } = await import('ai');
+            const { google } = await import('@ai-sdk/google');
+            const { z } = await import('zod');
+
+            const mealsPrompt = allMeals.map(m =>
+                `Day ${m.day} - ${m.name}: ${m.ingredients.join(', ')}`
+            ).join('\n');
+
+            const result = await generateObject({
+                model: google('gemini-2.0-flash'),
+                temperature: 0.3, // Lower temperature for more consistent analysis
+                schema: z.object({
+                    totalNutrition: z.object({
+                        calories: z.number().describe('Total calories for entire meal plan'),
+                        protein: z.number().describe('Total protein in grams'),
+                        carbs: z.number().describe('Total carbohydrates in grams'),
+                        fat: z.number().describe('Total fat in grams'),
+                        fiber: z.number().optional().describe('Total fiber in grams'),
+                        sugar: z.number().optional().describe('Total sugar in grams'),
+                    }),
+                    dailyAverage: z.object({
+                        calories: z.number(),
+                        protein: z.number(),
+                        carbs: z.number(),
+                        fat: z.number(),
+                    }),
+                    insights: z.array(z.string()).describe('Nutritional insights and recommendations'),
+                    healthScore: z.number().min(0).max(100).describe('Overall health score (0-100)'),
+                }),
+                prompt: `You are a nutrition expert. Analyze the following meal plan and provide detailed nutrition information.
+
+## Meal Plan: "${mealPlan.title}"
+Duration: ${mealPlan.days.length} days
+Meals per day: ${mealPlan.mealsPerDay}
+
+## Meals:
+${mealsPrompt}
+
+## Instructions:
+1. Calculate TOTAL nutrition for the ENTIRE meal plan (all days combined)
+2. Calculate DAILY AVERAGE nutrition
+3. Provide 3-5 actionable insights about the nutritional balance
+4. Give a health score (0-100) based on:
+   - Macronutrient balance
+   - Variety of ingredients
+   - Completeness of nutrition
+   - Overall healthiness
+
+Return valid JSON.`,
+            });
+
+            if (!result.object) {
+                throw new Error('Failed to analyze nutrition data');
+            }
+
+            const nutritionData = result.object;
 
             const uiMetadata = {
-                nutrition: mockTotalNutrition
+                nutrition: {
+                    total: nutritionData.totalNutrition,
+                    dailyAverage: nutritionData.dailyAverage,
+                    insights: nutritionData.insights,
+                    healthScore: nutritionData.healthScore,
+                    mealPlanTitle: mealPlan.title,
+                    duration: mealPlan.days.length,
+                }
             };
             const uiMetadataEncoded = Buffer.from(JSON.stringify(uiMetadata)).toString('base64');
 
             return successResponse(
                 {
-                    totalNutrition: mockTotalNutrition,
+                    totalNutrition: nutritionData.totalNutrition,
+                    dailyAverage: nutritionData.dailyAverage,
+                    insights: nutritionData.insights,
+                    healthScore: nutritionData.healthScore,
                 },
-                `Nutrition analysis completed. [UI_METADATA:${uiMetadataEncoded}]`
+                `✅ Nutrition analysis complete for "${mealPlan.title}"! Health score: ${nutritionData.healthScore}/100. Daily avg: ${Math.round(nutritionData.dailyAverage.calories)} cal. [UI_METADATA:${uiMetadataEncoded}]`
             );
         } catch (error) {
+            console.error('[analyzeNutrition] Error:', error);
             return errorResponse('Failed to analyze nutrition.', ErrorCode.INTERNAL_ERROR, true);
         }
     }
@@ -198,27 +262,82 @@ export const analyzeNutrition = tool({
 // ============================================================================
 
 export const getGroceryPricing = tool({
-    description: 'Get grocery pricing for a meal plan.',
+    description: 'Get estimated grocery pricing for a meal plan from different store types.',
     parameters: z.object({
         mealPlanId: z.string().describe('The ID of the meal plan.'),
         city: z.string().optional().describe('User city for local pricing'),
         country: z.string().optional().describe('User country'),
     }),
     execute: async ({ mealPlanId, city, country }): Promise<ToolResult> => {
-        const uiMetadata = {
-            prices: [
-                { store: 'Local Store', total: 50.00, currency: '$' },
-                { store: 'Online Grocer', total: 55.00, currency: '$' }
-            ]
-        };
-        const uiMetadataEncoded = Buffer.from(JSON.stringify(uiMetadata)).toString('base64');
+        try {
+            console.log(`[getGroceryPricing] 💰 Estimating prices for plan ${mealPlanId} in ${city || 'default location'}`);
 
-        return successResponse(
-            {
-                prices: uiMetadata.prices
-            },
-            `Pricing for meal plan ${mealPlanId} calculated. [UI_METADATA:${uiMetadataEncoded}]`
-        );
+            const prisma = (await import('@/lib/prisma')).default;
+            const mealPlan = await prisma.mealPlan.findUnique({
+                where: { id: mealPlanId },
+                include: { days: { include: { meals: true } } }
+            });
+
+            if (!mealPlan) {
+                return errorResponse("Couldn't find that meal plan.", ErrorCode.RESOURCE_NOT_FOUND);
+            }
+
+            // Extract ingredients
+            const allIngredients = mealPlan.days.flatMap(d => d.meals.flatMap(m => m.ingredients));
+
+            if (allIngredients.length === 0) {
+                return errorResponse("No ingredients found in this meal plan.", ErrorCode.INVALID_INPUT);
+            }
+
+            // Use AI to estimate pricing
+            const { generateObject } = await import('ai');
+            const { google } = await import('@ai-sdk/google');
+            const { z } = await import('zod');
+
+            const result = await generateObject({
+                model: google('gemini-2.0-flash'),
+                temperature: 0.2,
+                schema: z.object({
+                    prices: z.array(z.object({
+                        store: z.string().describe('Store name or type (e.g., "Whole Foods", "Walmart", "Local Market")'),
+                        total: z.number().describe('Estimated total cost'),
+                        currency: z.string().describe('Currency symbol'),
+                        notes: z.string().optional().describe('Brief note about pricing tier (e.g., "Organic/Premium", "Budget-friendly")')
+                    }))
+                }),
+                prompt: `Estimate the total grocery cost for these ingredients in ${city || 'San Francisco'}, ${country || 'US'}.
+                
+Ingredients:
+${allIngredients.slice(0, 50).join(', ')} ${allIngredients.length > 50 ? `...and ${allIngredients.length - 50} more items` : ''}
+
+Provide 3 pricing estimates:
+1. Budget/Discount Store (e.g., Walmart, Aldi)
+2. Mid-range/Standard Store (e.g., Kroger, Safeway)
+3. Premium/Organic Store (e.g., Whole Foods)
+
+Return valid JSON.`,
+            });
+
+            if (!result.object?.prices) {
+                throw new Error('Failed to generate pricing estimates');
+            }
+
+            const uiMetadata = {
+                prices: result.object.prices
+            };
+            const uiMetadataEncoded = Buffer.from(JSON.stringify(uiMetadata)).toString('base64');
+
+            return successResponse(
+                {
+                    prices: result.object.prices
+                },
+                `✅ Estimated grocery costs: ${result.object.prices.map(p => `${p.store}: ${p.currency}${p.total}`).join(', ')}. [UI_METADATA:${uiMetadataEncoded}]`
+            );
+
+        } catch (error) {
+            console.error('[getGroceryPricing] Error:', error);
+            return errorResponse("Failed to estimate grocery prices.", ErrorCode.GENERATION_FAILED, true);
+        }
     },
 });
 
@@ -437,68 +556,47 @@ export const generateMealRecipe = tool({
             console.log('[generateMealRecipe] 🍳 Generating AI recipe for:', mealName);
 
             // Use AI to generate real recipe content
-            const { generateText } = await import('ai');
+            const { generateObject } = await import('ai');
             const { google } = await import('@ai-sdk/google');
+            const { z } = await import('zod');
 
-            const { text } = await generateText({
+            const result = await generateObject({
                 model: google('gemini-2.0-flash'),
+                temperature: 0.5,
+                schema: z.object({
+                    name: z.string(),
+                    description: z.string(),
+                    servings: z.number(),
+                    prepTime: z.string(),
+                    cookTime: z.string(),
+                    difficulty: z.enum(['Easy', 'Medium', 'Hard']),
+                    cuisine: z.string(),
+                    ingredients: z.array(z.string()),
+                    instructions: z.array(z.string()),
+                    nutrition: z.object({
+                        calories: z.number(),
+                        protein: z.string(),
+                        carbs: z.string(),
+                        fat: z.string()
+                    }),
+                    tags: z.array(z.string())
+                }),
                 prompt: `You are a professional chef creating a detailed recipe.
 
 Generate a recipe for: "${mealName}"
-
-CRITICAL: Return ONLY valid JSON with NO markdown, NO code blocks, NO explanations.
-Just the raw JSON object exactly as shown below:
-
-{
-  "name": "Beef Cabbage Stir-Fry",
-  "description": "A savory African-inspired dish with tender beef and crispy cabbage",
-  "servings": 4,
-  "prepTime": "15 mins",
-  "cookTime": "25 mins",
-  "difficulty": "Easy",
-  "cuisine": "African",
-  "ingredients": [
-    "500g beef, thinly sliced",
-    "1 medium cabbage, shredded",
-    "2 onions, sliced",
-    "3 tomatoes, chopped",
-    "2 cloves garlic, minced",
-    "1 tsp ginger, grated",
-    "2 tbsp cooking oil",
-    "Salt and pepper to taste",
-    "1 tsp paprika",
-    "Fresh coriander for garnish"
-  ],
-  "instructions": [
-    "Heat oil in a large pan over high heat.",
-    "Add the sliced beef and brown for 5-7 minutes until cooked through. Remove and set aside.",
-    "In the same pan, sauté onions and garlic until fragrant (2 mins).",
-    "Add tomatoes and cook until soft (3-4 mins), forming a chunky sauce.",
-    "Add the shredded cabbage and stir-fry for 5 minutes until slightly wilted but still crunchy.",
-    "Return the beef to the pan, add paprika, salt, and pepper. Mix well.",
-    "Cook for another 3-4 minutes, stirring frequently.",
-    "Garnish with fresh coriander and serve hot with ugali or rice."
-  ],
-  "nutrition": {
-    "calories": 420,
-    "protein": "32g",
-    "carbs": "18g",
-    "fat": "24g"
-  },
-  "tags": ["quick", "high-protein", "authentic", "budget-friendly"]
-}
 
 IMPORTANT RULES:
 - Use REAL specific ingredients with exact measurements
 - Make instructions detailed and practical
 - Cuisine should match the dish origin
-- NO placeholder text
-- Return ONLY the JSON object, nothing else`,
+- NO placeholder text`,
             });
 
-            // Parse AI response
-            const cleanedText = text.trim().replace(/```json\n?/g, '').replace(/```\n?/g, '');
-            const recipe = JSON.parse(cleanedText);
+            if (!result.object) {
+                throw new Error('Failed to generate recipe');
+            }
+
+            const recipe = result.object;
 
             // Add placeholder image (in future, generate with DALL-E or use food image API)
             const recipeWithImage = {
@@ -572,109 +670,125 @@ IMPORTANT RULES:
 // ============================================================================
 
 export const modifyMealPlan = tool({
-    description: 'Modify a specific meal in an existing meal plan. Use this when user wants to swap, change, or replace a meal (e.g., "Change Tuesday dinner to tacos", "Swap lunch on day 3").',
+    description: 'Generate a different meal plan variant based on user preferences. Works just like generateMealPlan but produces a different plan. Use when user wants a new/different/alternative meal plan.',
     parameters: z.object({
-        mealPlanId: z.string().describe('The ID of the meal plan to modify.'),
-        day: z.number().describe('The day number to modify (1-based index).'),
-        mealIndex: z.number().optional().describe('The index of the meal to modify (0-based). If not provided, AI will infer from context or modify the first matching meal type.'),
-        newMealDescription: z.string().describe('Description of what the new meal should be (e.g., "Tacos", "Vegetarian Pasta").'),
+        duration: z.number().min(1).max(30).default(1).describe('Number of days for the meal plan'),
+        mealsPerDay: z.number().min(1).max(5).default(3).describe('Number of meals per day'),
+        preferences: z.string().optional().describe('User dietary preferences or restrictions'),
+        chatMessages: z.array(z.object({
+            role: z.enum(['user', 'assistant']),
+            content: z.string()
+        })).optional().describe('Recent chat messages to understand context'),
+        differentFrom: z.string().optional().describe('Context about what to make different from previous plan'),
     }),
-    execute: async ({ mealPlanId, day, mealIndex, newMealDescription }): Promise<ToolResult> => {
+    execute: async ({ duration, mealsPerDay, preferences, chatMessages, differentFrom }): Promise<ToolResult> => {
         try {
-            console.log(`[modifyMealPlan] 🔄 Modifying plan ${mealPlanId}, Day ${day}, Request: "${newMealDescription}"`);
+            console.log('[modifyMealPlan] 🔄 Generating DIFFERENT meal plan variant. Duration:', duration, 'Context:', chatMessages?.length || 0, 'msgs');
 
-            const prisma = (await import('@/lib/prisma')).default;
+            // 1. Get User Session & Preferences
+            const { auth } = await import('@/lib/auth');
+            const { headers } = await import('next/headers');
+            const session = await auth.api.getSession({ headers: await headers() });
 
-            // 1. Fetch existing plan
-            const existingPlan = await prisma.mealPlan.findUnique({
-                where: { id: mealPlanId },
-                include: { days: { include: { meals: true } } }
-            });
-
-            if (!existingPlan) {
-                return errorResponse("Couldn't find that meal plan.", ErrorCode.RESOURCE_NOT_FOUND);
+            if (!session?.user?.id) {
+                return errorResponse('You must be logged in to generate a meal plan.', ErrorCode.UNAUTHORIZED);
             }
 
-            // 2. Validate Day (using 1-based index)
-            const dayIndex = day - 1; // Convert to 0-based index
-            const targetDay = existingPlan.days[dayIndex];
-            if (!targetDay) {
-                return errorResponse(`Day ${day} not found in this meal plan. Plan has ${existingPlan.days.length} days.`, ErrorCode.INVALID_INPUT);
+            // Fetch full preferences for context if not passed explicitly
+            let userPrefsContext = preferences || '';
+            if (!userPrefsContext) {
+                const prisma = (await import('@/lib/prisma')).default;
+                const onboarding = await prisma.onboardingData.findUnique({
+                    where: { userId: session.user.id }
+                });
+                if (onboarding) {
+                    userPrefsContext = `Dietary: ${onboarding.dietaryPreference}, Goal: ${onboarding.goal}, Cuisines: ${onboarding.cuisinePreferences.join(', ')}`;
+                }
             }
 
-            // 3. Identify Target Meal
-            const targetIndex = mealIndex !== undefined && mealIndex >= 0 && mealIndex < targetDay.meals.length
-                ? mealIndex
-                : 0; // Default to first meal if unspecified/invalid
-
-            const oldMeal = targetDay.meals[targetIndex];
-            if (!oldMeal) {
-                return errorResponse(`Meal index ${targetIndex} not found on day ${day}.`, ErrorCode.INVALID_INPUT);
-            }
-
-            // 4. Generate Replacement Meal
+            // 2. Generate DIFFERENT Meal Plan using AI SDK with HIGHER temperature and explicit variation instructions
             const { generateObject } = await import('ai');
             const { google } = await import('@ai-sdk/google');
             const { z } = await import('zod');
 
             const result = await generateObject({
                 model: google('gemini-2.0-flash'),
-                temperature: 0.7,
+                temperature: 0.9, // HIGHER temperature for more variation
                 schema: z.object({
-                    name: z.string(),
-                    description: z.string(),
-                    ingredients: z.array(z.string()),
-                    instructions: z.string(),
+                    title: z.string().describe('A catchy title for this meal plan'),
+                    days: z.array(z.object({
+                        day: z.number(),
+                        meals: z.array(z.object({
+                            name: z.string(),
+                            description: z.string(),
+                            ingredients: z.array(z.string()),
+                            instructions: z.string(),
+                        }))
+                    }))
                 }),
-                prompt: `Generate a single meal replacement.
-                
-Target: Day ${day} of a meal plan.
-Request: "${newMealDescription}"
-Old Meal Context: Was "${oldMeal.name}".
+                prompt: `Generate a COMPLETELY DIFFERENT personalized meal plan for ${duration} days with ${mealsPerDay} meals per day.
 
-Return a valid JSON object for the new meal.`,
+🚨 CRITICAL: This is a MODIFICATION/ALTERNATIVE request. You MUST generate DIFFERENT meals from what was previously suggested.
+${differentFrom ? `\n🚨 AVOID THESE: ${differentFrom}\n` : ''}
+
+## User's Recent Chat Context (HIGHEST PRIORITY)
+${chatMessages?.map(m => `${m.role.toUpperCase()}: ${m.content}`).join('\n') || 'No recent context.'}
+
+## Saved User Preferences (Use as default, but OVERRIDE if Chat Context conflicts)
+${userPrefsContext || 'No saved preferences. Use balanced diet.'}
+
+## VARIATION REQUIREMENTS (CRITICAL)
+1. **Different Meals:** Generate COMPLETELY DIFFERENT meals from any previous suggestions
+2. **Different Cuisines:** Explore different cuisines and cooking styles
+3. **Variety:** Ensure maximum diversity and creativity
+4. **Fresh Ideas:** Think outside the box - suggest unexpected but delicious combinations
+5. **Specific Requests:** Still honor user's specific food requests if mentioned in chat context
+
+## Standard Requirements
+1. **Completeness:** For each meal, provide name, description, ingredients list, and instructions
+2. **Structure:** Generate exactly ${duration} days with ${mealsPerDay} meals each
+
+Return a valid JSON object.`,
             });
 
             if (!result.object) {
-                throw new Error('Failed to generate replacement meal');
+                throw new Error('Failed to generate modified meal plan data');
             }
 
-            const newMealData = result.object;
-
-            // 5. Update Database
-            await prisma.meal.update({
-                where: { id: oldMeal.id },
-                data: {
-                    name: newMealData.name,
-                    description: newMealData.description,
-                    ingredients: newMealData.ingredients,
-                    instructions: newMealData.instructions,
-                }
-            });
-
-            // 6. Return Updated Plan Context
-            const updatedPlan = await prisma.mealPlan.findUnique({
-                where: { id: mealPlanId },
-                include: { days: { include: { meals: true } } }
-            });
-
-            // Create UI metadata for the updated plan
-            const uiMetadata = {
-                mealPlan: updatedPlan, // Send full updated plan to refresh UI
-                toast: `Updated Day ${day}: ${newMealData.name}`
+            const mealPlanData = {
+                title: result.object.title,
+                duration,
+                mealsPerDay,
+                days: result.object.days
             };
+
+            // 3. Create UI Metadata for Save Button
+            const uiMetadata = {
+                actions: [
+                    {
+                        label: 'Save Meal Plan',
+                        action: 'save' as const,
+                        data: mealPlanData,
+                    },
+                ],
+                mealPlan: mealPlanData,
+            };
+
             const uiMetadataEncoded = Buffer.from(JSON.stringify(uiMetadata)).toString('base64');
+
+            // 4. Return Success Response
+            const totalMeals = mealPlanData.days.reduce((sum, day) => sum + day.meals.length, 0);
 
             return successResponse(
                 {
-                    updatedMeal: newMealData,
+                    mealPlan: mealPlanData,
                 },
-                `✅ Updated Day ${day} to "${newMealData.name}". [UI_METADATA:${uiMetadataEncoded}]`
+                `✅ Generated alternative ${duration}-day meal plan: "${mealPlanData.title}". Includes ${totalMeals} different meals. [UI_METADATA:${uiMetadataEncoded}]`
             );
 
         } catch (error) {
             console.error('[modifyMealPlan] Error:', error);
-            return errorResponse("Failed to modify the meal plan. Please try again.", ErrorCode.MODIFICATION_FAILED, true);
+            return errorResponse(error instanceof Error ? error.message : 'Unknown error', ErrorCode.GENERATION_FAILED, true);
         }
     },
 });
@@ -682,6 +796,124 @@ Return a valid JSON object for the new meal.`,
 // ============================================================================
 // SEARCH RECIPES TOOL
 // ============================================================================
+
+// ============================================================================
+// SWAP MEAL TOOL
+// ============================================================================
+
+export const swapMeal = tool({
+    description: 'Swap a specific meal in a meal plan with a new option based on user preferences. Use this when the user wants to change just ONE meal (e.g., "Change Tuesday dinner") while keeping the rest of the plan.',
+    parameters: z.object({
+        day: z.number().describe('The day number to swap (e.g., 1 for Day 1)'),
+        mealIndex: z.number().describe('The index of the meal to swap (0 for Breakfast, 1 for Lunch, 2 for Dinner, etc.)'),
+        reason: z.string().optional().describe('Why the user wants to swap (e.g., "I don\'t like fish", "Make it vegetarian")'),
+    }),
+    execute: async ({ day, mealIndex, reason }, options): Promise<ToolResult> => {
+        try {
+            console.log(`[swapMeal] 🔄 Swapping meal for Day ${day}, Index ${mealIndex}. Reason: ${reason || 'None'}`);
+
+            // 1. Get Current Meal Plan from Context
+            // @ts-ignore - context is injected by ToolExecutor via options
+            const context = (options as any)?.context;
+
+            // Look for the most recent meal plan in the context history
+            // It could be from generateMealPlan, modifyMealPlan, or even a previous swapMeal
+            const lastMealPlan =
+                context?.lastToolResult?.generateMealPlan?.data?.mealPlan ||
+                context?.lastToolResult?.modifyMealPlan?.data?.mealPlan ||
+                context?.lastToolResult?.swapMeal?.data?.mealPlan;
+
+            if (!lastMealPlan) {
+                console.error('[swapMeal] ❌ No active meal plan found in context');
+                return errorResponse("I can't find an active meal plan to modify. Please generate one first.", ErrorCode.INVALID_INPUT);
+            }
+
+            // 2. Validate Target
+            const targetDay = lastMealPlan.days.find((d: any) => d.day === day);
+            if (!targetDay) {
+                return errorResponse(`Day ${day} not found in the current plan.`, ErrorCode.INVALID_INPUT);
+            }
+
+            const targetMeal = targetDay.meals[mealIndex];
+            if (!targetMeal) {
+                return errorResponse(`Meal index ${mealIndex} not found for Day ${day}.`, ErrorCode.INVALID_INPUT);
+            }
+
+            console.log(`[swapMeal] 🎯 Target: ${targetMeal.name}`);
+
+            // 3. Generate NEW Meal using AI
+            const { generateObject } = await import('ai');
+            const { google } = await import('@ai-sdk/google');
+            const { z } = await import('zod');
+
+            const result = await generateObject({
+                model: google('gemini-2.0-flash'),
+                temperature: 0.8, // High temperature for variety
+                schema: z.object({
+                    name: z.string(),
+                    description: z.string(),
+                    ingredients: z.array(z.string()),
+                    instructions: z.string(),
+                }),
+                prompt: `Generate a replacement meal for Day ${day}, Meal ${mealIndex + 1} of a meal plan.
+                
+CURRENT MEAL (To Replace): "${targetMeal.name}" - ${targetMeal.description}
+REASON FOR SWAP: ${reason || "User wants something different"}
+
+CONTEXT (Other meals in the plan to avoid repetition):
+${lastMealPlan.days.map((d: any) => `Day ${d.day}: ${d.meals.map((m: any) => m.name).join(', ')}`).join('\n')}
+
+INSTRUCTIONS:
+1. Generate a COMPLETELY DIFFERENT meal than the current one.
+2. Respect the "Reason for Swap" strictly (e.g. if "vegetarian", no meat).
+3. Ensure it fits the meal type (Breakfast/Lunch/Dinner) based on index ${mealIndex}.
+4. Provide full details (ingredients, instructions).
+
+Return valid JSON.`,
+            });
+
+            if (!result.object) {
+                throw new Error('Failed to generate new meal');
+            }
+
+            const newMeal = result.object;
+
+            // 4. Construct Updated Plan
+            // Deep copy the plan to avoid mutating the context directly (though context is likely immutable/copied)
+            const updatedPlan = JSON.parse(JSON.stringify(lastMealPlan));
+            updatedPlan.days.find((d: any) => d.day === day).meals[mealIndex] = newMeal;
+
+            // 5. Create UI Metadata
+            const uiMetadata = {
+                actions: [
+                    {
+                        label: 'Save Updated Plan',
+                        action: 'save' as const,
+                        data: updatedPlan,
+                    },
+                ],
+                mealPlan: updatedPlan, // Render the FULL updated plan
+            };
+
+            const uiMetadataEncoded = Buffer.from(JSON.stringify(uiMetadata)).toString('base64');
+
+            return successResponse(
+                {
+                    mealPlan: updatedPlan,
+                    swappedMeal: newMeal,
+                    originalMeal: targetMeal
+                },
+                `✅ Swapped Day ${day} meal! Replaced "${targetMeal.name}" with "${newMeal.name}". [UI_METADATA:${uiMetadataEncoded}]`
+            );
+
+        } catch (error) {
+            console.error('[swapMeal] Error:', error);
+            return errorResponse("Failed to swap meal.", ErrorCode.GENERATION_FAILED, true);
+        }
+    },
+});
+
+
 
 export const searchRecipes = tool({
     description: 'Search for recipes based on a query. Use this when user asks to "find", "search", or "suggest" recipes without asking for a full meal plan (e.g., "Find me a spicy chicken pasta recipe", "Vegan breakfast ideas").',
@@ -749,5 +981,6 @@ export const tools = {
     generateGroceryList,
     generateMealRecipe,
     modifyMealPlan,
+    swapMeal,
     searchRecipes,
 };

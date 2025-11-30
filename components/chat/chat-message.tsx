@@ -15,7 +15,7 @@ import { oneDark, oneLight } from "react-syntax-highlighter/dist/esm/styles/pris
 import { useTheme } from "next-themes"
 import { motion } from "framer-motion"
 import { useRouter } from "next/navigation"
-import { saveMealPlanAction } from "@/actions/save-meal-plan"
+
 import { QuickActions } from "./quick-actions"
 import { ToolProgress, type ExecutionProgressData, type ToolProgressData } from "./tool-progress"
 
@@ -837,32 +837,44 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
                   "flex flex-col sm:flex-row items-center justify-center gap-3"
                 )}>
                   <Button
-                    variant="default"
+                    variant={savedMealPlanId ? "outline" : "default"}
                     size="lg"
                     className={cn(
                       "w-full max-w-xs sm:w-auto sm:min-w-[180px]",
                       "h-11 gap-2 font-semibold",
-                      "bg-gradient-to-r from-primary to-primary/90",
-                      "hover:from-primary/90 hover:to-primary/80",
-                      "shadow-lg shadow-primary/25",
+                      savedMealPlanId 
+                        ? "border-green-500/20 text-green-600 dark:text-green-400 bg-green-50/50 dark:bg-green-900/10 hover:bg-green-100/50 dark:hover:bg-green-900/20"
+                        : "bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary/80 shadow-lg shadow-primary/25",
                       "transition-all duration-200"
                     )}
                     onClick={async () => {
-                      if (!uiData?.mealPlan) return;
+                      if (!uiData?.mealPlan || savedMealPlanId) return;
                       try {
                         setSavingMealPlan(true);
-                        const { saveMealPlanAction } = await import('@/actions/save-meal-plan');
-                        const result = await saveMealPlanAction({
-                          ...uiData.mealPlan,
-                          createdAt: new Date().toISOString()
-                        });
                         
-                        if (result.success) {
+                        // Use the API endpoint as requested
+                        const response = await fetch('/api/savemealplan', {
+                          method: 'POST',
+                          headers: {
+                            'Content-Type': 'application/json',
+                          },
+                          body: JSON.stringify({
+                            ...uiData.mealPlan,
+                            createdAt: new Date().toISOString()
+                          }),
+                        });
+
+                        const result = await response.json();
+                        
+                        if (response.ok && result.success) {
                           setSavedMealPlanId(result.mealPlan.id);
                           toast({
-                            title: "Meal Plan Saved",
-                            description: "You can find it in your saved plans.",
+                            title: "Success!",
+                            description: "Meal plan saved to your collection.",
+                            className: "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-900",
                           });
+                          // Refresh the router to update any server components if needed
+                          router.refresh();
                         } else {
                           toast({
                             title: "Failed to save",
@@ -871,6 +883,7 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
                           });
                         }
                       } catch (e) {
+                        console.error('Error saving meal plan:', e);
                         toast({
                           title: "Error",
                           description: "An unexpected error occurred.",
@@ -880,15 +893,21 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
                         setSavingMealPlan(false);
                       }
                     }}
-                    disabled={savingMealPlan}
+                    disabled={savingMealPlan || !!savedMealPlanId}
                   >
                     {savingMealPlan ? (
                       <>
                         <Loader2 className="h-4 w-4 animate-spin" />
-                        Saving Meal Plan...
+                        Saving...
+                      </>
+                    ) : savedMealPlanId ? (
+                      <>
+                        <Check className="h-4 w-4" />
+                        Saved
                       </>
                     ) : (
                       <>
+                        <Save className="h-4 w-4" />
                         Save Meal Plan
                       </>
                     )}
