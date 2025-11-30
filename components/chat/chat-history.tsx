@@ -306,9 +306,13 @@ export function ChatHistory({ chatType, onSessionSelect }: ChatHistoryProps) {
         return session.chatType === chatType && session.messages && session.messages.length > 0;
       }
     );
-    return [...filtered].sort(
-      (a, b) => b.updatedAt.getTime() - a.updatedAt.getTime()
-    );
+    return [...filtered].sort((a, b) => {
+      // Primary sort: updatedAt (newest first)
+      const timeDiff = b.updatedAt.getTime() - a.updatedAt.getTime();
+      if (timeDiff !== 0) return timeDiff;
+      // Secondary sort: id (stable, deterministic)
+      return b.id.localeCompare(a.id);
+    });
   }, [sessions, chatType, currentSessionId]);
 
   const handleNewChat = () => {

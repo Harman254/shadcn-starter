@@ -414,9 +414,13 @@ export function ChatHistoryClient({ chatType, initialSessions = [], onSessionSel
       }
     });
     
-    return Array.from(sessionMap.values()).sort(
-      (a, b) => b.updatedAt.getTime() - a.updatedAt.getTime()
-    );
+    return Array.from(sessionMap.values()).sort((a, b) => {
+      // Primary sort: updatedAt (newest first)
+      const timeDiff = b.updatedAt.getTime() - a.updatedAt.getTime();
+      if (timeDiff !== 0) return timeDiff;
+      // Secondary sort: id (stable, deterministic)
+      return b.id.localeCompare(a.id);
+    });
   }, [sessions, chatType]);
 
   const handleNewChat = () => {

@@ -58,6 +58,94 @@ const MarkdownContent = memo(function MarkdownContent({ content, isDark }: { con
     <ReactMarkdown
       remarkPlugins={[remarkGfm]}
       components={{
+        // Enhanced headings with better typography
+        h1: ({ children }) => (
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight mb-4 mt-6 text-foreground border-b border-border/40 pb-2">
+            {children}
+          </h1>
+        ),
+        h2: ({ children }) => (
+          <h2 className="text-xl sm:text-2xl font-semibold mb-3 mt-5 text-foreground">
+            {children}
+          </h2>
+        ),
+        h3: ({ children }) => (
+          <h3 className="text-lg sm:text-xl font-semibold mb-2 mt-4 text-foreground">
+            {children}
+          </h3>
+        ),
+        
+        // Enhanced links with external link indicator
+        a: ({ href, children }) => (
+          <a
+            href={href}
+            className="text-primary hover:text-primary/80 underline decoration-primary/30 hover:decoration-primary/60 transition-colors font-medium inline-flex items-center gap-1"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {children}
+            {href?.startsWith('http') && (
+              <ExternalLink className="inline h-3 w-3" />
+            )}
+          </a>
+        ),
+        
+        // Enhanced blockquotes
+        blockquote: ({ children }) => (
+          <blockquote className="border-l-4 border-primary/30 pl-4 py-1 italic my-4 text-muted-foreground bg-accent/30 rounded-r-lg">
+            {children}
+          </blockquote>
+        ),
+        
+        // Enhanced tables with responsive wrapper
+        table: ({ children }) => (
+          <div className="overflow-x-auto my-6 rounded-lg border border-border shadow-sm">
+            <table className="w-full divide-y divide-border">
+              {children}
+            </table>
+          </div>
+        ),
+        thead: ({ children }) => (
+          <thead className="bg-muted/50">
+            {children}
+          </thead>
+        ),
+        th: ({ children }) => (
+          <th className="px-4 py-3 text-left text-xs font-semibold text-foreground uppercase tracking-wider">
+            {children}
+          </th>
+        ),
+        td: ({ children }) => (
+          <td className="px-4 py-3 text-sm text-foreground">
+            {children}
+          </td>
+        ),
+        
+        // Enhanced lists with better spacing
+        ul: ({ children }) => (
+          <ul className="space-y-2 my-4 ml-6">
+            {children}
+          </ul>
+        ),
+        ol: ({ children }) => (
+          <ol className="space-y-2 my-4 ml-6 list-decimal">
+            {children}
+          </ol>
+        ),
+        li: ({ children }) => (
+          <li className="text-[15px] sm:text-base leading-relaxed">
+            {children}
+          </li>
+        ),
+        
+        // Enhanced paragraphs
+        p: ({ children }) => (
+          <p className="text-[15px] sm:text-base leading-relaxed mb-4 text-foreground">
+            {children}
+          </p>
+        ),
+        
+        // Code blocks with syntax highlighting
         code({ node, inline, className, children, ...props }: any) {
           const match = /language-(\w+)/.exec(className || '')
           const language = match ? match[1] : ''
@@ -70,7 +158,7 @@ const MarkdownContent = memo(function MarkdownContent({ content, isDark }: { con
                 style={isDark ? oneDark : oneLight}
                 language={language}
                 PreTag="div"
-                className="rounded-xl !mt-0 !mb-0 !pt-10 !pb-4 !px-4 shadow-sm border border-border/50"
+                className="rounded-xl !mt-0 !mb-0 !pt-10 !pb-4  !px-4 shadow-sm border border-border/50"
                 customStyle={{
                   background: 'transparent',
                   fontSize: '0.875rem',
@@ -98,7 +186,7 @@ const MarkdownContent = memo(function MarkdownContent({ content, isDark }: { con
             </div>
           ) : (
             <code className={cn(
-              "bg-muted px-1.5 py-0.5 rounded-md text-sm font-mono font-medium",
+              "bg-accent/50 px-1.5 py-0.5 rounded-md text-[13px] sm:text-sm font-mono font-medium border border-accent",
               "text-foreground",
               className
             )} {...props}>
@@ -511,15 +599,16 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
     <article
       id={message ? `message-${message.id}` : undefined}
       className={cn(
-        "w-full py-4 sm:py-6",
-        "animate-in fade-in slide-in-from-bottom-2 duration-300"
+        "w-full py-6 sm:py-8",
+        "animate-in fade-in slide-in-from-bottom-2 duration-300",
+        "border-b border-border/5 last:border-0"
       )}
       role="article"
       aria-label={isAssistant ? "AI assistant message" : "Your message"}
       data-message-id={message?.id}
     >
       <div className={cn(
-        "max-w-3xl mx-auto px-4 sm:px-6",
+        "max-w-4xl mx-auto px-4 sm:px-6",
         isAssistant ? "flex justify-start" : "flex justify-end"
       )}>
         <div className={cn(
