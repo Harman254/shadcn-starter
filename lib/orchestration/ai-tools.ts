@@ -171,79 +171,113 @@ Return a valid JSON object.`,
 // ============================================================================
 
 export const analyzeNutrition = tool({
-    description: 'Analyze the nutritional value of a meal plan or recipe. Use this when user asks about "nutrition", "calories", "macros", or "healthiness" of the generated plan or dish.',
+    description: 'Analyze the nutritional value of a meal plan, recipe, or grocery list. Use this when user asks about "nutrition", "calories", "macros", or "healthiness".',
     parameters: z.object({
-        mealPlanId: z.string().optional().describe('The ID of the meal plan to analyze. If not provided, will try to analyze the most recent plan or recipe in context.'),
+        mealPlanId: z.string().optional().describe('The ID of the meal plan to analyze.'),
+        recipeName: z.string().optional().describe('The name of the recipe to analyze.'),
+        groceryListId: z.string().optional().describe('The ID of the grocery list to analyze.'),
     }),
-    execute: async ({ mealPlanId }, options): Promise<ToolResult> => {
+    execute: async ({ mealPlanId, recipeName, groceryListId }, options): Promise<ToolResult> => {
         try {
-            console.log('[analyzeNutrition] 🔬 Analyzing nutrition...');
+            console.log(`[analyzeNutrition] 🍎 Analyzing nutrition...`);
 
             // 1. Get Context
-            // @ts-ignore - context is injected by ToolExecutor via options
+            // @ts-ignore
             const context = (options as any)?.context;
 
-            let mealPlan;
-            let recipe;
+            let itemsToAnalyze: string[] = [];
+            let title = "Meal Plan";
+            let type = 'plan';
 
-            // 2. Resolve Content (Meal Plan or Recipe)
+            // 2. Resolve Content
             if (mealPlanId) {
-                // Fetch from DB if ID provided
                 const prisma = (await import('@/lib/prisma')).default;
-                mealPlan = await prisma.mealPlan.findUnique({
+                const mealPlan = await prisma.mealPlan.findUnique({
                     where: { id: mealPlanId },
                     include: { days: { include: { meals: true } } }
                 });
-            } else {
-                // Get from context
-                mealPlan =
-                    context?.lastToolResult?.generateMealPlan?.data?.mealPlan ||
-                    context?.lastToolResult?.modifyMealPlan?.data?.mealPlan ||
-                    context?.lastToolResult?.swapMeal?.data?.mealPlan;
 
-                recipe =
-                    context?.lastToolResult?.generateMealRecipe?.data?.recipe;
-            }
-
-            if (!mealPlan && !recipe) {
-                return errorResponse("I can't find a meal plan or recipe to analyze. Please generate one first.", ErrorCode.INVALID_INPUT);
-            }
-
-            // 3. Prepare Data for Analysis
-            let itemsToAnalyze: string[] = [];
-            let title = '';
-            let type = 'plan';
-
-            if (mealPlan) {
-                title = mealPlan.title;
-                type = 'plan';
-                if (mealPlan.days) {
-                    mealPlan.days.forEach((day: any) => {
-                        if (day.meals) {
-                            day.meals.forEach((meal: any) => {
-                                itemsToAnalyze.push(`Day ${day.day} - ${meal.name}: ${(meal.ingredients || []).join(', ')}`);
-                            });
-                        }
+                if (mealPlan) {
+                    title = `Meal Plan (${mealPlan.days.length} Days)`;
+                    type = 'plan';
+                    mealPlan.days.forEach((d: any) => {
+                        d.meals.forEach((m: any) => {
+                            itemsToAnalyze.push(`${m.name} (${m.ingredients.join(', ')})`);
+                        });
                     });
                 }
-            } else if (recipe) {
-                title = recipe.name;
+            } else if (groceryListId) {
+                const prisma = (await import('@/lib/prisma')).default;
+                const groceryList = await prisma.groceryList.findUnique({
+                    where: { id: groceryListId }
+                });
+
+                if (groceryList && Array.isArray(groceryList.items)) {
+                    title = "Grocery List";
+                    type = 'plan'; // Treat as a plan for aggregation
+                    (groceryList.items as any[]).forEach((item: any) => {
+                        itemsToAnalyze.push(`${item.item || item.name} (${item.quantity || ''} ${item.unit || ''})`);
+                    });
+                }
+            } else if (recipeName) {
+                title = recipeName;
                 type = 'recipe';
-                itemsToAnalyze.push(`${recipe.name}: ${(recipe.ingredients || []).join(', ')}`);
+                itemsToAnalyze.push(recipeName);
+            } else {
+                // Try to find from context
+                const lastMealPlan = context?.messages?.findLast((m: any) =>
+                    m.role === 'assistant' &&
+                    m.toolInvocations?.some((t: any) => t.toolName === 'generateMealPlan' && t.result?.success)
+                )?.toolInvocations?.find((t: any) => t.toolName === 'generateMealPlan')?.result?.mealPlan;
+
+                const lastRecipe = context?.messages?.findLast((m: any) =>
+                    m.role === 'assistant' &&
+                    m.toolInvocations?.some((t: any) => t.toolName === 'generateMealRecipe' && t.result?.success)
+                )?.toolInvocations?.find((t: any) => t.toolName === 'generateMealRecipe')?.result?.recipe;
+
+                const lastGroceryList = context?.messages?.findLast((m: any) =>
+                    m.role === 'assistant' &&
+                    m.toolInvocations?.some((t: any) => t.toolName === 'generateGroceryList' && t.result?.success)
+                )?.toolInvocations?.find((t: any) => t.toolName === 'generateGroceryList')?.result?.groceryList;
+
+                if (lastMealPlan) {
+                    title = `Meal Plan (${lastMealPlan.days.length} Days)`;
+                    type = 'plan';
+                    lastMealPlan.days.forEach((d: any) => {
+                        d.meals.forEach((m: any) => {
+                            itemsToAnalyze.push(`${m.name} (${m.ingredients.join(', ')})`);
+                        });
+                    });
+                } else if (lastRecipe) {
+                    title = lastRecipe.name;
+                    type = 'recipe';
+                    itemsToAnalyze.push(...lastRecipe.ingredients);
+                } else if (lastGroceryList) {
+                    title = "Grocery List";
+                    type = 'plan';
+                    if (Array.isArray(lastGroceryList.items)) {
+                        lastGroceryList.items.forEach((item: any) => {
+                            if (typeof item === 'string') {
+                                itemsToAnalyze.push(item);
+                            } else {
+                                itemsToAnalyze.push(`${item.item || item.name} (${item.quantity || ''} ${item.unit || ''})`);
+                            }
+                        });
+                    }
+                } else {
+                    return errorResponse("Please provide a meal plan, recipe, or grocery list to analyze.", ErrorCode.INVALID_INPUT);
+                }
             }
 
-            if (itemsToAnalyze.length === 0) {
-                return errorResponse('No food items found to analyze.', ErrorCode.INVALID_INPUT);
-            }
-
-            // 4. Use AI SDK to analyze nutrition
             const { generateObject } = await import('ai');
             const { google } = await import('@ai-sdk/google');
             const { z } = await import('zod');
 
             const result = await generateObject({
-                model: google('gemini-2.0-flash'),
-                temperature: 0.3,
+                model: google('gemini-2.0-flash', {
+                    useSearchGrounding: true,
+                }),
+                temperature: 0.2,
                 schema: z.object({
                     totalNutrition: z.object({
                         calories: z.number().describe('Total calories'),
@@ -265,17 +299,18 @@ export const analyzeNutrition = tool({
                 }),
                 prompt: `You are a nutrition expert. Analyze the following ${type} and provide detailed nutrition information.
 
-## ${type === 'plan' ? 'Meal Plan' : 'Recipe'}: "${title}"
+## ${type === 'plan' ? 'Meal Plan/List' : 'Recipe'}: "${title}"
 
 ## Items:
 ${itemsToAnalyze.join('\n')}
 
 ## Instructions:
-1. Calculate TOTAL nutrition.
-2. ${type === 'plan' ? 'Calculate DAILY AVERAGE nutrition.' : 'For a single recipe, Daily Average = Total.'}
-3. Provide 3-5 actionable insights about the nutritional balance.
-4. Give a health score (0-100).
-5. Write a concise summary (1-2 sentences).
+1. Search for accurate nutritional data for these items.
+2. Calculate TOTAL nutrition.
+3. ${type === 'plan' ? 'Calculate DAILY AVERAGE nutrition (if it is a grocery list, assume it covers 3-4 days unless specified).' : 'For a single recipe, Daily Average = Total.'}
+4. Provide 3-5 actionable insights about the nutritional balance.
+5. Give a health score (0-100).
+6. Write a concise summary (1-2 sentences).
 
 Return valid JSON.`,
             });
@@ -390,26 +425,27 @@ export const getGroceryPricing = tool({
             const { z } = await import('zod');
 
             const result = await generateObject({
-                model: google('gemini-2.0-flash'),
+                model: google('gemini-2.0-flash', {
+                    useSearchGrounding: true,
+                }),
                 temperature: 0.2,
                 schema: z.object({
                     prices: z.array(z.object({
                         store: z.string().describe('Store name or type (e.g., "Whole Foods", "Walmart", "Local Market")'),
                         total: z.number().describe('Estimated total cost'),
                         currency: z.string().describe('Currency symbol'),
-                        notes: z.string().optional().describe('Brief note about pricing tier')
+                        notes: z.string().optional().describe('Brief note about pricing tier or specific deals found'),
+                        sourceUrl: z.string().optional().describe('URL to the store or pricing source if available')
                     }))
                 }),
-                prompt: `Estimate the total grocery cost for these ingredients in ${city || 'San Francisco'}, ${country || 'US'}.
+                prompt: `Find CURRENT grocery prices for these ingredients in ${city || 'San Francisco'}, ${country || 'US'}.
                 
 Ingredients for "${title}":
 ${allIngredients.slice(0, 50).join(', ')} ${allIngredients.length > 50 ? `...and ${allIngredients.length - 50} more items` : ''}
 
-Provide 3 pricing estimates:
-1. Budget/Discount Store (e.g., Walmart, Aldi)
-2. Mid-range/Standard Store (e.g., Kroger, Safeway)
-3. Premium/Organic Store (e.g., Whole Foods)
-
+Search for real online grocery prices at major local retailers.
+Provide 3 pricing estimates from different store tiers (Budget, Standard, Premium).
+Include the source URL for the store or pricing if found.
 Return valid JSON.`,
             });
 
@@ -444,7 +480,7 @@ Return valid JSON.`,
 export const generateGroceryList = tool({
     description: 'Generate a consolidated grocery/shopping list with local prices and store suggestions. Can work with EITHER a full meal plan OR a single recipe. Use source="mealplan" for multi-day meal plans, source="recipe" for individual recipes or dishes. The tool will automatically find meal plans or recipes from conversation context if not explicitly provided.',
     parameters: z.object({
-        source: z.enum(['mealplan', 'recipe']).describe('Whether generating from a meal plan or single recipe'),
+        source: z.enum(['mealplan', 'recipe', 'meal']).describe('Whether generating from a meal plan or single recipe or meal'),
         mealPlanId: z.string().optional().describe('ID of saved meal plan (if source is mealplan)'),
         fromContext: z.string().optional().describe('Set to "true" to use the meal plan from conversation context'),
         mealPlan: z.object({
@@ -994,7 +1030,9 @@ export const searchRecipes = tool({
             const { z } = await import('zod');
 
             const result = await generateObject({
-                model: google('gemini-2.0-flash'),
+                model: google('gemini-2.0-flash', {
+                    useSearchGrounding: true,
+                }),
                 temperature: 0.7,
                 schema: z.object({
                     recipes: z.array(z.object({
@@ -1003,12 +1041,15 @@ export const searchRecipes = tool({
                         prepTime: z.string(),
                         calories: z.number().optional(),
                         tags: z.array(z.string()),
+                        sourceUrl: z.string().optional().describe('URL to the original recipe if found'),
+                        imageUrl: z.string().optional().describe('Image URL from the search result if available'),
                     }))
                 }),
-                prompt: `Generate ${count} distinct recipe options for: "${query}".
+                prompt: `Find ${count} distinct, highly-rated recipes for: "${query}".
                 
-Return valid JSON with a list of recipes.
-Keep descriptions concise (1 sentence).`,
+Search the web for REAL recipes from reputable cooking sites.
+Return valid JSON with a list of recipes found.
+Include the source URL and image URL if available.`,
             });
 
             if (!result.object?.recipes) {

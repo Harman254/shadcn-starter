@@ -1,6 +1,6 @@
 "use client"
 
-import { User, Loader2, Copy, Check, Clock, AlertCircle, Calendar, UtensilsCrossed, ChefHat, Star, ShoppingCart, MapPin, Tag, DollarSign, Save, MoreHorizontal } from "lucide-react"
+import { User, Loader2, Copy, Check, Clock, AlertCircle, Calendar, UtensilsCrossed, ChefHat, Star, ShoppingCart, MapPin, Tag, DollarSign, Save, MoreHorizontal, ExternalLink } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { Message } from "@/types"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
@@ -204,6 +204,8 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
   const [savedMealPlanId, setSavedMealPlanId] = useState<string | null>(null)
   const [savingGroceryList, setSavingGroceryList] = useState(false)
   const [savedGroceryListId, setSavedGroceryListId] = useState<string | null>(null)
+  const [savingRecipe, setSavingRecipe] = useState(false)
+  const [savedRecipeId, setSavedRecipeId] = useState<string | null>(null)
   const { toast } = useToast()
   const { theme, systemTheme } = useTheme()
   const router = useRouter()
@@ -218,9 +220,16 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
     if (message.ui) return message.ui;
     
     // 2. Check for embedded UI data in the message content
-    // Format: <!-- UI_DATA_START:BASE64_JSON:UI_DATA_END -->
+    // Format: <!-- UI_DATA_START:BASE64_JSON:UI_DATA_END --> OR [UI_METADATA:BASE64_JSON]
     if (message.content) {
-      const match = message.content.match(/<!-- UI_DATA_START:([^:]+):UI_DATA_END -->/);
+      // Try standard format first
+      let match = message.content.match(/<!-- UI_DATA_START:([^:]+):UI_DATA_END -->/);
+      
+      // Try alternative format if not found
+      if (!match) {
+        match = message.content.match(/\[UI_METADATA:([^\]]+)\]/);
+      }
+
       if (match && match[1]) {
         try {
           const decoded = Buffer.from(match[1], 'base64').toString('utf-8');
@@ -250,7 +259,17 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
              return { mealRecipe: tool.result.recipe };
           }
           if (tool.toolName === 'analyzeNutrition' && tool.result?.success) {
-             return { nutrition: tool.result.totalNutrition };
+             // Construct nutrition object to match UI expectation
+             return { 
+               nutrition: {
+                 total: tool.result.totalNutrition,
+                 dailyAverage: tool.result.dailyAverage,
+                 insights: tool.result.insights,
+                 healthScore: tool.result.healthScore,
+                 summary: tool.result.summary,
+                 type: 'plan' // Default assumption if missing
+               }
+             };
           }
           if (tool.toolName === 'getGroceryPricing' && tool.result?.success) {
              return { prices: tool.result.prices };
@@ -493,9 +512,7 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
       id={message ? `message-${message.id}` : undefined}
       className={cn(
         "w-full py-4 sm:py-6",
-        "animate-in fade-in slide-in-from-bottom-2 duration-300",
-        // Hide regular message container if tool call results are present
-        (isAssistant && (uiData?.mealPlan || uiData?.groceryList || uiData?.mealSuggestions || uiData?.mealRecipe || uiData?.nutrition || uiData?.prices || uiData?.recipeResults)) && "hidden"
+        "animate-in fade-in slide-in-from-bottom-2 duration-300"
       )}
       role="article"
       aria-label={isAssistant ? "AI assistant message" : "Your message"}
@@ -1427,18 +1444,20 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
 
                   {/* Save Button */}
                   <Button
-                    variant="default"
+                    variant={savedRecipeId ? "outline" : "default"}
                     size="lg"
                     className={cn(
                       "w-full mt-4",
                       "h-12 gap-2 font-semibold",
-                      "bg-gradient-to-r from-primary to-primary/90",
-                      "hover:from-primary/90 hover:to-primary/80",
-                      "shadow-lg shadow-primary/25"
+                      savedRecipeId 
+                        ? "border-green-500/20 text-green-600 dark:text-green-400 bg-green-50/50 dark:bg-green-900/10 hover:bg-green-100/50 dark:hover:bg-green-900/20"
+                        : "bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary/80 shadow-lg shadow-primary/25",
+                      "transition-all duration-200"
                     )}
                     onClick={async () => {
-                      if (!uiData?.mealRecipe) return;
+                      if (!uiData?.mealRecipe || savedRecipeId) return;
                       try {
+                        setSavingRecipe(true);
                         const response = await fetch('/api/recipes/save', {
                           method: 'POST',
                           headers: {
@@ -1462,6 +1481,7 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
                         const result = await response.json();
                         
                         if (response.ok && result.success) {
+                          setSavedRecipeId(result.recipe.id);
                           toast({
                             title: "Recipe Saved!",
                             description: `${uiData.mealRecipe.name} has been saved to your collection.`,
@@ -1482,11 +1502,28 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
                           description: "Failed to save recipe.",
                           variant: "destructive"
                         });
+                      } finally {
+                        setSavingRecipe(false);
                       }
                     }}
+                    disabled={savingRecipe || !!savedRecipeId}
                   >
-                    <Save className="h-5 w-5" />
-                    Save Recipe
+                    {savingRecipe ? (
+                      <>
+                        <Loader2 className="h-5 w-5 animate-spin" />
+                        Saving...
+                      </>
+                    ) : savedRecipeId ? (
+                      <>
+                        <Check className="h-5 w-5" />
+                        Saved
+                      </>
+                    ) : (
+                      <>
+                        <Save className="h-5 w-5" />
+                        Save Recipe
+                      </>
+                    )}
                   </Button>
 
                   {/* Smart Action Chips for Recipe */}
@@ -1652,7 +1689,21 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
                           <ShoppingCart className="h-5 w-5 text-muted-foreground" />
                         </div>
                         <div>
-                          <div className="font-semibold">{price.store}</div>
+                          <div className="font-semibold flex items-center gap-2">
+                            {price.store}
+                            {price.sourceUrl && (
+                              <a 
+                                href={price.sourceUrl} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="text-muted-foreground hover:text-primary transition-colors"
+                                title="View Store Price"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <ExternalLink className="h-3.5 w-3.5" />
+                              </a>
+                            )}
+                          </div>
                           <div className="text-xs text-muted-foreground">Local Store</div>
                         </div>
                       </div>
