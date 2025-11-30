@@ -607,128 +607,7 @@ Return JSON only.`,
     },
 });
 
-// ============================================================================
-// GENERATE MEAL RECIPE TOOL
-// ============================================================================
 
-export const generateMealRecipe = tool({
-    description: 'Generate a detailed recipe for a specific meal or dish when user requests ONE specific dish (e.g., "tilapia and rice", "ugali omena", "pasta carbonara"). Use this when user wants to know how to make a specific meal, not when they want a full meal plan.',
-    parameters: z.object({
-        mealName: z.string().describe('The name or description of the meal/dish the user wants to make (e.g., "tilapia and rice", "ugali omena")'),
-    }),
-    execute: async ({ mealName }): Promise<ToolResult> => {
-        try {
-            console.log('[generateMealRecipe] 🍳 Generating AI recipe for:', mealName);
-
-            // Use AI to generate real recipe content
-            const { generateObject } = await import('ai');
-            const { google } = await import('@ai-sdk/google');
-            const { z } = await import('zod');
-
-            const result = await generateObject({
-                model: google('gemini-2.0-flash'),
-                temperature: 0.5,
-                schema: z.object({
-                    name: z.string(),
-                    description: z.string(),
-                    servings: z.number(),
-                    prepTime: z.string(),
-                    cookTime: z.string(),
-                    difficulty: z.enum(['Easy', 'Medium', 'Hard']),
-                    cuisine: z.string(),
-                    ingredients: z.array(z.string()),
-                    instructions: z.array(z.string()),
-                    nutrition: z.object({
-                        calories: z.number(),
-                        protein: z.string(),
-                        carbs: z.string(),
-                        fat: z.string()
-                    }),
-                    tags: z.array(z.string())
-                }),
-                prompt: `You are a professional chef creating a detailed recipe.
-
-Generate a recipe for: "${mealName}"
-
-IMPORTANT RULES:
-- Use REAL specific ingredients with exact measurements
-- Make instructions detailed and practical
-- Cuisine should match the dish origin
-- NO placeholder text`,
-            });
-
-            if (!result.object) {
-                throw new Error('Failed to generate recipe');
-            }
-
-            const recipe = result.object;
-
-            // Add placeholder image (in future, generate with DALL-E or use food image API)
-            const recipeWithImage = {
-                ...recipe,
-                imageUrl: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&auto=format&fit=crop&q=80',
-            };
-
-            // Create UI metadata for beautiful meal recipe card display
-            const uiMetadata = {
-                mealRecipe: recipeWithImage,
-            };
-
-            // Encode UI metadata as base64
-            const uiMetadataEncoded = Buffer.from(JSON.stringify(uiMetadata)).toString('base64');
-
-            return successResponse(
-                {
-                    recipe: recipeWithImage,
-                },
-                `✨ Here's an authentic recipe for ${recipe.name}! Serves ${recipe.servings}, takes about ${recipe.prepTime} prep + ${recipe.cookTime} cooking. [UI_METADATA:${uiMetadataEncoded}]`
-            );
-
-        } catch (error) {
-            console.error('[generateMealRecipe] Error:', error);
-
-            // Fallback to skeleton data if AI fails
-            const recipe = {
-                name: mealName.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
-                description: `A delicious ${mealName} dish with authentic flavors.`,
-                servings: 4,
-                prepTime: "15 mins",
-                cookTime: "30 mins",
-                difficulty: "Medium",
-                cuisine: "Traditional",
-                imageUrl: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&auto=format&fit=crop&q=80',
-                ingredients: [
-                    "Main ingredients (see notes)",
-                    "Seasonings and spices",
-                    "Fresh vegetables",
-                    "Cooking oil",
-                ],
-                instructions: [
-                    "Prepare and season ingredients.",
-                    "Cook according to traditional methods.",
-                    "Serve hot.",
-                ],
-                nutrition: {
-                    calories: 450,
-                    protein: "28g",
-                    carbs: "45g",
-                    fat: "12g"
-                },
-                tags: ["authentic", "traditional"]
-            };
-
-            const uiMetadata = { mealRecipe: recipe };
-            const uiMetadataEncoded = Buffer.from(JSON.stringify(uiMetadata)).toString('base64');
-
-            return successResponse(
-                {
-                    recipe: recipe,
-                },
-                `✨ Here's a recipe for ${recipe.name}! (Note: Using basic template due to generation error) [UI_METADATA:${uiMetadataEncoded}]`
-            );
-        }
-    },
-});
 
 // ============================================================================
 // MODIFY MEAL PLAN TOOL
@@ -1036,6 +915,81 @@ Keep descriptions concise (1 sentence).`,
         } catch (error) {
             console.error('[searchRecipes] Error:', error);
             return errorResponse("I couldn't find any recipes matching that description. Please try a different search.", ErrorCode.GENERATION_FAILED, true);
+        }
+    },
+});
+
+export const generateMealRecipe = tool({
+    description: 'Generate a detailed recipe for a specific dish. Use this when the user asks for a specific recipe (e.g. "Recipe for Chapati", "How to make Sushi") or clicks on a recipe suggestion.',
+    parameters: z.object({
+        name: z.string().describe('The name of the dish to generate a recipe for.'),
+        description: z.string().optional().describe('Additional context or preferences (e.g. "spicy", "vegan").'),
+    }),
+    execute: async ({ name, description }): Promise<ToolResult> => {
+        try {
+            console.log(`[generateMealRecipe] 🍳 Generating recipe for "${name}"...`);
+
+            const { generateObject } = await import('ai');
+            const { google } = await import('@ai-sdk/google');
+            const { z } = await import('zod');
+
+            const result = await generateObject({
+                model: google('gemini-2.0-flash'),
+                temperature: 0.4,
+                schema: z.object({
+                    name: z.string(),
+                    description: z.string(),
+                    prepTime: z.string(),
+                    cookTime: z.string(),
+                    servings: z.number(),
+                    difficulty: z.enum(['Easy', 'Medium', 'Hard']),
+                    calories: z.number(),
+                    ingredients: z.array(z.string()),
+                    instructions: z.array(z.string()),
+                    tags: z.array(z.string()),
+                    nutrition: z.object({
+                        calories: z.number(),
+                        protein: z.number(),
+                        carbs: z.number(),
+                        fat: z.number(),
+                    }),
+                    imageUrl: z.string().optional().describe('A placeholder image URL for the dish'),
+                }),
+                prompt: `Generate a detailed recipe for "${name}" ${description ? `(${description})` : ''}.
+                
+Include:
+- Accurate ingredients and step-by-step instructions.
+- Nutritional estimate per serving.
+- A placeholder image URL from Unsplash (source.unsplash.com/800x600/?<dish-name>).
+
+Return valid JSON.`,
+            });
+
+            if (!result.object) {
+                throw new Error('Failed to generate recipe');
+            }
+
+            const recipe = {
+                ...result.object,
+                imageUrl: result.object.imageUrl || `https://source.unsplash.com/800x600/?${encodeURIComponent(name)}`
+            };
+
+            // Create UI metadata
+            const uiMetadata = {
+                mealRecipe: recipe,
+            };
+            const uiMetadataEncoded = Buffer.from(JSON.stringify(uiMetadata)).toString('base64');
+
+            return successResponse(
+                {
+                    recipe: recipe
+                },
+                `✅ Here is the recipe for "${recipe.name}". [UI_METADATA:${uiMetadataEncoded}]`
+            );
+
+        } catch (error) {
+            console.error('[generateMealRecipe] Error:', error);
+            return errorResponse("Failed to generate recipe.", ErrorCode.GENERATION_FAILED, true);
         }
     },
 });

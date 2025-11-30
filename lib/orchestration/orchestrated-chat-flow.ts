@@ -146,11 +146,26 @@ export class OrchestratedChatFlow {
           controller.enqueue(formatData({ type: 'status', content: '🤔 Analyzing your request...' }));
 
           // Load context and preferences in parallel
-          const [context, resolvedPreferences, resolvedLocation] = await Promise.all([
+          let [context, resolvedPreferences, resolvedLocation] = await Promise.all([
             this.contextManager.getContext(input.userId, input.sessionId),
             Promise.resolve(input.userPreferences),
             Promise.resolve(input.locationData)
           ]);
+
+          // RECOVERY LOGIC: If DB context is missing/empty, try to recover from chat history
+          if ((!context || !context.lastToolResult) && input.conversationHistory.length > 0) {
+            const recovered = this.contextManager.recoverContextFromHistory(input.conversationHistory);
+            if (recovered.lastToolResult) {
+              console.log('[OrchestratedChatFlow] 🩹 Context recovered from history');
+              if (!context) {
+                context = { timestamp: new Date(), ...recovered } as any;
+              } else {
+                context.lastToolResult = recovered.lastToolResult;
+                if (recovered.mealPlanId) context.mealPlanId = recovered.mealPlanId;
+                if (recovered.groceryListId) context.groceryListId = recovered.groceryListId;
+              }
+            }
+          }
 
           // 2. Plan
           const plan = await this.reasoningEngine.generatePlan(input.message, {

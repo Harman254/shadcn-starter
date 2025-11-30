@@ -71,7 +71,13 @@ export class ReasoningEngine {
           * If for a recipe, pass '{"source": "recipe"}'.
         - If the user asks for nutrition, call 'analyzeNutrition'. Do NOT invent a mealPlanId. Leave args empty to use context.
         - If the user asks for pricing, call 'getGroceryPricing'. Do NOT invent a mealPlanId. Leave args empty to use context.
-        - **General Chat / Info**: If the user asks a general question, requests information, or engages in small talk (e.g. "Hi", "What is Ugali?", "Talk to me about..."), return an EMPTY array for 'steps'. Do NOT call any tools. The synthesis layer will answer.
+        - **Recipe Requests**:
+          * **Single Dish**: If the user asks for a specific dish (e.g. "Chapati", "Sushi", "How to make X"), call 'generateMealRecipe'.
+            - Example: "Chapati" -> Call 'generateMealRecipe' with args '{"name": "Chapati"}'.
+          * **Search/List**: If the user asks for ideas or a list (e.g. "Find me pasta recipes", "Breakfast ideas"), call 'searchRecipes'.
+            - Example: "Pasta recipes" -> Call 'searchRecipes' with args '{"query": "pasta recipes", "count": 3}'.
+        - **General Chat / Info**: ONLY if the user asks a general question unrelated to generating content (e.g. "Hi", "How are you?"), return an EMPTY array.
+          * CRITICAL: Do NOT return empty for food items. "Chapati" is NOT general chat, it is a recipe request.
         - ALWAYS provide tool arguments as a valid JSON string.
         - For tool arguments, convert numbers to strings (e.g., duration: "1", mealsPerDay: "3")
         - DEFAULT to 1-day meal plans (duration: "1") unless user explicitly requests more days.
