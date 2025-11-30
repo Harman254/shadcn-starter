@@ -256,6 +256,12 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
           if (tool.toolName === 'searchRecipes' && tool.result?.success) {
              return { recipeResults: tool.result.recipes, query: tool.result.query };
           }
+          if (tool.toolName === 'modifyMealPlan' && tool.result?.success) {
+             return { mealPlan: tool.result.mealPlan };
+          }
+          if (tool.toolName === 'swapMeal' && tool.result?.success) {
+             return { mealPlan: tool.result.mealPlan };
+          }
         }
       }
     }

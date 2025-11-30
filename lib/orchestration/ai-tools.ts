@@ -963,6 +963,7 @@ Keep descriptions concise (1 sentence).`,
             return successResponse(
                 {
                     recipes: recipes,
+                    query: query
                 },
                 `✅ Found ${recipes.length} recipes for "${query}". [UI_METADATA:${uiMetadataEncoded}]`
             );
