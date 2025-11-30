@@ -82,6 +82,7 @@ export const metadata: Metadata = {
     yahoo: 'your-yahoo-verification-code',
   },
 }
+export const dynamic = 'force-dynamic'; // Ensure fresh data on every page load
 
 const MealPlans = async () => {
   const session = await auth.api.getSession({ headers: await headers() })
