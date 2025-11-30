@@ -80,6 +80,8 @@ export class ToolExecutor {
                         status: 'success'
                     };
 
+                    console.log('[ToolExecutor] ✅ Tool finished:', call.toolName);
+
                     if (onToolFinish) onToolFinish(executionResult);
                     return executionResult;
 

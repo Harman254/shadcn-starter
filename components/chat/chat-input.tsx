@@ -9,12 +9,17 @@ interface ChatInputProps {
   onSubmit: (value: string) => void
   isLoading: boolean
   disabled?: boolean
+  input?: string
+  handleInputChange?: (e: React.ChangeEvent<HTMLTextAreaElement> | React.ChangeEvent<HTMLInputElement>) => void
 }
 
-export function ChatInput({ onSubmit, isLoading, disabled = false }: ChatInputProps) {
-  const [value, setValue] = useState("")
+export function ChatInput({ onSubmit, isLoading, disabled = false, input, handleInputChange }: ChatInputProps) {
+  const [internalValue, setInternalValue] = useState("")
   const [isFocused, setIsFocused] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+  const isControlled = input !== undefined
+  const value = isControlled ? input : internalValue
 
   // Auto-resize textarea
   useEffect(() => {
@@ -28,7 +33,7 @@ export function ChatInput({ onSubmit, isLoading, disabled = false }: ChatInputPr
     if (e) {
       e.preventDefault()
     }
-    if (!value.trim() || isLoading || disabled) {
+    if (!value?.trim() || isLoading || disabled) {
       if (disabled) {
         onSubmit('')
       }
@@ -36,7 +41,9 @@ export function ChatInput({ onSubmit, isLoading, disabled = false }: ChatInputPr
     }
     
     const messageToSend = value.trim()
-    setValue("")
+    if (!isControlled) {
+      setValue("")
+    }
     
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto'
@@ -46,13 +53,33 @@ export function ChatInput({ onSubmit, isLoading, disabled = false }: ChatInputPr
       await onSubmit(messageToSend)
     } catch (error) {
       console.error('[ChatInput] Error submitting message:', error)
-      setValue(messageToSend)
+      if (!isControlled) {
+        setValue(messageToSend)
+      }
       if (textareaRef.current) {
         textareaRef.current.focus()
       }
     }
     
     textareaRef.current?.focus()
+  }
+
+  const setValue = (newValue: string) => {
+    if (isControlled) {
+      // If controlled, we can't set value directly, but we can trigger change if needed?
+      // Actually, for controlled inputs, the parent handles clearing.
+      // So we just don't do anything here if controlled.
+      return
+    }
+    setInternalValue(newValue)
+  }
+
+  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    if (handleInputChange) {
+      handleInputChange(e)
+    } else {
+      setInternalValue(e.target.value)
+    }
   }
 
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -62,7 +89,7 @@ export function ChatInput({ onSubmit, isLoading, disabled = false }: ChatInputPr
     }
   }
 
-  const hasValue = value.trim().length > 0
+  const hasValue = value && value.trim().length > 0
 
   return (
     <div className="w-full sticky bottom-0 left-0 right-0 z-50 safe-area-bottom">
@@ -93,7 +120,7 @@ export function ChatInput({ onSubmit, isLoading, disabled = false }: ChatInputPr
             <textarea
               ref={textareaRef}
               value={value}
-              onChange={(e) => setValue(e.target.value)}
+              onChange={handleChange}
               onKeyDown={handleKeyDown}
               onFocus={() => setIsFocused(true)}
               onBlur={() => setIsFocused(false)}

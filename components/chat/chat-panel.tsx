@@ -51,20 +51,23 @@ export function ChatPanel({
   const titleGeneratedRef = useRef<string | null>(null);
   const lockedSessionRef = useRef<string | null>(null);
   const lockInitializedRef = useRef(false);
+  const isUserSubmittingRef = useRef(false);
   
-  // Initialize lock from localStorage
-  useEffect(() => {
-    if (lockInitializedRef.current) return;
+  // Synchronously initialize lock from localStorage to prevent creating new session on refresh
+  // This is safe because ChatPanel is loaded with ssr: false
+  if (!lockInitializedRef.current && typeof window !== 'undefined') {
     lockInitializedRef.current = true;
     try {
       const stored = localStorage.getItem('chat-storage');
       if (stored) {
         const parsed = JSON.parse(stored);
         const storedSessionId = parsed?.state?.currentSessionId;
-        if (storedSessionId) lockedSessionRef.current = storedSessionId;
+        if (storedSessionId) {
+            lockedSessionRef.current = storedSessionId;
+        }
       }
     } catch (e) { /* Ignore */ }
-  }, []);
+  }
   
   // Session Logic
   const finalSessionId = useMemo(() => {
@@ -114,6 +117,7 @@ export function ChatPanel({
       preferencesSummary,
     },
     onFinish: async (message) => {
+      isUserSubmittingRef.current = false;
       if (!finalSessionId) return;
       
       // Extract UI data from the stream data
@@ -184,6 +188,7 @@ export function ChatPanel({
       }
     },
     onError: (error) => {
+      isUserSubmittingRef.current = false;
       console.error('[ChatPanel] useChat error:', error);
       toast({
         title: 'Message failed',
@@ -206,38 +211,46 @@ export function ChatPanel({
   // Sync store messages to useChat when session changes
    // CRITICAL: Don't sync during streaming or we'll overwrite the streaming message!
 useEffect(() => {
-if (!isLoading) {
+if (!isLoading && !isUserSubmittingRef.current) {
 setMessages(storeMessages);
 }
 }, [finalSessionId, storeMessages, isLoading, setMessages]);
 
 
-  const onFormSubmit = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    if (!input.trim()) return;
+  // We need to override the default submit handler to use append() so we can control the ID
+  const handleManualSubmit = async (value: string) => {
+     if (!value.trim()) return;
+     if (!isAuthenticated) {
+        openAuthModal('sign-in');
+        return;
+     }
 
-    if (!isAuthenticated) {
-      openAuthModal('sign-in');
-      return;
-    }
+     if (!navigator.onLine) {
+        queueMessage(value.trim());
+        handleInputChange({ target: { value: '' } } as React.ChangeEvent<HTMLInputElement>);
+        return;
+     }
 
-    if (!navigator.onLine) {
-      queueMessage(input.trim());
-      handleInputChange({ target: { value: '' } } as React.ChangeEvent<HTMLInputElement>);
-      return;
-    }
-
-    // Optimistically add user message to store
-    const userMsg: Message = {
-      id: crypto.randomUUID(),
-      role: 'user',
-      content: input,
-      timestamp: new Date(),
-    };
-    addMessage(finalSessionId, userMsg);
-    
-    // Trigger useChat submit
-    handleSubmit(e);
+     const messageId = crypto.randomUUID();
+     const userMsg: Message = {
+        id: messageId,
+        role: 'user',
+        content: value,
+        timestamp: new Date(),
+     };
+     
+     isUserSubmittingRef.current = true;
+     addMessage(finalSessionId, userMsg);
+     
+     // Clear input
+     handleInputChange({ target: { value: '' } } as React.ChangeEvent<HTMLInputElement>);
+     
+     // Append with same ID
+     append({
+        id: messageId,
+        role: 'user',
+        content: value,
+     });
   };
 
   const handleClearChat = useCallback(async () => {
@@ -257,14 +270,20 @@ setMessages(storeMessages);
                 openAuthModal('sign-in');
                 return;
              }
+             const messageId = crypto.randomUUID();
              const userMsg: Message = {
-                id: crypto.randomUUID(),
+                id: messageId,
                 role: 'user',
                 content: val,
                 timestamp: new Date(),
              };
+             isUserSubmittingRef.current = true;
              addMessage(finalSessionId, userMsg);
-             append({ role: 'user', content: val });
+             append({ 
+                id: messageId,
+                role: 'user', 
+                content: val 
+             });
           }} />
         ) : (
           <ChatMessages 
@@ -276,30 +295,13 @@ setMessages(storeMessages);
       </div>
       
       <div className="fixed bottom-0 left-0 right-0 z-20 bg-background/95 backdrop-blur-md border-t border-border/50 shadow-lg">
-         <ChatInput 
-           onSubmit={(val) => {
-             // ChatInput calls onSubmit with the value
-             // We need to update useChat's input state then submit
-             handleInputChange({ target: { value: val } } as React.ChangeEvent<HTMLInputElement>);
-             // We need to wait for state update? No, handleInputChange is sync-ish.
-             // Actually, handleSubmit uses the *current* input state.
-             // Better: use append() for direct submission without form event
-             if (!isAuthenticated) {
-                openAuthModal('sign-in');
-                return;
-             }
-             const userMsg: Message = {
-                id: crypto.randomUUID(),
-                role: 'user',
-                content: val,
-                timestamp: new Date(),
-             };
-             addMessage(finalSessionId, userMsg);
-             append({ role: 'user', content: val });
-           }}
-           isLoading={isLoading}
-           disabled={!isAuthenticated}
-         />
+          <ChatInput 
+            onSubmit={handleManualSubmit}
+            isLoading={isLoading}
+            disabled={!isAuthenticated}
+            input={input}
+            handleInputChange={handleInputChange}
+          />
       </div>
     </div>
   );

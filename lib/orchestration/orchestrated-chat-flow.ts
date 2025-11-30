@@ -278,11 +278,19 @@ export class OrchestratedChatFlow {
 
           controller.close();
 
+          // Safety timeout
+          const safetyTimeout = setTimeout(() => {
+            console.warn('[OrchestratedChatFlow] ⚠️ Stream safety timeout reached. Closing controller.');
+            try { controller.close(); } catch (e) { }
+          }, 60000);
+
         } catch (error) {
           clearInterval(keepAliveInterval);
           console.error('[OrchestratedChatFlow] Stream Error:', error);
           controller.enqueue(formatError(error instanceof Error ? error.message : 'An error occurred'));
           controller.close();
+        } finally {
+          console.log('[OrchestratedChatFlow] 🏁 Stream controller closed.');
         }
       }
     });
@@ -320,7 +328,7 @@ export class OrchestratedChatFlow {
       - DO NOT describe what's in the meal plan - the user can see it in the UI
       - DO NOT list meals, ingredients, or prices - they're already displayed
       - Just say something like "I've created your meal plan! Enjoy!" or "Here's your grocery list!"
-      - If there are ERRORS in the summary, apologize specifically for that part (e.g. "I couldn't get the prices, but here is the plan.")
+      - If there are ERRORS in the summary, apologize specifically for that part (e.g. "I couldn't get the prices, but here is the plan.") and suggest a next step (e.g. "Try asking for the list again").
       - Keep it enthusiastic but VERY brief
       ` : `
       - No tools were executed. This means the user likely asked a general question, just said hello, or is following up on a previous message.
@@ -329,6 +337,7 @@ export class OrchestratedChatFlow {
       - Be conversational, friendly, and engaging.
       - If they asked about the app's capabilities, explain that you can help with meal planning, grocery lists, and nutrition.
       - Do NOT apologize unless there was an actual error.
+      - If the previous tool execution FAILED, explain why in simple terms and ask if they want to try again.
       `}
       `;
   }
@@ -347,7 +356,9 @@ Your goal is to help users plan meals, analyze nutrition, check grocery prices, 
 You are also a knowledgeable culinary expert who can discuss food, recipes, ingredients, and cooking techniques freely.
 
 CRITICAL RULE: When users request specific actions (Meals, Meal planning, shoppinglist generation, analysis, nutrition, Recipes, Recipe analysis), you MUST use the corresponding tools.
-HOWEVER, if the user asks a general question (e.g., "What is Ugali?", "How do I cook rice?"), you should intelligently ANSWER DIRECTLY without using tools.`;
+HOWEVER, if the user asks a general question (e.g., "What is Ugali?", "How do I cook rice?"), you should intelligently ANSWER DIRECTLY without using tools.
+
+CONTEXT RESET: If the user says "Start over", "New plan", "Reset", or "Forget context", you should IGNORE the previous context (Meal Plan ID, Grocery List ID) and treat it as a fresh request. Explicitly mention that you are starting fresh.`;
 
     const contextInfo = `
 CURRENT CONTEXT:
@@ -361,10 +372,27 @@ ${context?.groceryListId ? `- Previous Grocery List ID: ${context.groceryListId}
 ${contextInfo}
 
 AVAILABLE TOOLS:
+- fetchUserPreferences: Fetch stored user preferences (dietary, allergies, goals)
 - generateMealPlan: Create a meal plan (parameters: duration, mealsPerDay, preferences)
-- analyzeNutrition: Analyze nutrition (optional mealPlanId, works from context)
-- getGroceryPricing: Get pricing estimates (optional mealPlanId, works from context)
+- modifyMealPlan: Generate a different meal plan variant
+- swapMeal: Swap a specific meal in the plan
+- generateMealRecipe: Generate detailed recipe for a meal
 - generateGroceryList: Create shopping list (optional mealPlanId, works from context)
+- optimizeGroceryList: Optimize grocery list with pricing and substitutions
+- analyzeNutrition: Analyze nutrition (optional mealPlanId, works from context)
+
+CRITICAL ORCHESTRATION RULES:
+1. **Meal Planning Flow**:
+   - ALWAYS start by checking/fetching user preferences if not provided.
+   - Then generate the meal plan.
+   - AFTER generating the plan, you can offer to generate a grocery list or analyze nutrition.
+   
+2. **Grocery Flow**:
+   - Generate the list first using "generateGroceryList".
+   - THEN offer to optimize it using "optimizeGroceryList" (especially if user mentions specific stores or saving money).
+
+3. **Recipe Flow**:
+   - If user asks for a recipe for a specific meal in the plan, use "generateMealRecipe".
 
 Remember: ALWAYS use tools for user requests. Be helpful and concise in your responses.`;
   }

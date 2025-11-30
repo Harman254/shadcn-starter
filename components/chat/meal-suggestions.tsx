@@ -44,7 +44,7 @@ export function MealSuggestions({ suggestions, onAdd }: MealSuggestionsProps) {
             <h3 className="font-semibold text-foreground">Meal Suggestions</h3>
           </div>
 
-          <div className="space-y-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {suggestions.map((meal, index) => (
               <motion.div
                 key={index}
@@ -52,63 +52,69 @@ export function MealSuggestions({ suggestions, onAdd }: MealSuggestionsProps) {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1 }}
                 className={cn(
-                  "group flex items-start gap-4 p-3 rounded-xl",
+                  "group relative flex flex-col overflow-hidden rounded-xl",
                   "bg-muted/30 hover:bg-muted/50",
-                  "border border-transparent hover:border-border/50",
-                  "transition-all duration-200"
+                  "border border-border/50 hover:border-primary/30",
+                  "transition-all duration-200",
+                  "hover:shadow-md"
                 )}
               >
-                {/* Image Placeholder or Icon */}
-                <div className="shrink-0 w-16 h-16 rounded-lg bg-muted flex items-center justify-center overflow-hidden">
-                  {meal.image ? (
-                    <img src={meal.image} alt={meal.name} className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="bg-gradient-to-br from-orange-100 to-orange-50 dark:from-orange-900/20 dark:to-orange-900/10 w-full h-full flex items-center justify-center">
-                       <span className="text-2xl">🥗</span>
-                    </div>
-                  )}
+                {/* Image Area */}
+                <div className="relative w-full aspect-video overflow-hidden bg-muted">
+                  <img 
+                    src={meal.image || "https://res.cloudinary.com/dcidanigq/image/upload/v1742112004/cld-sample-4.jpg"} 
+                    alt={meal.name} 
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" 
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-60" />
+                  
+                  {/* Overlay Content */}
+                  <div className="absolute bottom-0 left-0 right-0 p-3">
+                     <h4 className="font-bold text-white text-sm sm:text-base leading-tight shadow-sm">
+                        {meal.name}
+                     </h4>
+                  </div>
                 </div>
 
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <h4 className="font-semibold text-sm text-foreground leading-tight mb-1">
-                        {meal.name}
-                      </h4>
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
-                        <span className="flex items-center gap-1">
-                          <Flame className="h-3 w-3" />
-                          {meal.calories} cal
-                        </span>
-                        <span className="w-1 h-1 rounded-full bg-border" />
-                        <span>{meal.protein}g protein</span>
-                      </div>
-                    </div>
-                    
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="h-8 w-8 shrink-0 rounded-full border border-border/50 bg-background hover:bg-primary hover:text-primary-foreground hover:border-primary transition-colors"
-                      onClick={() => onAdd?.(meal)}
-                    >
-                      <Plus className="h-4 w-4" />
-                      <span className="sr-only">Add meal</span>
-                    </Button>
+                {/* Content Area */}
+                <div className="p-3 flex flex-col gap-2 flex-1">
+                  <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
+                    <span className="flex items-center gap-1">
+                      <Flame className="h-3 w-3" />
+                      {meal.calories || '---'} cal
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <Leaf className="h-3 w-3" />
+                      {meal.protein || '--'}g prot
+                    </span>
                   </div>
 
-                  <div className="flex flex-wrap gap-1.5">
-                    {meal.tags.map((tag, i) => (
+                  {meal.description && (
+                    <p className="text-xs text-muted-foreground line-clamp-2">
+                      {meal.description}
+                    </p>
+                  )}
+
+                  <div className="flex flex-wrap gap-1 mt-auto pt-2">
+                    {meal.tags.slice(0, 3).map((tag, i) => (
                       <span 
                         key={i}
-                        className={cn(
-                          "px-1.5 py-0.5 rounded-md text-[10px] font-medium",
-                          "bg-background border border-border/50 text-muted-foreground"
-                        )}
+                        className="px-1.5 py-0.5 rounded-md text-[10px] font-medium bg-background border border-border/50 text-muted-foreground"
                       >
                         {tag}
                       </span>
                     ))}
                   </div>
+                  
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    className="w-full mt-2 h-8 text-xs font-medium bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground transition-colors"
+                    onClick={() => onAdd?.(meal)}
+                  >
+                    <Plus className="h-3.5 w-3.5 mr-1.5" />
+                    View Recipe
+                  </Button>
                 </div>
               </motion.div>
             ))}

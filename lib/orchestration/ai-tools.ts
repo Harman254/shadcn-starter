@@ -8,6 +8,44 @@ import prisma from '@/lib/prisma';
 import { ToolResult, ErrorCode, successResponse, errorResponse } from '@/lib/types/tool-result';
 
 // ============================================================================
+// FETCH USER PREFERENCES TOOL
+// ============================================================================
+
+export const fetchUserPreferences = tool({
+    description: 'Fetch stored user preferences (dietary, allergies, goals, etc.) to inform meal planning.',
+    parameters: z.object({
+        userId: z.string().describe('The ID of the user to fetch preferences for'),
+    }),
+    execute: async ({ userId }): Promise<ToolResult> => {
+        try {
+            console.log('[fetchUserPreferences] 👤 Fetching preferences for:', userId);
+            const prisma = (await import('@/lib/prisma')).default;
+            const onboarding = await prisma.onboardingData.findUnique({
+                where: { userId }
+            });
+
+            if (!onboarding) {
+                return successResponse({ preferences: {} }, 'No saved preferences found.');
+            }
+
+            const preferences = {
+                dietary: onboarding.dietaryPreference,
+                cuisine: onboarding.cuisinePreferences,
+                goal: onboarding.goal,
+            };
+
+            return successResponse(
+                { preferences },
+                `✅ Fetched user preferences: ${onboarding.dietaryPreference}, ${onboarding.goal}.`
+            );
+        } catch (error) {
+            console.error('[fetchUserPreferences] Error:', error);
+            return errorResponse('Failed to fetch preferences.', ErrorCode.INTERNAL_ERROR);
+        }
+    },
+});
+
+// ============================================================================
 // MEAL PLAN GENERATION TOOL
 // ============================================================================
 
@@ -223,6 +261,7 @@ export const analyzeNutrition = tool({
                     }),
                     insights: z.array(z.string()).describe('Nutritional insights and recommendations'),
                     healthScore: z.number().min(0).max(100).describe('Overall health score (0-100)'),
+                    summary: z.string().describe('A concise 1-2 sentence summary of the nutritional analysis (e.g., "High protein plan with balanced macros, suitable for muscle gain.")'),
                 }),
                 prompt: `You are a nutrition expert. Analyze the following ${type} and provide detailed nutrition information.
 
@@ -236,6 +275,7 @@ ${itemsToAnalyze.join('\n')}
 2. ${type === 'plan' ? 'Calculate DAILY AVERAGE nutrition.' : 'For a single recipe, Daily Average = Total.'}
 3. Provide 3-5 actionable insights about the nutritional balance.
 4. Give a health score (0-100).
+5. Write a concise summary (1-2 sentences).
 
 Return valid JSON.`,
             });
@@ -252,6 +292,7 @@ Return valid JSON.`,
                     dailyAverage: nutritionData.dailyAverage,
                     insights: nutritionData.insights,
                     healthScore: nutritionData.healthScore,
+                    summary: nutritionData.summary,
                     title: title,
                     type: type
                 }
@@ -264,8 +305,9 @@ Return valid JSON.`,
                     dailyAverage: nutritionData.dailyAverage,
                     insights: nutritionData.insights,
                     healthScore: nutritionData.healthScore,
+                    summary: nutritionData.summary,
                 },
-                `✅ Nutrition analysis complete for "${title}"! Health score: ${nutritionData.healthScore}/100. ${type === 'plan' ? `Daily avg: ${Math.round(nutritionData.dailyAverage.calories)} cal.` : `Total: ${Math.round(nutritionData.totalNutrition.calories)} cal.`} [UI_METADATA:${uiMetadataEncoded}]`
+                `✅ Nutrition Analysis: ${nutritionData.summary} (Health Score: ${nutritionData.healthScore}/100) [UI_METADATA:${uiMetadataEncoded}]`
             );
         } catch (error) {
             console.error('[analyzeNutrition] Error:', error);
@@ -568,7 +610,7 @@ Return JSON only.`,
             const currency = result.object.locationInfo?.currencySymbol || '$';
 
             // 7. Save to Database (Persistence)
-            // TODO: Re-enable after Prisma client regeneration completes
+            // Auto-save disabled in favor of manual save button in UI
             // const prisma = (await import('@/lib/prisma')).default;
             // const savedList = await prisma.groceryList.create({
             //     data: {
@@ -737,9 +779,87 @@ Return a valid JSON object.`,
     },
 });
 
+
+
 // ============================================================================
-// SEARCH RECIPES TOOL
+// OPTIMIZE GROCERY LIST TOOL
 // ============================================================================
+
+export const optimizeGroceryList = tool({
+    description: 'Optimize a grocery list by finding the best prices and substitutions at specific stores.',
+    parameters: z.object({
+        listId: z.string().optional().describe('ID of the grocery list to optimize'),
+        storeIds: z.array(z.string()).optional().describe('List of preferred store IDs (e.g., "partner_store_nairobi")'),
+        items: z.array(z.object({
+            item: z.string(),
+            quantity: z.string(),
+        })).optional().describe('List of items if no listId is provided'),
+    }),
+    execute: async ({ listId, storeIds, items }, options): Promise<ToolResult> => {
+        try {
+            console.log('[optimizeGroceryList] 🛒 Optimizing list...', { listId, storeIds });
+
+            // 1. Resolve Items
+            let itemsToOptimize = items || [];
+            if (!itemsToOptimize.length && listId) {
+                // In a real app, fetch from DB. For now, check context or error.
+                // @ts-ignore
+                const context = (options as any)?.context;
+                const lastList = context?.lastToolResult?.generateGroceryList?.data?.groceryList;
+                if (lastList) {
+                    itemsToOptimize = lastList;
+                }
+            }
+
+            if (!itemsToOptimize.length) {
+                return errorResponse('No items found to optimize.', ErrorCode.INVALID_INPUT);
+            }
+
+            // 2. Simulate Optimization with AI
+            const { generateObject } = await import('ai');
+            const { google } = await import('@ai-sdk/google');
+            const { z } = await import('zod');
+
+            const result = await generateObject({
+                model: google('gemini-2.0-flash'),
+                temperature: 0.2,
+                schema: z.object({
+                    optimizedItems: z.array(z.object({
+                        originalItem: z.string(),
+                        optimizedItem: z.string().describe('Brand or specific product match'),
+                        store: z.string(),
+                        price: z.number(),
+                        savings: z.number().optional(),
+                        reason: z.string().optional().describe('Why this was chosen (e.g. "Best value", "On sale")'),
+                    })),
+                    totalCost: z.number(),
+                    totalSavings: z.number(),
+                }),
+                prompt: `Optimize this grocery list for stores: ${storeIds?.join(', ') || 'Best local stores'}.
+                Items: ${JSON.stringify(itemsToOptimize)}
+                
+                Find the best value options, suggest specific brands or substitutions where appropriate to save money or improve quality.`,
+            });
+
+            if (!result.object) {
+                throw new Error('Failed to optimize list');
+            }
+
+            const optimizationResult = result.object;
+            const uiMetadata = { optimization: optimizationResult };
+            const uiMetadataEncoded = Buffer.from(JSON.stringify(uiMetadata)).toString('base64');
+
+            return successResponse(
+                { optimization: optimizationResult },
+                `✅ Optimized your grocery list! Total estimated cost: $${optimizationResult.totalCost.toFixed(2)} (Savings: $${optimizationResult.totalSavings.toFixed(2)}). [UI_METADATA:${uiMetadataEncoded}]`
+            );
+
+        } catch (error) {
+            console.error('[optimizeGroceryList] Error:', error);
+            return errorResponse('Failed to optimize grocery list.', ErrorCode.INTERNAL_ERROR);
+        }
+    },
+});
 
 // ============================================================================
 // SWAP MEAL TOOL
@@ -971,7 +1091,8 @@ Return valid JSON.`,
 
             const recipe = {
                 ...result.object,
-                imageUrl: result.object.imageUrl || `https://source.unsplash.com/800x600/?${encodeURIComponent(name)}`
+                // Use Cloudinary placeholder instead of AI-generated or Unsplash
+                imageUrl: 'https://res.cloudinary.com/dcidanigq/image/upload/v1742111994/samples/food/fish-vegetables.jpg'
             };
 
             // Create UI metadata

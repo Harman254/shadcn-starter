@@ -202,6 +202,8 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
   const [isMounted, setIsMounted] = useState(false)
   const [savingMealPlan, setSavingMealPlan] = useState(false)
   const [savedMealPlanId, setSavedMealPlanId] = useState<string | null>(null)
+  const [savingGroceryList, setSavingGroceryList] = useState(false)
+  const [savedGroceryListId, setSavedGroceryListId] = useState<string | null>(null)
   const { toast } = useToast()
   const { theme, systemTheme } = useTheme()
   const router = useRouter()
@@ -376,7 +378,7 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
   }, [message?.toolInvocations, message?.createdAt]);
 
   // Handle loading state with ToolProgress or generic loading
-  if (isLoading || (message?.toolInvocations && message.toolInvocations.length > 0 && !uiData?.mealPlan && !uiData?.groceryList && !uiData?.mealSuggestions && !uiData?.mealRecipe && !uiData?.nutrition && !uiData?.prices && !uiData?.recipeResults)) {
+  if (isLoading) {
     return (
       <motion.div
         initial={{ opacity: 0, y: 10 }}
@@ -640,7 +642,7 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
       </article>
 
       {/* Tool call results (meal plan/grocery list) - Full width immersive display - BREAKS OUT OF CONTAINER */}
-      {isAssistant && (uiData?.mealPlan || uiData?.groceryList || uiData?.mealSuggestions || uiData?.mealRecipe) && (
+      {isAssistant && (uiData?.mealPlan || uiData?.groceryList || uiData?.mealSuggestions || uiData?.mealRecipe || uiData?.nutrition || uiData?.prices || uiData?.recipeResults) && (
         <div className={cn(
           "w-full max-w-3xl mx-auto", // Constrain to same width
           "px-0 sm:px-0", // Remove padding for immersive feel
@@ -684,7 +686,7 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
                     <div className="relative h-32 sm:h-40 w-full overflow-hidden">
                       <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent z-10" />
                       <img 
-                        src="https://images.unsplash.com/photo-1498837167922-ddd27525d352?q=80&w=2670&auto=format&fit=crop" 
+                        src="https://res.cloudinary.com/dcidanigq/image/upload/v1742112002/samples/breakfast.jpg" 
                         alt="Meal Plan" 
                         className="w-full h-full object-cover transform hover:scale-105 transition-transform duration-500"
                       />
@@ -1015,10 +1017,21 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
                 "backdrop-blur-sm"
               )}>
                 {/* Grocery List Header */}
-                <div className="flex items-center justify-between px-4 py-3 border-b border-border/50 bg-muted/30 backdrop-blur-sm">
-                  <div className="flex items-center gap-2">
-                    <VerifiedBadge source="Mealwise AI" />
-                    <span className="text-xs font-medium text-muted-foreground hidden sm:inline-block">
+                <div className="relative h-32 sm:h-40 w-full overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent z-10" />
+                  <img 
+                    src="https://res.cloudinary.com/dcidanigq/image/upload/v1742111994/samples/food/pot-mussels.jpg" 
+                    alt="Grocery List" 
+                    className="w-full h-full object-cover transform hover:scale-105 transition-transform duration-500"
+                  />
+                  <div className="absolute bottom-3 left-4 sm:left-6 z-20">
+                    <div className="flex items-center gap-2 mb-1">
+                      <VerifiedBadge source="Mealwise AI" className="bg-white/20 text-white border-white/30 backdrop-blur-md" />
+                    </div>
+                    <h4 className="text-lg sm:text-xl font-bold text-white leading-tight shadow-sm">
+                      Your Shopping List
+                    </h4>
+                    <span className="text-xs font-medium text-white/90">
                       {groceryList.items?.length || 0} Items
                     </span>
                   </div>
@@ -1162,6 +1175,90 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
                       </div>
                     );
                   })()}
+                </div>
+
+                {/* Save Button for Grocery List */}
+                <div className={cn(
+                  "px-4 sm:px-5 md:px-6 py-4 sm:py-5",
+                  "bg-muted/20 border-t border-border/50",
+                  "flex flex-col sm:flex-row items-center justify-center gap-3"
+                )}>
+                  <Button
+                    variant={savedGroceryListId ? "outline" : "default"}
+                    size="lg"
+                    className={cn(
+                      "w-full max-w-xs sm:w-auto sm:min-w-[180px]",
+                      "h-11 gap-2 font-semibold",
+                      savedGroceryListId 
+                        ? "border-green-500/20 text-green-600 dark:text-green-400 bg-green-50/50 dark:bg-green-900/10 hover:bg-green-100/50 dark:hover:bg-green-900/20"
+                        : "bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary/80 shadow-lg shadow-primary/25",
+                      "transition-all duration-200"
+                    )}
+                    onClick={async () => {
+                      if (!groceryList || savedGroceryListId) return;
+                      try {
+                        setSavingGroceryList(true);
+                        
+                        const response = await fetch('/api/grocery/save', {
+                          method: 'POST',
+                          headers: {
+                            'Content-Type': 'application/json',
+                          },
+                          body: JSON.stringify({
+                            items: groceryList.items,
+                            locationInfo: groceryList.locationInfo,
+                            totalEstimatedCost: groceryList.totalEstimatedCost,
+                            mealPlanId: uiData.mealPlan?.id // Optional linkage
+                          }),
+                        });
+
+                        const result = await response.json();
+                        
+                        if (response.ok && result.success) {
+                          setSavedGroceryListId(result.list.id);
+                          toast({
+                            title: "Success!",
+                            description: "Grocery list saved to your collection.",
+                            className: "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-900",
+                          });
+                          router.refresh();
+                        } else {
+                          toast({
+                            title: "Failed to save",
+                            description: result.error || "Please try again.",
+                            variant: "destructive"
+                          });
+                        }
+                      } catch (e) {
+                        console.error('Error saving grocery list:', e);
+                        toast({
+                          title: "Error",
+                          description: "An unexpected error occurred.",
+                          variant: "destructive"
+                        });
+                      } finally {
+                        setSavingGroceryList(false);
+                      }
+                    }}
+                    disabled={savingGroceryList || !!savedGroceryListId}
+                  >
+                    {savingGroceryList ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Saving...
+                      </>
+                    ) : savedGroceryListId ? (
+                      <>
+                        <Check className="h-4 w-4" />
+                        Saved
+                      </>
+                    ) : (
+                      <>
+                        <Save className="h-4 w-4" />
+                        Save Grocery List
+                      </>
+                    )}
+                  </Button>
                 </div>
 
                 {/* Smart Action Chips for Grocery List */}
@@ -1339,20 +1436,47 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
                       "hover:from-primary/90 hover:to-primary/80",
                       "shadow-lg shadow-primary/25"
                     )}
-                    onClick={() => {
-                      // Save to localStorage for now
+                    onClick={async () => {
+                      if (!uiData?.mealRecipe) return;
                       try {
-                        const savedRecipes = JSON.parse(localStorage.getItem('savedRecipes') || '[]');
-                        savedRecipes.push({
-                          ...uiData.mealRecipe,
-                          savedAt: new Date().toISOString()
+                        const response = await fetch('/api/recipes/save', {
+                          method: 'POST',
+                          headers: {
+                            'Content-Type': 'application/json',
+                          },
+                          body: JSON.stringify({
+                            name: uiData.mealRecipe.name,
+                            description: uiData.mealRecipe.description,
+                            prepTime: uiData.mealRecipe.prepTime,
+                            cookTime: uiData.mealRecipe.cookTime,
+                            servings: uiData.mealRecipe.servings,
+                            difficulty: uiData.mealRecipe.difficulty,
+                            ingredients: uiData.mealRecipe.ingredients,
+                            instructions: uiData.mealRecipe.instructions,
+                            tags: uiData.mealRecipe.tags,
+                            nutrition: uiData.mealRecipe.nutrition,
+                            imageUrl: uiData.mealRecipe.imageUrl,
+                          }),
                         });
-                        localStorage.setItem('savedRecipes', JSON.stringify(savedRecipes));
-                        toast({
-                          title: "Recipe Saved",
-                          description: `${uiData.mealRecipe.name} has been saved to your collection.`,
-                        });
+
+                        const result = await response.json();
+                        
+                        if (response.ok && result.success) {
+                          toast({
+                            title: "Recipe Saved!",
+                            description: `${uiData.mealRecipe.name} has been saved to your collection.`,
+                            className: "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-900",
+                          });
+                          router.refresh();
+                        } else {
+                          toast({
+                            title: "Failed to save",
+                            description: result.error || "Please try again.",
+                            variant: "destructive"
+                          });
+                        }
                       } catch (e) {
+                        console.error('Error saving recipe:', e);
                         toast({
                           title: "Error",
                           description: "Failed to save recipe.",
@@ -1402,81 +1526,88 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
             >
               <div className={cn(
                 "bg-card rounded-2xl overflow-hidden",
-                "border border-border/50 shadow-lg",
-                "p-6"
+                "border border-border/50 shadow-lg"
               )}>
-                <div className="flex items-center justify-between mb-6">
-                   <div className="flex items-center gap-2">
-                     <div className="p-2 bg-primary/10 rounded-lg text-primary">
-                       <UtensilsCrossed className="h-5 w-5" />
-                     </div>
-                     <div>
-                       <h3 className="text-xl font-bold">Nutrition Analysis</h3>
-                       {uiData.nutrition.title && (
-                         <p className="text-sm text-muted-foreground">{uiData.nutrition.title}</p>
-                       )}
-                     </div>
-                   </div>
-                   {uiData.nutrition.healthScore !== undefined && (
-                     <div className="flex items-center gap-2 px-4 py-2 bg-primary/10 rounded-full">
-                       <span className="text-sm font-medium text-muted-foreground">Health Score</span>
-                       <span className="text-2xl font-bold text-primary">{uiData.nutrition.healthScore}</span>
-                       <span className="text-sm text-muted-foreground">/100</span>
-                     </div>
-                   )}
-                </div>
-
-                {/* Display Daily Average or Total based on type */}
-                <div className="mb-4">
-                  <h4 className="text-sm font-medium text-muted-foreground mb-3">
-                    {uiData.nutrition.type === 'plan' ? 'Daily Average' : 'Total Nutrition'}
-                  </h4>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                    <div className="text-center p-4 bg-muted/30 rounded-xl border border-border/50">
-                      <div className="text-2xl font-bold text-primary">
-                        {Math.round(uiData.nutrition.type === 'plan' ? uiData.nutrition.dailyAverage.calories : uiData.nutrition.total.calories)}
-                      </div>
-                      <div className="text-sm text-muted-foreground font-medium mt-1">Calories</div>
+                {/* Nutrition Header Image */}
+                <div className="relative h-32 sm:h-40 w-full overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent z-10" />
+                  <img 
+                    src="https://res.cloudinary.com/dcidanigq/image/upload/v1742111996/samples/food/spices.jpg" 
+                    alt="Nutrition Analysis" 
+                    className="w-full h-full object-cover transform hover:scale-105 transition-transform duration-500"
+                  />
+                  <div className="absolute bottom-3 left-4 sm:left-6 z-20">
+                    <div className="flex items-center gap-2 mb-1">
+                      <VerifiedBadge source="USDA Data" className="bg-white/20 text-white border-white/30 backdrop-blur-md" />
                     </div>
-                    <div className="text-center p-4 bg-muted/30 rounded-xl border border-border/50">
-                      <div className="text-xl font-bold text-foreground">
-                        {Math.round(uiData.nutrition.type === 'plan' ? uiData.nutrition.dailyAverage.protein : uiData.nutrition.total.protein)}g
-                      </div>
-                      <div className="text-sm text-muted-foreground font-medium mt-1">Protein</div>
-                    </div>
-                    <div className="text-center p-4 bg-muted/30 rounded-xl border border-border/50">
-                      <div className="text-xl font-bold text-foreground">
-                        {Math.round(uiData.nutrition.type === 'plan' ? uiData.nutrition.dailyAverage.carbs : uiData.nutrition.total.carbs)}g
-                      </div>
-                      <div className="text-sm text-muted-foreground font-medium mt-1">Carbs</div>
-                    </div>
-                    <div className="text-center p-4 bg-muted/30 rounded-xl border border-border/50">
-                      <div className="text-xl font-bold text-foreground">
-                        {Math.round(uiData.nutrition.type === 'plan' ? uiData.nutrition.dailyAverage.fat : uiData.nutrition.total.fat)}g
-                      </div>
-                      <div className="text-sm text-muted-foreground font-medium mt-1">Fat</div>
-                    </div>
+                    <h4 className="text-lg sm:text-xl font-bold text-white leading-tight shadow-sm">
+                      Nutrition Facts
+                    </h4>
                   </div>
                 </div>
 
-                {/* Insights */}
-                {uiData.nutrition.insights && uiData.nutrition.insights.length > 0 && (
-                  <div className="mt-6 space-y-2">
-                    <h4 className="text-sm font-semibold text-foreground mb-2">Nutritional Insights</h4>
-                    {uiData.nutrition.insights.map((insight: string, idx: number) => (
-                      <div key={idx} className="flex gap-2 items-start p-3 bg-muted/30 rounded-lg">
-                        <AlertCircle className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-                        <p className="text-sm text-foreground">{insight}</p>
+                <div className="p-6">
+                  {/* Health Score if available */}
+                  {uiData.nutrition.healthScore !== undefined && (
+                    <div className="flex items-center justify-center gap-2 px-4 py-2 bg-primary/10 rounded-full mb-6">
+                      <span className="text-sm font-medium text-muted-foreground">Health Score</span>
+                      <span className="text-2xl font-bold text-primary">{uiData.nutrition.healthScore}</span>
+                      <span className="text-sm text-muted-foreground">/100</span>
+                    </div>
+                  )}
+
+                  {/* Display Daily Average or Total based on type */}
+                  <div className="mb-4">
+                    <h4 className="text-sm font-medium text-muted-foreground mb-3">
+                      {uiData.nutrition.type === 'plan' ? 'Daily Average' : 'Total Nutrition'}
+                    </h4>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                      <div className="text-center p-4 bg-muted/30 rounded-xl border border-border/50">
+                        <div className="text-2xl font-bold text-primary">
+                          {Math.round(uiData.nutrition.type === 'plan' ? uiData.nutrition.dailyAverage.calories : uiData.nutrition.total.calories)}
+                        </div>
+                        <div className="text-sm text-muted-foreground font-medium mt-1">Calories</div>
                       </div>
-                    ))}
+                      <div className="text-center p-4 bg-muted/30 rounded-xl border border-border/50">
+                        <div className="text-xl font-bold text-foreground">
+                          {Math.round(uiData.nutrition.type === 'plan' ? uiData.nutrition.dailyAverage.protein : uiData.nutrition.total.protein)}g
+                        </div>
+                        <div className="text-sm text-muted-foreground font-medium mt-1">Protein</div>
+                      </div>
+                      <div className="text-center p-4 bg-muted/30 rounded-xl border border-border/50">
+                        <div className="text-xl font-bold text-foreground">
+                          {Math.round(uiData.nutrition.type === 'plan' ? uiData.nutrition.dailyAverage.carbs : uiData.nutrition.total.carbs)}g
+                        </div>
+                        <div className="text-sm text-muted-foreground font-medium mt-1">Carbs</div>
+                      </div>
+                      <div className="text-center p-4 bg-muted/30 rounded-xl border border-border/50">
+                        <div className="text-xl font-bold text-foreground">
+                          {Math.round(uiData.nutrition.type === 'plan' ? uiData.nutrition.dailyAverage.fat : uiData.nutrition.total.fat)}g
+                        </div>
+                        <div className="text-sm text-muted-foreground font-medium mt-1">Fat</div>
+                      </div>
+                    </div>
                   </div>
-                )}
-                
-                <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-950/20 rounded-xl border border-blue-100 dark:border-blue-900/50 flex gap-3">
-                  <AlertCircle className="h-5 w-5 text-blue-600 dark:text-blue-400 shrink-0" />
-                  <p className="text-sm text-blue-700 dark:text-blue-300">
-                    This analysis is an estimate based on standard ingredients. Actual values may vary depending on specific brands and portion sizes.
-                  </p>
+
+                  {/* Insights */}
+                  {uiData.nutrition.insights && uiData.nutrition.insights.length > 0 && (
+                    <div className="mt-6 space-y-2">
+                      <h4 className="text-sm font-semibold text-foreground mb-2">Nutritional Insights</h4>
+                      {uiData.nutrition.insights.map((insight: string, idx: number) => (
+                        <div key={idx} className="flex gap-2 items-start p-3 bg-muted/30 rounded-lg">
+                          <AlertCircle className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                          <p className="text-sm text-foreground">{insight}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  
+                  <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-950/20 rounded-xl border border-blue-100 dark:border-blue-900/50 flex gap-3">
+                    <AlertCircle className="h-5 w-5 text-blue-600 dark:text-blue-400 shrink-0" />
+                    <p className="text-sm text-blue-700 dark:text-blue-300">
+                      This analysis is an estimate based on standard ingredients. Actual values may vary depending on specific brands and portion sizes.
+                    </p>
+                  </div>
                 </div>
               </div>
             </motion.div>
@@ -1492,17 +1623,28 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
             >
               <div className={cn(
                 "bg-card rounded-2xl overflow-hidden",
-                "border border-border/50 shadow-lg",
-                "p-6"
+                "border border-border/50 shadow-lg"
               )}>
-                <div className="flex items-center gap-2 mb-6">
-                   <div className="p-2 bg-green-100 dark:bg-green-900/20 rounded-lg text-green-600 dark:text-green-400">
-                     <DollarSign className="h-5 w-5" />
-                   </div>
-                   <h3 className="text-xl font-bold">Estimated Costs</h3>
+                {/* Prices Header Image */}
+                <div className="relative h-32 sm:h-40 w-full overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent z-10" />
+                  <img 
+                    src="https://res.cloudinary.com/dcidanigq/image/upload/v1742111994/samples/food/dessert.jpg" 
+                    alt="Price Check" 
+                    className="w-full h-full object-cover transform hover:scale-105 transition-transform duration-500"
+                  />
+                  <div className="absolute bottom-3 left-4 sm:left-6 z-20">
+                    <div className="flex items-center gap-2 mb-1">
+                      <VerifiedBadge source="Local Prices" className="bg-white/20 text-white border-white/30 backdrop-blur-md" />
+                    </div>
+                    <h4 className="text-lg sm:text-xl font-bold text-white leading-tight shadow-sm">
+                      Estimated Costs
+                    </h4>
+                  </div>
                 </div>
 
-                <div className="space-y-3">
+                <div className="p-6">
+                  <div className="space-y-3">
                   {uiData.prices.map((price: any, idx: number) => (
                     <div key={idx} className="flex items-center justify-between p-4 bg-muted/30 rounded-xl border border-border/50 hover:border-primary/30 transition-colors">
                       <div className="flex items-center gap-3">
@@ -1529,6 +1671,7 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
                 <Button className="w-full mt-6" variant="outline" onClick={() => onActionClick?.("Generate a grocery list for these items")}>
                   Generate Shopping List
                 </Button>
+                </div>
               </div>
             </motion.div>
           )}
