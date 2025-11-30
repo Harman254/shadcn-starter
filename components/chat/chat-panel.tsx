@@ -204,9 +204,13 @@ export function ChatPanel({
   });
 
   // Sync store messages to useChat when session changes
-  useEffect(() => {
-    setMessages(storeMessages);
-  }, [finalSessionId]); 
+   // CRITICAL: Don't sync during streaming or we'll overwrite the streaming message!
+useEffect(() => {
+if (!isLoading) {
+setMessages(storeMessages);
+}
+}, [finalSessionId, storeMessages, isLoading, setMessages]);
+
 
   const onFormSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
