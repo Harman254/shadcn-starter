@@ -256,6 +256,20 @@ setMessages(storeMessages);
   const handleClearChat = useCallback(async () => {
     if (!finalSessionId) return;
     clearSession(finalSessionId);
+    await clearFromDatabase();
+    setMessages([]); // Clear useChat state
+    toast({ title: 'Chat cleared' });
+  }, [finalSessionId, clearSession, clearFromDatabase, toast, setMessages]);
+
+  return (
+    <div className="flex flex-col h-full w-full relative">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden pb-32 sm:pb-36">
+        {messages.length === 0 ? (
+          <EmptyScreen onExampleClick={(val) => {
+             if (!isAuthenticated) {
+                openAuthModal('sign-in');
+                return;
+             }
              const messageId = crypto.randomUUID();
              const userMsg: Message = {
                 id: messageId,
