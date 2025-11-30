@@ -442,7 +442,7 @@ Return valid JSON.`,
 // ============================================================================
 
 export const generateGroceryList = tool({
-    description: 'Generate a grocery list with local prices from EITHER a meal plan OR a single recipe/meal. Use this when user wants a shopping list.',
+    description: 'Generate a consolidated grocery/shopping list with local prices and store suggestions. Can work with EITHER a full meal plan OR a single recipe. Use source="mealplan" for multi-day meal plans, source="recipe" for individual recipes or dishes. The tool will automatically find meal plans or recipes from conversation context if not explicitly provided.',
     parameters: z.object({
         source: z.enum(['mealplan', 'recipe']).describe('Whether generating from a meal plan or single recipe'),
         mealPlanId: z.string().optional().describe('ID of saved meal plan (if source is mealplan)'),

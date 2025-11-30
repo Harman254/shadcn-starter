@@ -8,6 +8,7 @@ interface ChatSession {
   title?: string;
   messages: Message[];
   updatedAt: Date;
+  isSynced?: boolean; // Track if session exists in database
 }
 
 interface ChatStore {
@@ -59,6 +60,7 @@ export const useChatStore = create<ChatStore>()(
           title: title || undefined,
           messages: [],
           updatedAt: new Date(),
+          isSynced: false, // New sessions are not synced yet
         };
 
         set((state) => ({
@@ -306,17 +308,28 @@ export const useChatStore = create<ChatStore>()(
         set((state) => {
           const sessionsMap: Record<string, ChatSession> = {};
 
+          // Find the oldest session in the incoming batch to determine the sync window
+          let oldestIncomingSession: Date | null = null;
+
           // Process incoming sessions
           sessions.forEach((session) => {
+            const updatedAt = new Date(session.updatedAt);
+
+            // Track oldest session for sync window
+            if (!oldestIncomingSession || updatedAt < oldestIncomingSession) {
+              oldestIncomingSession = updatedAt;
+            }
+
             sessionsMap[session.id] = {
               id: session.id,
               chatType: session.chatType,
               title: session.title || undefined,
-              updatedAt: new Date(session.updatedAt),
+              updatedAt: updatedAt,
               messages: session.messages.map((msg) => ({
                 ...msg,
                 timestamp: msg.timestamp ? new Date(msg.timestamp) : undefined,
               })),
+              isSynced: true, // Mark as synced since it came from DB
             };
           });
 
@@ -327,6 +340,49 @@ export const useChatStore = create<ChatStore>()(
               Object.entries(state.sessions).filter(
                 ([_, session]) => session.chatType !== replaceForChatType
               )
+            );
+          } else {
+            // SMART SYNC: Handle deletions for partial syncs
+            // If we have a local session that is marked as synced (exists in DB)
+            // BUT it is missing from the incoming batch
+            // AND it is newer than the oldest incoming session (so it should be in the batch)
+            // THEN it must have been deleted remotely -> Remove it
+
+            const incomingIds = new Set(Object.keys(sessionsMap));
+
+            filteredSessions = Object.fromEntries(
+              Object.entries(state.sessions).filter(([id, session]) => {
+                // Keep if it's in the incoming batch (will be merged later)
+                if (incomingIds.has(id)) return true;
+
+                // Keep if it's NOT synced (unsaved local session)
+                if (!session.isSynced) return true;
+
+                // If we have incoming sessions, check if this one should have been included
+                if (oldestIncomingSession) {
+                  // If this session is newer than the oldest incoming one,
+                  // it SHOULD have been in the batch if it still existed.
+                  // Since it's missing, it must be deleted.
+                  if (session.updatedAt >= oldestIncomingSession) {
+                    if (process.env.NODE_ENV === 'development') {
+                      console.log(`[ChatStore] 🗑️ Removing deleted session: ${id} (${session.title})`);
+                    }
+                    return false; // Remove it
+                  }
+                } else if (sessions.length === 0 && session.chatType === sessions[0]?.chatType) {
+                  // If incoming batch is empty, and we expected sessions for this type,
+                  // then all synced sessions of this type are deleted.
+                  // But we don't know the chatType if sessions is empty...
+                  // Wait, if sessions is empty, we can't infer chatType easily unless passed.
+                  // But usually getChatSessions returns empty array if no sessions.
+                  // If we don't know the chatType, we can't safely delete.
+                  // But typically syncFromDatabase is called with a specific list.
+                  return true;
+                }
+
+                // Keep older sessions (might be paginated out)
+                return true;
+              })
             );
           }
 
@@ -360,7 +416,8 @@ export const useChatStore = create<ChatStore>()(
                 title,
                 messages,
                 // Keep the later update time
-                updatedAt: localSession.updatedAt > dbSession.updatedAt ? localSession.updatedAt : dbSession.updatedAt
+                updatedAt: localSession.updatedAt > dbSession.updatedAt ? localSession.updatedAt : dbSession.updatedAt,
+                isSynced: true, // Confirm it's synced
               };
             } else {
               // New session from DB
@@ -371,15 +428,6 @@ export const useChatStore = create<ChatStore>()(
           // CRITICAL: NEVER clear currentSessionId during sync - always preserve it
           const preservedCurrentSessionId = state.currentSessionId;
 
-          // Check if we actually changed anything to avoid unnecessary re-renders
-          const currentSessionKeys = Object.keys(state.sessions).sort().join(',');
-          const newSessionKeys = Object.keys(mergedSessions).sort().join(',');
-
-          if (currentSessionKeys === newSessionKeys) {
-            // Deep check for equality could be expensive, so we rely on key check + length check
-            // This is a basic optimization
-          }
-
           return {
             sessions: mergedSessions,
             currentSessionId: preservedCurrentSessionId, // ALWAYS preserve - never clear
@@ -388,8 +436,6 @@ export const useChatStore = create<ChatStore>()(
       },
 
       markAsSaved: (sessionId) => {
-        // This can be used to track which sessions need to be saved
-        // For now, we'll just update the session
         set((state) => {
           const session = state.sessions[sessionId];
           if (!session) return state;
@@ -400,6 +446,7 @@ export const useChatStore = create<ChatStore>()(
               [sessionId]: {
                 ...session,
                 updatedAt: new Date(),
+                isSynced: true, // Mark as synced when saved
               },
             },
           };

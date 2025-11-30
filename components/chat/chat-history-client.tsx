@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useMemo, useCallback, memo } from 'react';
+import { useEffect, useState, useMemo, useCallback, memo, useRef } from 'react';
 import { useChatStore } from '@/store/chat-store';
 import { useSession } from '@/lib/auth-client';
 import { useAuthModal } from '@/components/AuthModalProvider';
@@ -164,6 +164,10 @@ export function ChatHistoryClient({ chatType, initialSessions = [], onSessionSel
   const { open: openAuthModal } = useAuthModal();
   const { toast } = useToast();
   
+  // Track if we've already loaded to prevent duplicate fetches
+  const hasLoadedRef = useRef(false);
+  const initialSessionsProcessedRef = useRef(false);
+  
   // Zustand store for reactive updates
   const currentSessionId = useChatStore((state) => state.currentSessionId);
   const setCurrentSession = useChatStore((state) => state.setCurrentSession);
@@ -172,14 +176,10 @@ export function ChatHistoryClient({ chatType, initialSessions = [], onSessionSel
   const syncFromDatabase = useChatStore((state) => state.syncFromDatabase);
 
   // Load sessions from server action on mount if not provided
+  // This effect runs ONCE on mount to load initial data
   useEffect(() => {
-    // CRITICAL: If currentSessionId is set (user selected a session), NEVER load
-    // This prevents overriding the user's selection
-    if (currentSessionId) {
-      if (process.env.NODE_ENV === 'development') {
-        console.log('[ChatHistoryClient] 🚫 BLOCKED initial load - user selected session:', currentSessionId);
-      }
-      setIsLoading(false);
+    // Prevent duplicate loads - only run once
+    if (hasLoadedRef.current) {
       return;
     }
 
@@ -191,40 +191,34 @@ export function ChatHistoryClient({ chatType, initialSessions = [], onSessionSel
 
       try {
         setIsLoading(true);
+        
+        if (process.env.NODE_ENV === 'development') {
+          console.log('[ChatHistoryClient] 📥 Loading sessions from server (initial load)');
+        }
+        
         const serverSessions = await getChatSessions(chatType);
         setSessions(serverSessions);
         
-        // CRITICAL: Check again if currentSessionId was set while fetching
-        const currentState = useChatStore.getState();
-        if (currentState.currentSessionId) {
-          if (process.env.NODE_ENV === 'development') {
-            console.log('[ChatHistoryClient] 🚫 User selected session during fetch, skipping sync');
-          }
-          setIsLoading(false);
-          return;
-        }
-        
-          // Sync to store - merge sessions, don't replace (preserves user-selected sessions)
-          if (serverSessions.length > 0) {
-            const sessionsToSync = serverSessions.map((s) => ({
-              id: s.id,
-              chatType: s.chatType,
-              title: s.title || undefined,
-              messages: s.lastMessage ? [{
-                id: s.lastMessage.id,
-                role: s.lastMessage.role,
-                content: s.lastMessage.content,
-                timestamp: new Date(s.lastMessage.timestamp),
-              }] : [],
-              updatedAt: new Date(s.updatedAt),
-            }));
-            
-            // CRITICAL: Don't use replaceForChatType on initial load
-            // This preserves local sessions that haven't been saved to DB yet
-            syncFromDatabase(sessionsToSync);
+        // Sync to store - merge sessions, don't replace (preserves user-selected sessions)
+        if (serverSessions.length > 0) {
+          const sessionsToSync = serverSessions.map((s) => ({
+            id: s.id,
+            chatType: s.chatType,
+            title: s.title || undefined,
+            messages: s.lastMessage ? [{
+              id: s.lastMessage.id,
+              role: s.lastMessage.role,
+              content: s.lastMessage.content,
+              timestamp: new Date(s.lastMessage.timestamp),
+            }] : [],
+            updatedAt: new Date(s.updatedAt),
+          }));
           
-          // Set current session if none is set (don't override user selection)
-          // Double-check currentSessionId is still null
+          // CRITICAL: Don't use replaceForChatType on initial load
+          // This preserves local sessions that haven't been saved to DB yet
+          syncFromDatabase(sessionsToSync);
+        
+          // Set current session if none is set
           const finalState = useChatStore.getState();
           if (!finalState.currentSessionId) {
             const matchingSession = serverSessions.find((s) => s.chatType === chatType);
@@ -234,24 +228,19 @@ export function ChatHistoryClient({ chatType, initialSessions = [], onSessionSel
           }
         }
       } catch (error) {
-        console.error('Failed to load sessions:', error);
+        console.error('[ChatHistoryClient] Failed to load sessions:', error);
       } finally {
         setIsLoading(false);
+        hasLoadedRef.current = true; // Mark as loaded
       }
     };
 
-    // Only load if we don't have initial sessions
-    if (initialSessions.length === 0) {
-      loadSessions();
-    } else {
-      // CRITICAL: Check if currentSessionId is set before syncing initial sessions
-      if (currentSessionId) {
-        if (process.env.NODE_ENV === 'development') {
-          console.log('[ChatHistoryClient] 🚫 BLOCKED initial sync - user selected session:', currentSessionId);
-        }
-        return;
+    // Process initial sessions if provided (SSR/SSG scenario)
+    const processInitialSessions = () => {
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[ChatHistoryClient] 📥 Processing initial sessions:', initialSessions.length);
       }
-
+      
       // Sync initial sessions to store
       const sessionsToSync = initialSessions.map((s) => ({
         id: s.id,
@@ -269,7 +258,7 @@ export function ChatHistoryClient({ chatType, initialSessions = [], onSessionSel
       // CRITICAL: Don't use replaceForChatType - preserve local sessions
       syncFromDatabase(sessionsToSync);
       
-      // Double-check before setting
+      // Set current session if none is set
       const finalCheckState = useChatStore.getState();
       if (!finalCheckState.currentSessionId) {
         const matchingSession = initialSessions.find((s) => s.chatType === chatType);
@@ -277,8 +266,20 @@ export function ChatHistoryClient({ chatType, initialSessions = [], onSessionSel
           setCurrentSession(matchingSession.id);
         }
       }
+      
+      initialSessionsProcessedRef.current = true;
+      hasLoadedRef.current = true; // Mark as loaded
+    };
+
+    // Decide: load from server or process initial sessions
+    if (initialSessions.length === 0) {
+      loadSessions();
+    } else if (!initialSessionsProcessedRef.current) {
+      processInitialSessions();
     }
-  }, [chatType, isAuthenticated, currentSessionId, syncFromDatabase, setCurrentSession]); // Added currentSessionId to deps
+    
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Empty deps - run ONCE on mount only
 
   // Only render after mount to avoid hydration mismatch
   useEffect(() => {
