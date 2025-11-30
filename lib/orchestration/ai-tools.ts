@@ -133,58 +133,82 @@ Return a valid JSON object.`,
 // ============================================================================
 
 export const analyzeNutrition = tool({
-    description: 'Analyze the nutrition of a specific meal plan by ID using AI-powered analysis.',
+    description: 'Analyze the nutritional value of a meal plan or recipe. Use this when user asks about "nutrition", "calories", "macros", or "healthiness" of the generated plan or dish.',
     parameters: z.object({
-        mealPlanId: z.string().describe('The ID of the meal plan to analyze.'),
+        mealPlanId: z.string().optional().describe('The ID of the meal plan to analyze. If not provided, will try to analyze the most recent plan or recipe in context.'),
     }),
-    execute: async ({ mealPlanId }): Promise<ToolResult> => {
+    execute: async ({ mealPlanId }, options): Promise<ToolResult> => {
         try {
-            console.log('[analyzeNutrition] 🔬 Analyzing nutrition for meal plan:', mealPlanId);
+            console.log('[analyzeNutrition] 🔬 Analyzing nutrition...');
 
-            const mealPlan = await prisma.mealPlan.findUnique({
-                where: { id: mealPlanId },
-                include: { days: { include: { meals: true } } }
-            });
+            // 1. Get Context
+            // @ts-ignore - context is injected by ToolExecutor via options
+            const context = (options as any)?.context;
 
-            if (!mealPlan) {
-                return errorResponse('Meal plan not found.', ErrorCode.RESOURCE_NOT_FOUND);
-            }
+            let mealPlan;
+            let recipe;
 
-            // Extract all meals for analysis
-            const allMeals: Array<{ day: number; name: string; ingredients: string[] }> = [];
-            if (mealPlan.days) {
-                mealPlan.days.forEach((day: any) => {
-                    if (day.meals) {
-                        day.meals.forEach((meal: any) => {
-                            allMeals.push({
-                                day: day.day,
-                                name: meal.name,
-                                ingredients: meal.ingredients || []
-                            });
-                        });
-                    }
+            // 2. Resolve Content (Meal Plan or Recipe)
+            if (mealPlanId) {
+                // Fetch from DB if ID provided
+                const prisma = (await import('@/lib/prisma')).default;
+                mealPlan = await prisma.mealPlan.findUnique({
+                    where: { id: mealPlanId },
+                    include: { days: { include: { meals: true } } }
                 });
+            } else {
+                // Get from context
+                mealPlan =
+                    context?.lastToolResult?.generateMealPlan?.data?.mealPlan ||
+                    context?.lastToolResult?.modifyMealPlan?.data?.mealPlan ||
+                    context?.lastToolResult?.swapMeal?.data?.mealPlan;
+
+                recipe =
+                    context?.lastToolResult?.generateMealRecipe?.data?.recipe;
             }
 
-            if (allMeals.length === 0) {
-                return errorResponse('No meals found in this meal plan.', ErrorCode.INVALID_INPUT);
+            if (!mealPlan && !recipe) {
+                return errorResponse("I can't find a meal plan or recipe to analyze. Please generate one first.", ErrorCode.INVALID_INPUT);
             }
 
-            // Use AI SDK to analyze nutrition
+            // 3. Prepare Data for Analysis
+            let itemsToAnalyze: string[] = [];
+            let title = '';
+            let type = 'plan';
+
+            if (mealPlan) {
+                title = mealPlan.title;
+                type = 'plan';
+                if (mealPlan.days) {
+                    mealPlan.days.forEach((day: any) => {
+                        if (day.meals) {
+                            day.meals.forEach((meal: any) => {
+                                itemsToAnalyze.push(`Day ${day.day} - ${meal.name}: ${(meal.ingredients || []).join(', ')}`);
+                            });
+                        }
+                    });
+                }
+            } else if (recipe) {
+                title = recipe.name;
+                type = 'recipe';
+                itemsToAnalyze.push(`${recipe.name}: ${(recipe.ingredients || []).join(', ')}`);
+            }
+
+            if (itemsToAnalyze.length === 0) {
+                return errorResponse('No food items found to analyze.', ErrorCode.INVALID_INPUT);
+            }
+
+            // 4. Use AI SDK to analyze nutrition
             const { generateObject } = await import('ai');
             const { google } = await import('@ai-sdk/google');
             const { z } = await import('zod');
 
-            const mealsPrompt = allMeals.map(m =>
-                `Day ${m.day} - ${m.name}: ${m.ingredients.join(', ')}`
-            ).join('\n');
-
             const result = await generateObject({
                 model: google('gemini-2.0-flash'),
-                temperature: 0.3, // Lower temperature for more consistent analysis
+                temperature: 0.3,
                 schema: z.object({
                     totalNutrition: z.object({
-                        calories: z.number().describe('Total calories for entire meal plan'),
+                        calories: z.number().describe('Total calories'),
                         protein: z.number().describe('Total protein in grams'),
                         carbs: z.number().describe('Total carbohydrates in grams'),
                         fat: z.number().describe('Total fat in grams'),
@@ -200,24 +224,18 @@ export const analyzeNutrition = tool({
                     insights: z.array(z.string()).describe('Nutritional insights and recommendations'),
                     healthScore: z.number().min(0).max(100).describe('Overall health score (0-100)'),
                 }),
-                prompt: `You are a nutrition expert. Analyze the following meal plan and provide detailed nutrition information.
+                prompt: `You are a nutrition expert. Analyze the following ${type} and provide detailed nutrition information.
 
-## Meal Plan: "${mealPlan.title}"
-Duration: ${mealPlan.days.length} days
-Meals per day: ${mealPlan.mealsPerDay}
+## ${type === 'plan' ? 'Meal Plan' : 'Recipe'}: "${title}"
 
-## Meals:
-${mealsPrompt}
+## Items:
+${itemsToAnalyze.join('\n')}
 
 ## Instructions:
-1. Calculate TOTAL nutrition for the ENTIRE meal plan (all days combined)
-2. Calculate DAILY AVERAGE nutrition
-3. Provide 3-5 actionable insights about the nutritional balance
-4. Give a health score (0-100) based on:
-   - Macronutrient balance
-   - Variety of ingredients
-   - Completeness of nutrition
-   - Overall healthiness
+1. Calculate TOTAL nutrition.
+2. ${type === 'plan' ? 'Calculate DAILY AVERAGE nutrition.' : 'For a single recipe, Daily Average = Total.'}
+3. Provide 3-5 actionable insights about the nutritional balance.
+4. Give a health score (0-100).
 
 Return valid JSON.`,
             });
@@ -234,8 +252,8 @@ Return valid JSON.`,
                     dailyAverage: nutritionData.dailyAverage,
                     insights: nutritionData.insights,
                     healthScore: nutritionData.healthScore,
-                    mealPlanTitle: mealPlan.title,
-                    duration: mealPlan.days.length,
+                    title: title,
+                    type: type
                 }
             };
             const uiMetadataEncoded = Buffer.from(JSON.stringify(uiMetadata)).toString('base64');
@@ -247,7 +265,7 @@ Return valid JSON.`,
                     insights: nutritionData.insights,
                     healthScore: nutritionData.healthScore,
                 },
-                `✅ Nutrition analysis complete for "${mealPlan.title}"! Health score: ${nutritionData.healthScore}/100. Daily avg: ${Math.round(nutritionData.dailyAverage.calories)} cal. [UI_METADATA:${uiMetadataEncoded}]`
+                `✅ Nutrition analysis complete for "${title}"! Health score: ${nutritionData.healthScore}/100. ${type === 'plan' ? `Daily avg: ${Math.round(nutritionData.dailyAverage.calories)} cal.` : `Total: ${Math.round(nutritionData.totalNutrition.calories)} cal.`} [UI_METADATA:${uiMetadataEncoded}]`
             );
         } catch (error) {
             console.error('[analyzeNutrition] Error:', error);
@@ -262,34 +280,69 @@ Return valid JSON.`,
 // ============================================================================
 
 export const getGroceryPricing = tool({
-    description: 'Get estimated grocery pricing for a meal plan from different store types.',
+    description: 'Get estimated grocery pricing for a meal plan or recipe from different store types.',
     parameters: z.object({
-        mealPlanId: z.string().describe('The ID of the meal plan.'),
+        mealPlanId: z.string().optional().describe('The ID of the meal plan. If not provided, will use context.'),
         city: z.string().optional().describe('User city for local pricing'),
         country: z.string().optional().describe('User country'),
     }),
-    execute: async ({ mealPlanId, city, country }): Promise<ToolResult> => {
+    execute: async ({ mealPlanId, city, country }, options): Promise<ToolResult> => {
         try {
-            console.log(`[getGroceryPricing] 💰 Estimating prices for plan ${mealPlanId} in ${city || 'default location'}`);
+            console.log(`[getGroceryPricing] 💰 Estimating prices...`);
 
-            const prisma = (await import('@/lib/prisma')).default;
-            const mealPlan = await prisma.mealPlan.findUnique({
-                where: { id: mealPlanId },
-                include: { days: { include: { meals: true } } }
-            });
+            // 1. Get Context
+            // @ts-ignore
+            const context = (options as any)?.context;
 
-            if (!mealPlan) {
-                return errorResponse("Couldn't find that meal plan.", ErrorCode.RESOURCE_NOT_FOUND);
+            let mealPlan;
+            let recipe;
+
+            // 2. Resolve Content
+            if (mealPlanId) {
+                const prisma = (await import('@/lib/prisma')).default;
+                mealPlan = await prisma.mealPlan.findUnique({
+                    where: { id: mealPlanId },
+                    include: { days: { include: { meals: true } } }
+                });
+            } else {
+                mealPlan =
+                    context?.lastToolResult?.generateMealPlan?.data?.mealPlan ||
+                    context?.lastToolResult?.modifyMealPlan?.data?.mealPlan ||
+                    context?.lastToolResult?.swapMeal?.data?.mealPlan;
+
+                recipe =
+                    context?.lastToolResult?.generateMealRecipe?.data?.recipe;
             }
 
-            // Extract ingredients
-            const allIngredients = mealPlan.days.flatMap(d => d.meals.flatMap(m => m.ingredients));
+            if (!mealPlan && !recipe) {
+                return errorResponse("I can't find a meal plan or recipe to price. Please generate one first.", ErrorCode.INVALID_INPUT);
+            }
+
+            // 3. Extract Ingredients
+            const allIngredients: string[] = [];
+            let title = '';
+
+            if (mealPlan) {
+                title = mealPlan.title;
+                if (mealPlan.days) {
+                    mealPlan.days.forEach((day: any) => {
+                        if (day.meals) {
+                            day.meals.forEach((meal: any) => {
+                                if (meal.ingredients) allIngredients.push(...meal.ingredients);
+                            });
+                        }
+                    });
+                }
+            } else if (recipe) {
+                title = recipe.name;
+                if (recipe.ingredients) allIngredients.push(...recipe.ingredients);
+            }
 
             if (allIngredients.length === 0) {
-                return errorResponse("No ingredients found in this meal plan.", ErrorCode.INVALID_INPUT);
+                return errorResponse("No ingredients found to price.", ErrorCode.INVALID_INPUT);
             }
 
-            // Use AI to estimate pricing
+            // 4. Use AI to estimate pricing
             const { generateObject } = await import('ai');
             const { google } = await import('@ai-sdk/google');
             const { z } = await import('zod');
@@ -302,12 +355,12 @@ export const getGroceryPricing = tool({
                         store: z.string().describe('Store name or type (e.g., "Whole Foods", "Walmart", "Local Market")'),
                         total: z.number().describe('Estimated total cost'),
                         currency: z.string().describe('Currency symbol'),
-                        notes: z.string().optional().describe('Brief note about pricing tier (e.g., "Organic/Premium", "Budget-friendly")')
+                        notes: z.string().optional().describe('Brief note about pricing tier')
                     }))
                 }),
                 prompt: `Estimate the total grocery cost for these ingredients in ${city || 'San Francisco'}, ${country || 'US'}.
                 
-Ingredients:
+Ingredients for "${title}":
 ${allIngredients.slice(0, 50).join(', ')} ${allIngredients.length > 50 ? `...and ${allIngredients.length - 50} more items` : ''}
 
 Provide 3 pricing estimates:
@@ -323,7 +376,8 @@ Return valid JSON.`,
             }
 
             const uiMetadata = {
-                prices: result.object.prices
+                prices: result.object.prices,
+                title: title
             };
             const uiMetadataEncoded = Buffer.from(JSON.stringify(uiMetadata)).toString('base64');
 
@@ -331,7 +385,7 @@ Return valid JSON.`,
                 {
                     prices: result.object.prices
                 },
-                `✅ Estimated grocery costs: ${result.object.prices.map(p => `${p.store}: ${p.currency}${p.total}`).join(', ')}. [UI_METADATA:${uiMetadataEncoded}]`
+                `✅ Estimated grocery costs for "${title}": ${result.object.prices.map(p => `${p.store}: ${p.currency}${p.total}`).join(', ')}. [UI_METADATA:${uiMetadataEncoded}]`
             );
 
         } catch (error) {
@@ -418,14 +472,10 @@ export const generateGroceryList = tool({
                 console.log('[generateGroceryList] 🔍 Looking for meal plan in context...');
                 // @ts-ignore - context is injected by ToolExecutor via options
                 const context = (options as any)?.context;
-                const lastMealPlan = context?.lastToolResult?.generateMealPlan?.data?.mealPlan;
-
-                console.log('[generateGroceryList] Context check:', {
-                    hasContext: !!context,
-                    hasLastToolResult: !!context?.lastToolResult,
-                    hasGenerateMealPlan: !!context?.lastToolResult?.generateMealPlan,
-                    hasMealPlan: !!lastMealPlan
-                });
+                const lastMealPlan =
+                    context?.lastToolResult?.generateMealPlan?.data?.mealPlan ||
+                    context?.lastToolResult?.modifyMealPlan?.data?.mealPlan ||
+                    context?.lastToolResult?.swapMeal?.data?.mealPlan;
 
                 if (lastMealPlan) {
                     console.log('[generateGroceryList] 💡 Found meal plan in conversation context!');
@@ -434,6 +484,21 @@ export const generateGroceryList = tool({
                 } else {
                     console.error('[generateGroceryList] ❌ No meal plan found in context');
                     return errorResponse("Missing meal plan data. Please generate a meal plan first.", ErrorCode.INVALID_INPUT);
+                }
+            }
+            // Fallback: Check injected context for last generated recipe
+            else if (source === 'recipe' && (!recipeName || !ingredients)) {
+                console.log('[generateGroceryList] 🔍 Looking for recipe in context...');
+                // @ts-ignore
+                const context = (options as any)?.context;
+                const lastRecipe = context?.lastToolResult?.generateMealRecipe?.data?.recipe;
+
+                if (lastRecipe) {
+                    console.log('[generateGroceryList] 💡 Found recipe in conversation context!');
+                    allIngredients = lastRecipe.ingredients || [];
+                    planTitle = lastRecipe.name;
+                } else {
+                    return errorResponse("Missing recipe data. Please generate a recipe first.", ErrorCode.INVALID_INPUT);
                 }
             }
             else {

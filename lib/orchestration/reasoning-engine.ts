@@ -30,7 +30,7 @@ export class ReasoningEngine {
             const toolNames = Object.keys(availableTools);
 
             const { object, usage } = await generateObject({
-                model: google('gemini-2.0-flash-exp'),
+                model: google('gemini-2.0-flash'),
                 schema: z.object({
                     reasoning: z.string().describe('Explanation of why these steps are chosen'),
                     steps: z.array(z.object({
@@ -67,10 +67,10 @@ export class ReasoningEngine {
         CRITICAL:
         - If the user asks for a meal plan, call 'generateMealPlan'.
         - If the user asks for a grocery list, call 'generateGroceryList'.
-          * If lastToolResult contains a meal plan from 'generateMealPlan', pass '{"source": "mealplan", "fromContext": "true"}' as args.
-          * If context.mealPlanId exists, pass '{"source": "mealplan", "mealPlanId": "<ID>"}' as args.
-        - If the user asks for nutrition, call 'analyzeNutrition'.
-        - If the user asks for pricing, call 'getGroceryPricing'.
+          * If for a meal plan, pass '{"source": "mealplan", "fromContext": "true"}' unless a specific ID is known.
+          * If for a recipe, pass '{"source": "recipe"}'.
+        - If the user asks for nutrition, call 'analyzeNutrition'. Do NOT invent a mealPlanId. Leave args empty to use context.
+        - If the user asks for pricing, call 'getGroceryPricing'. Do NOT invent a mealPlanId. Leave args empty to use context.
         - **General Chat / Info**: If the user asks a general question, requests information, or engages in small talk (e.g. "Hi", "What is Ugali?", "Talk to me about..."), return an EMPTY array for 'steps'. Do NOT call any tools. The synthesis layer will answer.
         - ALWAYS provide tool arguments as a valid JSON string.
         - For tool arguments, convert numbers to strings (e.g., duration: "1", mealsPerDay: "3")
