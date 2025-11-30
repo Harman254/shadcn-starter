@@ -362,9 +362,9 @@ ${contextInfo}
 
 AVAILABLE TOOLS:
 - generateMealPlan: Create a meal plan (parameters: duration, mealsPerDay, preferences)
-- analyzeNutrition: Analyze nutrition for a meal plan (requires: mealPlanId)
-- getGroceryPricing: Get pricing for a meal plan (requires: mealPlanId)
-- generateGroceryList: Create a grocery list (requires: mealPlanId)
+- analyzeNutrition: Analyze nutrition (optional mealPlanId, works from context)
+- getGroceryPricing: Get pricing estimates (optional mealPlanId, works from context)
+- generateGroceryList: Create shopping list (optional mealPlanId, works from context)
 
 Remember: ALWAYS use tools for user requests. Be helpful and concise in your responses.`;
   }
