@@ -8,7 +8,13 @@ import { Button } from "@/components/ui/button"
 import { Clock, Users, Flame, ChefHat, ArrowLeft } from "lucide-react"
 import Image from "next/image"
 
-export default async function RecipeDetailPage({ params }: { params: { id: string } }) {
+export default async function RecipeDetailPage({ 
+  params 
+}: { 
+  params: Promise<{ id: string }> 
+}) {
+  const { id } = await params;
+  
   const session = await auth.api.getSession({
     headers: await headers()
   });
@@ -20,7 +26,7 @@ export default async function RecipeDetailPage({ params }: { params: { id: strin
   // Fetch recipe from database
   const recipe = await prisma.recipe.findUnique({
     where: {
-      id: params.id,
+      id: id,
       userId: session.user.id, // Ensure user owns the recipe
     },
   });

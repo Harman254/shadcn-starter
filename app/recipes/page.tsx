@@ -54,7 +54,7 @@ export default async function SavedRecipesPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {recipes.map((recipe) => (
+          {recipes.map((recipe: any) => (
             <Card key={recipe.id} className="overflow-hidden flex flex-col hover:shadow-lg transition-shadow">
               {/* Recipe Image */}
               <div className="relative h-48 w-full bg-muted">
@@ -98,7 +98,7 @@ export default async function SavedRecipesPage() {
                 {/* Tags */}
                 {recipe.tags && recipe.tags.length > 0 && (
                   <div className="flex flex-wrap gap-1.5">
-                    {recipe.tags.slice(0, 3).map((tag, idx) => (
+                    {recipe.tags.slice(0, 3).map((tag: string, idx: number) => (
                       <Badge key={idx} variant="outline" className="text-xs">
                         {tag}
                       </Badge>
