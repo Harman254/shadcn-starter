@@ -103,6 +103,13 @@ export class ToolExecutor {
             stepResults.forEach(r => {
                 if (r.status === 'success') {
                     aggregatedResults[r.toolName] = r.result;
+                } else {
+                    // Include failed tools so the reasoning engine knows they failed
+                    aggregatedResults[r.toolName] = {
+                        success: false,
+                        error: r.error || 'Tool execution failed',
+                        isSystemError: true
+                    };
                 }
             });
         }

@@ -85,7 +85,7 @@ export class OrchestratedChatFlow {
       // We use generateText here instead of streamText
       const { generateText } = await import('ai');
       const { text } = await generateText({
-        model: google('gemini-2.0-flash-exp'),
+        model: google('gemini-2.0-flash'),
         system: this.buildSystemPrompt(input, context, false),
         prompt: this.buildSynthesisPrompt(input.message, toolResults),
       });
@@ -207,7 +207,7 @@ export class OrchestratedChatFlow {
           clearInterval(keepAliveInterval);
 
           const result = streamText({
-            model: google('gemini-2.0-flash-exp'),
+            model: google('gemini-2.0-flash'),
             system: this.buildSystemPrompt(input, context, false),
             prompt: this.buildSynthesisPrompt(input.message, toolResults),
           });
@@ -251,7 +251,7 @@ export class OrchestratedChatFlow {
     const toolMessages = Object.entries(toolResults)
       .map(([tool, result]) => {
         if (result) {
-          if (result.status === 'error') {
+          if (result.success === false || result.isSystemError) {
             return `Tool '${tool}' FAILED: ${result.error || 'Unknown error'}`;
           }
           if (typeof result.message === 'string') {
