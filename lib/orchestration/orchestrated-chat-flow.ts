@@ -231,10 +231,37 @@ export class OrchestratedChatFlow {
           // result.toDataStream() returns a stream of formatted chunks (0:"text", etc.)
           const reader = result.toDataStream().getReader();
 
+          // Track accumulated text to detect empty responses
+          let accumulatedText = '';
+          const hasSuccessfulTools = Object.values(toolResults).some(
+            (result: any) => result && result.success !== false && !result.isSystemError
+          );
+
           while (true) {
             const { done, value } = await reader.read();
             if (done) break;
+
+            // Track text chunks (format: 0:"text content")
+            const textChunk = value.toString();
+            if (textChunk.startsWith('0:')) {
+              try {
+                const parsed = JSON.parse(textChunk.substring(2));
+                accumulatedText += parsed;
+              } catch (e) {
+                // Ignore parse errors
+              }
+            }
+
             controller.enqueue(value);
+          }
+
+          // CRITICAL FIX: If synthesis produced no visible text but tools succeeded,
+          // send a fallback message so the user isn't left with a blank response
+          const visibleText = accumulatedText.trim().replace(/<!--[\s\S]*?-->/g, '').trim();
+          if (hasSuccessfulTools && visibleText.length === 0) {
+            console.warn('[OrchestratedChatFlow] ⚠️ Synthesis produced empty response despite tool success. Adding fallback.');
+            const fallbackMessage = "Here's what I've prepared for you! 🎉";
+            controller.enqueue(encoder.encode(`0:${JSON.stringify(fallbackMessage)}\n`));
           }
 
           // Send UI data as a hidden HTML comment at the end of the message
@@ -315,12 +342,12 @@ export class OrchestratedChatFlow {
     isRetry: boolean,
     forcedTools?: string[]
   ): string {
-    const basePrompt = `You are an expert AI assistant for a meal planning application.
+    const basePrompt = `You are a diverse expert AI assistant for a meal planning application.
 Your goal is to help users plan meals, analyze nutrition, check grocery prices, and generate grocery lists.
 You are also a knowledgeable culinary expert who can discuss food, recipes, ingredients, and cooking techniques freely.
 
-CRITICAL RULE: When users request specific actions (planning, list generation, analysis), you MUST use the corresponding tools.
-HOWEVER, if the user asks a general question (e.g., "What is Ugali?", "How do I cook rice?"), you should ANSWER DIRECTLY without using tools.`;
+CRITICAL RULE: When users request specific actions (Meals, Meal planning, shoppinglist generation, analysis, nutrition, Recipes, Recipe analysis), you MUST use the corresponding tools.
+HOWEVER, if the user asks a general question (e.g., "What is Ugali?", "How do I cook rice?"), you should intelligently ANSWER DIRECTLY without using tools.`;
 
     const contextInfo = `
 CURRENT CONTEXT:

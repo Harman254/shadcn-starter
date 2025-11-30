@@ -1405,31 +1405,72 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
                 "border border-border/50 shadow-lg",
                 "p-6"
               )}>
-                <div className="flex items-center gap-2 mb-6">
-                   <div className="p-2 bg-primary/10 rounded-lg text-primary">
-                     <UtensilsCrossed className="h-5 w-5" />
+                <div className="flex items-center justify-between mb-6">
+                   <div className="flex items-center gap-2">
+                     <div className="p-2 bg-primary/10 rounded-lg text-primary">
+                       <UtensilsCrossed className="h-5 w-5" />
+                     </div>
+                     <div>
+                       <h3 className="text-xl font-bold">Nutrition Analysis</h3>
+                       {uiData.nutrition.title && (
+                         <p className="text-sm text-muted-foreground">{uiData.nutrition.title}</p>
+                       )}
+                     </div>
                    </div>
-                   <h3 className="text-xl font-bold">Nutrition Analysis</h3>
+                   {uiData.nutrition.healthScore !== undefined && (
+                     <div className="flex items-center gap-2 px-4 py-2 bg-primary/10 rounded-full">
+                       <span className="text-sm font-medium text-muted-foreground">Health Score</span>
+                       <span className="text-2xl font-bold text-primary">{uiData.nutrition.healthScore}</span>
+                       <span className="text-sm text-muted-foreground">/100</span>
+                     </div>
+                   )}
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                  <div className="text-center p-4 bg-muted/30 rounded-xl border border-border/50">
-                    <div className="text-2xl font-bold text-primary">{uiData.nutrition.calories}</div>
-                    <div className="text-sm text-muted-foreground font-medium mt-1">Calories</div>
-                  </div>
-                  <div className="text-center p-4 bg-muted/30 rounded-xl border border-border/50">
-                    <div className="text-xl font-bold text-foreground">{uiData.nutrition.protein}g</div>
-                    <div className="text-sm text-muted-foreground font-medium mt-1">Protein</div>
-                  </div>
-                  <div className="text-center p-4 bg-muted/30 rounded-xl border border-border/50">
-                    <div className="text-xl font-bold text-foreground">{uiData.nutrition.carbs}g</div>
-                    <div className="text-sm text-muted-foreground font-medium mt-1">Carbs</div>
-                  </div>
-                  <div className="text-center p-4 bg-muted/30 rounded-xl border border-border/50">
-                    <div className="text-xl font-bold text-foreground">{uiData.nutrition.fat}g</div>
-                    <div className="text-sm text-muted-foreground font-medium mt-1">Fat</div>
+                {/* Display Daily Average or Total based on type */}
+                <div className="mb-4">
+                  <h4 className="text-sm font-medium text-muted-foreground mb-3">
+                    {uiData.nutrition.type === 'plan' ? 'Daily Average' : 'Total Nutrition'}
+                  </h4>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                    <div className="text-center p-4 bg-muted/30 rounded-xl border border-border/50">
+                      <div className="text-2xl font-bold text-primary">
+                        {Math.round(uiData.nutrition.type === 'plan' ? uiData.nutrition.dailyAverage.calories : uiData.nutrition.total.calories)}
+                      </div>
+                      <div className="text-sm text-muted-foreground font-medium mt-1">Calories</div>
+                    </div>
+                    <div className="text-center p-4 bg-muted/30 rounded-xl border border-border/50">
+                      <div className="text-xl font-bold text-foreground">
+                        {Math.round(uiData.nutrition.type === 'plan' ? uiData.nutrition.dailyAverage.protein : uiData.nutrition.total.protein)}g
+                      </div>
+                      <div className="text-sm text-muted-foreground font-medium mt-1">Protein</div>
+                    </div>
+                    <div className="text-center p-4 bg-muted/30 rounded-xl border border-border/50">
+                      <div className="text-xl font-bold text-foreground">
+                        {Math.round(uiData.nutrition.type === 'plan' ? uiData.nutrition.dailyAverage.carbs : uiData.nutrition.total.carbs)}g
+                      </div>
+                      <div className="text-sm text-muted-foreground font-medium mt-1">Carbs</div>
+                    </div>
+                    <div className="text-center p-4 bg-muted/30 rounded-xl border border-border/50">
+                      <div className="text-xl font-bold text-foreground">
+                        {Math.round(uiData.nutrition.type === 'plan' ? uiData.nutrition.dailyAverage.fat : uiData.nutrition.total.fat)}g
+                      </div>
+                      <div className="text-sm text-muted-foreground font-medium mt-1">Fat</div>
+                    </div>
                   </div>
                 </div>
+
+                {/* Insights */}
+                {uiData.nutrition.insights && uiData.nutrition.insights.length > 0 && (
+                  <div className="mt-6 space-y-2">
+                    <h4 className="text-sm font-semibold text-foreground mb-2">Nutritional Insights</h4>
+                    {uiData.nutrition.insights.map((insight: string, idx: number) => (
+                      <div key={idx} className="flex gap-2 items-start p-3 bg-muted/30 rounded-lg">
+                        <AlertCircle className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                        <p className="text-sm text-foreground">{insight}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
                 
                 <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-950/20 rounded-xl border border-blue-100 dark:border-blue-900/50 flex gap-3">
                   <AlertCircle className="h-5 w-5 text-blue-600 dark:text-blue-400 shrink-0" />
