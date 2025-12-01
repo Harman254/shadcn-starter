@@ -1062,39 +1062,47 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
                          <MoreHorizontal className="mr-1.5 h-3.5 w-3.5" />
                          Modify Plan
                        </Button>
-                       {savedMealPlanId && (
-                         <Button
-                           variant="outline"
-                           size="sm"
-                           className="h-9 rounded-full px-4 text-xs font-medium border-primary/20 hover:bg-primary/5 hover:text-primary transition-colors"
-                           onClick={() => router.push(`/meal-plans/${savedMealPlanId}/explore`)}
-                         >
-                           <ChefHat className="mr-1.5 h-3.5 w-3.5" />
-                           Explore Plan
-                         </Button>
-                       )}
+                       <Button
+                         variant="outline"
+                         size="sm"
+                         className="h-9 rounded-full px-4 text-xs font-medium border-primary/20 hover:bg-primary/5 hover:text-primary transition-colors"
+                         onClick={() => {
+                           if (savedMealPlanId) {
+                             router.push(`/meal-plans/${savedMealPlanId}/explore`);
+                           } else {
+                             sessionStorage.setItem('mealPlanPreview', JSON.stringify(uiData.mealPlan));
+                             router.push('/meal-plans/preview');
+                           }
+                         }}
+                       >
+                         <ChefHat className="mr-1.5 h-3.5 w-3.5" />
+                         {savedMealPlanId ? 'Explore Plan' : 'Preview Plan'}
+                       </Button>
                     </div>
                   )}
                   
                   <Button
-                    variant="outline"
+                    variant={savedMealPlanId ? "outline" : "default"}
                     size="lg"
                     className={cn(
                       "w-full max-w-xs sm:w-auto sm:min-w-[180px]",
                       "h-11 gap-2 font-semibold",
-                      "border-2 border-primary/20",
-                      "hover:bg-primary/5 hover:border-primary/40",
+                      savedMealPlanId
+                        ? "border-2 border-primary/20 hover:bg-primary/5 hover:border-primary/40"
+                        : "bg-gradient-to-r from-secondary to-secondary/90 hover:from-secondary/90 hover:to-secondary/80 shadow-md shadow-secondary/20",
                       "transition-all duration-200"
                     )}
                     onClick={() => {
                       if (savedMealPlanId) {
                         router.push(`/meal-plans/${savedMealPlanId}/explore`);
+                      } else {
+                        sessionStorage.setItem('mealPlanPreview', JSON.stringify(uiData.mealPlan));
+                        router.push('/meal-plans/preview');
                       }
                     }}
-                    disabled={!savedMealPlanId}
                   >
                     <ChefHat className="h-4 w-4" />
-                    Explore Plan
+                    {savedMealPlanId ? 'Explore Plan' : 'Preview Plan'}
                   </Button>
                 </div>
               </div>

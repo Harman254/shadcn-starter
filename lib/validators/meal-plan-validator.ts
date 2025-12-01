@@ -93,10 +93,6 @@ export function validateMealPlanInput(input: SaveMealPlanInput): ValidationResul
         errors.push(`Day ${dayIndex + 1}: meals must be an array`);
       } else if (day.meals.length === 0) {
         errors.push(`Day ${dayIndex + 1}: meals array must not be empty`);
-      } else if (day.meals.length !== input.mealsPerDay) {
-        errors.push(
-          `Day ${dayIndex + 1}: expected ${input.mealsPerDay} meals, got ${day.meals.length}`
-        );
       } else {
         // Validate each meal
         day.meals.forEach((meal, mealIndex) => {
@@ -119,8 +115,6 @@ export function validateMealPlanInput(input: SaveMealPlanInput): ValidationResul
           // Validate ingredients
           if (!meal.ingredients || !Array.isArray(meal.ingredients)) {
             errors.push(`${mealPrefix}: ingredients must be an array`);
-          } else if (meal.ingredients.length === 0) {
-            errors.push(`${mealPrefix}: ingredients array must not be empty`);
           } else {
             meal.ingredients.forEach((ingredient, ingIndex) => {
               if (typeof ingredient !== 'string' || !ingredient.trim()) {

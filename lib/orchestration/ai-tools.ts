@@ -199,11 +199,13 @@ export const analyzeNutrition = tool({
                 });
 
                 if (mealPlan) {
-                    title = `Meal Plan (${mealPlan.days.length} Days)`;
+                    title = `Meal Plan(${mealPlan.days.length
+                        } Days)`;
                     type = 'plan';
                     mealPlan.days.forEach((d: any) => {
                         d.meals.forEach((m: any) => {
-                            itemsToAnalyze.push(`${m.name} (${m.ingredients.join(', ')})`);
+                            itemsToAnalyze.push(`${m.name
+                                }(${m.ingredients.join(', ')})`);
                         });
                     });
                 }
@@ -217,7 +219,7 @@ export const analyzeNutrition = tool({
                     title = "Grocery List";
                     type = 'plan'; // Treat as a plan for aggregation
                     (groceryList.items as any[]).forEach((item: any) => {
-                        itemsToAnalyze.push(`${item.item || item.name} (${item.quantity || ''} ${item.unit || ''})`);
+                        itemsToAnalyze.push(`${item.item || item.name}(${item.quantity || ''} ${item.unit || ''})`);
                     });
                 }
             } else if (query) {
@@ -265,11 +267,11 @@ export const analyzeNutrition = tool({
                 const activeGroceryList = lastGroceryList || msgGroceryList;
 
                 if (activeMealPlan) {
-                    title = `Meal Plan (${activeMealPlan.days.length} Days)`;
+                    title = `Meal Plan(${activeMealPlan.days.length} Days)`;
                     type = 'plan';
                     activeMealPlan.days.forEach((d: any) => {
                         d.meals.forEach((m: any) => {
-                            itemsToAnalyze.push(`${m.name} (${m.ingredients.join(', ')})`);
+                            itemsToAnalyze.push(`${m.name}(${m.ingredients.join(', ')})`);
                         });
                     });
                 } else if (activeRecipe) {
@@ -284,7 +286,7 @@ export const analyzeNutrition = tool({
                             if (typeof item === 'string') {
                                 itemsToAnalyze.push(item);
                             } else {
-                                itemsToAnalyze.push(`${item.item || item.name} (${item.quantity || ''} ${item.unit || ''})`);
+                                itemsToAnalyze.push(`${item.item || item.name}(${item.quantity || ''} ${item.unit || ''})`);
                             }
                         });
                     }
@@ -321,7 +323,7 @@ export const analyzeNutrition = tool({
                     healthScore: z.number().min(0).max(100).describe('Overall health score (0-100)'),
                     summary: z.string().describe('A concise 1-2 sentence summary of the nutritional analysis (e.g., "High protein plan with balanced macros, suitable for muscle gain.")'),
                 }),
-                prompt: `You are a nutrition expert. Analyze the following ${type} and provide detailed nutrition information.
+                prompt: `You are a nutrition expert.Analyze the following ${type} and provide detailed nutrition information.
 
 ## ${type === 'plan' ? 'Meal Plan/List' : type === 'food' ? 'Food Item' : 'Recipe'}: "${title}"
 
@@ -329,12 +331,12 @@ export const analyzeNutrition = tool({
 ${itemsToAnalyze.join('\n')}
 
 ## Instructions:
-1. **SEARCH GROUNDING IS ENABLED:** You MUST use the search results to find ACCURATE, REAL-WORLD nutritional data for these specific items. Do not just guess.
+1. ** SEARCH GROUNDING IS ENABLED:** You MUST use the search results to find ACCURATE, REAL - WORLD nutritional data for these specific items.Do not just guess.
 2. Calculate TOTAL nutrition based on the search data.
 3. ${type === 'plan' ? 'Calculate DAILY AVERAGE nutrition (if it is a grocery list, assume it covers 3-4 days unless specified).' : 'For a single recipe or food item, Daily Average = Total.'}
-4. Provide 3-5 actionable insights about the nutritional balance.
-5. Give a health score (0-100).
-6. Write a concise summary (1-2 sentences).
+4. Provide 3 - 5 actionable insights about the nutritional balance.
+5. Give a health score(0 - 100).
+6. Write a concise summary(1 - 2 sentences).
 
 Return valid JSON.`,
             });
@@ -366,7 +368,7 @@ Return valid JSON.`,
                     healthScore: nutritionData.healthScore,
                     summary: nutritionData.summary,
                 },
-                `✅ Nutrition Analysis: ${nutritionData.summary} (Health Score: ${nutritionData.healthScore}/100) [UI_METADATA:${uiMetadataEncoded}]`
+                `✅ Nutrition Analysis: ${nutritionData.summary} (Health Score: ${nutritionData.healthScore}/100)[UI_METADATA: ${uiMetadataEncoded}]`
             );
         } catch (error) {
             console.error('[analyzeNutrition] Error:', error);
@@ -462,16 +464,16 @@ export const getGroceryPricing = tool({
                         sourceUrl: z.string().optional().describe('URL to the store or pricing source if available')
                     }))
                 }),
-                prompt: `Find CURRENT, REAL-WORLD grocery prices for these ingredients in ${city || 'San Francisco'}, ${country || 'US'}.
+                prompt: `Find CURRENT, REAL - WORLD grocery prices for these ingredients in ${city || 'San Francisco'}, ${country || 'US'}.
                 
 Ingredients for "${title}":
 ${allIngredients.slice(0, 50).join(', ')} ${allIngredients.length > 50 ? `...and ${allIngredients.length - 50} more items` : ''}
 
 ## INSTRUCTIONS:
-1. **USE SEARCH RESULTS:** You MUST extract ACTUAL prices from the search results. Do not hallucinate prices.
-2. **SOURCE URLS:** You MUST include the specific URL where you found the price in the 'sourceUrl' field.
-3. **TIERS:** Provide 3 pricing estimates from different store tiers (Budget, Standard, Premium) found in the search results.
-4. **ACCURACY:** If you can't find an exact match, find the closest substitute and note it.
+1. ** USE SEARCH RESULTS:** You MUST extract ACTUAL prices from the search results.Do not hallucinate prices.
+2. ** SOURCE URLS:** You MUST include the specific URL where you found the price in the 'sourceUrl' field.
+3. ** TIERS:** Provide 3 pricing estimates from different store tiers(Budget, Standard, Premium) found in the search results.
+4. ** ACCURACY:** If you can't find an exact match, find the closest substitute and note it.
 
 Return valid JSON.`,
             });
@@ -490,7 +492,7 @@ Return valid JSON.`,
                 {
                     prices: result.object.prices
                 },
-                `✅ Estimated grocery costs for "${title}": ${result.object.prices.map(p => `${p.store}: ${p.currency}${p.total}`).join(', ')}. [UI_METADATA:${uiMetadataEncoded}]`
+                `✅ Estimated grocery costs for "${title}": ${result.object.prices.map(p => `${p.store}: ${p.currency}${p.total}`).join(', ')}.[UI_METADATA: ${uiMetadataEncoded}]`
             );
 
         } catch (error) {
@@ -616,7 +618,7 @@ export const generateGroceryList = tool({
 
             // 4. Pre-process: Consolidate Ingredients
             const ingredientCount = allIngredients.length;
-            const consolidatedListPrompt = allIngredients.map(i => `- ${i}`).join('\n');
+            const consolidatedListPrompt = allIngredients.map(i => `- ${i} `).join('\n');
 
             console.log(`[generateGroceryList] Processing ${ingredientCount} ingredients for AI...`);
 
@@ -642,20 +644,20 @@ export const generateGroceryList = tool({
                         localStores: z.array(z.string()),
                     }),
                 }),
-                prompt: `You are a smart grocery assistant. Convert this list of ingredients into a consolidated shopping list.
+                prompt: `You are a smart grocery assistant.Convert this list of ingredients into a consolidated shopping list.
 
 ## USER LOCATION
-- City: ${locationData.city || 'San Francisco'}
+    - City: ${locationData.city || 'San Francisco'}
 - Currency: ${locationData.currencySymbol || '$'}
 
 ## INGREDIENTS TO PROCESS
 ${consolidatedListPrompt}
 
 ## INSTRUCTIONS
-1. **Consolidate:** Combine similar items (e.g., "2 onions" and "chopped onion" -> "Onions", Quantity: "3").
-2. **Categorize:** Group by aisle (Produce, Dairy, Meat, Pantry, Spices).
-3. **Price:** Estimate TOTAL price for the quantity in ${locationData.currencySymbol || '$'}.
-4. **Stores:** Suggest stores in ${locationData.city || 'San Francisco'}.
+1. ** Consolidate:** Combine similar items(e.g., "2 onions" and "chopped onion" -> "Onions", Quantity: "3").
+2. ** Categorize:** Group by aisle(Produce, Dairy, Meat, Pantry, Spices).
+3. ** Price:** Estimate TOTAL price for the quantity in ${locationData.currencySymbol || '$'}.
+4. ** Stores:** Suggest stores in ${locationData.city || 'San Francisco'}.
 
 Return JSON only.`,
             });
@@ -690,7 +692,7 @@ Return JSON only.`,
                     id: 'temp-' + Date.now(), // Temporary ID until DB save is re-enabled
                     items: result.object.groceryList,
                     locationInfo: result.object.locationInfo,
-                    totalEstimatedCost: `${currency}${totalCost.toFixed(2)}`,
+                    totalEstimatedCost: `${currency}${totalCost.toFixed(2)} `,
                 },
             };
             const uiMetadataEncoded = Buffer.from(JSON.stringify(uiMetadata)).toString('base64');
@@ -700,9 +702,9 @@ Return JSON only.`,
                     id: uiMetadata.groceryList.id,
                     items: result.object.groceryList,
                     locationInfo: result.object.locationInfo,
-                    totalEstimatedCost: `${currency}${totalCost.toFixed(2)}`
+                    totalEstimatedCost: `${currency}${totalCost.toFixed(2)} `
                 },
-                `✅ Generated and saved grocery list for ${planTitle}! ${result.object.groceryList.length} items, approx ${currency}${totalCost.toFixed(2)}. [UI_METADATA:${uiMetadataEncoded}]`
+                `✅ Generated and saved grocery list for ${planTitle}! ${result.object.groceryList.length} items, approx ${currency}${totalCost.toFixed(2)}.[UI_METADATA: ${uiMetadataEncoded}]`
             );
 
         } catch (error) {
@@ -751,7 +753,7 @@ export const modifyMealPlan = tool({
                     where: { userId: session.user.id }
                 });
                 if (onboarding) {
-                    userPrefsContext = `Dietary: ${onboarding.dietaryPreference}, Goal: ${onboarding.goal}, Cuisines: ${onboarding.cuisinePreferences.join(', ')}`;
+                    userPrefsContext = `Dietary: ${onboarding.dietaryPreference}, Goal: ${onboarding.goal}, Cuisines: ${onboarding.cuisinePreferences.join(', ')} `;
                 }
             }
 
@@ -777,25 +779,25 @@ export const modifyMealPlan = tool({
                 }),
                 prompt: `Generate a COMPLETELY DIFFERENT personalized meal plan for ${duration} days with ${mealsPerDay} meals per day.
 
-🚨 CRITICAL: This is a MODIFICATION/ALTERNATIVE request. You MUST generate DIFFERENT meals from what was previously suggested.
-${differentFrom ? `\n🚨 AVOID THESE: ${differentFrom}\n` : ''}
+🚨 CRITICAL: This is a MODIFICATION / ALTERNATIVE request.You MUST generate DIFFERENT meals from what was previously suggested.
+    ${differentFrom ? `\n🚨 AVOID THESE: ${differentFrom}\n` : ''}
 
 ## User's Recent Chat Context (HIGHEST PRIORITY)
 ${chatMessages?.map(m => `${m.role.toUpperCase()}: ${m.content}`).join('\n') || 'No recent context.'}
 
-## Saved User Preferences (Use as default, but OVERRIDE if Chat Context conflicts)
+## Saved User Preferences(Use as default, but OVERRIDE if Chat Context conflicts)
 ${userPrefsContext || 'No saved preferences. Use balanced diet.'}
 
-## VARIATION REQUIREMENTS (CRITICAL)
-1. **Different Meals:** Generate COMPLETELY DIFFERENT meals from any previous suggestions
-2. **Different Cuisines:** Explore different cuisines and cooking styles
-3. **Variety:** Ensure maximum diversity and creativity
-4. **Fresh Ideas:** Think outside the box - suggest unexpected but delicious combinations
-5. **Specific Requests:** Still honor user's specific food requests if mentioned in chat context
+## VARIATION REQUIREMENTS(CRITICAL)
+1. ** Different Meals:** Generate COMPLETELY DIFFERENT meals from any previous suggestions
+2. ** Different Cuisines:** Explore different cuisines and cooking styles
+3. ** Variety:** Ensure maximum diversity and creativity
+4. ** Fresh Ideas:** Think outside the box - suggest unexpected but delicious combinations
+5. ** Specific Requests:** Still honor user's specific food requests if mentioned in chat context
 
 ## Standard Requirements
-1. **Completeness:** For each meal, provide name, description, ingredients list, and instructions
-2. **Structure:** Generate exactly ${duration} days with ${mealsPerDay} meals each
+1. ** Completeness:** For each meal, provide name, description, ingredients list, and instructions
+2. ** Structure:** Generate exactly ${duration} days with ${mealsPerDay} meals each
 
 Return a valid JSON object.`,
             });
@@ -832,7 +834,7 @@ Return a valid JSON object.`,
                 {
                     mealPlan: mealPlanData,
                 },
-                `✅ Generated alternative ${duration}-day meal plan: "${mealPlanData.title}". Includes ${totalMeals} different meals. [UI_METADATA:${uiMetadataEncoded}]`
+                `✅ Generated alternative ${duration} -day meal plan: "${mealPlanData.title}".Includes ${totalMeals} different meals. [UI_METADATA:${uiMetadataEncoded}]`
             );
 
         } catch (error) {
@@ -899,7 +901,7 @@ export const optimizeGroceryList = tool({
                     totalSavings: z.number(),
                 }),
                 prompt: `Optimize this grocery list for stores: ${storeIds?.join(', ') || 'Best local stores'}.
-                Items: ${JSON.stringify(itemsToOptimize)}
+Items: ${JSON.stringify(itemsToOptimize)}
                 
                 Find the best value options, suggest specific brands or substitutions where appropriate to save money or improve quality.`,
             });
@@ -914,7 +916,7 @@ export const optimizeGroceryList = tool({
 
             return successResponse(
                 { optimization: optimizationResult },
-                `✅ Optimized your grocery list! Total estimated cost: $${optimizationResult.totalCost.toFixed(2)} (Savings: $${optimizationResult.totalSavings.toFixed(2)}). [UI_METADATA:${uiMetadataEncoded}]`
+                `✅ Optimized your grocery list! Total estimated cost: $${optimizationResult.totalCost.toFixed(2)} (Savings: $${optimizationResult.totalSavings.toFixed(2)}).[UI_METADATA: ${uiMetadataEncoded}]`
             );
 
         } catch (error) {
@@ -937,7 +939,7 @@ export const swapMeal = tool({
     }),
     execute: async ({ day, mealIndex, reason }, options): Promise<ToolResult> => {
         try {
-            console.log(`[swapMeal] 🔄 Swapping meal for Day ${day}, Index ${mealIndex}. Reason: ${reason || 'None'}`);
+            console.log(`[swapMeal] 🔄 Swapping meal for Day ${day}, Index ${mealIndex}.Reason: ${reason || 'None'} `);
 
             // 1. Get Current Meal Plan from Context
             // @ts-ignore - context is injected by ToolExecutor via options
@@ -966,7 +968,7 @@ export const swapMeal = tool({
                 return errorResponse(`Meal index ${mealIndex} not found for Day ${day}.`, ErrorCode.INVALID_INPUT);
             }
 
-            console.log(`[swapMeal] 🎯 Target: ${targetMeal.name}`);
+            console.log(`[swapMeal] 🎯 Target: ${targetMeal.name} `);
 
             // 3. Generate NEW Meal using AI
             const { generateObject } = await import('ai');
@@ -984,17 +986,17 @@ export const swapMeal = tool({
                 }),
                 prompt: `Generate a replacement meal for Day ${day}, Meal ${mealIndex + 1} of a meal plan.
                 
-CURRENT MEAL (To Replace): "${targetMeal.name}" - ${targetMeal.description}
+CURRENT MEAL(To Replace): "${targetMeal.name}" - ${targetMeal.description}
 REASON FOR SWAP: ${reason || "User wants something different"}
 
-CONTEXT (Other meals in the plan to avoid repetition):
+CONTEXT(Other meals in the plan to avoid repetition):
 ${lastMealPlan.days.map((d: any) => `Day ${d.day}: ${d.meals.map((m: any) => m.name).join(', ')}`).join('\n')}
 
 INSTRUCTIONS:
 1. Generate a COMPLETELY DIFFERENT meal than the current one.
-2. Respect the "Reason for Swap" strictly (e.g. if "vegetarian", no meat).
-3. Ensure it fits the meal type (Breakfast/Lunch/Dinner) based on index ${mealIndex}.
-4. Provide full details (ingredients, instructions).
+2. Respect the "Reason for Swap" strictly(e.g.if "vegetarian", no meat).
+3. Ensure it fits the meal type(Breakfast / Lunch / Dinner) based on index ${mealIndex}.
+4. Provide full details(ingredients, instructions).
 
 Return valid JSON.`,
             });
@@ -1050,7 +1052,7 @@ export const searchRecipes = tool({
     }),
     execute: async ({ query, count }): Promise<ToolResult> => {
         try {
-            console.log(`[searchRecipes] 🔍 Searching for "${query}" (Limit: ${count})`);
+            console.log(`[searchRecipes] 🔍 Searching for "${query}"(Limit: ${count})`);
 
             const { generateObject } = await import('ai');
             const { google } = await import('@ai-sdk/google');
@@ -1072,13 +1074,13 @@ export const searchRecipes = tool({
                         imageUrl: z.string().optional().describe('Image URL from the search result if available'),
                     }))
                 }),
-                prompt: `Find ${count} distinct, highly-rated recipes for: "${query}".
+                prompt: `Find ${count} distinct, highly - rated recipes for: "${query}".
                 
 ## INSTRUCTIONS:
-1. **USE SEARCH RESULTS:** You MUST find REAL recipes from reputable cooking websites using the search results.
-2. **SOURCE URLS:** You MUST extract the actual URL of the recipe into 'sourceUrl'.
-3. **IMAGES:** You MUST extract the actual image URL from the search result into 'imageUrl' if available.
-4. **DETAILS:** Extract accurate prep times, calories, and tags from the search result.
+1. ** USE SEARCH RESULTS:** You MUST find REAL recipes from reputable cooking websites using the search results.
+2. ** SOURCE URLS:** You MUST extract the actual URL of the recipe into 'sourceUrl'.
+3. ** IMAGES:** You MUST extract the actual image URL from the search result into 'imageUrl' if available.
+4. ** DETAILS:** Extract accurate prep times, calories, and tags from the search result.
 
 Return valid JSON with a list of recipes found.`,
             });
@@ -1148,11 +1150,11 @@ export const generateMealRecipe = tool({
                     imageUrl: z.string().optional().describe('A placeholder image URL for the dish'),
                 }),
                 prompt: `Generate a detailed recipe for "${name}" ${description ? `(${description})` : ''}.
-                
+
 Include:
-- Accurate ingredients and step-by-step instructions.
+- Accurate ingredients and step - by - step instructions.
 - Nutritional estimate per serving.
-- A placeholder image URL from Unsplash (source.unsplash.com/800x600/?<dish-name>).
+- A placeholder image URL from Unsplash(source.unsplash.com / 800x600 /? <dish-name >).
 
 Return valid JSON.`,
             });

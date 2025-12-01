@@ -14,14 +14,14 @@ import type { MealPlan } from '@/types';
 
 export type SaveMealPlanResult =
   | {
-      success: true;
-      mealPlan: MealPlan;
-    }
+    success: true;
+    mealPlan: MealPlan;
+  }
   | {
-      success: false;
-      error: string;
-      code: string;
-    };
+    success: false;
+    error: string;
+    code: string;
+  };
 
 /**
  * Helper function to estimate calories based on ingredients
@@ -57,6 +57,38 @@ export async function saveMealPlanService(
         success: false,
         error: validation.errors.join('; '),
         code: 'VALIDATION_ERROR',
+      };
+    }
+
+    // Check for existing meal plan with same metadata to prevent duplicates
+    const existingMealPlan = await prisma.mealPlan.findFirst({
+      where: {
+        userId,
+        title: input.title.trim(),
+        duration: input.duration,
+        mealsPerDay: input.mealsPerDay,
+      },
+      include: {
+        days: {
+          include: {
+            meals: {
+              orderBy: {
+                type: 'asc',
+              },
+            },
+          },
+          orderBy: {
+            date: 'asc',
+          },
+        },
+      },
+    });
+
+    if (existingMealPlan) {
+      console.log('[saveMealPlanService] Found existing meal plan, returning it instead of creating new one');
+      return {
+        success: true,
+        mealPlan: existingMealPlan,
       };
     }
 
@@ -184,7 +216,7 @@ export async function saveMealPlanService(
     // Handle Prisma errors
     if (error && typeof error === 'object' && 'code' in error) {
       const prismaError = error as { code: string; message?: string };
-      
+
       if (prismaError.code === 'P2002') {
         return {
           success: false,
@@ -192,7 +224,7 @@ export async function saveMealPlanService(
           code: 'DUPLICATE_ERROR',
         };
       }
-      
+
       if (prismaError.code === 'P2025') {
         return {
           success: false,
@@ -204,7 +236,7 @@ export async function saveMealPlanService(
 
     // Log unexpected errors
     console.error('[saveMealPlanService] Unexpected error:', error);
-    
+
     return {
       success: false,
       error: error instanceof Error ? error.message : 'An unknown error occurred while saving the meal plan',

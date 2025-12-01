@@ -32,14 +32,21 @@ const MealPlanStatusCard = ({ hasMealPlan, mealPlan, meals }: Props) => {
     
     // Calculate difference in days (ms per day = 1000 * 60 * 60 * 24)
     const diffTime = Math.abs(now.getTime() - startDate.getTime());
-    const daysPassed = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+    // Ensure daysPassed is at least 1 (Day 1)
+    const daysPassed = Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24))); 
     
     const daysRemaining = mealPlan.duration - daysPassed;
     const progressPercent = Math.min(100, (daysPassed / mealPlan.duration) * 100);
 
     let status: 'active' | 'expiring' | 'expired' = 'active';
-    if (daysRemaining <= 0) status = 'expired';
-    else if (daysRemaining <= 2) status = 'expiring';
+    
+    // Only expire if we are PAST the duration (e.g. Day 8 of 7)
+    if (daysPassed > mealPlan.duration) {
+      status = 'expired';
+    } else if (daysRemaining < 2) {
+      // Warn if less than 2 days remaining (e.g. Day 6 or 7 of 7)
+      status = 'expiring';
+    }
 
     return { status, daysRemaining, progressPercent, daysPassed };
   }, [mealPlan]);
@@ -166,7 +173,7 @@ const MealPlanStatusCard = ({ hasMealPlan, mealPlan, meals }: Props) => {
                   </div>
                   <Target className="w-5 h-5 text-emerald-400 opacity-60" />
                 </div>
-                <div className="text-4xl font-black text-white mb-2">
+                <div className="text-7xl font-black text-white mb-4 tracking-tighter">
                   {status === 'expired' ? 0 : daysRemaining}
                 </div>
                 <div className="text-slate-400 font-semibold">Days Remaining</div>
@@ -193,7 +200,7 @@ const MealPlanStatusCard = ({ hasMealPlan, mealPlan, meals }: Props) => {
                   </div>
                   <ChefHat className="w-5 h-5 text-purple-400 opacity-60" />
                 </div>
-                <div className="text-4xl font-black text-white mb-2">{mealPlan.mealsPerDay}</div>
+                <div className="text-7xl font-black text-white mb-4 tracking-tighter">{mealPlan.mealsPerDay}</div>
                 <div className="text-slate-400 font-semibold">Meals Daily</div>
               </div>
             </motion.div>
@@ -211,7 +218,7 @@ const MealPlanStatusCard = ({ hasMealPlan, mealPlan, meals }: Props) => {
                   </div>
                   <Clock className="w-5 h-5 text-cyan-400 opacity-60" />
                 </div>
-                <div className="text-4xl font-black text-white mb-2">{mealPlan.duration * mealPlan.mealsPerDay}</div>
+                <div className="text-7xl font-black text-white mb-4 tracking-tighter">{mealPlan.duration * mealPlan.mealsPerDay}</div>
                 <div className="text-slate-400 font-semibold">Total Meals</div>
               </div>
             </motion.div>
