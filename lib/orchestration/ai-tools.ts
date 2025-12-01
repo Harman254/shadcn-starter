@@ -323,8 +323,8 @@ export const analyzeNutrition = tool({
 ${itemsToAnalyze.join('\n')}
 
 ## Instructions:
-1. Search for accurate nutritional data for these items.
-2. Calculate TOTAL nutrition.
+1. **SEARCH GROUNDING IS ENABLED:** You MUST use the search results to find ACCURATE, REAL-WORLD nutritional data for these specific items. Do not just guess.
+2. Calculate TOTAL nutrition based on the search data.
 3. ${type === 'plan' ? 'Calculate DAILY AVERAGE nutrition (if it is a grocery list, assume it covers 3-4 days unless specified).' : 'For a single recipe, Daily Average = Total.'}
 4. Provide 3-5 actionable insights about the nutritional balance.
 5. Give a health score (0-100).
@@ -456,14 +456,17 @@ export const getGroceryPricing = tool({
                         sourceUrl: z.string().optional().describe('URL to the store or pricing source if available')
                     }))
                 }),
-                prompt: `Find CURRENT grocery prices for these ingredients in ${city || 'San Francisco'}, ${country || 'US'}.
+                prompt: `Find CURRENT, REAL-WORLD grocery prices for these ingredients in ${city || 'San Francisco'}, ${country || 'US'}.
                 
 Ingredients for "${title}":
 ${allIngredients.slice(0, 50).join(', ')} ${allIngredients.length > 50 ? `...and ${allIngredients.length - 50} more items` : ''}
 
-Search for real online grocery prices at major local retailers.
-Provide 3 pricing estimates from different store tiers (Budget, Standard, Premium).
-Include the source URL for the store or pricing if found.
+## INSTRUCTIONS:
+1. **USE SEARCH RESULTS:** You MUST extract ACTUAL prices from the search results. Do not hallucinate prices.
+2. **SOURCE URLS:** You MUST include the specific URL where you found the price in the 'sourceUrl' field.
+3. **TIERS:** Provide 3 pricing estimates from different store tiers (Budget, Standard, Premium) found in the search results.
+4. **ACCURACY:** If you can't find an exact match, find the closest substitute and note it.
+
 Return valid JSON.`,
             });
 
@@ -1065,9 +1068,13 @@ export const searchRecipes = tool({
                 }),
                 prompt: `Find ${count} distinct, highly-rated recipes for: "${query}".
                 
-Search the web for REAL recipes from reputable cooking sites.
-Return valid JSON with a list of recipes found.
-Include the source URL and image URL if available.`,
+## INSTRUCTIONS:
+1. **USE SEARCH RESULTS:** You MUST find REAL recipes from reputable cooking websites using the search results.
+2. **SOURCE URLS:** You MUST extract the actual URL of the recipe into 'sourceUrl'.
+3. **IMAGES:** You MUST extract the actual image URL from the search result into 'imageUrl' if available.
+4. **DETAILS:** Extract accurate prep times, calories, and tags from the search result.
+
+Return valid JSON with a list of recipes found.`,
             });
 
             if (!result.object?.recipes) {
