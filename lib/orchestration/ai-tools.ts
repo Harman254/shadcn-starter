@@ -173,11 +173,12 @@ Return a valid JSON object.`,
 export const analyzeNutrition = tool({
     description: 'Analyze the nutritional value of a meal plan, recipe, or grocery list. Use this when user asks about "nutrition", "calories", "macros", or "healthiness".',
     parameters: z.object({
+        query: z.string().optional().describe('A specific food item, dish, or description to analyze (e.g., "apple", "chicken breast", "my lunch"). Use this if the user asks about a specific food not in a plan.'),
         mealPlanId: z.string().optional().describe('The ID of the meal plan to analyze.'),
         recipeName: z.string().optional().describe('The name of the recipe to analyze.'),
         groceryListId: z.string().optional().describe('The ID of the grocery list to analyze.'),
     }),
-    execute: async ({ mealPlanId, recipeName, groceryListId }, options): Promise<ToolResult> => {
+    execute: async ({ query, mealPlanId, recipeName, groceryListId }, options): Promise<ToolResult> => {
         try {
             console.log(`[analyzeNutrition] 🍎 Analyzing nutrition...`);
 
@@ -219,6 +220,11 @@ export const analyzeNutrition = tool({
                         itemsToAnalyze.push(`${item.item || item.name} (${item.quantity || ''} ${item.unit || ''})`);
                     });
                 }
+            } else if (query) {
+                // 2a. Handle explicit query (Highest priority after IDs)
+                title = query;
+                type = 'food';
+                itemsToAnalyze.push(query);
             } else if (recipeName) {
                 title = recipeName;
                 type = 'recipe';
@@ -317,7 +323,7 @@ export const analyzeNutrition = tool({
                 }),
                 prompt: `You are a nutrition expert. Analyze the following ${type} and provide detailed nutrition information.
 
-## ${type === 'plan' ? 'Meal Plan/List' : 'Recipe'}: "${title}"
+## ${type === 'plan' ? 'Meal Plan/List' : type === 'food' ? 'Food Item' : 'Recipe'}: "${title}"
 
 ## Items:
 ${itemsToAnalyze.join('\n')}
@@ -325,7 +331,7 @@ ${itemsToAnalyze.join('\n')}
 ## Instructions:
 1. **SEARCH GROUNDING IS ENABLED:** You MUST use the search results to find ACCURATE, REAL-WORLD nutritional data for these specific items. Do not just guess.
 2. Calculate TOTAL nutrition based on the search data.
-3. ${type === 'plan' ? 'Calculate DAILY AVERAGE nutrition (if it is a grocery list, assume it covers 3-4 days unless specified).' : 'For a single recipe, Daily Average = Total.'}
+3. ${type === 'plan' ? 'Calculate DAILY AVERAGE nutrition (if it is a grocery list, assume it covers 3-4 days unless specified).' : 'For a single recipe or food item, Daily Average = Total.'}
 4. Provide 3-5 actionable insights about the nutritional balance.
 5. Give a health score (0-100).
 6. Write a concise summary (1-2 sentences).

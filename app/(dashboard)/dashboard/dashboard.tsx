@@ -8,6 +8,7 @@ import {
   ClipboardList,
   Heart,
   Loader2,
+  MessageSquare,
   Settings,
 } from 'lucide-react';
 import MealPlanStatusCard, { MealPlan } from '@/components/meal-plan-status';
@@ -77,6 +78,13 @@ const  Dashboard = () =>{
 
         {/* Quick Navigation Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-10">
+          <Link href="/chat" >
+            <QuickNavCard
+              icon={<MessageSquare className="w-8 h-8" />}
+              title="AI Nutritionist"
+              description="Get instant answers and personalized advice"
+            />
+          </Link>
           <Link href="/meal-plans/new" >
             <QuickNavCard
               icon={<ChefHat className="w-8 h-8" />}

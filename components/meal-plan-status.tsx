@@ -22,6 +22,27 @@ type Props = {
 
 const MealPlanStatusCard = ({ hasMealPlan, mealPlan, meals }: Props) => {
   const router = useRouter();
+
+  // Calculate Expiration Status
+  const { status, daysRemaining, progressPercent, daysPassed } = React.useMemo(() => {
+    if (!mealPlan) return { status: 'inactive', daysRemaining: 0, progressPercent: 0, daysPassed: 0 };
+
+    const startDate = new Date(mealPlan.createdAt);
+    const now = new Date();
+    
+    // Calculate difference in days (ms per day = 1000 * 60 * 60 * 24)
+    const diffTime = Math.abs(now.getTime() - startDate.getTime());
+    const daysPassed = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+    
+    const daysRemaining = mealPlan.duration - daysPassed;
+    const progressPercent = Math.min(100, (daysPassed / mealPlan.duration) * 100);
+
+    let status: 'active' | 'expiring' | 'expired' = 'active';
+    if (daysRemaining <= 0) status = 'expired';
+    else if (daysRemaining <= 2) status = 'expiring';
+
+    return { status, daysRemaining, progressPercent, daysPassed };
+  }, [mealPlan]);
   
   return (
     <motion.div 
@@ -55,21 +76,51 @@ const MealPlanStatusCard = ({ hasMealPlan, mealPlan, meals }: Props) => {
 
       {hasMealPlan && mealPlan ? (
         <div className="relative z-10 p-8 sm:p-12">
-          {/* Status Badge */}
+          {/* Status Badge & Notification */}
           <motion.div 
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.2, duration: 0.5 }}
-            className="flex justify-center mb-8"
+            className="flex flex-col items-center mb-8 gap-4"
           >
-            <div className="inline-flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-emerald-500/20 to-teal-500/20 backdrop-blur-sm rounded-full border border-emerald-400/30">
+            {/* Status Badge */}
+            <div className={`inline-flex items-center gap-3 px-6 py-3 backdrop-blur-sm rounded-full border ${
+              status === 'expired' 
+                ? 'bg-red-500/20 border-red-400/30' 
+                : status === 'expiring'
+                ? 'bg-amber-500/20 border-amber-400/30'
+                : 'bg-gradient-to-r from-emerald-500/20 to-teal-500/20 border-emerald-400/30'
+            }`}>
               <div className="relative">
-                <div className="w-3 h-3 bg-emerald-400 rounded-full animate-pulse" />
-                <div className="absolute inset-0 w-3 h-3 bg-emerald-400 rounded-full animate-ping" />
+                <div className={`w-3 h-3 rounded-full animate-pulse ${
+                  status === 'expired' ? 'bg-red-400' : status === 'expiring' ? 'bg-amber-400' : 'bg-emerald-400'
+                }`} />
+                {status === 'active' && <div className="absolute inset-0 w-3 h-3 bg-emerald-400 rounded-full animate-ping" />}
               </div>
-              <Rocket className="w-4 h-4 text-emerald-400 animate-pulse" />
-              <span className="text-sm font-bold text-emerald-300 tracking-wide">ACTIVE MEAL PLAN</span>
+              <Rocket className={`w-4 h-4 animate-pulse ${
+                 status === 'expired' ? 'text-red-400' : status === 'expiring' ? 'text-amber-400' : 'text-emerald-400'
+              }`} />
+              <span className={`text-sm font-bold tracking-wide ${
+                 status === 'expired' ? 'text-red-300' : status === 'expiring' ? 'text-amber-300' : 'text-emerald-300'
+              }`}>
+                {status === 'expired' ? 'PLAN EXPIRED' : status === 'expiring' ? 'EXPIRING SOON' : 'ACTIVE MEAL PLAN'}
+              </span>
             </div>
+
+            {/* Expiring/Expired Alert Banner */}
+            {status !== 'active' && (
+               <motion.div 
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className={`px-4 py-2 rounded-lg text-sm font-medium ${
+                  status === 'expired' ? 'bg-red-500/10 text-red-200 border border-red-500/20' : 'bg-amber-500/10 text-amber-200 border border-amber-500/20'
+                }`}
+               >
+                 {status === 'expired' 
+                   ? "This plan has ended. Time to create a new one!" 
+                   : `Heads up! Only ${daysRemaining} day${daysRemaining !== 1 ? 's' : ''} left.`}
+               </motion.div>
+            )}
           </motion.div>
 
           {/* Main Header */}
@@ -89,7 +140,9 @@ const MealPlanStatusCard = ({ hasMealPlan, mealPlan, meals }: Props) => {
               </span>
             </h1>
             <p className="text-slate-300 text-xl max-w-2xl mx-auto leading-relaxed">
-              Perfectly crafted meal plan designed to fuel your success
+              {status === 'expired' 
+                ? "Your previous plan was a success! Ready for the next chapter?" 
+                : `Day ${Math.min(daysPassed, mealPlan.duration)} of ${mealPlan.duration} • Keep up the great work!`}
             </p>
           </motion.div>
 
@@ -113,8 +166,17 @@ const MealPlanStatusCard = ({ hasMealPlan, mealPlan, meals }: Props) => {
                   </div>
                   <Target className="w-5 h-5 text-emerald-400 opacity-60" />
                 </div>
-                <div className="text-4xl font-black text-white mb-2">{mealPlan.duration}</div>
-                <div className="text-slate-400 font-semibold">Days Planned</div>
+                <div className="text-4xl font-black text-white mb-2">
+                  {status === 'expired' ? 0 : daysRemaining}
+                </div>
+                <div className="text-slate-400 font-semibold">Days Remaining</div>
+                {/* Progress Bar */}
+                <div className="w-full h-1.5 bg-white/10 rounded-full mt-3 overflow-hidden">
+                  <div 
+                    className={`h-full rounded-full ${status === 'expired' ? 'bg-red-500' : 'bg-emerald-400'}`}
+                    style={{ width: `${status === 'expired' ? 100 : progressPercent}%` }} 
+                  />
+                </div>
               </div>
             </motion.div>
 
