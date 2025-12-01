@@ -300,6 +300,15 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
   const currentTheme = theme === 'system' ? systemTheme : theme
   const isDark = currentTheme === 'dark'
 
+  // Clean message content by removing UI data markers
+  const cleanContent = useMemo(() => {
+    if (!message?.content) return '';
+    return message.content
+      .replace(/<!-- UI_DATA_START:[\s\S]*?:UI_DATA_END -->/g, '')
+      .replace(/\[UI_METADATA:[^\]]+\]/g, '')
+      .trim();
+  }, [message?.content]);
+
   // Extract UI data from either legacy .ui property, embedded content, or toolInvocations
   const uiData = useMemo(() => {
     if (!message) return null;
@@ -578,7 +587,7 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
   const handleCopy = async () => {
     if (!message?.content) return
     try {
-      await navigator.clipboard.writeText(message.content)
+      await navigator.clipboard.writeText(cleanContent)
       setCopied(true)
       toast({
         title: 'Copied to clipboard',
@@ -662,7 +671,7 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
                     "prose-li:marker:text-primary/50",
                     "dark:prose-invert"
                   )}>
-                  <MarkdownContent content={message.content} isDark={isDark} />
+                  <MarkdownContent content={cleanContent} isDark={isDark} />
                 </div>
                 </div>
               ) : (
@@ -675,7 +684,7 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
                   "text-[15px] sm:text-base leading-relaxed tracking-wide",
                 )}>
                   <p className="whitespace-pre-wrap break-words font-medium">
-                    {message.content}
+                    {cleanContent}
                   </p>
                 </div>
               )}

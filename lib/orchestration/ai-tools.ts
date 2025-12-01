@@ -224,39 +224,57 @@ export const analyzeNutrition = tool({
                 type = 'recipe';
                 itemsToAnalyze.push(recipeName);
             } else {
-                // Try to find from context
-                const lastMealPlan = context?.messages?.findLast((m: any) =>
+                // Try to find from context (messages OR lastToolResult)
+                // @ts-ignore
+                const messages = (options as any)?.messages || context?.messages;
+
+                // 1. Check lastToolResult (Most reliable for immediate follow-ups)
+                const lastMealPlan =
+                    context?.lastToolResult?.generateMealPlan?.data?.mealPlan ||
+                    context?.lastToolResult?.modifyMealPlan?.data?.mealPlan ||
+                    context?.lastToolResult?.swapMeal?.data?.mealPlan;
+
+                const lastRecipe = context?.lastToolResult?.generateMealRecipe?.data?.recipe;
+
+                const lastGroceryList = context?.lastToolResult?.generateGroceryList?.data?.groceryList;
+
+                // 2. Fallback to checking messages if no lastToolResult
+                const msgMealPlan = !lastMealPlan ? messages?.findLast((m: any) =>
                     m.role === 'assistant' &&
                     m.toolInvocations?.some((t: any) => t.toolName === 'generateMealPlan' && t.result?.success)
-                )?.toolInvocations?.find((t: any) => t.toolName === 'generateMealPlan')?.result?.mealPlan;
+                )?.toolInvocations?.find((t: any) => t.toolName === 'generateMealPlan')?.result?.mealPlan : null;
 
-                const lastRecipe = context?.messages?.findLast((m: any) =>
+                const msgRecipe = !lastRecipe ? messages?.findLast((m: any) =>
                     m.role === 'assistant' &&
                     m.toolInvocations?.some((t: any) => t.toolName === 'generateMealRecipe' && t.result?.success)
-                )?.toolInvocations?.find((t: any) => t.toolName === 'generateMealRecipe')?.result?.recipe;
+                )?.toolInvocations?.find((t: any) => t.toolName === 'generateMealRecipe')?.result?.recipe : null;
 
-                const lastGroceryList = context?.messages?.findLast((m: any) =>
+                const msgGroceryList = !lastGroceryList ? messages?.findLast((m: any) =>
                     m.role === 'assistant' &&
                     m.toolInvocations?.some((t: any) => t.toolName === 'generateGroceryList' && t.result?.success)
-                )?.toolInvocations?.find((t: any) => t.toolName === 'generateGroceryList')?.result?.groceryList;
+                )?.toolInvocations?.find((t: any) => t.toolName === 'generateGroceryList')?.result?.groceryList : null;
 
-                if (lastMealPlan) {
-                    title = `Meal Plan (${lastMealPlan.days.length} Days)`;
+                const activeMealPlan = lastMealPlan || msgMealPlan;
+                const activeRecipe = lastRecipe || msgRecipe;
+                const activeGroceryList = lastGroceryList || msgGroceryList;
+
+                if (activeMealPlan) {
+                    title = `Meal Plan (${activeMealPlan.days.length} Days)`;
                     type = 'plan';
-                    lastMealPlan.days.forEach((d: any) => {
+                    activeMealPlan.days.forEach((d: any) => {
                         d.meals.forEach((m: any) => {
                             itemsToAnalyze.push(`${m.name} (${m.ingredients.join(', ')})`);
                         });
                     });
-                } else if (lastRecipe) {
-                    title = lastRecipe.name;
+                } else if (activeRecipe) {
+                    title = activeRecipe.name;
                     type = 'recipe';
-                    itemsToAnalyze.push(...lastRecipe.ingredients);
-                } else if (lastGroceryList) {
+                    itemsToAnalyze.push(...activeRecipe.ingredients);
+                } else if (activeGroceryList) {
                     title = "Grocery List";
                     type = 'plan';
-                    if (Array.isArray(lastGroceryList.items)) {
-                        lastGroceryList.items.forEach((item: any) => {
+                    if (Array.isArray(activeGroceryList.items)) {
+                        activeGroceryList.items.forEach((item: any) => {
                             if (typeof item === 'string') {
                                 itemsToAnalyze.push(item);
                             } else {
