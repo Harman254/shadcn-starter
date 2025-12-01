@@ -673,6 +673,14 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
                   )}>
                   <MarkdownContent content={cleanContent} isDark={isDark} />
                 </div>
+                {/* Timestamp for Assistant */}
+                {isMounted && message?.timestamp && formattedTime && (
+                  <div className="flex justify-end mt-2 select-none">
+                    <span className="text-[10px] sm:text-xs text-muted-foreground/60 font-medium">
+                      {formattedTime}
+                    </span>
+                  </div>
+                )}
                 </div>
               ) : (
 
@@ -686,6 +694,27 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
                   <p className="whitespace-pre-wrap break-words font-medium">
                     {cleanContent}
                   </p>
+                  {/* Timestamp & Status for User */}
+                  <div className="flex items-center justify-end gap-1.5 mt-1.5 select-none">
+                    {isMounted && message?.timestamp && formattedTime && (
+                      <span className="text-[10px] sm:text-xs text-primary-foreground/70 font-medium">
+                        {formattedTime}
+                      </span>
+                    )}
+                    {!isAssistant && message?.status && (
+                      <div className="flex items-center">
+                        {message.status === 'sending' && (
+                          <Clock className="h-3 w-3 text-primary-foreground/70 animate-pulse" aria-label="Sending" />
+                        )}
+                        {message.status === 'sent' && (
+                          <Check className="h-3 w-3 text-primary-foreground/70" aria-label="Sent" />
+                        )}
+                        {message.status === 'failed' && (
+                          <AlertCircle className="h-3 w-3 text-destructive-foreground" aria-label="Failed to send" />
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
             {message && (
@@ -710,30 +739,6 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
             )}
           </div>
             </div>
-          </div>
-          
-          <div className={cn(
-            "flex items-center gap-2 mt-2",
-            !isAssistant && "justify-end"
-          )}>
-            {!isAssistant && message?.status && (
-              <div className="flex items-center gap-1">
-                {message.status === 'sending' && (
-                  <Clock className="h-3 w-3 text-muted-foreground/60 animate-pulse" aria-label="Sending" />
-                )}
-                {message.status === 'sent' && (
-                  <Check className="h-3 w-3 text-primary" aria-label="Sent" />
-                )}
-                {message.status === 'failed' && (
-                  <AlertCircle className="h-3 w-3 text-destructive" aria-label="Failed to send" />
-                )}
-              </div>
-            )}
-          {isMounted && message?.timestamp && formattedTime && (
-              <span className={cn("text-xs text-muted-foreground/60")}>
-              {formattedTime}
-            </span>
-            )}
           </div>
           
           {/* Quick Actions - Show after assistant messages, aligned with message content */}

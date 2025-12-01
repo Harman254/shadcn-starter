@@ -42,22 +42,26 @@ export function useOfflineChat({
           return;
         }
 
-        const messages = session.messages;
+        // Check if message already exists (it should from optimistic UI)
+        const existingMessage = session.messages.find(m => m.id === queuedMessage.id);
 
-        // Create user message from queued content
-        const userMessage: Message = {
-          id: queuedMessage.id,
-          role: 'user',
-          content: queuedMessage.content,
-          timestamp: new Date(queuedMessage.timestamp),
-          status: 'sending',
-        };
+        if (!existingMessage) {
+          // If missing (e.g. page reload cleared non-persisted state?), add it back
+          const userMessage: Message = {
+            id: queuedMessage.id,
+            role: 'user',
+            content: queuedMessage.content,
+            timestamp: new Date(queuedMessage.timestamp),
+            status: 'sending',
+          };
+          addMessage(sessionId, userMessage);
+        }
 
-        // Add user message to store
-        addMessage(sessionId, userMessage);
+        // Get fresh messages list including the user message
+        const currentMessages = getCurrentSession()?.messages || [];
 
         // Get AI response
-        const response = await getResponse(chatType, [...messages, userMessage]);
+        const response = await getResponse(chatType, currentMessages);
         const assistantMessage: Message = {
           ...response,
           timestamp: new Date(),
@@ -66,8 +70,8 @@ export function useOfflineChat({
         // Add assistant message
         addMessage(sessionId, assistantMessage);
 
-        // Update status to sent
-        updateMessageStatus(sessionId, userMessage.id, 'sent');
+        // Update user message status to sent
+        updateMessageStatus(sessionId, queuedMessage.id, 'sent');
 
         // Notify callback
         onMessageSynced?.(queuedMessage.id);
@@ -75,6 +79,10 @@ export function useOfflineChat({
         logger.log('[OfflineChat] ✅ Successfully synced message:', queuedMessage.id);
       } catch (error) {
         logger.error('[OfflineChat] Failed to sync message:', error);
+
+        // Update status to failed if possible
+        updateMessageStatus(sessionId, queuedMessage.id, 'failed');
+
         throw error; // Re-throw to let queue handle retry logic
       }
     };
@@ -95,11 +103,23 @@ export function useOfflineChat({
       if (!sessionId) return null;
 
       const messageId = offlineQueue.enqueue(sessionId, content);
+
+      // Optimistic UI: Add message to store immediately
+      const optimisticMessage: Message = {
+        id: messageId,
+        role: 'user',
+        content,
+        timestamp: new Date(),
+        status: 'sending',
+      };
+
+      addMessage(sessionId, optimisticMessage);
+
       onMessageQueued?.(messageId);
-      logger.log('[OfflineChat] Message queued:', messageId);
+      logger.log('[OfflineChat] Message queued and added to store:', messageId);
       return messageId;
     },
-    [sessionId, onMessageQueued]
+    [sessionId, onMessageQueued, addMessage]
   );
 
   /**

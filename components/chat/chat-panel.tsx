@@ -263,45 +263,50 @@ setMessages(storeMessages);
 
   return (
     <div className="flex flex-col h-full w-full relative">
-      <div className="flex-1 overflow-y-auto overflow-x-hidden pb-32 sm:pb-36">
-        {messages.length === 0 ? (
-          <EmptyScreen onExampleClick={(val) => {
-             if (!isAuthenticated) {
-                openAuthModal('sign-in');
-                return;
-             }
-             const messageId = crypto.randomUUID();
-             const userMsg: Message = {
-                id: messageId,
-                role: 'user',
-                content: val,
-                timestamp: new Date(),
-             };
-             isUserSubmittingRef.current = true;
-             addMessage(finalSessionId, userMsg);
-             append({ 
-                id: messageId,
-                role: 'user', 
-                content: val 
-             });
-          }} />
-        ) : (
-          <ChatMessages 
-            messages={messages} 
-            isLoading={isLoading}
-            data={data}
-          />
-        )}
+      <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0">
+        <div className="max-w-3xl mx-auto w-full pb-32 sm:pb-40 px-4">
+          {messages.length === 0 ? (
+            <EmptyScreen onExampleClick={(val) => {
+               if (!isAuthenticated) {
+                  openAuthModal('sign-in');
+                  return;
+               }
+               const messageId = crypto.randomUUID();
+               const userMsg: Message = {
+                  id: messageId,
+                  role: 'user',
+                  content: val,
+                  timestamp: new Date(),
+               };
+               isUserSubmittingRef.current = true;
+               addMessage(finalSessionId, userMsg);
+               append({ 
+                  id: messageId,
+                  role: 'user', 
+                  content: val 
+               });
+            }} />
+          ) : (
+            <ChatMessages 
+              messages={messages} 
+              isLoading={isLoading}
+              data={data}
+            />
+          )}
+        </div>
       </div>
       
-      <div className="fixed bottom-0 left-0 right-0 z-20 bg-background/95 backdrop-blur-md border-t border-border/50 shadow-lg">
-          <ChatInput 
-            onSubmit={handleManualSubmit}
-            isLoading={isLoading}
-            disabled={!isAuthenticated}
-            input={input}
-            handleInputChange={handleInputChange}
-          />
+      {/* Floating Input Container */}
+      <div className="fixed bottom-0 right-0 z-50 px-4 pb-4 sm:pb-6 pointer-events-none left-0 md:left-[260px]">
+          <div className="max-w-3xl mx-auto w-full pointer-events-auto">
+            <ChatInput 
+              onSubmit={handleManualSubmit}
+              isLoading={isLoading}
+              disabled={!isAuthenticated}
+              input={input}
+              handleInputChange={handleInputChange}
+            />
+          </div>
       </div>
     </div>
   );
