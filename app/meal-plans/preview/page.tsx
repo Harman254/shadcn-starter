@@ -148,7 +148,7 @@ export default function PreviewMealPlanPage() {
           >
             <AlertCircle className="h-4 w-4 text-blue-500 shrink-0 mt-0.5" />
             <p className="text-xs sm:text-sm text-blue-700 dark:text-blue-300">
-              This is a preview. Go back and click <span className="font-semibold">"Save Meal Plan"</span> to save permanently and unlock full features.
+              This is a preview. Go back and click <span className="font-semibold">&quot;Save Meal Plan&quot;</span> to save permanently and unlock full features.
             </p>
           </motion.div>
         </motion.div>
