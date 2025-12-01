@@ -854,6 +854,17 @@ export function ChatHistoryClient({ chatType, initialSessions = [], onSessionSel
     }
   };
 
+  // Group sessions by date
+  const groupedSessions = useMemo(() => {
+    const groups: Record<string, SessionData[]> = {};
+    displaySessions.forEach(session => {
+      const group = getDateGroup(new Date(session.updatedAt));
+      if (!groups[group]) groups[group] = [];
+      groups[group].push(session);
+    });
+    return groups;
+  }, [displaySessions]);
+
   // Show auth prompt if not authenticated
   if (!isAuthenticated && !isAuthPending && isMounted) {
     return (
@@ -890,17 +901,6 @@ export function ChatHistoryClient({ chatType, initialSessions = [], onSessionSel
       </div>
     );
   }
-
-  // Group sessions by date
-  const groupedSessions = useMemo(() => {
-    const groups: Record<string, SessionData[]> = {};
-    displaySessions.forEach(session => {
-      const group = getDateGroup(new Date(session.updatedAt));
-      if (!groups[group]) groups[group] = [];
-      groups[group].push(session);
-    });
-    return groups;
-  }, [displaySessions]);
 
   const groupOrder = ['Today', 'Yesterday', 'Previous 7 Days', 'Older'];
 
