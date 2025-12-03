@@ -149,7 +149,7 @@ const Index = () => {
           {/* Nutrition Breakdown */}
           <div className="rounded-2xl bg-card p-6 shadow-card">
             <h2 className="text-lg font-semibold">Nutrition Breakdown</h2>
-            <p className="text-sm text-muted-foreground">Today's macros distribution</p>
+            <p className="text-sm text-muted-foreground">Today&apos;s macros distribution</p>
             <NutritionDonut
               data={nutritionData}
               centerLabel="Total"
@@ -174,7 +174,7 @@ const Index = () => {
           <div className="rounded-2xl bg-card p-6 shadow-card">
             <div className="mb-4">
               <h2 className="text-lg font-semibold">Meal Plan Progress</h2>
-              <p className="text-sm text-muted-foreground">This week's adherence</p>
+              <p className="text-sm text-muted-foreground">This week&apos;s adherence</p>
             </div>
             <MealPlanProgress
               completed={14}
