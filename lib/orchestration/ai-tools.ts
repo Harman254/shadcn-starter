@@ -177,8 +177,13 @@ export const analyzeNutrition = tool({
         mealPlanId: z.string().optional().describe('The ID of the meal plan to analyze.'),
         recipeName: z.string().optional().describe('The name of the recipe to analyze.'),
         groceryListId: z.string().optional().describe('The ID of the grocery list to analyze.'),
+        chatMessages: z.array(z.object({
+            role: z.enum(['user', 'assistant']),
+            content: z.string(),
+            toolInvocations: z.array(z.any()).optional(),
+        })).optional().describe('Recent chat messages to understand context and find previous meal plans or lists'),
     }),
-    execute: async ({ query, mealPlanId, recipeName, groceryListId }, options): Promise<ToolResult> => {
+    execute: async ({ query, mealPlanId, recipeName, groceryListId, chatMessages }, options): Promise<ToolResult> => {
         try {
             console.log(`[analyzeNutrition] 🍎 Analyzing nutrition...`);
 
@@ -199,13 +204,11 @@ export const analyzeNutrition = tool({
                 });
 
                 if (mealPlan) {
-                    title = `Meal Plan(${mealPlan.days.length
-                        } Days)`;
+                    title = `Meal Plan(${mealPlan.days.length} Days)`;
                     type = 'plan';
                     mealPlan.days.forEach((d: any) => {
                         d.meals.forEach((m: any) => {
-                            itemsToAnalyze.push(`${m.name
-                                }(${m.ingredients.join(', ')})`);
+                            itemsToAnalyze.push(`${m.name}(${m.ingredients.join(', ')})`);
                         });
                     });
                 }
@@ -233,8 +236,11 @@ export const analyzeNutrition = tool({
                 itemsToAnalyze.push(recipeName);
             } else {
                 // Try to find from context (messages OR lastToolResult)
+                // Use explicit chatMessages param first, then fallback to options
                 // @ts-ignore
-                const messages = (options as any)?.messages || context?.messages;
+                const messages = chatMessages || (options as any)?.messages || context?.messages;
+
+                console.log(`[analyzeNutrition] 🔍 Searching context in ${messages?.length || 0} messages...`);
 
                 // 1. Check lastToolResult (Most reliable for immediate follow-ups)
                 const lastMealPlan =
@@ -247,26 +253,34 @@ export const analyzeNutrition = tool({
                 const lastGroceryList = context?.lastToolResult?.generateGroceryList?.data?.groceryList;
 
                 // 2. Fallback to checking messages if no lastToolResult
-                const msgMealPlan = !lastMealPlan ? messages?.findLast((m: any) =>
-                    m.role === 'assistant' &&
-                    m.toolInvocations?.some((t: any) => t.toolName === 'generateMealPlan' && t.result?.success)
-                )?.toolInvocations?.find((t: any) => t.toolName === 'generateMealPlan')?.result?.mealPlan : null;
+                // Helper to safely check tool invocations
+                const findToolResult = (toolName: string) => {
+                    if (!messages) return null;
+                    // Search backwards
+                    for (let i = messages.length - 1; i >= 0; i--) {
+                        const m = messages[i];
+                        if (m.role === 'assistant' && m.toolInvocations) {
+                            const invocation = m.toolInvocations.find((t: any) => t.toolName === toolName && (t.result?.success || t.state === 'result'));
+                            if (invocation?.result) {
+                                // Handle both direct result and result.data wrapper
+                                return invocation.result[toolName === 'generateMealRecipe' ? 'recipe' : toolName === 'generateGroceryList' ? 'groceryList' : 'mealPlan'] ||
+                                    invocation.result.data?.[toolName === 'generateMealRecipe' ? 'recipe' : toolName === 'generateGroceryList' ? 'groceryList' : 'mealPlan'];
+                            }
+                        }
+                    }
+                    return null;
+                };
 
-                const msgRecipe = !lastRecipe ? messages?.findLast((m: any) =>
-                    m.role === 'assistant' &&
-                    m.toolInvocations?.some((t: any) => t.toolName === 'generateMealRecipe' && t.result?.success)
-                )?.toolInvocations?.find((t: any) => t.toolName === 'generateMealRecipe')?.result?.recipe : null;
-
-                const msgGroceryList = !lastGroceryList ? messages?.findLast((m: any) =>
-                    m.role === 'assistant' &&
-                    m.toolInvocations?.some((t: any) => t.toolName === 'generateGroceryList' && t.result?.success)
-                )?.toolInvocations?.find((t: any) => t.toolName === 'generateGroceryList')?.result?.groceryList : null;
+                const msgMealPlan = !lastMealPlan ? findToolResult('generateMealPlan') : null;
+                const msgRecipe = !lastRecipe ? findToolResult('generateMealRecipe') : null;
+                const msgGroceryList = !lastGroceryList ? findToolResult('generateGroceryList') : null;
 
                 const activeMealPlan = lastMealPlan || msgMealPlan;
                 const activeRecipe = lastRecipe || msgRecipe;
                 const activeGroceryList = lastGroceryList || msgGroceryList;
 
                 if (activeMealPlan) {
+                    console.log('[analyzeNutrition] Found Meal Plan in context');
                     title = `Meal Plan(${activeMealPlan.days.length} Days)`;
                     type = 'plan';
                     activeMealPlan.days.forEach((d: any) => {
@@ -275,10 +289,12 @@ export const analyzeNutrition = tool({
                         });
                     });
                 } else if (activeRecipe) {
+                    console.log('[analyzeNutrition] Found Recipe in context');
                     title = activeRecipe.name;
                     type = 'recipe';
                     itemsToAnalyze.push(...activeRecipe.ingredients);
                 } else if (activeGroceryList) {
+                    console.log('[analyzeNutrition] Found Grocery List in context');
                     title = "Grocery List";
                     type = 'plan';
                     if (Array.isArray(activeGroceryList.items)) {
@@ -388,14 +404,21 @@ export const getGroceryPricing = tool({
         mealPlanId: z.string().optional().describe('The ID of the meal plan. If not provided, will use context.'),
         city: z.string().optional().describe('User city for local pricing'),
         country: z.string().optional().describe('User country'),
+        chatMessages: z.array(z.object({
+            role: z.enum(['user', 'assistant']),
+            content: z.string(),
+            toolInvocations: z.array(z.any()).optional(),
+        })).optional().describe('Recent chat messages to understand context'),
     }),
-    execute: async ({ mealPlanId, city, country }, options): Promise<ToolResult> => {
+    execute: async ({ mealPlanId, city, country, chatMessages }, options): Promise<ToolResult> => {
         try {
             console.log(`[getGroceryPricing] 💰 Estimating prices...`);
 
             // 1. Get Context
             // @ts-ignore
             const context = (options as any)?.context;
+            // @ts-ignore
+            const messages = chatMessages || (options as any)?.messages || context?.messages;
 
             let mealPlan;
             let recipe;
@@ -408,13 +431,31 @@ export const getGroceryPricing = tool({
                     include: { days: { include: { meals: true } } }
                 });
             } else {
+                // Helper to safely check tool invocations
+                const findToolResult = (toolName: string) => {
+                    if (!messages) return null;
+                    for (let i = messages.length - 1; i >= 0; i--) {
+                        const m = messages[i];
+                        if (m.role === 'assistant' && m.toolInvocations) {
+                            const invocation = m.toolInvocations.find((t: any) => t.toolName === toolName && (t.result?.success || t.state === 'result'));
+                            if (invocation?.result) {
+                                return invocation.result[toolName === 'generateMealRecipe' ? 'recipe' : 'mealPlan'] ||
+                                    invocation.result.data?.[toolName === 'generateMealRecipe' ? 'recipe' : 'mealPlan'];
+                            }
+                        }
+                    }
+                    return null;
+                };
+
                 mealPlan =
                     context?.lastToolResult?.generateMealPlan?.data?.mealPlan ||
                     context?.lastToolResult?.modifyMealPlan?.data?.mealPlan ||
-                    context?.lastToolResult?.swapMeal?.data?.mealPlan;
+                    context?.lastToolResult?.swapMeal?.data?.mealPlan ||
+                    findToolResult('generateMealPlan');
 
                 recipe =
-                    context?.lastToolResult?.generateMealRecipe?.data?.recipe;
+                    context?.lastToolResult?.generateMealRecipe?.data?.recipe ||
+                    findToolResult('generateMealRecipe');
             }
 
             if (!mealPlan && !recipe) {
@@ -528,8 +569,13 @@ export const generateGroceryList = tool({
         }).optional().describe('Meal plan object directly from context (if not saved yet or source is recipe)'),
         recipeName: z.string().optional().describe('Name of the recipe to create grocery list for (if source is recipe)'),
         ingredients: z.array(z.string()).optional().describe('List of ingredients from the recipe (if source is recipe)'),
+        chatMessages: z.array(z.object({
+            role: z.enum(['user', 'assistant']),
+            content: z.string(),
+            toolInvocations: z.array(z.any()).optional(),
+        })).optional().describe('Recent chat messages to understand context'),
     }),
-    execute: async ({ source, mealPlanId, mealPlan, recipeName, ingredients, fromContext }, options): Promise<ToolResult> => {
+    execute: async ({ source, mealPlanId, mealPlan, recipeName, ingredients, fromContext, chatMessages }, options): Promise<ToolResult> => {
         try {
             console.log('[generateGroceryList] 🛒 Source:', source);
 
@@ -579,10 +625,30 @@ export const generateGroceryList = tool({
                 console.log('[generateGroceryList] 🔍 Looking for meal plan in context...');
                 // @ts-ignore - context is injected by ToolExecutor via options
                 const context = (options as any)?.context;
+                // @ts-ignore
+                const messages = chatMessages || (options as any)?.messages || context?.messages;
+
+                // Helper to safely check tool invocations
+                const findToolResult = (toolName: string) => {
+                    if (!messages) return null;
+                    for (let i = messages.length - 1; i >= 0; i--) {
+                        const m = messages[i];
+                        if (m.role === 'assistant' && m.toolInvocations) {
+                            const invocation = m.toolInvocations.find((t: any) => t.toolName === toolName && (t.result?.success || t.state === 'result'));
+                            if (invocation?.result) {
+                                return invocation.result[toolName === 'generateMealRecipe' ? 'recipe' : 'mealPlan'] ||
+                                    invocation.result.data?.[toolName === 'generateMealRecipe' ? 'recipe' : 'mealPlan'];
+                            }
+                        }
+                    }
+                    return null;
+                };
+
                 const lastMealPlan =
                     context?.lastToolResult?.generateMealPlan?.data?.mealPlan ||
                     context?.lastToolResult?.modifyMealPlan?.data?.mealPlan ||
-                    context?.lastToolResult?.swapMeal?.data?.mealPlan;
+                    context?.lastToolResult?.swapMeal?.data?.mealPlan ||
+                    findToolResult('generateMealPlan');
 
                 if (lastMealPlan) {
                     console.log('[generateGroceryList] 💡 Found meal plan in conversation context!');
@@ -598,7 +664,28 @@ export const generateGroceryList = tool({
                 console.log('[generateGroceryList] 🔍 Looking for recipe in context...');
                 // @ts-ignore
                 const context = (options as any)?.context;
-                const lastRecipe = context?.lastToolResult?.generateMealRecipe?.data?.recipe;
+                // @ts-ignore
+                const messages = chatMessages || (options as any)?.messages || context?.messages;
+
+                // Helper to safely check tool invocations
+                const findToolResult = (toolName: string) => {
+                    if (!messages) return null;
+                    for (let i = messages.length - 1; i >= 0; i--) {
+                        const m = messages[i];
+                        if (m.role === 'assistant' && m.toolInvocations) {
+                            const invocation = m.toolInvocations.find((t: any) => t.toolName === toolName && (t.result?.success || t.state === 'result'));
+                            if (invocation?.result) {
+                                return invocation.result[toolName === 'generateMealRecipe' ? 'recipe' : 'mealPlan'] ||
+                                    invocation.result.data?.[toolName === 'generateMealRecipe' ? 'recipe' : 'mealPlan'];
+                            }
+                        }
+                    }
+                    return null;
+                };
+
+                const lastRecipe =
+                    context?.lastToolResult?.generateMealRecipe?.data?.recipe ||
+                    findToolResult('generateMealRecipe');
 
                 if (lastRecipe) {
                     console.log('[generateGroceryList] 💡 Found recipe in conversation context!');
@@ -628,7 +715,9 @@ export const generateGroceryList = tool({
             const { z } = await import('zod');
 
             const result = await generateObject({
-                model: google('gemini-2.0-flash'),
+                model: google('gemini-2.0-flash', {
+                    useSearchGrounding: true, // Enable search for real local stores
+                }),
                 temperature: 0.2,
                 schema: z.object({
                     groceryList: z.array(z.object({
@@ -641,23 +730,24 @@ export const generateGroceryList = tool({
                     })),
                     locationInfo: z.object({
                         currencySymbol: z.string(),
-                        localStores: z.array(z.string()),
+                        localStores: z.array(z.string()).describe('Real grocery store names with specific locations near the user, e.g., "Naivas Westlands", "Carrefour Two Rivers"'),
                     }),
                 }),
-                prompt: `You are a smart grocery assistant.Convert this list of ingredients into a consolidated shopping list.
+                prompt: `You are a smart grocery assistant. Convert this list of ingredients into a consolidated shopping list.
 
-## USER LOCATION
-    - City: ${locationData.city || 'San Francisco'}
+## USER LOCATION (CRITICAL - Use search to find REAL stores here)
+- City: ${locationData.city || 'San Francisco'}
+- Country: ${locationData.country || 'US'}
 - Currency: ${locationData.currencySymbol || '$'}
 
 ## INGREDIENTS TO PROCESS
 ${consolidatedListPrompt}
 
 ## INSTRUCTIONS
-1. ** Consolidate:** Combine similar items(e.g., "2 onions" and "chopped onion" -> "Onions", Quantity: "3").
-2. ** Categorize:** Group by aisle(Produce, Dairy, Meat, Pantry, Spices).
-3. ** Price:** Estimate TOTAL price for the quantity in ${locationData.currencySymbol || '$'}.
-4. ** Stores:** Suggest stores in ${locationData.city || 'San Francisco'}.
+1. **Consolidate:** Combine similar items (e.g., "2 onions" and "chopped onion" -> "Onions", Quantity: "3").
+2. **Categorize:** Group by aisle (Produce, Dairy, Meat, Pantry, Spices).
+3. **Price:** Use search to estimate REAL local prices in ${locationData.city || 'San Francisco'} using ${locationData.currencySymbol || '$'}.
+4. **Local Stores (CRITICAL):** You MUST search for and return 4-6 REAL grocery stores that exist in ${locationData.city || 'San Francisco'}, ${locationData.country || 'US'}. Include specific store names with their area/location.
 
 Return JSON only.`,
             });
@@ -699,10 +789,12 @@ Return JSON only.`,
 
             return successResponse(
                 {
-                    id: uiMetadata.groceryList.id,
-                    items: result.object.groceryList,
-                    locationInfo: result.object.locationInfo,
-                    totalEstimatedCost: `${currency}${totalCost.toFixed(2)} `
+                    groceryList: {
+                        id: uiMetadata.groceryList.id,
+                        items: result.object.groceryList,
+                        locationInfo: result.object.locationInfo,
+                        totalEstimatedCost: `${currency}${totalCost.toFixed(2)} `
+                    }
                 },
                 `✅ Generated and saved grocery list for ${planTitle}! ${result.object.groceryList.length} items, approx ${currency}${totalCost.toFixed(2)}.[UI_METADATA: ${uiMetadataEncoded}]`
             );
@@ -1189,6 +1281,379 @@ Return valid JSON.`,
     },
 });
 
+// ============================================================================
+// INGREDIENT SUBSTITUTIONS TOOL
+// ============================================================================
+
+export const suggestIngredientSubstitutions = tool({
+    description: 'Suggest ingredient substitutions for dietary restrictions, allergies, preferences, availability, or health goals. Use when user asks to "replace", "substitute", "swap", or "alternative for" an ingredient.',
+    parameters: z.object({
+        ingredient: z.string().describe('The ingredient to substitute (e.g., "eggs", "butter", "flour")'),
+        reason: z.enum(['allergy', 'vegan', 'vegetarian', 'healthier', 'cheaper', 'unavailable', 'preference', 'keto', 'low-carb', 'gluten-free']).describe('Why the substitution is needed'),
+        recipeContext: z.string().optional().describe('The recipe or dish context (e.g., "brownies", "stir fry") to ensure substitution works'),
+        quantity: z.string().optional().describe('Original quantity to calculate substitution ratios'),
+    }),
+    execute: async ({ ingredient, reason, recipeContext, quantity }): Promise<ToolResult> => {
+        try {
+            console.log(`[suggestIngredientSubstitutions] 🔄 Finding substitutes for "${ingredient}" (${reason})`);
+
+            const { generateObject } = await import('ai');
+            const { google } = await import('@ai-sdk/google');
+            const { z } = await import('zod');
+
+            const result = await generateObject({
+                model: google('gemini-2.0-flash', {
+                    useSearchGrounding: true,
+                }),
+                temperature: 0.3,
+                schema: z.object({
+                    originalIngredient: z.string(),
+                    substitutions: z.array(z.object({
+                        name: z.string().describe('Name of the substitute'),
+                        ratio: z.string().describe('Substitution ratio (e.g., "1:1", "1 egg = 1/4 cup applesauce")'),
+                        notes: z.string().describe('Important notes about using this substitute'),
+                        bestFor: z.array(z.string()).describe('What types of recipes this works best for'),
+                        nutritionChange: z.object({
+                            calories: z.string().optional(),
+                            protein: z.string().optional(),
+                            carbs: z.string().optional(),
+                            fat: z.string().optional(),
+                        }).optional(),
+                        difficulty: z.enum(['easy', 'moderate', 'advanced']),
+                    })),
+                    bestMatch: z.string().describe('The single best substitution for this context'),
+                    tip: z.string().describe('A helpful tip for successful substitution'),
+                }),
+                prompt: `You are a culinary expert specializing in ingredient substitutions.
+
+## SUBSTITUTION REQUEST
+- **Ingredient:** ${ingredient}${quantity ? ` (${quantity})` : ''}
+- **Reason:** ${reason}
+- **Recipe Context:** ${recipeContext || 'General cooking'}
+
+## INSTRUCTIONS
+1. **USE SEARCH:** Find ACCURATE, REAL substitution ratios from trusted culinary sources.
+2. **Provide 3-5 alternatives** ranked by how well they work for this specific context.
+3. **Include ratios:** Be specific (e.g., "1 egg = 3 tbsp aquafaba, whipped").
+4. **Note texture/flavor changes:** Warn about any significant differences.
+5. **Nutrition impact:** Note if the substitute is higher/lower in calories, protein, etc.
+
+Return valid JSON.`,
+            });
+
+            if (!result.object) {
+                throw new Error('Failed to generate substitution suggestions');
+            }
+
+            const uiMetadata = {
+                substitutions: result.object,
+            };
+            const uiMetadataEncoded = Buffer.from(JSON.stringify(uiMetadata)).toString('base64');
+
+            return successResponse(
+                {
+                    ...result.object,
+                },
+                `✅ Found ${result.object.substitutions.length} substitutes for ${ingredient}. Best match: ${result.object.bestMatch}. [UI_METADATA:${uiMetadataEncoded}]`
+            );
+
+        } catch (error) {
+            console.error('[suggestIngredientSubstitutions] Error:', error);
+            return errorResponse('Failed to find ingredient substitutions.', ErrorCode.GENERATION_FAILED, true);
+        }
+    },
+});
+
+// ============================================================================
+// SEASONAL INGREDIENTS TOOL
+// ============================================================================
+
+export const getSeasonalIngredients = tool({
+    description: 'Get seasonal ingredients for the user\'s location. Use when user asks about "what\'s in season", "seasonal produce", or "fresh local ingredients". Also useful for suggesting cheaper, fresher options.',
+    parameters: z.object({
+        category: z.enum(['all', 'fruits', 'vegetables', 'herbs', 'seafood']).default('all').describe('Type of seasonal ingredients to find'),
+        includeRecipes: z.boolean().default(true).describe('Whether to include recipe suggestions using seasonal items'),
+    }),
+    execute: async ({ category, includeRecipes }, options): Promise<ToolResult> => {
+        try {
+            console.log(`[getSeasonalIngredients] 🌿 Finding seasonal ${category}...`);
+
+            // Get user location
+            const { auth } = await import('@/lib/auth');
+            const { headers } = await import('next/headers');
+            const session = await auth.api.getSession({ headers: await headers() });
+
+            let location = { city: 'San Francisco', country: 'US', hemisphere: 'northern' };
+
+            if (session?.user?.id) {
+                const { getLocationDataWithCaching } = await import('@/lib/location');
+                const locationData = await getLocationDataWithCaching(session.user.id, session.session.id);
+                location = {
+                    city: locationData.city || 'San Francisco',
+                    country: locationData.country || 'US',
+                    hemisphere: (locationData as any).latitude && (locationData as any).latitude < 0 ? 'southern' : 'northern'
+                };
+            }
+
+            // Get current month for seasonality
+            const currentMonth = new Date().toLocaleString('en-US', { month: 'long' });
+
+            const { generateObject } = await import('ai');
+            const { google } = await import('@ai-sdk/google');
+            const { z } = await import('zod');
+
+            const result = await generateObject({
+                model: google('gemini-2.0-flash', {
+                    useSearchGrounding: true,
+                }),
+                temperature: 0.4,
+                schema: z.object({
+                    season: z.string().describe('Current season name'),
+                    location: z.string(),
+                    seasonalItems: z.array(z.object({
+                        name: z.string(),
+                        category: z.string(),
+                        peakMonths: z.string(),
+                        priceAdvantage: z.string().describe('e.g., "30% cheaper than off-season"'),
+                        localTip: z.string().optional().describe('Where to find locally or local name'),
+                    })),
+                    recipeSuggestions: z.array(z.object({
+                        name: z.string(),
+                        featuredIngredient: z.string(),
+                        description: z.string(),
+                    })).optional(),
+                    shoppingTip: z.string(),
+                }),
+                prompt: `You are a local produce expert.
+
+## LOCATION & TIME
+- **City:** ${location.city}
+- **Country:** ${location.country}
+- **Hemisphere:** ${location.hemisphere}
+- **Current Month:** ${currentMonth}
+
+## TASK
+Find what ${category === 'all' ? 'produce, fruits, vegetables, and herbs are' : category + ' are'} currently IN SEASON in ${location.city}, ${location.country}.
+
+## INSTRUCTIONS
+1. **USE SEARCH:** Find ACCURATE seasonal produce for this specific location and time of year.
+2. **Include 8-12 seasonal items** that are at peak freshness RIGHT NOW.
+3. **Price advantage:** Note typical savings compared to off-season.
+4. **Local names:** Include local market names if different (e.g., "sukuma wiki" for kale in Kenya).
+${includeRecipes ? '5. **Recipe suggestions:** Include 3 simple recipes using these seasonal items.' : ''}
+
+Return valid JSON.`,
+            });
+
+            if (!result.object) {
+                throw new Error('Failed to get seasonal ingredients');
+            }
+
+            const uiMetadata = {
+                seasonal: result.object,
+            };
+            const uiMetadataEncoded = Buffer.from(JSON.stringify(uiMetadata)).toString('base64');
+
+            return successResponse(
+                {
+                    ...result.object,
+                },
+                `✅ Found ${result.object.seasonalItems.length} seasonal items for ${result.object.season} in ${location.city}! ${result.object.shoppingTip} [UI_METADATA:${uiMetadataEncoded}]`
+            );
+
+        } catch (error) {
+            console.error('[getSeasonalIngredients] Error:', error);
+            return errorResponse('Failed to get seasonal ingredients.', ErrorCode.GENERATION_FAILED, true);
+        }
+    },
+});
+
+// ============================================================================
+// PLAN FROM INVENTORY TOOL
+// ============================================================================
+
+export const planFromInventory = tool({
+    description: 'Generate meal suggestions based on ingredients the user already has. Use when user asks "what can I make with...", "I have X, Y, Z...", or "use up my..." ingredients.',
+    parameters: z.object({
+        ingredients: z.array(z.string()).describe('List of ingredients the user has available'),
+        preferences: z.string().optional().describe('Dietary preferences or restrictions'),
+        mealType: z.enum(['any', 'breakfast', 'lunch', 'dinner', 'snack']).default('any'),
+        maxCookTime: z.number().optional().describe('Maximum cooking time in minutes'),
+    }),
+    execute: async ({ ingredients, preferences, mealType, maxCookTime }): Promise<ToolResult> => {
+        try {
+            console.log(`[planFromInventory] 🏠 Planning with ${ingredients.length} ingredients...`);
+
+            const { generateObject } = await import('ai');
+            const { google } = await import('@ai-sdk/google');
+            const { z } = await import('zod');
+
+            const result = await generateObject({
+                model: google('gemini-2.0-flash', {
+                    useSearchGrounding: true,
+                }),
+                temperature: 0.6,
+                schema: z.object({
+                    possibleMeals: z.array(z.object({
+                        name: z.string(),
+                        description: z.string(),
+                        ingredientsUsed: z.array(z.string()),
+                        additionalNeeded: z.array(z.string()).describe('Ingredients needed but not in inventory'),
+                        cookTime: z.string(),
+                        difficulty: z.enum(['easy', 'medium', 'hard']),
+                        matchScore: z.number().min(0).max(100).describe('How well this uses available ingredients'),
+                    })),
+                    bestMatch: z.object({
+                        name: z.string(),
+                        reason: z.string(),
+                    }),
+                    shoppingListAdditions: z.array(z.string()).describe('Common items to buy to unlock more recipes'),
+                    tip: z.string(),
+                }),
+                prompt: `You are a resourceful home chef.
+
+## AVAILABLE INGREDIENTS
+${ingredients.map(i => `- ${i}`).join('\n')}
+
+## CONSTRAINTS
+- Meal type: ${mealType}
+- Preferences: ${preferences || 'None specified'}
+${maxCookTime ? `- Max cook time: ${maxCookTime} minutes` : ''}
+
+## TASK
+Suggest 4-6 meals that can be made with these ingredients. Prioritize recipes that use MORE of the available ingredients and need FEWER additional items.
+
+## INSTRUCTIONS
+1. **USE SEARCH:** Find REAL recipes that work with these combinations.
+2. **Match score:** Rate how well each recipe uses the available ingredients (100 = uses all, needs nothing else).
+3. **Practical additions:** What 3-5 pantry staples would unlock the most new recipes?
+4. **Be creative:** Think of unexpected but delicious combinations.
+
+Return valid JSON.`,
+            });
+
+            if (!result.object) {
+                throw new Error('Failed to plan from inventory');
+            }
+
+            const uiMetadata = {
+                inventoryPlan: result.object,
+                availableIngredients: ingredients,
+            };
+            const uiMetadataEncoded = Buffer.from(JSON.stringify(uiMetadata)).toString('base64');
+
+            return successResponse(
+                {
+                    ...result.object,
+                },
+                `✅ Found ${result.object.possibleMeals.length} meals you can make! Best match: "${result.object.bestMatch.name}" - ${result.object.bestMatch.reason} [UI_METADATA:${uiMetadataEncoded}]`
+            );
+
+        } catch (error) {
+            console.error('[planFromInventory] Error:', error);
+            return errorResponse('Failed to plan from inventory.', ErrorCode.GENERATION_FAILED, true);
+        }
+    },
+});
+
+// ============================================================================
+// MEAL PREP TIMELINE TOOL
+// ============================================================================
+
+export const generatePrepTimeline = tool({
+    description: 'Generate an optimized meal prep timeline/schedule. Use when user wants to "batch cook", "meal prep", "prep ahead", or asks "how to prepare multiple meals efficiently".',
+    parameters: z.object({
+        recipes: z.array(z.string()).describe('List of recipe names to prep'),
+        targetDate: z.string().optional().describe('When the meals should be ready (e.g., "Sunday dinner", "this week")'),
+        prepStyle: z.enum(['batch', 'same-day', 'week-ahead']).default('batch').describe('Prep strategy'),
+        availableTime: z.number().optional().describe('Available prep time in minutes'),
+    }),
+    execute: async ({ recipes, targetDate, prepStyle, availableTime }): Promise<ToolResult> => {
+        try {
+            console.log(`[generatePrepTimeline] ⏱️ Creating prep timeline for ${recipes.length} recipes...`);
+
+            const { generateObject } = await import('ai');
+            const { google } = await import('@ai-sdk/google');
+            const { z } = await import('zod');
+
+            const result = await generateObject({
+                model: google('gemini-2.0-flash'),
+                temperature: 0.3,
+                schema: z.object({
+                    prepDate: z.string(),
+                    totalActiveTime: z.number().describe('Total hands-on time in minutes'),
+                    totalPassiveTime: z.number().describe('Total waiting/cooking time in minutes'),
+                    timeline: z.array(z.object({
+                        time: z.string().describe('Time marker (e.g., "0:00", "0:15")'),
+                        duration: z.number().describe('Duration in minutes'),
+                        action: z.string().describe('What to do'),
+                        recipe: z.string().describe('Which recipe this is for'),
+                        type: z.enum(['active', 'passive']),
+                        parallelTask: z.string().optional().describe('What else can be done during this step'),
+                    })),
+                    storageInstructions: z.array(z.object({
+                        item: z.string(),
+                        method: z.string(),
+                        duration: z.string(),
+                        reheatingTip: z.string(),
+                    })),
+                    equipmentNeeded: z.array(z.string()),
+                    proTips: z.array(z.string()),
+                }),
+                prompt: `You are a meal prep efficiency expert.
+
+## RECIPES TO PREP
+${recipes.map((r, i) => `${i + 1}. ${r}`).join('\n')}
+
+## PREP STYLE
+- Style: ${prepStyle}
+- Target: ${targetDate || 'This week'}
+${availableTime ? `- Available time: ${availableTime} minutes` : ''}
+
+## TASK
+Create an optimized prep schedule that minimizes total time by:
+1. **Batching similar tasks** (e.g., chop all vegetables at once)
+2. **Using passive time** (while something bakes, prep the next thing)
+3. **Identifying parallel tasks** (what can be done simultaneously)
+
+## INSTRUCTIONS
+1. Create a minute-by-minute timeline starting from 0:00.
+2. Identify when the oven, stovetop, or appliances can run in parallel.
+3. Include storage instructions for prepped items.
+4. List all equipment needed upfront so user can prepare.
+5. Add 3-5 pro tips for efficient prepping.
+
+Return valid JSON.`,
+            });
+
+            if (!result.object) {
+                throw new Error('Failed to generate prep timeline');
+            }
+
+            const uiMetadata = {
+                prepTimeline: result.object,
+                recipes: recipes,
+            };
+            const uiMetadataEncoded = Buffer.from(JSON.stringify(uiMetadata)).toString('base64');
+
+            const totalTime = result.object.totalActiveTime + result.object.totalPassiveTime;
+            const hours = Math.floor(totalTime / 60);
+            const mins = totalTime % 60;
+
+            return successResponse(
+                {
+                    ...result.object,
+                },
+                `✅ Created prep timeline for ${recipes.length} recipes! Total time: ${hours > 0 ? hours + 'h ' : ''}${mins}m (${result.object.totalActiveTime}m active). [UI_METADATA:${uiMetadataEncoded}]`
+            );
+
+        } catch (error) {
+            console.error('[generatePrepTimeline] Error:', error);
+            return errorResponse('Failed to generate prep timeline.', ErrorCode.GENERATION_FAILED, true);
+        }
+    },
+});
+
 export const tools = {
     generateMealPlan,
     analyzeNutrition,
@@ -1198,4 +1663,8 @@ export const tools = {
     modifyMealPlan,
     swapMeal,
     searchRecipes,
+    suggestIngredientSubstitutions,
+    getSeasonalIngredients,
+    planFromInventory,
+    generatePrepTimeline,
 };

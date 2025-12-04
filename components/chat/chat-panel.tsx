@@ -52,6 +52,8 @@ export function ChatPanel({
   const lockedSessionRef = useRef<string | null>(null);
   const lockInitializedRef = useRef(false);
   const isUserSubmittingRef = useRef(false);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const hasInitialScrolledRef = useRef(false);
   
   // Synchronously initialize lock from localStorage to prevent creating new session on refresh
   // This is safe because ChatPanel is loaded with ssr: false
@@ -252,6 +254,25 @@ setMessages(storeMessages);
         content: value,
      });
   };
+  // Auto-scroll to bottom when chat first loads
+  useEffect(() => {
+    if (!scrollContainerRef.current) return;
+    if (messages.length > 0 && !hasInitialScrolledRef.current) {
+      hasInitialScrolledRef.current = true;
+      setTimeout(() => {
+        if (scrollContainerRef.current) {
+          scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
+        }
+      }, 100);
+    }
+  }, [messages.length]);
+
+  // Scroll during streaming
+  useEffect(() => {
+    if (!scrollContainerRef.current || !isLoading) return;
+    scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
+  }, [messages, isLoading]);
+
 
   const handleClearChat = useCallback(async () => {
     if (!finalSessionId) return;
@@ -263,7 +284,7 @@ setMessages(storeMessages);
 
   return (
     <div className="flex flex-col h-full w-full relative">
-      <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0">
+      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto overflow-x-hidden min-h-0">
         <div className="max-w-3xl mx-auto w-full pb-32 sm:pb-40 px-4">
           {messages.length === 0 ? (
             <EmptyScreen onExampleClick={(val) => {

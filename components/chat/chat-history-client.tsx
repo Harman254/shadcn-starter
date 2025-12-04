@@ -244,12 +244,17 @@ export function ChatHistoryClient({ chatType, initialSessions = [], onSessionSel
           
           syncFromDatabase(sessionsToSync);
         
-          // Set current session if none is set
+          // Auto-select the most recent session if none is set
+          // serverSessions are already sorted by updatedAt descending, so first = most recent
           const finalState = useChatStore.getState();
-          if (!finalState.currentSessionId) {
-            const matchingSession = serverSessions.find((s) => s.chatType === chatType);
-            if (matchingSession) {
-              setCurrentSession(matchingSession.id);
+          if (!finalState.currentSessionId && serverSessions.length > 0) {
+            const mostRecentSession = serverSessions[0]; // Already sorted, first is most recent
+            if (mostRecentSession.chatType === chatType) {
+              setCurrentSession(mostRecentSession.id);
+              
+              if (process.env.NODE_ENV === 'development') {
+                console.log('[ChatHistoryClient] 🎯 Auto-selected most recent chat:', mostRecentSession.id, mostRecentSession.title);
+              }
             }
           }
         }

@@ -20,7 +20,17 @@ import { QuickActions } from "./quick-actions"
 import { ToolProgress, type ExecutionProgressData, type ToolProgressData } from "./tool-progress"
 
 import { VerifiedBadge } from "./verified-badge"
-import { MealSuggestions, type MealSuggestion } from "./meal-suggestions"
+import { MealPlanDisplay } from "./tools/meal-plan-display"
+import { GroceryListDisplay } from "./tools/grocery-list-display"
+import { NutritionDisplay } from "./tools/nutrition-display"
+import { RecipeDisplay } from "./tools/recipe-display"
+import { PricingDisplay } from "./tools/pricing-display"
+import { MealSuggestions } from "./tools/meal-suggestions"
+import { OptimizeGroceryListDisplay } from "./tools/optimize-grocery-list-display"
+import { SubstitutionDisplay } from "./tools/substitution-display"
+import { SeasonalDisplay } from "./tools/seasonal-display"
+import { InventoryPlanDisplay } from "./tools/inventory-plan-display"
+import { PrepTimelineDisplay } from "./tools/prep-timeline-display"
 
 interface ChatMessageProps {
   message?: Message
@@ -53,6 +63,9 @@ function formatTimestamp(date?: Date): string {
 // Memoized Markdown content to prevent re-renders and "parentNode" errors during streaming
 const MarkdownContent = memo(function MarkdownContent({ content, isDark }: { content: string, isDark: boolean }) {
   const { toast } = useToast()
+  
+  // Guard against null/undefined content to prevent render issues
+  if (!content) return null
   
   return (
     <ReactMarkdown
@@ -762,664 +775,57 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
       </article>
 
       {/* Tool call results (meal plan/grocery list) - Full width immersive display - BREAKS OUT OF CONTAINER */}
-      {isAssistant && (uiData?.mealPlan || uiData?.groceryList || uiData?.mealSuggestions || uiData?.mealRecipe || uiData?.nutrition || uiData?.prices || uiData?.recipeResults) && (
+      {isAssistant && (uiData?.mealPlan || uiData?.groceryList || uiData?.mealSuggestions || uiData?.mealRecipe || uiData?.nutrition || uiData?.prices || uiData?.recipeResults || uiData?.substitutions || uiData?.seasonal || uiData?.inventoryPlan || uiData?.prepTimeline) && (
         <div className={cn(
           "w-full max-w-3xl mx-auto", // Constrain to same width
           "px-0 sm:px-0", // Remove padding for immersive feel
           "my-4 sm:my-6" // Vertical spacing
         )}>
-          {/* Meal Plan Display - Full width immersive */}
+          {/* Meal Plan Display */}
           {uiData?.mealPlan && (
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3 }}
-              className={cn(
-                "w-full",
-                "animate-in fade-in slide-in-from-bottom-2 duration-300"
-              )}
+              className="w-full"
             >
-              <div className={cn(
-                "relative overflow-hidden w-full",
-                "bg-gradient-to-br from-card via-card to-primary/5",
-                "border-y border-border/50 sm:border-x sm:border-border/50 sm:rounded-2xl", // Edge-to-edge on mobile, rounded on larger screens
-                "shadow-lg shadow-primary/5",
-                "backdrop-blur-sm"
-              )}>
-                <div className="flex items-center justify-between px-4 py-3 border-b border-border/50 bg-muted/30 backdrop-blur-sm">
-                  <div className="flex items-center gap-2">
-                    <VerifiedBadge source="Mealwise AI" />
-                    <span className="text-xs font-medium text-muted-foreground hidden sm:inline-block">
-                      {uiData.mealPlan.duration}-Day Plan
-                    </span>
-                  </div>
-                </div>
-                {/* Header with gradient accent */}
-                <div className={cn(
-                  "relative px-4 sm:px-5 md:px-6 py-4 sm:py-5",
-                  "bg-white",
-                  "border-b border-neutral-100",
-                  "border-l-4 border-l-primary" // Left border accent
-                )}>
-                  <div className="flex flex-col">
-                    {/* Header Image */}
-                    <div className="relative h-32 sm:h-40 w-full overflow-hidden">
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent z-10" />
-                      <img 
-                        src="https://res.cloudinary.com/dcidanigq/image/upload/v1742112002/samples/breakfast.jpg" 
-                        alt="Meal Plan" 
-                        className="w-full h-full object-cover transform hover:scale-105 transition-transform duration-500"
-                      />
-                      <div className="absolute bottom-3 left-4 sm:left-6 z-20">
-                        <h4 className="text-lg sm:text-xl font-bold text-white leading-tight shadow-sm">
-                          {uiData.mealPlan.title}
-                        </h4>
-                        <div className="flex items-center gap-2 text-white/90 text-xs sm:text-sm mt-1">
-                          <span className="flex items-center gap-1">
-                            <Calendar className="h-3.5 w-3.5" />
-                            {uiData.mealPlan.duration} Days
-                          </span>
-                          <span className="w-1 h-1 rounded-full bg-white/60" />
-                          <span className="flex items-center gap-1">
-                            <UtensilsCrossed className="h-3.5 w-3.5" />
-                            {uiData.mealPlan.mealsPerDay} Meals/Day
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Content Container */}
-                    <div className="px-4 sm:px-6 py-4">
-                      {/* Days Grid */}
-                      <div className="grid gap-6">
-                        <div className="flex items-center gap-4 mt-1.5 text-xs sm:text-sm text-muted-foreground">
-                          <div className="flex items-center gap-1.5">
-                            <Calendar className="h-3.5 w-3.5" />
-                            <span>{uiData.mealPlan.duration} {uiData.mealPlan.duration === 1 ? 'day' : 'days'}</span>
-                          </div>
-                          <div className="flex items-center gap-1.5">
-                            <UtensilsCrossed className="h-3.5 w-3.5" />
-                            <span>{uiData.mealPlan.mealsPerDay} meals/day</span>
-                          </div>
-                          <div className="flex items-center gap-1.5">
-                            <Star className="h-3.5 w-3.5" />
-                            <span>{uiData.mealPlan.days.reduce((sum: any, day: any) => sum + day.meals.length, 0)} total meals</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    <VerifiedBadge source="Mealwise AI" />
-                  </div>
-                </div>
-
-                {/* Meal Plan Content */}
-                <div className="p-4 sm:p-5 md:p-6">
-                  <div className="space-y-5">
-                    {uiData.mealPlan.days.map((day: any, dayIndex: number) => (
-                      <motion.div
-                        key={dayIndex}
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ duration: 0.2, delay: dayIndex * 0.05 }}
-                        className={cn(
-                          "relative",
-                          dayIndex < (uiData.mealPlan?.days.length ?? 0) - 1 && "pb-5 border-b border-border/30"
-                        )}
-                      >
-                        {/* Day Header */}
-                        <div className="flex items-center gap-2 mb-4">
-                          <div className={cn(
-                            "flex items-center justify-center",
-                            "w-8 h-8 rounded-lg",
-                            "bg-primary/10 text-primary",
-                            "font-bold text-sm",
-                            "border border-primary/20"
-                          )}>
-                            {day.day}
-                          </div>
-                          <h4 className="font-semibold text-base text-foreground">
-                            Day {day.day}
-                          </h4>
-                        </div>
-
-                        {/* Meals Grid */}
-                        <div className="grid gap-3 sm:gap-4">
-                          {day.meals.map((meal: any, mealIndex: number) => (
-                            <motion.div
-                              key={mealIndex}
-                              initial={{ opacity: 0, scale: 0.98 }}
-                              animate={{ opacity: 1, scale: 1 }}
-                              transition={{ duration: 0.2, delay: (dayIndex * 0.05) + (mealIndex * 0.03) }}
-                              className={cn(
-                                "group relative",
-                                "p-4 rounded-xl",
-                                "bg-muted/30 hover:bg-muted/40",
-                                "border border-border/30 hover:border-primary/30",
-                                "transition-all duration-200",
-                                "hover:shadow-md hover:shadow-primary/5"
-                              )}
-                            >
-                              {/* Meal Name */}
-                              <div className="flex items-start gap-3">
-                                <div className={cn(
-                                  "mt-0.5 shrink-0",
-                                  "w-2 h-2 rounded-full",
-                                  "bg-primary/60 group-hover:bg-primary",
-                                  "transition-colors duration-200"
-                                )} />
-                                <div className="flex-1 min-w-0">
-                                  <h5 className="font-semibold text-sm sm:text-base text-foreground mb-1.5">
-                                    {meal.name}
-                                  </h5>
-                                  
-                                  {/* Description */}
-                                  {meal.description && (
-                                    <p className="text-xs sm:text-sm text-muted-foreground mb-2.5 leading-relaxed">
-                                      {meal.description}
-                                    </p>
-                                  )}
-                                  
-                                  {/* Ingredients */}
-                                  {meal.ingredients && meal.ingredients.length > 0 && (
-                                    <div className="mt-2.5 pt-2.5 border-t border-border/20">
-                                      <div className="flex flex-wrap items-center gap-1.5">
-                                        <span className="text-xs font-medium text-muted-foreground/80">Ingredients:</span>
-                                        <div className="flex flex-wrap gap-1.5">
-                                          {meal.ingredients.slice(0, 4).map((ingredient: string, ingIndex: number) => (
-                                            <span
-                                              key={ingIndex}
-                                              className={cn(
-                                                "inline-flex items-center",
-                                                "px-2 py-0.5 rounded-md",
-                                                "text-xs font-medium",
-                                                "bg-primary/10 text-primary",
-                                                "border border-primary/20"
-                                              )}
-                                            >
-                                              {ingredient}
-                                            </span>
-                                          ))}
-                                          {meal.ingredients.length > 4 && (
-                                            <span className="text-xs text-muted-foreground font-medium">
-                                              +{meal.ingredients.length - 4} more
-                                            </span>
-                                          )}
-                                        </div>
-                                      </div>
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                            </motion.div>
-                          ))}
-                        </div>
-                      </motion.div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Action Buttons Section - Below Meal Plan */}
-                <div className={cn(
-                  "px-4 sm:px-5 md:px-6 py-4 sm:py-5",
-                  "bg-muted/20 border-t border-border/50",
-                  "flex flex-col sm:flex-row items-center justify-center gap-3"
-                )}>
-                  <Button
-                    variant={savedMealPlanId ? "outline" : "default"}
-                    size="lg"
-                    className={cn(
-                      "w-full max-w-xs sm:w-auto sm:min-w-[180px]",
-                      "h-11 gap-2 font-semibold",
-                      savedMealPlanId 
-                        ? "border-green-500/20 text-green-600 dark:text-green-400 bg-green-50/50 dark:bg-green-900/10 hover:bg-green-100/50 dark:hover:bg-green-900/20"
-                        : "bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary/80 shadow-lg shadow-primary/25",
-                      "transition-all duration-200"
-                    )}
-                    onClick={async () => {
-                      if (!uiData?.mealPlan || savedMealPlanId) return;
-                      try {
-                        setSavingMealPlan(true);
-                        
-                        // Use the API endpoint as requested
-                        const response = await fetch('/api/savemealplan', {
-                          method: 'POST',
-                          headers: {
-                            'Content-Type': 'application/json',
-                          },
-                          body: JSON.stringify({
-                            ...uiData.mealPlan,
-                            createdAt: new Date().toISOString()
-                          }),
-                        });
-
-                        const result = await response.json();
-                        
-                        if (response.ok && result.success) {
-                          setSavedMealPlanId(result.mealPlan.id);
-                          toast({
-                            title: "Success!",
-                            description: "Meal plan saved to your collection.",
-                            className: "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-900",
-                          });
-                          // Refresh the router to update any server components if needed
-                          router.refresh();
-                        } else {
-                          toast({
-                            title: "Failed to save",
-                            description: result.error || "Please try again.",
-                            variant: "destructive"
-                          });
-                        }
-                      } catch (e) {
-                        console.error('Error saving meal plan:', e);
-                        toast({
-                          title: "Error",
-                          description: "An unexpected error occurred.",
-                          variant: "destructive"
-                        });
-                      } finally {
-                        setSavingMealPlan(false);
-                      }
-                    }}
-                    disabled={savingMealPlan || !!savedMealPlanId}
-                  >
-                    {savingMealPlan ? (
-                      <>
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        Saving...
-                      </>
-                    ) : savedMealPlanId ? (
-                      <>
-                        <Check className="h-4 w-4" />
-                        Saved
-                      </>
-                    ) : (
-                      <>
-                        <Save className="h-4 w-4" />
-                        Save Meal Plan
-                      </>
-                    )}
-                  </Button>
-                  
-                  {/* Smart Action Chips */}
-                  {onActionClick && (
-                    <div className="flex flex-wrap items-center justify-center gap-2">
-                       <Button
-                         variant="outline"
-                         size="sm"
-                         className="h-9 rounded-full px-4 text-xs font-medium border-primary/20 hover:bg-primary/5 hover:text-primary transition-colors"
-                         onClick={() => onActionClick("Generate a grocery list for this plan")}
-                       >
-                         <ShoppingCart className="mr-1.5 h-3.5 w-3.5" />
-                         Generate Grocery List
-                       </Button>
-                       <Button
-                         variant="outline"
-                         size="sm"
-                         className="h-9 rounded-full px-4 text-xs font-medium border-primary/20 hover:bg-primary/5 hover:text-primary transition-colors"
-                         onClick={() => onActionClick("I want to modify this meal plan")}
-                       >
-                         <MoreHorizontal className="mr-1.5 h-3.5 w-3.5" />
-                         Modify Plan
-                       </Button>
-                       <Button
-                         variant="outline"
-                         size="sm"
-                         className="h-9 rounded-full px-4 text-xs font-medium border-primary/20 hover:bg-primary/5 hover:text-primary transition-colors"
-                         onClick={() => {
-                           if (savedMealPlanId) {
-                             router.push(`/meal-plans/${savedMealPlanId}/explore`);
-                           } else {
-                             sessionStorage.setItem('mealPlanPreview', JSON.stringify(uiData.mealPlan));
-                             router.push('/meal-plans/preview');
-                           }
-                         }}
-                       >
-                         <ChefHat className="mr-1.5 h-3.5 w-3.5" />
-                         {savedMealPlanId ? 'Explore Plan' : 'Preview Plan'}
-                       </Button>
-                    </div>
-                  )}
-                  
-                  <Button
-                    variant={savedMealPlanId ? "outline" : "default"}
-                    size="lg"
-                    className={cn(
-                      "w-full max-w-xs sm:w-auto sm:min-w-[180px]",
-                      "h-11 gap-2 font-semibold",
-                      savedMealPlanId
-                        ? "border-2 border-primary/20 hover:bg-primary/5 hover:border-primary/40"
-                        : "bg-gradient-to-r from-secondary to-secondary/90 hover:from-secondary/90 hover:to-secondary/80 shadow-md shadow-secondary/20",
-                      "transition-all duration-200"
-                    )}
-                    onClick={() => {
-                      if (savedMealPlanId) {
-                        router.push(`/meal-plans/${savedMealPlanId}/explore`);
-                      } else {
-                        sessionStorage.setItem('mealPlanPreview', JSON.stringify(uiData.mealPlan));
-                        router.push('/meal-plans/preview');
-                      }
-                    }}
-                  >
-                    <ChefHat className="h-4 w-4" />
-                    {savedMealPlanId ? 'Explore Plan' : 'Preview Plan'}
-                  </Button>
-                </div>
-              </div>
+              <MealPlanDisplay 
+                mealPlan={uiData.mealPlan} 
+                onActionClick={onActionClick} 
+              />
             </motion.div>
           )}
           
-          {/* Grocery List Display - Full width immersive */}
-          {(() => {
-            const groceryList = uiData?.groceryList;
-            if (!groceryList) return null;
-            
-            // Debug logging in development
-            if (process.env.NODE_ENV === 'development') {
-              console.log('[ChatMessage] 🛒 Rendering grocery list:', {
-                hasGroceryList: !!groceryList,
-                hasItems: !!groceryList.items,
-                itemsLength: groceryList.items?.length || 0,
-                itemsType: Array.isArray(groceryList.items) ? 'array' : typeof groceryList.items,
-                hasLocationInfo: !!groceryList.locationInfo,
-                hasTotalCost: !!groceryList.totalEstimatedCost,
-                fullGroceryList: groceryList,
-              });
-            }
-            
-            return (
+          {/* Grocery List Display */}
+          {uiData?.groceryList && (
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3 }}
-              className={cn(
-                "w-full",
-                "animate-in fade-in slide-in-from-bottom-2 duration-300"
-              )}
+              className="w-full"
             >
-              <div className={cn(
-                "relative overflow-hidden w-full",
-                "bg-gradient-to-br from-card via-card to-secondary/5 dark:from-card dark:via-card dark:to-secondary/10",
-                "border-y border-border/50 sm:border-x sm:border-border/50 sm:rounded-2xl",
-                "shadow-lg shadow-secondary/5",
-                "backdrop-blur-sm"
-              )}>
-                {/* Grocery List Header */}
-                <div className="relative h-32 sm:h-40 w-full overflow-hidden">
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent z-10" />
-                  <img 
-                    src="https://res.cloudinary.com/dcidanigq/image/upload/v1742111994/samples/food/pot-mussels.jpg" 
-                    alt="Grocery List" 
-                    className="w-full h-full object-cover transform hover:scale-105 transition-transform duration-500"
-                  />
-                  <div className="absolute bottom-3 left-4 sm:left-6 z-20">
-                    <div className="flex items-center gap-2 mb-1">
-                      <VerifiedBadge source="Mealwise AI" className="bg-white/20 text-white border-white/30 backdrop-blur-md" />
-                    </div>
-                    <h4 className="text-lg sm:text-xl font-bold text-white leading-tight shadow-sm">
-                      Your Shopping List
-                    </h4>
-                    <span className="text-xs font-medium text-white/90">
-                      {groceryList.items?.length || 0} Items
-                    </span>
-                  </div>
-                </div>
-
-                {/* Grocery List Content */}
-                <div className="p-4 sm:p-5 md:p-6">
-                  {/* Location and Cost Summary */}
-                  <div className={cn(
-                    "mb-5 p-4 rounded-xl",
-                    "bg-gradient-to-br from-secondary/10 to-secondary/5",
-                    "border border-border/30"
-                  )}>
-                    <div className="flex items-center justify-between flex-wrap gap-3">
-                      <div className="flex items-center gap-2 text-sm">
-                        <MapPin className="h-4 w-4 text-primary" />
-                        <span className="font-medium text-foreground">
-                          {groceryList.locationInfo?.currencySymbol || '$'} Prices for your area
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-muted-foreground">Total Estimate:</span>
-                        <span className="text-lg font-bold text-primary">
-                          {groceryList.totalEstimatedCost || '$0.00'}
-                        </span>
-                      </div>
-                    </div>
-                    {groceryList.locationInfo?.localStores && groceryList.locationInfo.localStores.length > 0 && (
-                      <div className="mt-3 pt-3 border-t border-border/20">
-                        <p className="text-xs text-muted-foreground mb-2">Suggested stores:</p>
-                        <div className="flex flex-wrap gap-1.5">
-                          {groceryList.locationInfo.localStores.slice(0, 3).map((store: string, index: number) => (
-                            <span 
-                              key={index}
-                              className={cn(
-                                "inline-flex items-center px-2 py-1 rounded-md text-xs font-medium",
-                                "bg-background border border-border/50 text-muted-foreground"
-                              )}
-                            >
-                              {store}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Grocery Items - Grouped by Category */}
-                  {(() => {
-                    const items = groceryList.items || [];
-                    if (items.length === 0) {
-                      return (
-                        <div className="text-center py-8 text-muted-foreground">
-                          No items in the grocery list
-                        </div>
-                      );
-                    }
-
-                    // Group items by category
-                    const groupedItems = items.reduce((acc: Record<string, any[]>, item: any) => {
-                      const category = item.category || 'Other';
-                      if (!acc[category]) acc[category] = [];
-                      acc[category].push(item);
-                      return acc;
-                    }, {});
-
-                    return (
-                      <div className="space-y-5">
-                        {(Object.entries(groupedItems) as [string, any[]][]).map(([category, categoryItems], categoryIndex: number) => (
-                          <motion.div
-                            key={category}
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.2, delay: categoryIndex * 0.05 }}
-                            className="space-y-3"
-                          >
-                            {/* Category Header */}
-                            <div className="flex items-center gap-2">
-                              <Tag className="h-4 w-4 text-primary" />
-                              <h4 className="font-semibold text-base text-foreground">
-                                {category}
-                              </h4>
-                              <span className="text-xs text-muted-foreground">
-                                ({categoryItems.length} {categoryItems.length === 1 ? 'item' : 'items'})
-                              </span>
-                            </div>
-
-                            {/* Items in Category */}
-                            <div className="grid gap-2">
-                              {categoryItems.map((item: any, itemIndex: number) => (
-                                <motion.div
-                                  key={item.id || itemIndex}
-                                  initial={{ opacity: 0, x: -10 }}
-                                  animate={{ opacity: 1, x: 0 }}
-                                  transition={{ duration: 0.2, delay: (categoryIndex * 0.05) + (itemIndex * 0.02) }}
-                                  className={cn(
-                                    "group relative p-3 rounded-lg",
-                                    "bg-background hover:bg-muted/40",
-                                    "border border-border/30 hover:border-primary/30",
-                                    "transition-all duration-200"
-                                  )}
-                                >
-                                  <div className="flex items-center justify-between gap-3">
-                                    <div className="flex-1 min-w-0">
-                                      <div className="flex items-center gap-2">
-                                        <div className={cn(
-                                          "w-1.5 h-1.5 rounded-full shrink-0",
-                                          "bg-primary/60 group-hover:bg-primary",
-                                          "transition-colors duration-200"
-                                        )} />
-                                        <h5 className="font-medium text-sm text-foreground">
-                                          {item.item}
-                                        </h5>
-                                        <span className={cn(
-                                          "px-2 py-0.5 rounded text-xs font-medium shrink-0",
-                                          "bg-primary/10 text-primary border border-primary/20"
-                                        )}>
-                                          {item.quantity}
-                                        </span>
-                                      </div>
-                                      {item.suggestedLocation && (
-                                        <p className="text-xs text-muted-foreground mt-1 ml-3.5">
-                                          Available at: {item.suggestedLocation}
-                                        </p>
-                                      )}
-                                    </div>
-                                    <div className="shrink-0 text-right">
-                                      <div className="flex items-center gap-1">
-                                        <DollarSign className="h-3 w-3 text-muted-foreground" />
-                                        <span className="font-semibold text-sm text-foreground">
-                                          {item.estimatedPrice}
-                                        </span>
-                                      </div>
-                                    </div>
-                                  </div>
-                                </motion.div>
-                              ))}
-                            </div>
-                          </motion.div>
-                        ))}
-                      </div>
-                    );
-                  })()}
-                </div>
-
-                {/* Save Button for Grocery List */}
-                <div className={cn(
-                  "px-4 sm:px-5 md:px-6 py-4 sm:py-5",
-                  "bg-muted/20 border-t border-border/50",
-                  "flex flex-col sm:flex-row items-center justify-center gap-3"
-                )}>
-                  <Button
-                    variant={savedGroceryListId ? "outline" : "default"}
-                    size="lg"
-                    className={cn(
-                      "w-full max-w-xs sm:w-auto sm:min-w-[180px]",
-                      "h-11 gap-2 font-semibold",
-                      savedGroceryListId 
-                        ? "border-green-500/20 text-green-600 dark:text-green-400 bg-green-50/50 dark:bg-green-900/10 hover:bg-green-100/50 dark:hover:bg-green-900/20"
-                        : "bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary/80 shadow-lg shadow-primary/25",
-                      "transition-all duration-200"
-                    )}
-                    onClick={async () => {
-                      if (!groceryList || savedGroceryListId) return;
-                      try {
-                        setSavingGroceryList(true);
-                        
-                        const response = await fetch('/api/grocery/save', {
-                          method: 'POST',
-                          headers: {
-                            'Content-Type': 'application/json',
-                          },
-                          body: JSON.stringify({
-                            items: groceryList.items,
-                            locationInfo: groceryList.locationInfo,
-                            totalEstimatedCost: groceryList.totalEstimatedCost,
-                            mealPlanId: uiData.mealPlan?.id // Optional linkage
-                          }),
-                        });
-
-                        const result = await response.json();
-                        
-                        if (response.ok && result.success) {
-                          setSavedGroceryListId(result.list.id);
-                          toast({
-                            title: "Success!",
-                            description: "Grocery list saved to your collection.",
-                            className: "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-900",
-                          });
-                          router.refresh();
-                        } else {
-                          toast({
-                            title: "Failed to save",
-                            description: result.error || "Please try again.",
-                            variant: "destructive"
-                          });
-                        }
-                      } catch (e) {
-                        console.error('Error saving grocery list:', e);
-                        toast({
-                          title: "Error",
-                          description: "An unexpected error occurred.",
-                          variant: "destructive"
-                        });
-                      } finally {
-                        setSavingGroceryList(false);
-                      }
-                    }}
-                    disabled={savingGroceryList || !!savedGroceryListId}
-                  >
-                    {savingGroceryList ? (
-                      <>
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        Saving...
-                      </>
-                    ) : savedGroceryListId ? (
-                      <>
-                        <Check className="h-4 w-4" />
-                        Saved
-                      </>
-                    ) : (
-                      <>
-                        <Save className="h-4 w-4" />
-                        Save Grocery List
-                      </>
-                    )}
-                  </Button>
-                </div>
-
-                {/* Smart Action Chips for Grocery List */}
-                {onActionClick && (
-                  <div className={cn(
-                    "px-4 sm:px-5 md:px-6 py-4 sm:py-5",
-                    "bg-muted/20 border-t border-border/50",
-                    "flex flex-wrap items-center justify-center gap-2"
-                  )}>
-                     <Button
-                       variant="outline"
-                       size="sm"
-                       className="h-9 rounded-full px-4 text-xs font-medium border-primary/20 hover:bg-primary/5 hover:text-primary transition-colors"
-                       onClick={() => onActionClick("Send this grocery list to WhatsApp")}
-                     >
-                       <WhatsAppIcon className="mr-1.5 h-3.5 w-3.5" />
-                       Send to WhatsApp
-                     </Button>
-                     <Button
-                       variant="outline"
-                       size="sm"
-                       className="h-9 rounded-full px-4 text-xs font-medium border-primary/20 hover:bg-primary/5 hover:text-primary transition-colors"
-                       onClick={() => onActionClick("Check local prices for these items")}
-                     >
-                       <DollarSign className="mr-1.5 h-3.5 w-3.5" />
-                       Check Prices
-                     </Button>
-                  </div>
-                )}
-              </div>
+              <GroceryListDisplay 
+                groceryList={uiData.groceryList} 
+                mealPlanId={uiData.mealPlan?.id}
+                onActionClick={onActionClick} 
+              />
             </motion.div>
-            );
-          })()}
+          )}
+
+          {/* Optimize Grocery List Display */}
+          {uiData?.optimization && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+              className="w-full max-w-xl mx-auto"
+            >
+              <OptimizeGroceryListDisplay 
+                optimization={uiData.optimization} 
+                onActionClick={onActionClick} 
+              />
+            </motion.div>
+          )}
 
           {/* Meal Suggestions Display */}
           {uiData?.mealSuggestions && (
@@ -1433,15 +839,15 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
               )}
             >
               <MealSuggestions 
-                suggestions={uiData.mealSuggestions} 
-                onAdd={(suggestion) => {
-                  onActionClick?.(`Create a meal plan with ${suggestion.name}`);
+                results={uiData.mealSuggestions} 
+                onActionClick={(action: string) => {
+                  onActionClick?.(action);
                 }}
               />
             </motion.div>
           )}
 
-          {/* Meal Recipe Display - Single meal with image and details */}
+          {/* Meal Recipe Display */}
           {uiData?.mealRecipe && (
             <motion.div
               initial={{ opacity: 0, y: 10 }}
@@ -1449,219 +855,10 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
               transition={{ duration: 0.3 }}
               className="w-full max-w-2xl mx-auto"
             >
-              <div className={cn(
-                "bg-card rounded-2xl overflow-hidden",
-                "border border-border/50 shadow-lg"
-              )}>
-                {/* Recipe Image */}
-                <div className="relative h-64 sm:h-80 w-full bg-muted">
-                  <img 
-                    src={uiData.mealRecipe.imageUrl} 
-                    alt={uiData.mealRecipe.name}
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                  <div className="absolute bottom-0 left-0 right-0 p-6">
-                    <h2 className="text-2xl sm:text-3xl font-bold text-white mb-2">
-                      {uiData.mealRecipe.name}
-                    </h2>
-                    <p className="text-white/90 text-sm sm:text-base">
-                      {uiData.mealRecipe.description}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Recipe Info */}
-                <div className="p-6 space-y-6">
-                  {/* Quick Stats */}
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                    <div className="text-center p-3 bg-muted/30 rounded-lg">
-                      <div className="text-2xl font-bold text-primary">{uiData.mealRecipe.servings}</div>
-                      <div className="text-xs text-muted-foreground">Servings</div>
-                    </div>
-                    <div className="text-center p-3 bg-muted/30 rounded-lg">
-                      <div className="text-sm font-semibold text-foreground">{uiData.mealRecipe.prepTime}</div>
-                      <div className="text-xs text-muted-foreground">Prep Time</div>
-                    </div>
-                    <div className="text-center p-3 bg-muted/30 rounded-lg">
-                      <div className="text-sm font-semibold text-foreground">{uiData.mealRecipe.cookTime}</div>
-                      <div className="text-xs text-muted-foreground">Cook Time</div>
-                    </div>
-                    <div className="text-center p-3 bg-muted/30 rounded-lg">
-                      <div className="text-sm font-semibold text-foreground">{uiData.mealRecipe.difficulty}</div>
-                      <div className="text-xs text-muted-foreground">Difficulty</div>
-                    </div>
-                  </div>
-
-                  {/* Nutrition */}
-                  <div className="flex items-center justify-around py-4 border-y border-border/30">
-                    <div className="text-center">
-                      <div className="text-lg font-bold">{uiData.mealRecipe.nutrition.calories}</div>
-                      <div className="text-xs text-muted-foreground">Calories</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-lg font-bold">{uiData.mealRecipe.nutrition.protein}</div>
-                      <div className="text-xs text-muted-foreground">Protein</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-lg font-bold">{uiData.mealRecipe.nutrition.carbs}</div>
-                      <div className="text-xs text-muted-foreground">Carbs</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-lg font-bold">{uiData.mealRecipe.nutrition.fat}</div>
-                      <div className="text-xs text-muted-foreground">Fat</div>
-                    </div>
-                  </div>
-
-                  {/* Ingredients */}
-                  <div>
-                    <h3 className="text-lg font-bold mb-3">Ingredients</h3>
-                    <ul className="space-y-2">
-                      {uiData.mealRecipe.ingredients.map((ingredient: string, idx: number) => (
-                        <li key={idx} className="flex items-start gap-2">
-                          <span className="text-primary mt-1.5">•</span>
-                          <span className="text-foreground">{ingredient}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-
-                  {/* Instructions */}
-                  <div>
-                    <h3 className="text-lg font-bold mb-3">Instructions</h3>
-                    <ol className="space-y-3">
-                      {uiData.mealRecipe.instructions.map((instruction: string, idx: number) => (
-                        <li key={idx} className="flex gap-3">
-                          <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">
-                            {idx + 1}
-                          </span>
-                          <span className="text-foreground pt-0.5">{instruction}</span>
-                        </li>
-                      ))}
-                    </ol>
-                  </div>
-
-                  {/* Tags */}
-                  <div className="flex flex-wrap gap-2">
-                    {uiData.mealRecipe.tags.map((tag: string, idx: number) => (
-                      <span 
-                        key={idx}
-                        className="px-3 py-1 bg-primary/10 text-primary text-xs font-medium rounded-full"
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-
-                  {/* Save Button */}
-                  <Button
-                    variant={savedRecipeId ? "outline" : "default"}
-                    size="lg"
-                    className={cn(
-                      "w-full mt-4",
-                      "h-12 gap-2 font-semibold",
-                      savedRecipeId 
-                        ? "border-green-500/20 text-green-600 dark:text-green-400 bg-green-50/50 dark:bg-green-900/10 hover:bg-green-100/50 dark:hover:bg-green-900/20"
-                        : "bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary/80 shadow-lg shadow-primary/25",
-                      "transition-all duration-200"
-                    )}
-                    onClick={async () => {
-                      if (!uiData?.mealRecipe || savedRecipeId) return;
-                      try {
-                        setSavingRecipe(true);
-                        const response = await fetch('/api/recipes/save', {
-                          method: 'POST',
-                          headers: {
-                            'Content-Type': 'application/json',
-                          },
-                          body: JSON.stringify({
-                            name: uiData.mealRecipe.name,
-                            description: uiData.mealRecipe.description,
-                            prepTime: uiData.mealRecipe.prepTime,
-                            cookTime: uiData.mealRecipe.cookTime,
-                            servings: uiData.mealRecipe.servings,
-                            difficulty: uiData.mealRecipe.difficulty,
-                            ingredients: uiData.mealRecipe.ingredients,
-                            instructions: uiData.mealRecipe.instructions,
-                            tags: uiData.mealRecipe.tags,
-                            nutrition: uiData.mealRecipe.nutrition,
-                            imageUrl: uiData.mealRecipe.imageUrl,
-                          }),
-                        });
-
-                        const result = await response.json();
-                        
-                        if (response.ok && result.success) {
-                          setSavedRecipeId(result.recipe.id);
-                          toast({
-                            title: "Recipe Saved!",
-                            description: `${uiData.mealRecipe.name} has been saved to your collection.`,
-                            className: "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-900",
-                          });
-                          router.refresh();
-                        } else {
-                          toast({
-                            title: "Failed to save",
-                            description: result.error || "Please try again.",
-                            variant: "destructive"
-                          });
-                        }
-                      } catch (e) {
-                        console.error('Error saving recipe:', e);
-                        toast({
-                          title: "Error",
-                          description: "Failed to save recipe.",
-                          variant: "destructive"
-                        });
-                      } finally {
-                        setSavingRecipe(false);
-                      }
-                    }}
-                    disabled={savingRecipe || !!savedRecipeId}
-                  >
-                    {savingRecipe ? (
-                      <>
-                        <Loader2 className="h-5 w-5 animate-spin" />
-                        Saving...
-                      </>
-                    ) : savedRecipeId ? (
-                      <>
-                        <Check className="h-5 w-5" />
-                        Saved
-                      </>
-                    ) : (
-                      <>
-                        <Save className="h-5 w-5" />
-                        Save Recipe
-                      </>
-                    )}
-                  </Button>
-
-                  {/* Smart Action Chips for Recipe */}
-                  {onActionClick && (
-                    <div className="flex flex-wrap items-center justify-center gap-2 mt-4 pt-4 border-t border-border/30">
-                       <Button
-                         variant="outline"
-                         size="sm"
-                         className="h-9 rounded-full px-4 text-xs font-medium border-primary/20 hover:bg-primary/5 hover:text-primary transition-colors"
-                         onClick={() => onActionClick(`Add ${uiData.mealRecipe.name} to my meal plan`)}
-                       >
-                         <Calendar className="mr-1.5 h-3.5 w-3.5" />
-                         Add to Plan
-                       </Button>
-                       <Button
-                         variant="outline"
-                         size="sm"
-                         className="h-9 rounded-full px-4 text-xs font-medium border-primary/20 hover:bg-primary/5 hover:text-primary transition-colors"
-                         onClick={() => onActionClick(`Create a grocery list for ${uiData.mealRecipe.name}`)}
-                       >
-                         <ShoppingCart className="mr-1.5 h-3.5 w-3.5" />
-                         Shop Ingredients
-                       </Button>
-                    </div>
-                  )}
-                </div>
-              </div>
+              <RecipeDisplay 
+                recipe={uiData.mealRecipe} 
+                onActionClick={onActionClick} 
+              />
             </motion.div>
           )}
           {/* Nutrition Analysis Display */}
@@ -1672,92 +869,7 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
               transition={{ duration: 0.3 }}
               className="w-full max-w-2xl mx-auto"
             >
-              <div className={cn(
-                "bg-card rounded-2xl overflow-hidden",
-                "border border-border/50 shadow-lg"
-              )}>
-                {/* Nutrition Header Image */}
-                <div className="relative h-32 sm:h-40 w-full overflow-hidden">
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent z-10" />
-                  <img 
-                    src="https://res.cloudinary.com/dcidanigq/image/upload/v1742111996/samples/food/spices.jpg" 
-                    alt="Nutrition Analysis" 
-                    className="w-full h-full object-cover transform hover:scale-105 transition-transform duration-500"
-                  />
-                  <div className="absolute bottom-3 left-4 sm:left-6 z-20">
-                    <div className="flex items-center gap-2 mb-1">
-                      <VerifiedBadge source="USDA Data" className="bg-white/20 text-white border-white/30 backdrop-blur-md" />
-                    </div>
-                    <h4 className="text-lg sm:text-xl font-bold text-white leading-tight shadow-sm">
-                      Nutrition Facts
-                    </h4>
-                  </div>
-                </div>
-
-                <div className="p-6">
-                  {/* Health Score if available */}
-                  {uiData.nutrition.healthScore !== undefined && (
-                    <div className="flex items-center justify-center gap-2 px-4 py-2 bg-primary/10 rounded-full mb-6">
-                      <span className="text-sm font-medium text-muted-foreground">Health Score</span>
-                      <span className="text-2xl font-bold text-primary">{uiData.nutrition.healthScore}</span>
-                      <span className="text-sm text-muted-foreground">/100</span>
-                    </div>
-                  )}
-
-                  {/* Display Daily Average or Total based on type */}
-                  <div className="mb-4">
-                    <h4 className="text-sm font-medium text-muted-foreground mb-3">
-                      {uiData.nutrition.type === 'plan' ? 'Daily Average' : 'Total Nutrition'}
-                    </h4>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                      <div className="text-center p-4 bg-muted/30 rounded-xl border border-border/50">
-                        <div className="text-2xl font-bold text-primary">
-                          {Math.round(uiData.nutrition.type === 'plan' ? uiData.nutrition.dailyAverage.calories : uiData.nutrition.total.calories)}
-                        </div>
-                        <div className="text-sm text-muted-foreground font-medium mt-1">Calories</div>
-                      </div>
-                      <div className="text-center p-4 bg-muted/30 rounded-xl border border-border/50">
-                        <div className="text-xl font-bold text-foreground">
-                          {Math.round(uiData.nutrition.type === 'plan' ? uiData.nutrition.dailyAverage.protein : uiData.nutrition.total.protein)}g
-                        </div>
-                        <div className="text-sm text-muted-foreground font-medium mt-1">Protein</div>
-                      </div>
-                      <div className="text-center p-4 bg-muted/30 rounded-xl border border-border/50">
-                        <div className="text-xl font-bold text-foreground">
-                          {Math.round(uiData.nutrition.type === 'plan' ? uiData.nutrition.dailyAverage.carbs : uiData.nutrition.total.carbs)}g
-                        </div>
-                        <div className="text-sm text-muted-foreground font-medium mt-1">Carbs</div>
-                      </div>
-                      <div className="text-center p-4 bg-muted/30 rounded-xl border border-border/50">
-                        <div className="text-xl font-bold text-foreground">
-                          {Math.round(uiData.nutrition.type === 'plan' ? uiData.nutrition.dailyAverage.fat : uiData.nutrition.total.fat)}g
-                        </div>
-                        <div className="text-sm text-muted-foreground font-medium mt-1">Fat</div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Insights */}
-                  {uiData.nutrition.insights && uiData.nutrition.insights.length > 0 && (
-                    <div className="mt-6 space-y-2">
-                      <h4 className="text-sm font-semibold text-foreground mb-2">Nutritional Insights</h4>
-                      {uiData.nutrition.insights.map((insight: string, idx: number) => (
-                        <div key={idx} className="flex gap-2 items-start p-3 bg-muted/30 rounded-lg">
-                          <AlertCircle className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-                          <p className="text-sm text-foreground">{insight}</p>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  
-                  <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-950/20 rounded-xl border border-blue-100 dark:border-blue-900/50 flex gap-3">
-                    <AlertCircle className="h-5 w-5 text-blue-600 dark:text-blue-400 shrink-0" />
-                    <p className="text-sm text-blue-700 dark:text-blue-300">
-                      This analysis is an estimate based on standard ingredients. Actual values may vary depending on specific brands and portion sizes.
-                    </p>
-                  </div>
-                </div>
-              </div>
+              <NutritionDisplay nutrition={uiData.nutrition} />
             </motion.div>
           )}
 
@@ -1769,72 +881,10 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
               transition={{ duration: 0.3 }}
               className="w-full max-w-xl mx-auto"
             >
-              <div className={cn(
-                "bg-card rounded-2xl overflow-hidden",
-                "border border-border/50 shadow-lg"
-              )}>
-                {/* Prices Header Image */}
-                <div className="relative h-32 sm:h-40 w-full overflow-hidden">
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent z-10" />
-                  <img 
-                    src="https://res.cloudinary.com/dcidanigq/image/upload/v1742111994/samples/food/dessert.jpg" 
-                    alt="Price Check" 
-                    className="w-full h-full object-cover transform hover:scale-105 transition-transform duration-500"
-                  />
-                  <div className="absolute bottom-3 left-4 sm:left-6 z-20">
-                    <div className="flex items-center gap-2 mb-1">
-                      <VerifiedBadge source="Local Prices" className="bg-white/20 text-white border-white/30 backdrop-blur-md" />
-                    </div>
-                    <h4 className="text-lg sm:text-xl font-bold text-white leading-tight shadow-sm">
-                      Estimated Costs
-                    </h4>
-                  </div>
-                </div>
-
-                <div className="p-6">
-                  <div className="space-y-3">
-                  {uiData.prices.map((price: any, idx: number) => (
-                    <div key={idx} className="flex items-center justify-between p-4 bg-muted/30 rounded-xl border border-border/50 hover:border-primary/30 transition-colors">
-                      <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 rounded-full bg-white dark:bg-muted flex items-center justify-center border border-border/50 shadow-sm">
-                          <ShoppingCart className="h-5 w-5 text-muted-foreground" />
-                        </div>
-                        <div>
-                          <div className="font-semibold flex items-center gap-2">
-                            {price.store}
-                            {price.sourceUrl && (
-                              <a 
-                                href={price.sourceUrl} 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                className="text-muted-foreground hover:text-primary transition-colors"
-                                title="View Store Price"
-                                onClick={(e) => e.stopPropagation()}
-                              >
-                                <ExternalLink className="h-3.5 w-3.5" />
-                              </a>
-                            )}
-                          </div>
-                          <div className="text-xs text-muted-foreground">Local Store</div>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-lg font-bold text-primary">
-                          {price.currency}{price.total.toFixed(2)}
-                        </div>
-                        <div className="text-xs text-green-600 dark:text-green-400 font-medium">
-                          In Stock
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                
-                <Button className="w-full mt-6" variant="outline" onClick={() => onActionClick?.("Generate a grocery list for these items")}>
-                  Generate Shopping List
-                </Button>
-                </div>
-              </div>
+              <PricingDisplay 
+                prices={uiData.prices} 
+                onActionClick={onActionClick} 
+              />
             </motion.div>
           )}
 
@@ -1849,18 +899,64 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
                 "animate-in fade-in slide-in-from-bottom-2 duration-300"
               )}
             >
-              <div className="mb-4 px-1">
-                <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
-                  <ChefHat className="h-5 w-5 text-primary" />
-                  Found {uiData.recipeResults.length} recipes for &quot;{uiData.query}&quot;
-                </h3>
-              </div>
               <MealSuggestions 
-                suggestions={uiData.recipeResults} 
-                onAdd={(suggestion) => {
-                  onActionClick?.(`Show me the recipe for ${suggestion.name}`);
+                results={uiData.recipeResults} 
+                title={`Found ${uiData.recipeResults.length} recipes for "${uiData.query}"`}
+                onActionClick={(action: string) => {
+                  onActionClick?.(action);
                 }}
               />
+            </motion.div>
+          )}
+
+          {/* Ingredient Substitutions Display */}
+          {uiData?.substitutions && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+              className="w-full max-w-2xl mx-auto"
+            >
+              <SubstitutionDisplay data={uiData.substitutions} />
+            </motion.div>
+          )}
+
+          {/* Seasonal Ingredients Display */}
+          {uiData?.seasonal && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+              className="w-full max-w-2xl mx-auto"
+            >
+              <SeasonalDisplay data={uiData.seasonal} />
+            </motion.div>
+          )}
+
+          {/* Inventory Plan Display */}
+          {uiData?.inventoryPlan && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+              className="w-full max-w-2xl mx-auto"
+            >
+              <InventoryPlanDisplay 
+                data={uiData.inventoryPlan} 
+                onActionClick={onActionClick} 
+              />
+            </motion.div>
+          )}
+
+          {/* Prep Timeline Display */}
+          {uiData?.prepTimeline && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+              className="w-full max-w-2xl mx-auto"
+            >
+              <PrepTimelineDisplay data={uiData.prepTimeline} />
             </motion.div>
           )}
         </div>
