@@ -85,28 +85,40 @@ const SessionItem = memo(function SessionItem({
   return (
     <div
       className={cn(
-        "group relative flex items-center gap-2 px-3 py-2 text-sm transition-colors rounded-md cursor-pointer",
+        "group relative flex items-center gap-2 px-3 py-2.5 text-sm transition-all rounded-lg cursor-pointer",
+        // ChatGPT-style: subtle left border when active
         isActive 
-          ? "bg-accent text-accent-foreground font-medium" 
-          : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+          ? "bg-accent/80 text-foreground before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-5 before:w-1 before:bg-primary before:rounded-r-full" 
+          : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
       )}
       onClick={() => onSelect(session.id)}
     >
-      <div className="flex-1 truncate">
+      {/* Chat icon for visual hint */}
+      <div className={cn(
+        "h-5 w-5 shrink-0 flex items-center justify-center rounded-md transition-colors",
+        isActive ? "text-primary" : "text-muted-foreground/50"
+      )}>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+        </svg>
+      </div>
+
+      {/* Title - clean, single line */}
+      <div className="flex-1 min-w-0 truncate font-medium">
         {session.title || (session.messageCount > 0 ? 'New conversation' : 'New chat')}
       </div>
 
-      {/* Delete button - Simple and direct */}
+      {/* Delete button - ONLY visible on hover (ChatGPT style) */}
       <AlertDialog>
         <AlertDialogTrigger asChild>
           <div
             role="button"
             tabIndex={0}
             className={cn(
-              "h-6 w-6 shrink-0 flex items-center justify-center rounded-md z-20",
+              "h-7 w-7 shrink-0 flex items-center justify-center rounded-md transition-all",
+              "opacity-0 group-hover:opacity-100", // Hidden until hover
               "text-muted-foreground hover:text-destructive hover:bg-destructive/10",
-              "transition-colors cursor-pointer",
-              isActive && "text-foreground hover:text-destructive"
+              "cursor-pointer"
             )}
             onClick={(e) => e.stopPropagation()}
             onKeyDown={(e) => {
@@ -116,9 +128,9 @@ const SessionItem = memo(function SessionItem({
             }}
           >
             {isDeleting ? (
-              <Loader2 className="h-3 w-3 animate-spin" />
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
             ) : (
-              <Trash2 className="h-3 w-3" />
+              <Trash2 className="h-3.5 w-3.5" />
             )}
           </div>
         </AlertDialogTrigger>
@@ -126,7 +138,7 @@ const SessionItem = memo(function SessionItem({
           <AlertDialogHeader>
             <AlertDialogTitle>Delete conversation?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete this conversation.
+              This will permanently delete this conversation and cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="flex-col sm:flex-row gap-2 sm:gap-0">
@@ -910,58 +922,44 @@ export function ChatHistoryClient({ chatType, initialSessions = [], onSessionSel
   const groupOrder = ['Today', 'Yesterday', 'Previous 7 Days', 'Older'];
 
   return (
-    <div className="h-full flex flex-col bg-muted/5">
-      {/* Header - Removed duplicate New Chat button */}
-      <div className="px-4 py-3 border-b border-border/40 bg-background/50 backdrop-blur-sm sticky top-0 z-10">
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex-1 min-w-0">
-            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">History</h3>
-          </div>
-          <div className="flex items-center gap-1.5 shrink-0">
-          <div className="flex items-center gap-1.5 shrink-0">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleNewChat}
-              className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-md transition-colors"
-              aria-label="New chat"
-              disabled={!isAuthenticated}
-              title="New chat"
-            >
-              <Plus className="h-4 w-4" />
-            </Button>
-          </div>
-          </div>
-        </div>
+    <div className="h-full flex flex-col bg-background">
+      {/* New Chat Button - Full width, prominent (ChatGPT style) */}
+      <div className="p-3 border-b border-border/30">
+        <Button
+          onClick={handleNewChat}
+          variant="outline"
+          className="w-full justify-start gap-3 h-10 px-3 text-sm font-medium border-border/50 hover:bg-muted/50"
+          disabled={!isAuthenticated}
+        >
+          <Plus className="h-4 w-4" />
+          New chat
+        </Button>
       </div>
 
       {/* Scrollable content */}
       <ScrollArea className="flex-1">
-        <div className="px-2 py-2 space-y-6">
+        <div className="py-3 space-y-4">
           {(isLoading || isAuthPending) ? (
             <div className="flex flex-col items-center justify-center py-12 gap-3 text-muted-foreground/50">
-              <Loader2 className="h-6 w-6 animate-spin" />
-              <p className="text-xs font-medium">Loading history...</p>
+              <Loader2 className="h-5 w-5 animate-spin" />
+              <p className="text-xs">Loading...</p>
             </div>
           ) : displaySessions.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
-              <div className="w-12 h-12 rounded-2xl bg-muted/50 flex items-center justify-center mb-4">
-                <History className="h-6 w-6 text-muted-foreground/50" />
+              <div className="w-10 h-10 rounded-xl bg-muted/50 flex items-center justify-center mb-3">
+                <History className="h-5 w-5 text-muted-foreground/40" />
               </div>
-              <h4 className="text-sm font-medium text-foreground mb-1">No history yet</h4>
-              <p className="text-xs text-muted-foreground max-w-[200px] leading-relaxed">
-                Start a new conversation to see it appear here.
-              </p>
+              <p className="text-sm text-muted-foreground">No conversations yet</p>
             </div>
           ) : (
-            <div className="space-y-6">
+            <div className="space-y-4 px-2">
               {groupOrder.map(group => {
                 const groupSessions = groupedSessions[group];
                 if (!groupSessions || groupSessions.length === 0) return null;
 
                 return (
-                  <div key={group} className="space-y-1">
-                    <h4 className="px-3 text-xs font-medium text-muted-foreground/70 mb-2">{group}</h4>
+                  <div key={group}>
+                    <h4 className="px-3 py-1.5 text-xs font-semibold text-muted-foreground/60 uppercase tracking-wide">{group}</h4>
                     <div className="space-y-0.5">
                       {groupSessions.map((session) => (
                         <SessionItem
