@@ -6,7 +6,7 @@ const nextConfig = {
   // Empty turbopack config to silence Next.js 16 Turbopack warning
   turbopack: {},
   // Externalize packages with dynamic requires that don't work with Turbopack
-  serverExternalPackages: ['express', 'inngest'],
+  serverExternalPackages: [],
   images: {
     remotePatterns: [
       {
