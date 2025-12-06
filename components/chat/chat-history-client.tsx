@@ -134,17 +134,22 @@ const SessionItem = memo(function SessionItem({
             )}
           </div>
         </AlertDialogTrigger>
+        {/* @ts-expect-error - TS 4.9.5 doesn't infer Radix types correctly */}
         <AlertDialogContent className="sm:max-w-md">
           <AlertDialogHeader>
+            {/* @ts-expect-error - TS 4.9.5 type inference issue */}
             <AlertDialogTitle>Delete conversation?</AlertDialogTitle>
+            {/* @ts-expect-error - TS 4.9.5 type inference issue */}
             <AlertDialogDescription>
               This will permanently delete this conversation and cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="flex-col sm:flex-row gap-2 sm:gap-0">
+            {/* @ts-expect-error - TS 4.9.5 type inference issue */}
             <AlertDialogCancel className="w-full sm:w-auto">Cancel</AlertDialogCancel>
+            {/* @ts-expect-error - TS 4.9.5 type inference issue */}
             <AlertDialogAction
-              onClick={(e) => {
+              onClick={(e: React.MouseEvent) => {
                 e.stopPropagation();
                 onDelete(session.id);
               }}
@@ -937,6 +942,7 @@ export function ChatHistoryClient({ chatType, initialSessions = [], onSessionSel
       </div>
 
       {/* Scrollable content */}
+      {/* @ts-ignore - TS 4.9.5 type inference issue with Radix ScrollArea */}
       <ScrollArea className="flex-1">
         <div className="py-3 space-y-4">
           {(isLoading || isAuthPending) ? (
