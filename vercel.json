@@ -1,5 +1,9 @@
 {
     "$schema": "https://openapi.vercel.sh/vercel.json",
     "framework": "nextjs",
-    "buildCommand": "next build --no-turbopack"
+    "build": {
+        "env": {
+            "NEXT_PRIVATE_SKIP_TURBOPACK": "1"
+        }
+    }
 }
