@@ -63,7 +63,7 @@
     "inngest": "^3.40.1",
     "lucide-react": "0.105.0-alpha.4",
     "motion": "^12.10.5",
-    "next": "16.0.7",
+    "next": "16.1.0-canary.12",
     "next-cloudinary": "^6.16.0",
     "next-pwa": "^5.6.0",
     "next-themes": "^0.2.1",
