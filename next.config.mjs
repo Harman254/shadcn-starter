@@ -3,6 +3,8 @@ import withPWA from 'next-pwa';
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   experimental: {},
+  // Empty turbopack config to silence Next.js 16 Turbopack warning
+  turbopack: {},
   images: {
     remotePatterns: [
       {
@@ -11,7 +13,6 @@ const nextConfig = {
         port: '',
         pathname: '/**',
       },
-    
     ],
     dangerouslyAllowSVG: true,
     contentDispositionType: 'attachment',
