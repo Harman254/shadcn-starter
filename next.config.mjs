@@ -16,6 +16,13 @@ const nextConfig = {
         pathname: '/**',
       },
     ],
+    // Allow local placeholder images with query strings
+    localPatterns: [
+      {
+        pathname: '/**',
+        search: '',
+      },
+    ],
     dangerouslyAllowSVG: true,
     contentDispositionType: 'attachment',
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
