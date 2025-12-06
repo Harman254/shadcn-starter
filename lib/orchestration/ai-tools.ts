@@ -737,7 +737,6 @@ export const generateGroceryList = tool({
 
 ## USER LOCATION (CRITICAL - Use search to find REAL stores here)
 - City: ${locationData.city || 'San Francisco'}
-- Country: ${locationData.country || 'US'}
 - Currency: ${locationData.currencySymbol || '$'}
 
 ## INGREDIENTS TO PROCESS
@@ -1205,28 +1204,257 @@ Return valid JSON with a list of recipes found.`,
     },
 });
 
-export const generateMealRecipe = tool({
-    description: 'Generate a detailed recipe for a specific dish. Use this when the user asks for a specific recipe (e.g. "Recipe for Chapati", "How to make Sushi") or clicks on a recipe suggestion.',
-    parameters: z.object({
-        name: z.string().describe('The name of the dish to generate a recipe for.'),
-        description: z.string().optional().describe('Additional context or preferences (e.g. "spicy", "vegan").'),
-    }),
-    execute: async ({ name, description }): Promise<ToolResult> => {
-        try {
-            console.log(`[generateMealRecipe] 🍳 Generating recipe for "${name}"...`);
+// ============================================================================
+// SEARCH FOOD DATA TOOL - THE ONLY SEARCH-GROUNDED TOOL
+// ============================================================================
 
+export const searchFoodData = tool({
+    description: `Search for real-world, up-to-date food data. This is the ONLY tool with search grounding enabled. Use when user asks about:
+- Real nutrition facts ("calories in ugali", "protein in 100g omena", "KFC Zinger nutrition")
+- Kenyan/African foods ("calories in matoke", "nduma nutrition", "nyama choma macros")
+- Food prices ("price of 1kg beef in Nairobi", "milk price at Naivas")
+- Food availability ("where to buy quinoa in Kenya", "is almond flour available locally")
+- Ingredient substitutions ("alternative to heavy cream", "butter substitute")
+- Health facts ("are mangoes high in sugar", "do bananas cause weight gain", "foods high in iron")`,
+    parameters: z.object({
+        query: z.string().describe('The food-related question or search query'),
+        queryType: z.enum([
+            'nutrition',      // Calories, macros, vitamins, minerals
+            'price',          // Local food prices
+            'availability',   // Where to buy, local availability
+            'substitution',   // Ingredient alternatives
+            'health_fact',    // General health/nutrition facts
+            'comparison',     // Compare two foods
+        ]).describe('Type of food data being requested'),
+        foodItem: z.string().optional().describe('Specific food item being queried (e.g., "ugali", "KFC Zinger")'),
+        location: z.string().optional().describe('Location context for prices/availability (e.g., "Nairobi", "Kenya")'),
+    }),
+    execute: async ({ query, queryType, foodItem, location }): Promise<ToolResult> => {
+        try {
+            console.log(`[searchFoodData] 🔍 Query: "${query}" | Type: ${queryType}`);
+
+            // 1. Get User Location for Context
+            let userLocation = location || '';
+            if (!userLocation) {
+                try {
+                    const { auth } = await import('@/lib/auth');
+                    const { headers } = await import('next/headers');
+                    const session = await auth.api.getSession({ headers: await headers() });
+                    if (session?.user?.id) {
+                        const { getLocationDataWithCaching } = await import('@/lib/location');
+                        const locationData = await getLocationDataWithCaching(session.user.id, session.session.id);
+                        userLocation = `${locationData.city || ''}, ${locationData.country || 'Kenya'}`;
+                    }
+                } catch (e) {
+                    userLocation = 'Kenya'; // Default fallback
+                }
+            }
+
+            // 2. Build Query-Type Specific Schema
             const { generateObject } = await import('ai');
             const { google } = await import('@ai-sdk/google');
             const { z } = await import('zod');
 
             const result = await generateObject({
-                model: google('gemini-2.0-flash'),
+                model: google('gemini-2.0-flash', {
+                    useSearchGrounding: true, // ⭐ THE KEY - REAL WEB SEARCH
+                }),
+                temperature: 0.1, // Low temperature for factual accuracy
+                schema: z.object({
+                    query: z.string(),
+                    queryType: z.string(),
+                    foodItem: z.string().optional(),
+
+                    // Nutrition Data (if applicable)
+                    nutrition: z.object({
+                        servingSize: z.string().optional(),
+                        calories: z.number().optional(),
+                        protein: z.number().optional(),
+                        carbs: z.number().optional(),
+                        fat: z.number().optional(),
+                        fiber: z.number().optional(),
+                        sugar: z.number().optional(),
+                        sodium: z.number().optional(),
+                        vitamins: z.array(z.object({
+                            name: z.string(),
+                            amount: z.string(),
+                            dailyValue: z.string().optional(),
+                        })).optional(),
+                        minerals: z.array(z.object({
+                            name: z.string(),
+                            amount: z.string(),
+                            dailyValue: z.string().optional(),
+                        })).optional(),
+                        glycemicIndex: z.number().optional(),
+                        allergens: z.array(z.string()).optional(),
+                    }).optional(),
+
+                    // Price Data (if applicable)
+                    pricing: z.object({
+                        item: z.string(),
+                        prices: z.array(z.object({
+                            store: z.string(),
+                            price: z.string(),
+                            unit: z.string(),
+                            notes: z.string().optional(),
+                        })),
+                        averagePrice: z.string().optional(),
+                        currency: z.string(),
+                        lastUpdated: z.string().optional(),
+                    }).optional(),
+
+                    // Availability Data (if applicable)
+                    availability: z.object({
+                        item: z.string(),
+                        isAvailableLocally: z.boolean(),
+                        stores: z.array(z.object({
+                            name: z.string(),
+                            location: z.string().optional(),
+                            notes: z.string().optional(),
+                        })),
+                        alternatives: z.array(z.string()).optional(),
+                        onlineOptions: z.array(z.string()).optional(),
+                    }).optional(),
+
+                    // Substitution Data (if applicable)
+                    substitutions: z.array(z.object({
+                        name: z.string(),
+                        ratio: z.string(),
+                        notes: z.string(),
+                        bestFor: z.array(z.string()).optional(),
+                    })).optional(),
+
+                    // Health Facts (if applicable)
+                    healthFacts: z.object({
+                        summary: z.string(),
+                        benefits: z.array(z.string()).optional(),
+                        concerns: z.array(z.string()).optional(),
+                        recommendation: z.string().optional(),
+                    }).optional(),
+
+                    // Comparison Data (if applicable)
+                    comparison: z.object({
+                        items: z.array(z.string()),
+                        winner: z.string().optional(),
+                        summary: z.string(),
+                        differences: z.array(z.object({
+                            metric: z.string(),
+                            values: z.array(z.string()),
+                        })).optional(),
+                    }).optional(),
+
+                    // Sources
+                    sources: z.array(z.object({
+                        name: z.string(),
+                        url: z.string().optional(),
+                    })).optional(),
+
+                    // Summary
+                    summary: z.string().describe('A concise answer to the user query'),
+                }),
+                prompt: `You are a food data specialist with access to real-world databases. Search and extract ACCURATE, VERIFIED data.
+
+## USER QUERY
+"${query}"
+
+## QUERY TYPE
+${queryType}
+
+## FOOD ITEM
+${foodItem || 'Not specified'}
+
+## USER LOCATION
+${userLocation || 'Kenya'}
+
+## CRITICAL INSTRUCTIONS
+1. **USE SEARCH:** You MUST use search grounding to find REAL data. Do NOT guess or hallucinate.
+2. **SOURCES:** Include the sources where you found the data (USDA, nutritional databases, local supermarket sites, etc.).
+3. **ACCURACY:** For nutrition, use verified sources like USDA, Kenya Nutrition Tables, or official brand data.
+4. **LOCAL CONTEXT:** For prices/availability, focus on ${userLocation || 'Kenyan'} markets (Naivas, Carrefour, Quickmart, local markets).
+5. **KENYAN FOODS:** If asking about local foods (ugali, matoke, nduma, omena, nyama choma), use East African nutritional data.
+6. **BE SPECIFIC:** Include exact values with units (g, mg, kcal, KES, etc.).
+
+## QUERY-SPECIFIC FOCUS
+${queryType === 'nutrition' ? '- Extract complete nutritional breakdown per serving\n- Include vitamins and minerals if available\n- Note allergens and glycemic index' : ''}
+${queryType === 'price' ? '- Find CURRENT prices from local supermarkets\n- Include multiple stores for comparison\n- Specify currency (KES/USD)' : ''}
+${queryType === 'availability' ? '- Check if item is available in local markets\n- Suggest specific stores and locations\n- Offer alternatives if not available' : ''}
+${queryType === 'substitution' ? '- Provide 3-5 substitutes ranked by effectiveness\n- Include exact ratios\n- Note taste/texture differences' : ''}
+${queryType === 'health_fact' ? '- Provide evidence-based health information\n- Cite studies or reputable sources\n- Give balanced pros and cons' : ''}
+${queryType === 'comparison' ? '- Compare nutritionally and practically\n- Declare a winner with reasoning\n- Use a table format internally' : ''}
+
+Return valid JSON with ONLY the relevant sections populated.`,
+            });
+
+            if (!result.object) {
+                throw new Error('Failed to search food data');
+            }
+
+            const foodData = result.object;
+
+            // 3. Create UI Metadata
+            const uiMetadata = {
+                foodData: foodData,
+            };
+            const uiMetadataEncoded = Buffer.from(JSON.stringify(uiMetadata)).toString('base64');
+
+            return successResponse(
+                foodData,
+                `✅ ${foodData.summary} [UI_METADATA:${uiMetadataEncoded}]`
+            );
+
+        } catch (error) {
+            console.error('[searchFoodData] Error:', error);
+            return errorResponse("I couldn't find that food information. Please try rephrasing your question.", ErrorCode.GENERATION_FAILED, true);
+        }
+    },
+});
+
+export const generateMealRecipe = tool({
+    description: 'Generate a detailed recipe for a specific dish. Use this when the user asks for a specific recipe (e.g. "Recipe for Chapati", "How to make Sushi") or clicks on a recipe suggestion.',
+    parameters: z.object({
+        name: z.string().describe('The name of the dish to generate a recipe for.'),
+        description: z.string().optional().describe('Additional context or preferences (e.g. "spicy", "vegan").'),
+        chatMessages: z.array(z.object({
+            role: z.enum(['user', 'assistant']),
+            content: z.string()
+        })).optional().describe('Recent chat messages to understand context and specific requests'),
+    }),
+    execute: async ({ name, description, chatMessages }): Promise<ToolResult> => {
+        try {
+            console.log(`[generateMealRecipe] 🍳 Generating recipe for "${name}"...`);
+
+            // 1. Get User Session & Preferences
+            const { auth } = await import('@/lib/auth');
+            const { headers } = await import('next/headers');
+            const session = await auth.api.getSession({ headers: await headers() });
+
+            let userPrefsContext = '';
+            if (session?.user?.id) {
+                const prisma = (await import('@/lib/prisma')).default;
+                const onboarding = await prisma.onboardingData.findUnique({
+                    where: { userId: session.user.id }
+                });
+                if (onboarding) {
+                    userPrefsContext = `User Preferences: Dietary: ${onboarding.dietaryPreference}, Goal: ${onboarding.goal}, Cuisines: ${onboarding.cuisinePreferences.join(', ')}`;
+                }
+            }
+
+            // 2. Generate Recipe with AI SDK
+            const { generateObject } = await import('ai');
+            const { google } = await import('@ai-sdk/google');
+            const { z } = await import('zod');
+
+            const result = await generateObject({
+                model: google('gemini-2.0-flash', {
+                    useSearchGrounding: true, // Enable search for accurate recipe data
+                }),
                 temperature: 0.4,
                 schema: z.object({
                     name: z.string(),
                     description: z.string(),
                     prepTime: z.string(),
                     cookTime: z.string(),
+                    totalTime: z.string(),
                     servings: z.number(),
                     difficulty: z.enum(['Easy', 'Medium', 'Hard']),
                     calories: z.number(),
@@ -1238,15 +1466,30 @@ export const generateMealRecipe = tool({
                         protein: z.number(),
                         carbs: z.number(),
                         fat: z.number(),
+                        fiber: z.number().optional(),
                     }),
-                    imageUrl: z.string().optional().describe('A placeholder image URL for the dish'),
+                    tips: z.array(z.string()).describe('Chef tips for best results'),
+                    variations: z.array(z.object({
+                        name: z.string(),
+                        description: z.string(),
+                    })).describe('Recipe variations (e.g., vegan, spicy, etc.)'),
+                    sourceUrl: z.string().optional().describe('URL to original recipe if found via search'),
                 }),
-                prompt: `Generate a detailed recipe for "${name}" ${description ? `(${description})` : ''}.
+                prompt: `Generate a detailed, accurate recipe for "${name}"${description ? ` (${description})` : ''}.
 
-Include:
-- Accurate ingredients and step - by - step instructions.
-- Nutritional estimate per serving.
-- A placeholder image URL from Unsplash(source.unsplash.com / 800x600 /? <dish-name >).
+## User Context
+${userPrefsContext || 'No saved preferences.'}
+
+## Recent Chat Context (if relevant)
+${chatMessages?.slice(-5).map(m => `${m.role.toUpperCase()}: ${m.content}`).join('\n') || 'No recent context.'}
+
+## INSTRUCTIONS
+1. **USE SEARCH:** Find REAL recipes from reputable sources. Extract accurate measurements and techniques.
+2. **Respect Preferences:** If user has dietary restrictions, adapt the recipe accordingly.
+3. **Include Details:** Provide accurate prep/cook times, servings, and nutritional info per serving.
+4. **Chef Tips:** Add 2-3 practical tips for best results.
+5. **Variations:** Suggest 2-3 recipe variations (e.g., healthier, spicier, vegan).
+6. **Source:** If found from a real recipe site, include the sourceUrl.
 
 Return valid JSON.`,
             });
@@ -1257,12 +1500,19 @@ Return valid JSON.`,
 
             const recipe = {
                 ...result.object,
-                // Use Cloudinary placeholder instead of AI-generated or Unsplash
+                // Use Cloudinary placeholder for consistent image display
                 imageUrl: 'https://res.cloudinary.com/dcidanigq/image/upload/v1742111994/samples/food/fish-vegetables.jpg'
             };
 
-            // Create UI metadata
+            // 3. Create UI Metadata with Save Action
             const uiMetadata = {
+                actions: [
+                    {
+                        label: 'Save Recipe',
+                        action: 'save_recipe' as const,
+                        data: recipe,
+                    },
+                ],
                 mealRecipe: recipe,
             };
             const uiMetadataEncoded = Buffer.from(JSON.stringify(uiMetadata)).toString('base64');
@@ -1655,14 +1905,17 @@ Return valid JSON.`,
 });
 
 export const tools = {
+    fetchUserPreferences,
     generateMealPlan,
     analyzeNutrition,
     getGroceryPricing,
     generateGroceryList,
+    optimizeGroceryList,
     generateMealRecipe,
     modifyMealPlan,
     swapMeal,
     searchRecipes,
+    searchFoodData,
     suggestIngredientSubstitutions,
     getSeasonalIngredients,
     planFromInventory,

@@ -120,7 +120,7 @@ export function ChatInput({ onSubmit, isLoading, disabled = false, input, handle
             onKeyDown={handleKeyDown}
             onFocus={() => setIsFocused(true)}
             onBlur={() => setIsFocused(false)}
-            placeholder={disabled ? "Sign in to start chatting..." : "Ask anything..."}
+            placeholder={disabled ? "Sign in to start chatting..." : "Ask anything about food..."}
             rows={1}
             className={cn(
               "flex-1 resize-none bg-transparent border-none",

@@ -139,7 +139,7 @@ export class OrchestratedChatFlow {
           } catch (e) {
             clearInterval(keepAliveInterval);
           }
-        }, 2000);
+        }, 3000); // 3s to reduce noise while preventing timeouts
 
         try {
           // 1. Initial Status
@@ -255,14 +255,7 @@ export class OrchestratedChatFlow {
             controller.enqueue(value);
           }
 
-          // CRITICAL FIX: If synthesis produced no visible text but tools succeeded,
-          // send a fallback message so the user isn't left with a blank response
-          const visibleText = accumulatedText.trim().replace(/<!--[\s\S]*?-->/g, '').trim();
-          if (hasSuccessfulTools && visibleText.length === 0) {
-            console.warn('[OrchestratedChatFlow] ⚠️ Synthesis produced empty response despite tool success. Adding fallback.');
-            const fallbackMessage = "Here's what I've prepared for you! 🎉";
-            controller.enqueue(encoder.encode(`0:${JSON.stringify(fallbackMessage)}\n`));
-          }
+
 
           // Send UI data as a hidden HTML comment at the end of the message
           // This ensures it travels with the text and is persisted in history
@@ -315,29 +308,42 @@ export class OrchestratedChatFlow {
     const hasResults = toolMessages.length > 0;
     const hasErrors = toolMessages.some(m => m.includes('FAILED'));
 
+    // Randomize personality for variety
+    const personalities = [
+      'a friendly chef who loves sharing food wisdom',
+      'an enthusiastic food blogger excited about healthy eating',
+      'a warm kitchen companion who makes cooking fun',
+      'a supportive nutritionist who celebrates every meal',
+      'a cheerful sous chef who loves to help'
+    ];
+    const personality = personalities[Math.floor(Math.random() * personalities.length)];
+
     return `
       USER MESSAGE: "${userMessage}"
       
       TOOL EXECUTION SUMMARY:
       ${hasResults ? toolMessages.join('\n') : 'No tools were executed.'}
       
-      CRITICAL INSTRUCTIONS:
+      YOUR PERSONALITY: You are ${personality}.
+      
+      CREATIVE RESPONSE GUIDELINES:
       ${hasResults ? `
       - The UI is ALREADY showing the full data (meal plan cards, grocery lists, etc.)
-      - Your job is to write a SHORT, friendly acknowledgment (1-2 sentences MAX)
-      - DO NOT describe what's in the meal plan - the user can see it in the UI
-      - DO NOT list meals, ingredients, or prices - they're already displayed
-      - Just say something like "I've created your meal plan! Enjoy!" or "Here's your grocery list!"
-      - If there are ERRORS in the summary, apologize specifically for that part (e.g. "I couldn't get the prices, but here is the plan.") and suggest a next step (e.g. "Try asking for the list again").
-      - Keep it enthusiastic but VERY brief
+      - Write a SHORT, creative acknowledgment (1-2 sentences MAX)
+      - DO NOT describe what's in the data - the user can SEE it
+      - BE CREATIVE! Vary your responses each time:
+        * Use different greetings (Awesome! / Voilà! / Ta-da! / Here you go! / Done!)
+        * Add relevant emojis sparingly (🎉 🍳 🥗 ✨)
+        * Occasionally add a fun food fact or tip
+        * Sometimes ask a follow-up question ("Want me to adjust anything?")
+      - If there are ERRORS, be honest but helpful ("Hmm, couldn't get prices, but here's your plan!")
+      - Match the user's energy - if they're excited, be excited back!
       ` : `
-      - No tools were executed. This means the user likely asked a general question, just said hello, or is following up on a previous message.
-      - CHECK THE CONVERSATION HISTORY. If the user says "??" or "Hello?", they might be waiting for a response to their previous message.
-      - Answer the user's question directly and helpfully.
-      - Be conversational, friendly, and engaging.
-      - If they asked about the app's capabilities, explain that you can help with meal planning, grocery lists, and nutrition.
-      - Do NOT apologize unless there was an actual error.
-      - If the previous tool execution FAILED, explain why in simple terms and ask if they want to try again.
+      - No tools were executed - this is a general chat.
+      - Be conversational, witty, and engaging.
+      - Show your food expertise naturally.
+      - Ask clarifying questions if unsure what they need.
+      - If they said hello, greet them warmly and ask how you can help with their meal planning.
       `}
       `;
   }
@@ -378,7 +384,7 @@ AVAILABLE TOOLS:
 - swapMeal: Swap a specific meal in the plan
 - generateMealRecipe: Generate detailed recipe for a meal
 - generateGroceryList: Create shopping list (optional mealPlanId, works from context)
-- optimizeGroceryList: Optimize grocery list with pricing and substitutions
+- searchFoodData: Search real-world food data (nutrition, prices, availability, substitutions)
 - analyzeNutrition: Analyze nutrition (optional mealPlanId, works from context)
 
 CRITICAL ORCHESTRATION RULES:

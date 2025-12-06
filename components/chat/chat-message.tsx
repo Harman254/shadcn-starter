@@ -31,6 +31,7 @@ import { SubstitutionDisplay } from "./tools/substitution-display"
 import { SeasonalDisplay } from "./tools/seasonal-display"
 import { InventoryPlanDisplay } from "./tools/inventory-plan-display"
 import { PrepTimelineDisplay } from "./tools/prep-timeline-display"
+import { FoodDataDisplay } from "./tools/food-data-display"
 
 interface ChatMessageProps {
   message?: Message
@@ -775,7 +776,7 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
       </article>
 
       {/* Tool call results (meal plan/grocery list) - Full width immersive display - BREAKS OUT OF CONTAINER */}
-      {isAssistant && (uiData?.mealPlan || uiData?.groceryList || uiData?.mealSuggestions || uiData?.mealRecipe || uiData?.nutrition || uiData?.prices || uiData?.recipeResults || uiData?.substitutions || uiData?.seasonal || uiData?.inventoryPlan || uiData?.prepTimeline) && (
+      {isAssistant && (uiData?.mealPlan || uiData?.groceryList || uiData?.mealSuggestions || uiData?.mealRecipe || uiData?.nutrition || uiData?.prices || uiData?.recipeResults || uiData?.substitutions || uiData?.seasonal || uiData?.inventoryPlan || uiData?.prepTimeline || uiData?.foodData) && (
         <div className={cn(
           "w-full max-w-3xl mx-auto", // Constrain to same width
           "px-0 sm:px-0", // Remove padding for immersive feel
@@ -957,6 +958,18 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
               className="w-full max-w-2xl mx-auto"
             >
               <PrepTimelineDisplay data={uiData.prepTimeline} />
+            </motion.div>
+          )}
+
+          {/* Food Data Display (searchFoodData) */}
+          {uiData?.foodData && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+              className="w-full max-w-2xl mx-auto"
+            >
+              <FoodDataDisplay data={uiData.foodData} />
             </motion.div>
           )}
         </div>
