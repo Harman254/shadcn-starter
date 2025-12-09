@@ -3,6 +3,7 @@
 import { motion } from "framer-motion"
 import { Activity, Flame, Droplets, Wheat, Zap, TrendingUp, AlertCircle, Wand2, Heart } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { CitationList } from "./citation-link"
 
 interface NutritionDisplayProps {
   nutrition: any
@@ -304,6 +305,17 @@ export function NutritionDisplay({ nutrition }: NutritionDisplayProps) {
                 </motion.div>
               ))}
             </div>
+          </div>
+        )}
+
+        {/* Citations */}
+        {nutrition.citations?.length > 0 && (
+          <div className="relative px-6 sm:px-8 pb-4">
+            <CitationList 
+              citations={nutrition.citations.map((c: any) => ({ url: c.url, label: c.title }))} 
+              title="Data Sources"
+              className="text-white/60"
+            />
           </div>
         )}
 

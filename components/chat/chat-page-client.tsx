@@ -5,6 +5,14 @@ import { Menu, Wand2, Plus, History, MessageSquare } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { Skeleton } from '@/components/ui/skeleton';
 
+
+
+const pacifico = Pacifico({
+  subsets: ["latin"],
+  weight: ["400"],
+  variable: "--font-pacifico",
+})
+
 // Lazy load heavy components
 const ChatPanel = dynamic(() => import('@/components/chat/chat-panel').then(mod => mod.ChatPanel), {
   loading: () => (
@@ -34,6 +42,7 @@ import { Button } from '@/components/ui/button';
 import { UserPreference } from '@/types';
 import { cn } from '@/lib/utils';
 import { useChatStore } from '@/store/chat-store';
+import { Pacifico} from 'next/font/google';
 
 interface ChatPageClientProps {
   preferences?: UserPreference[];
@@ -50,10 +59,7 @@ export function ChatPageClient({ preferences = [], preferencesSummary = '' }: Ch
     setMounted(true);
   }, []);
 
-  const handleNewChat = () => {
-    createSession('context-aware');
-    setHistoryOpen(false); // Close mobile menu if open
-  };
+
 
   if (!mounted) return null;
 
@@ -69,7 +75,13 @@ export function ChatPageClient({ preferences = [], preferencesSummary = '' }: Ch
               <div className="p-1.5 bg-primary/10 rounded-md">
                 <Wand2 className="h-4 w-4" />
               </div>
-              <span>Mealwise AI</span>
+              <span
+                              className={cn(
+                                "bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 via-black/90 to-rose-500 dark:from-indigo-300 dark:via-white/90 dark:to-rose-300 ",
+                                pacifico.className,
+                              )}
+                            >Mealwise
+                              </span>
            </div>
         </div>
       </div>
@@ -91,12 +103,7 @@ export function ChatPageClient({ preferences = [], preferencesSummary = '' }: Ch
                   Mealwise
                 </SheetTitle>
               </SheetHeader>
-              <div className="p-4">
-                 <Button onClick={handleNewChat} className="w-full justify-start gap-2" variant="outline">
-                    <Plus className="h-4 w-4" />
-                    New Chat
-                 </Button>
-              </div>
+
               <div className="flex-1 overflow-hidden">
                 <ChatHistoryClient 
                   chatType="context-aware"

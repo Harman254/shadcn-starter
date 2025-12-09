@@ -18,6 +18,7 @@ import { logger } from '@/utils/logger';
 import { fetchWithRetry } from '@/utils/api-retry';
 import { useChat } from '@ai-sdk/react';
 import { Button } from '@/components/ui/button';
+import { motion, AnimatePresence } from 'framer-motion';
 
 // Cache empty arrays outside component to ensure stable references
 const EMPTY_MESSAGES: Message[] = [];
@@ -283,7 +284,13 @@ setMessages(storeMessages);
   }, [finalSessionId, clearSession, clearFromDatabase, toast, setMessages]);
 
   return (
-    <div className="flex flex-col h-full w-full relative">
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.5 }}
+      className="flex flex-col h-full w-full relative"
+    >
       <div ref={scrollContainerRef} className="flex-1 overflow-y-auto overflow-x-hidden min-h-0">
         <div className="max-w-3xl mx-auto w-full pb-32 sm:pb-40 px-4">
           {messages.length === 0 ? (
@@ -329,6 +336,6 @@ setMessages(storeMessages);
             />
           </div>
       </div>
-    </div>
+    </motion.div>
   );
 }

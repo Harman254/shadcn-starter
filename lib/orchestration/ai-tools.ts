@@ -5,6 +5,17 @@ import { getPricingClient } from './api-clients/grocery-pricing-api';
 import prisma from '@/lib/prisma';
 import { ToolResult, ErrorCode, successResponse, errorResponse } from '@/lib/types/tool-result';
 
+// Helper to validate URLs
+function isValidUrl(urlString: string | undefined): boolean {
+    if (!urlString) return false;
+    try {
+        const url = new URL(urlString);
+        return url.protocol === 'http:' || url.protocol === 'https:';
+    } catch {
+        return false;
+    }
+}
+
 // ============================================================================
 // FETCH USER PREFERENCES TOOL
 // ============================================================================
@@ -336,6 +347,10 @@ export const analyzeNutrition = tool({
                     insights: z.array(z.string()).describe('Nutritional insights and recommendations'),
                     healthScore: z.number().min(0).max(100).describe('Overall health score (0-100)'),
                     summary: z.string().describe('A concise 1-2 sentence summary of the nutritional analysis (e.g., "High protein plan with balanced macros, suitable for muscle gain.")'),
+                    citations: z.array(z.object({
+                        url: z.string().describe('Source URL where nutritional data was found'),
+                        title: z.string().describe('Title or name of the source'),
+                    })).optional().describe('List of sources used for nutritional data, extracted from search results'),
                 }),
                 prompt: `You are a nutrition expert.Analyze the following ${type} and provide detailed nutrition information.
 
@@ -368,6 +383,7 @@ Return valid JSON.`,
                     insights: nutritionData.insights,
                     healthScore: nutritionData.healthScore,
                     summary: nutritionData.summary,
+                    citations: nutritionData.citations?.filter((c: any) => isValidUrl(c.url)) || [],
                     title: title,
                     type: type
                 }
@@ -381,6 +397,7 @@ Return valid JSON.`,
                     insights: nutritionData.insights,
                     healthScore: nutritionData.healthScore,
                     summary: nutritionData.summary,
+                    citations: nutritionData.citations?.filter((c: any) => isValidUrl(c.url)) || [],
                 },
                 `✅ Nutrition Analysis: ${nutritionData.summary} (Health Score: ${nutritionData.healthScore}/100)[UI_METADATA: ${uiMetadataEncoded}]`
             );
@@ -521,17 +538,22 @@ Return valid JSON.`,
                 throw new Error('Failed to generate pricing estimates');
             }
 
+            const sanitizedPrices = result.object.prices.map(p => ({
+                ...p,
+                sourceUrl: isValidUrl(p.sourceUrl) ? p.sourceUrl : undefined
+            }));
+
             const uiMetadata = {
-                prices: result.object.prices,
+                prices: sanitizedPrices,
                 title: title
             };
             const uiMetadataEncoded = Buffer.from(JSON.stringify(uiMetadata)).toString('base64');
 
             return successResponse(
                 {
-                    prices: result.object.prices
+                    prices: sanitizedPrices
                 },
-                `✅ Estimated grocery costs for "${title}": ${result.object.prices.map(p => `${p.store}: ${p.currency}${p.total}`).join(', ')}.[UI_METADATA: ${uiMetadataEncoded}]`
+                `✅ Estimated grocery costs for "${title}": ${sanitizedPrices.map(p => `${p.store}: ${p.currency}${p.total}`).join(', ')}.[UI_METADATA: ${uiMetadataEncoded}]`
             );
 
         } catch (error) {
@@ -1902,6 +1924,134 @@ Return valid JSON.`,
     },
 });
 
+// ============================================================================
+// SMART PANTRY VISION TOOL
+// ============================================================================
+
+export const analyzePantryImage = tool({
+    description: 'Analyze an image of a fridge or pantry to identify ingredients. Use this whenever the user uploads an image and asks to "scan my fridge", "check my pantry", or "add these to inventory".',
+    parameters: z.object({
+        imageUrl: z.string().describe('The URL of the image to analyze.'),
+    }),
+    execute: async ({ imageUrl }): Promise<ToolResult> => {
+        try {
+            console.log(`[analyzePantryImage] 📸 Analyzing image: ${imageUrl}`);
+
+            const { generateObject } = await import('ai');
+            const { google } = await import('@ai-sdk/google');
+            const { z } = await import('zod');
+
+            const result = await generateObject({
+                model: google('gemini-2.0-flash'), // Supports vision
+                schema: z.object({
+                    items: z.array(z.object({
+                        name: z.string(),
+                        category: z.enum(['produce', 'dairy', 'protein', 'grains', 'spices', 'other']),
+                        quantity: z.string().describe('Estimated quantity (e.g. "2", "1/2 gallon")'),
+                        expiryEstimate: z.string().optional().describe('Estimated shelf life (e.g., "1 week", "3 days")'),
+                    })),
+                    summary: z.string().describe('Brief summary of what was found'),
+                }),
+                messages: [
+                    {
+                        role: 'user',
+                        content: [
+                            { type: 'text', text: 'Analyze this image and identify all food ingredients visible. Estimate quantities and expiry where possible.' },
+                            { type: 'image', image: imageUrl }
+                        ],
+                    },
+                ],
+            });
+
+            if (!result.object) {
+                throw new Error('Failed to analyze image');
+            }
+
+            const { items, summary } = result.object;
+
+            // Create UI metadata for potential "Add to Pantry" button
+            const uiMetadata = {
+                pantryAnalysis: {
+                    items: items,
+                    imageUrl: imageUrl
+                },
+                actions: [
+                    {
+                        label: 'Add to Pantry',
+                        action: 'update_pantry',
+                        data: { items: items }
+                    }
+                ]
+            };
+            const uiMetadataEncoded = Buffer.from(JSON.stringify(uiMetadata)).toString('base64');
+
+            return successResponse(
+                { items, summary },
+                `✅ I found ${items.length} items: ${summary}. [UI_METADATA:${uiMetadataEncoded}]`
+            );
+
+        } catch (error) {
+            console.error('[analyzePantryImage] Error:', error);
+            return errorResponse("Failed to analyze image.", ErrorCode.GENERATION_FAILED, true);
+        }
+    },
+});
+
+// ============================================================================
+// UPDATE PANTRY TOOL
+// ============================================================================
+
+export const updatePantry = tool({
+    description: 'Update the user\'s pantry/inventory with new items or changes. Use this after analyzing an image or when user explicitly adds items.',
+    parameters: z.object({
+        items: z.array(z.object({
+            name: z.string(),
+            category: z.string().optional(),
+            quantity: z.string().optional(),
+            expiryEstimate: z.string().optional(),
+        })).describe('List of items to add or update'),
+    }),
+    execute: async ({ items }): Promise<ToolResult> => {
+        try {
+            console.log(`[updatePantry] 📝 Updating pantry with ${items.length} items...`);
+
+            const { auth } = await import('@/lib/auth');
+            const { headers } = await import('next/headers');
+            const session = await auth.api.getSession({ headers: await headers() });
+
+            if (!session?.user?.id) {
+                return errorResponse('You must be logged in to update your pantry.', ErrorCode.UNAUTHORIZED);
+            }
+
+            const prisma = (await import('@/lib/prisma')).default;
+
+            // Process items in transaction
+            await prisma.$transaction(
+                items.map(item =>
+                    prisma.pantryItem.create({
+                        data: {
+                            userId: session.user.id,
+                            name: item.name,
+                            category: item.category || 'Uncategorized',
+                            quantity: item.quantity || '1',
+                            expiry: item.expiryEstimate ? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) : null, // Default 1 week if not specific, logic can be improved
+                        }
+                    })
+                )
+            );
+
+            return successResponse(
+                { count: items.length },
+                `✅ Added ${items.length} items to your pantry!`
+            );
+
+        } catch (error) {
+            console.error('[updatePantry] Error:', error);
+            return errorResponse("Failed to update pantry.", ErrorCode.INTERNAL_ERROR, true);
+        }
+    },
+});
+
 export const tools = {
     fetchUserPreferences,
     generateMealPlan,
@@ -1918,4 +2068,6 @@ export const tools = {
     getSeasonalIngredients,
     planFromInventory,
     generatePrepTimeline,
+    analyzePantryImage,
+    updatePantry,
 };

@@ -1,9 +1,10 @@
 "use client"
 
 import { motion } from "framer-motion"
-import { ShoppingCart, ExternalLink, TrendingDown, DollarSign, Wand2, Crown, Building2, Tag } from "lucide-react"
+import { ShoppingCart, TrendingDown, DollarSign, Wand2, Crown, Building2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
+import { CitationLink } from "./citation-link"
 
 interface PricingDisplayProps {
   prices: any[]
@@ -114,18 +115,14 @@ export function PricingDisplay({ prices, onActionClick }: PricingDisplayProps) {
                         <Building2 className={cn("h-5 w-5", isBest ? "text-green-400" : "text-white/50")} />
                       </div>
                       <div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <span className="font-semibold text-white">{price.store}</span>
                           {price.sourceUrl && (
-                            <a 
-                              href={price.sourceUrl} 
-                              target="_blank" 
-                              rel="noopener noreferrer"
-                              className="text-white/40 hover:text-green-400 transition-colors"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <ExternalLink className="h-3.5 w-3.5" />
-                            </a>
+                            <CitationLink 
+                              url={price.sourceUrl} 
+                              label="View"
+                              className="!py-0.5 !px-1.5 !text-[10px]"
+                            />
                           )}
                         </div>
                         <span className="text-xs text-white/40">{price.notes || "Standard pricing"}</span>
