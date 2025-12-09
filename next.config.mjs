@@ -4,6 +4,9 @@ import withPWA from 'next-pwa';
 const nextConfig = {
   experimental: {},
 
+  // Empty turbopack config to silence the webpack/turbopack conflict warning on Vercel
+  turbopack: {},
+
   // Externalize packages with dynamic requires that don't work with Turbopack
   serverExternalPackages: [],
   images: {

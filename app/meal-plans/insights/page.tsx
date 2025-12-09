@@ -38,9 +38,9 @@ async function getInsights(userId: string): Promise<InsightData | null> {
     let totalCalories = 0
     let totalDays = 0
 
-    mealPlans.forEach((plan) => {
-      plan.days.forEach((dayMeal) => {
-        const dayCalories = dayMeal.meals.reduce((sum, meal) => sum + (meal.calories || 0), 0)
+    mealPlans.forEach((plan: typeof mealPlans[number]) => {
+      plan.days.forEach((dayMeal: typeof plan.days[number]) => {
+        const dayCalories = dayMeal.meals.reduce((sum: number, meal: typeof dayMeal.meals[number]) => sum + (meal.calories || 0), 0)
         if (dayCalories > 0) {
           totalCalories += dayCalories
           totalDays++
