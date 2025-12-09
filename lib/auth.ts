@@ -7,7 +7,6 @@ import type { User } from 'better-auth';
 import { Polar } from "@polar-sh/sdk";
 import { polar, checkout, portal, usage, webhooks } from "@polar-sh/better-auth";
 import { addSubscriber, updateSubscriber, removeSubscriber, getSubscriberByCustomerId } from '@/data';
-import { PolarWebhookPayload } from '@/types/polar-webhook';
 import { headers } from 'next/headers';
 
 const polarClient = new Polar({
@@ -20,10 +19,10 @@ export const auth = betterAuth({
   database: prismaAdapter(prisma, {
     provider: "postgresql",
   }),
-  
+
   // API route path - must match the route file location
   apiPath: "/api/auth",
-  
+
   // Email and Password Configuration
   emailAndPassword: {
     enabled: true,
@@ -60,7 +59,7 @@ export const auth = betterAuth({
     },
     tokenExpiration: 3600, // in seconds
   },
-  
+
   // Email Verification Settings
   emailVerification: {
     sendOnSignUp: true,
@@ -129,59 +128,59 @@ export const auth = betterAuth({
       client: polarClient,
       createCustomerOnSignUp: true,
       use: [
-          checkout({
-              products: [
-                  {
-                      productId: "d6f79514-fa26-4b48-a8f4-da20e3d087c5",
-                      slug: "Mealwise-Pro" // Custom slug for easy reference in Checkout URL, e.g. /checkout/Mealwise-Pro
-                  }
-              ],
-              successUrl: process.env.POLAR_SUCCESS_URL,
-              authenticatedUsersOnly: true
-          }),
-          portal(),
-          usage(),
-          webhooks({
-            secret: process.env.POLAR_WEBHOOK_SECRET!,
-            onSubscriptionCreated: async (payload: PolarWebhookPayload) => {
+        checkout({
+          products: [
+            {
+              productId: "d6f79514-fa26-4b48-a8f4-da20e3d087c5",
+              slug: "Mealwise-Pro" // Custom slug for easy reference in Checkout URL, e.g. /checkout/Mealwise-Pro
+            }
+          ],
+          successUrl: process.env.POLAR_SUCCESS_URL,
+          authenticatedUsersOnly: true
+        }),
+        portal(),
+        usage(),
+        webhooks({
+          secret: process.env.POLAR_WEBHOOK_SECRET!,
+          onSubscriptionCreated: async (payload) => {
+            try {
+              console.log("🎉 Subscription created webhook received:", {
+                type: payload.type,
+                customerId: payload.data.id,
+                timestamp: new Date().toISOString()
+              });
+
+              const customerId = payload.data.id;
+
+              // Get the current session to identify the user
+              const session = await auth.api.getSession({
+                headers: await headers()
+              });
+
+              if (!session?.user?.id) {
+                console.error("❌ No authenticated user found in session");
+                throw new Error("User not authenticated");
+              }
+
+              const userId = session.user.id;
+              console.log("👤 User ID from session:", userId);
+
+              // Save subscription in your database
+              const subscription = await addSubscriber(customerId, userId);
+
+              console.log("✅ Subscription saved successfully:", {
+                subscriptionId: subscription.id,
+                customerId: subscription.CustomerID,
+                userId: subscription.userID
+              });
+
+              // Send welcome email to the user
               try {
-                console.log("🎉 Subscription created webhook received:", {
-                  type: payload.type,
-                  customerId: payload.data.id,
-                  timestamp: new Date().toISOString()
-                });
-
-                const customerId = payload.data.id;
-                
-                // Get the current session to identify the user
-                const session = await auth.api.getSession({
-                  headers: await headers()
-                });
-
-                if (!session?.user?.id) {
-                  console.error("❌ No authenticated user found in session");
-                  throw new Error("User not authenticated");
-                }
-
-                const userId = session.user.id;
-                console.log("👤 User ID from session:", userId);
-            
-                // Save subscription in your database
-                const subscription = await addSubscriber(customerId, userId);
-                
-                console.log("✅ Subscription saved successfully:", {
-                  subscriptionId: subscription.id,
-                  customerId: subscription.CustomerID,
-                  userId: subscription.userID
-                });
-
-                // Send welcome email to the user
-                try {
-                  await resend.emails.send({
-                    from: "noreply@aimealwise.com",
-                    to: session.user.email,
-                    subject: "Welcome to MealWise Pro! 🎉",
-                    html: `
+                await resend.emails.send({
+                  from: "noreply@aimealwise.com",
+                  to: session.user.email,
+                  subject: "Welcome to MealWise Pro! 🎉",
+                  html: `
                       <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
                         <h1 style="color: #16a34a;">Welcome to MealWise Pro!</h1>
                         <p>Thank you for subscribing to MealWise Pro! You now have access to:</p>
@@ -204,58 +203,56 @@ export const auth = betterAuth({
                         </a>
                       </div>
                     `,
-                  });
-                  console.log("📧 Welcome email sent successfully");
-                } catch (emailError) {
-                  console.error("❌ Failed to send welcome email:", emailError);
-                  // Don't throw here - email failure shouldn't break the webhook
-                }
-
-              } catch (error) {
-                console.error("❌ Error handling subscription creation:", error);
-                // Re-throw to let Polar know the webhook failed
-                throw error;
-              }
-            },
-            onCustomerStateChanged: async (payload: PolarWebhookPayload) => {
-              try {
-                console.log("🔄 Customer state changed webhook received:", {
-                  type: payload.type,
-                  customerId: payload.data.id,
-                  activeSubscriptions: payload.data.active_subscriptions?.length || 0,
-                  activeBenefits: payload.data.active_benefits?.length || 0,
-                  timestamp: new Date().toISOString()
                 });
+                console.log("📧 Welcome email sent successfully");
+              } catch (emailError) {
+                console.error("❌ Failed to send welcome email:", emailError);
+                // Don't throw here - email failure shouldn't break the webhook
+              }
 
-                const customerId = payload.data.id;
-                const activeSubscriptions = payload.data.active_subscriptions || [];
-                const activeBenefits = payload.data.active_benefits || [];
+            } catch (error) {
+              console.error("❌ Error handling subscription creation:", error);
+              // Re-throw to let Polar know the webhook failed
+              throw error;
+            }
+          },
+          onCustomerStateChanged: async (payload) => {
+            try {
+              console.log("🔄 Customer state changed webhook received:", {
+                type: payload.type,
+                customerId: payload.data.id,
+                activeSubscriptions: payload.data.activeSubscriptions?.length || 0,
+                timestamp: new Date().toISOString()
+              });
 
-                // Check if customer has any active subscriptions
-                const hasActiveSubscription = activeSubscriptions.length > 0;
+              const customerId = payload.data.id;
+              const activeSubscriptions = payload.data.activeSubscriptions || [];
 
-                // Find the user associated with this customer
-                const existingSubscription = await getSubscriberByCustomerId(customerId);
-                
-                if (!existingSubscription) {
-                  console.log("⚠️ No subscription found for customer:", customerId);
-                  return;
-                }
+              // Check if customer has any active subscriptions
+              const hasActiveSubscription = activeSubscriptions.length > 0;
 
-                const userId = existingSubscription.userID;
+              // Find the user associated with this customer
+              const existingSubscription = await getSubscriberByCustomerId(customerId);
 
-                if (hasActiveSubscription) {
-                  // Customer has active subscriptions - update their status
-                  console.log("✅ Customer has active subscriptions, updating status");
-                  await updateSubscriber(customerId, userId);
-                  
-                  // Send subscription reactivated email
-                  try {
-                    await resend.emails.send({
-                      from: "noreply@aimealwise.com",
-                      to: existingSubscription.user.email,
-                      subject: "Your MealWise Pro subscription is active! 🎉",
-                      html: `
+              if (!existingSubscription) {
+                console.log("⚠️ No subscription found for customer:", customerId);
+                return;
+              }
+
+              const userId = existingSubscription.userID;
+
+              if (hasActiveSubscription) {
+                // Customer has active subscriptions - update their status
+                console.log("✅ Customer has active subscriptions, updating status");
+                await updateSubscriber(customerId, userId);
+
+                // Send subscription reactivated email
+                try {
+                  await resend.emails.send({
+                    from: "noreply@aimealwise.com",
+                    to: existingSubscription.user.email,
+                    subject: "Your MealWise Pro subscription is active! 🎉",
+                    html: `
                         <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
                           <h1 style="color: #16a34a;">Subscription Active!</h1>
                           <p>Great news! Your MealWise Pro subscription is now active again.</p>
@@ -278,23 +275,23 @@ export const auth = betterAuth({
                           </a>
                         </div>
                       `,
-                    });
-                    console.log("📧 Subscription reactivated email sent");
-                  } catch (emailError) {
-                    console.error("❌ Failed to send reactivation email:", emailError);
-                  }
-                } else {
-                  // Customer has no active subscriptions - remove their subscription
-                  console.log("❌ Customer has no active subscriptions, removing subscription");
-                  await removeSubscriber(userId);
-                  
-                  // Send subscription cancelled email
-                  try {
-                    await resend.emails.send({
-                      from: "noreply@aimealwise.com",
-                      to: existingSubscription.user.email,
-                      subject: "Your MealWise Pro subscription has ended",
-                      html: `
+                  });
+                  console.log("📧 Subscription reactivated email sent");
+                } catch (emailError) {
+                  console.error("❌ Failed to send reactivation email:", emailError);
+                }
+              } else {
+                // Customer has no active subscriptions - remove their subscription
+                console.log("❌ Customer has no active subscriptions, removing subscription");
+                await removeSubscriber(userId);
+
+                // Send subscription cancelled email
+                try {
+                  await resend.emails.send({
+                    from: "noreply@aimealwise.com",
+                    to: existingSubscription.user.email,
+                    subject: "Your MealWise Pro subscription has ended",
+                    html: `
                         <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
                           <h1 style="color: #dc2626;">Subscription Ended</h1>
                           <p>Your MealWise Pro subscription has ended. You can still access basic features, but premium features are no longer available.</p>
@@ -314,51 +311,51 @@ export const auth = betterAuth({
                           </p>
                         </div>
                       `,
-                    });
-                    console.log("📧 Subscription cancelled email sent");
-                  } catch (emailError) {
-                    console.error("❌ Failed to send cancellation email:", emailError);
-                  }
+                  });
+                  console.log("📧 Subscription cancelled email sent");
+                } catch (emailError) {
+                  console.error("❌ Failed to send cancellation email:", emailError);
                 }
-
-                console.log("✅ Customer state change processed successfully");
-
-              } catch (error) {
-                console.error("❌ Error handling customer state change:", error);
-                throw error;
               }
-            },
-            onOrderPaid: async (payload: PolarWebhookPayload) => {
+
+              console.log("✅ Customer state change processed successfully");
+
+            } catch (error) {
+              console.error("❌ Error handling customer state change:", error);
+              throw error;
+            }
+          },
+          onOrderPaid: async (payload) => {
+            try {
+              console.log("💰 Order paid webhook received:", {
+                type: payload.type,
+                customerId: payload.data.customerId,
+                orderId: payload.data.id,
+                amount: payload.data.totalAmount,
+                currency: payload.data.currency,
+                timestamp: new Date().toISOString()
+              });
+
+              const customerId = payload.data.customerId;
+              const orderId = payload.data.id;
+              const amount = payload.data.totalAmount;
+              const currency = payload.data.currency;
+
+              // Find the user associated with this customer
+              const existingSubscription = await getSubscriberByCustomerId(customerId);
+
+              if (!existingSubscription) {
+                console.log("⚠️ No subscription found for customer:", customerId);
+                return;
+              }
+
+              // Send payment confirmation email
               try {
-                console.log("💰 Order paid webhook received:", {
-                  type: payload.type,
-                  customerId: payload.data.customer_id,
-                  orderId: payload.data.id,
-                  amount: payload.data.total_amount,
-                  currency: payload.data.currency,
-                  timestamp: new Date().toISOString()
-                });
-
-                const customerId = payload.data.customer_id;
-                const orderId = payload.data.id;
-                const amount = payload.data.total_amount;
-                const currency = payload.data.currency;
-
-                // Find the user associated with this customer
-                const existingSubscription = await getSubscriberByCustomerId(customerId);
-                
-                if (!existingSubscription) {
-                  console.log("⚠️ No subscription found for customer:", customerId);
-                  return;
-                }
-
-                // Send payment confirmation email
-                try {
-                  await resend.emails.send({
-                    from: "noreply@aimealwise.com",
-                    to: existingSubscription.user.email,
-                    subject: "Payment Confirmed - MealWise Pro",
-                    html: `
+                await resend.emails.send({
+                  from: "noreply@aimealwise.com",
+                  to: existingSubscription.user.email,
+                  subject: "Payment Confirmed - MealWise Pro",
+                  html: `
                       <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
                         <h1 style="color: #16a34a;">Payment Confirmed!</h1>
                         <p>Thank you for your payment. Your MealWise Pro subscription is now active.</p>
@@ -380,45 +377,45 @@ export const auth = betterAuth({
                         </a>
                       </div>
                     `,
-                  });
-                  console.log("📧 Payment confirmation email sent");
-                } catch (emailError) {
-                  console.error("❌ Failed to send payment confirmation email:", emailError);
-                }
-
-                console.log("✅ Order payment processed successfully");
-
-              } catch (error) {
-                console.error("❌ Error handling order payment:", error);
-                throw error;
-              }
-            },
-            onPayload: async (payload: PolarWebhookPayload) => {
-              try {
-                console.log("📨 General webhook received:", {
-                  type: payload.type,
-                  timestamp: new Date().toISOString(),
-                  data: JSON.stringify(payload.data, null, 2)
                 });
-
-                // Log all webhook events for debugging and monitoring
-                // This is a catch-all handler for any webhook events not specifically handled above
-                
-                // You could add additional logic here for:
-                // - Analytics tracking
-                // - Audit logging
-                // - Custom event handling
-                // - Integration with other services
-
-                console.log("✅ General webhook payload processed");
-
-              } catch (error) {
-                console.error("❌ Error handling general webhook payload:", error);
-                throw error;
+                console.log("📧 Payment confirmation email sent");
+              } catch (emailError) {
+                console.error("❌ Failed to send payment confirmation email:", emailError);
               }
+
+              console.log("✅ Order payment processed successfully");
+
+            } catch (error) {
+              console.error("❌ Error handling order payment:", error);
+              throw error;
             }
-          })
-       
+          },
+          onPayload: async (payload) => {
+            try {
+              console.log("📨 General webhook received:", {
+                type: payload.type,
+                timestamp: new Date().toISOString(),
+                data: JSON.stringify(payload.data, null, 2)
+              });
+
+              // Log all webhook events for debugging and monitoring
+              // This is a catch-all handler for any webhook events not specifically handled above
+
+              // You could add additional logic here for:
+              // - Analytics tracking
+              // - Audit logging
+              // - Custom event handling
+              // - Integration with other services
+
+              console.log("✅ General webhook payload processed");
+
+            } catch (error) {
+              console.error("❌ Error handling general webhook payload:", error);
+              throw error;
+            }
+          }
+        })
+
       ],
     })
   ], // Make sure polar is the last plugin in the array
