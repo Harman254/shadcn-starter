@@ -105,8 +105,8 @@ export async function POST(req: NextRequest) {
             where: { userId: user.id },
         })
 
-        // 7. Delete favorite meals
-        await prisma.favoriteMeal.deleteMany({
+        // 7. Delete favorite recipes
+        await prisma.favoriteRecipe.deleteMany({
             where: { userId: user.id },
         })
 
