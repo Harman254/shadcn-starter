@@ -8,6 +8,21 @@ import Footer from '@/components/footer';
 import { AuthModalProvider } from '@/components/AuthModalProvider';
 import PushEngageScript from '@/components/PushEngageScript';
 import { InstallPrompt } from '@/components/pwa/install-prompt';
+import { Geist, Geist_Mono } from 'next/font/google';
+
+// Geist Sans - Primary font for body text and UI
+const geistSans = Geist({
+  variable: '--font-geist-sans',
+  subsets: ['latin'],
+  display: 'swap',
+});
+
+// Geist Mono - For code blocks and monospace text
+const geistMono = Geist_Mono({
+  variable: '--font-geist-mono',
+  subsets: ['latin'],
+  display: 'swap',
+});
 
 interface RootLayoutProps {
   children: React.ReactNode;
@@ -37,9 +52,9 @@ export const viewport = {
   viewportFit: 'cover',
 }
 
-export default async function  RootLayout({ children }: RootLayoutProps) {
+export default async function RootLayout({ children }: RootLayoutProps) {
   return (
-    <html suppressHydrationWarning lang="en">
+    <html suppressHydrationWarning lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
       <head>
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#6366f1" />
@@ -47,7 +62,7 @@ export default async function  RootLayout({ children }: RootLayoutProps) {
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="MealWise" />
       </head>
-      <body suppressHydrationWarning>
+      <body suppressHydrationWarning className="font-sans antialiased">
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <AuthModalProvider>
             {/* Single container for the entire application */}
@@ -66,3 +81,4 @@ export default async function  RootLayout({ children }: RootLayoutProps) {
     </html>
   );
 }
+

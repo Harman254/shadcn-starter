@@ -270,7 +270,7 @@ const Preferences = ({userId}:Props ) => {
       setOriginalPreferences({ ...preferences }) // Create a new object to ensure state update
       setHasChanges(false)
       toast.success("Your meal preferences have been updated successfully.")
-      router.push('meal-plans/new')
+      router.push('/chat')
     } catch (error) {
       console.error("Save error:", error)
       console.log(error)

@@ -1,9 +1,7 @@
 import { tool } from 'ai';
 import { z } from 'zod';
-import { generateMealPlanCore } from '@/ai/flows/chat/dynamic-select-tools';
 import { getNutritionClient } from './api-clients/nutrition-api';
 import { getPricingClient } from './api-clients/grocery-pricing-api';
-import { generateGroceryListCore } from '@/ai/flows/chat/dynamic-select-tools';
 import prisma from '@/lib/prisma';
 import { ToolResult, ErrorCode, successResponse, errorResponse } from '@/lib/types/tool-result';
 
@@ -612,7 +610,7 @@ export const generateGroceryList = tool({
                 if (!dbMealPlan) {
                     return errorResponse("Couldn't find that meal plan.", ErrorCode.RESOURCE_NOT_FOUND);
                 }
-                allIngredients = dbMealPlan.days.flatMap(d => d.meals.flatMap(m => m.ingredients));
+                allIngredients = dbMealPlan.days.flatMap((d: { meals: { ingredients: string[] }[] }) => d.meals.flatMap((m: { ingredients: string[] }) => m.ingredients));
                 planTitle = dbMealPlan.title;
             }
             else if (source === 'mealplan' && mealPlan) {

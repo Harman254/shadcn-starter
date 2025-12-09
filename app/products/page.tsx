@@ -363,7 +363,7 @@ export default function MealwisePage() {
             Join thousands of users who&apos;ve simplified their meal planning with AI-powered recommendations.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href='/meal-plans/new'>
+            <Link href='/chat'>
             <Button size="lg" className="bg-white text-green-600 hover:bg-gray-100 px-8 dark:bg-white dark:text-green-600 dark:hover:bg-gray-100">
               Start Free Today
             </Button>

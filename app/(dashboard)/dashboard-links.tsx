@@ -20,8 +20,8 @@ const dashboardLinks = [
   },
   {
     id: 13,
-    name: "New",
-    href: "/meal-plans/new",
+    name: "Insights",
+    href: "/meal-plans/insights",
     icon: HomeIcon,
   },
   

@@ -1,6 +1,7 @@
 'use server';
 
-import  prisma  from "@/lib/prisma";
+import prisma from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 import { MealPlan, UserPreference } from "@/types";
 import { startOfWeek } from "date-fns";
 
@@ -17,7 +18,7 @@ export async function fetchOnboardingData(userid: string): Promise<UserPreferenc
         userId: userid,
       }
     });
-    
+
     if (process.env.NODE_ENV === 'development') {
       console.log('[fetchOnboardingData] Fetched data:', {
         userId: userid,
@@ -25,7 +26,7 @@ export async function fetchOnboardingData(userid: string): Promise<UserPreferenc
         hasData: data.length > 0,
       });
     }
-    
+
     return data;
   } catch (error) {
     console.error('[fetchOnboardingData] Error:', error);
@@ -161,7 +162,7 @@ export async function getLatestFullMealPlanByUserId(userId: string) {
 
 
 export async function getLatestMealPlanByUserId(userId: string) {
-    
+
   return await prisma.mealPlan.findFirst({
     where: { userId },
     orderBy: {
@@ -195,32 +196,32 @@ export const addSubscriber = async (customerID: string, userID: string) => {
   if (!customerID) {
     throw new Error('Customer ID is required');
   }
-  
+
   if (!userID) {
     throw new Error('User ID is required');
   }
 
   try {
     // Use a transaction to ensure data consistency
-    const subscriber = await prisma.$transaction(async (tx) => {
+    const subscriber = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       // Check if user exists
       const userExists = await tx.user.findUnique({
         where: { id: userID }
       });
-      
+
       if (!userExists) {
         throw new Error(`User with ID ${userID} not found`);
       }
-      
+
       // Check if subscription already exists for this user
       const existingSubscription = await tx.subscription.findUnique({
         where: { userID }
       });
-      
+
       if (existingSubscription) {
         throw new Error(`User with ID ${userID} already has a subscription`);
       }
-      
+
       // Create a new subscription record
       const newSubscription = await tx.subscription.create({
         data: {
@@ -230,17 +231,17 @@ export const addSubscriber = async (customerID: string, userID: string) => {
           // id is handled automatically by @default(uuid())
         }
       });
-      
+
       return newSubscription;
     });
-    
+
     console.log("Subscriber created:", subscriber);
     return subscriber;
-    
+
   } catch (error) {
     // Log the error for debugging
     console.error("Failed to create subscriber:", error);
-    
+
     // Rethrow the error with a more user-friendly message
     if (error instanceof Error) {
       throw error; // Rethrow application errors with their original message
@@ -255,23 +256,23 @@ export const updateSubscriber = async (customerID: string, userID: string) => {
   if (!customerID) {
     throw new Error('Customer ID is required');
   }
-  
+
   if (!userID) {
     throw new Error('User ID is required');
   }
 
   try {
     // Use a transaction to ensure data consistency
-    const subscriber = await prisma.$transaction(async (tx) => {
+    const subscriber = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       // Check if user exists
       const userExists = await tx.user.findUnique({
         where: { id: userID }
       });
-      
+
       if (!userExists) {
         throw new Error(`User with ID ${userID} not found`);
       }
-      
+
       // Update existing subscription or create new one
       const updatedSubscription = await tx.subscription.upsert({
         where: { userID },
@@ -283,16 +284,16 @@ export const updateSubscriber = async (customerID: string, userID: string) => {
           userID,
         }
       });
-      
+
       return updatedSubscription;
     });
-    
+
     console.log("Subscriber updated:", subscriber);
     return subscriber;
-    
+
   } catch (error) {
     console.error("Failed to update subscriber:", error);
-    
+
     if (error instanceof Error) {
       throw error;
     } else {
@@ -309,30 +310,30 @@ export const removeSubscriber = async (userID: string) => {
 
   try {
     // Use a transaction to ensure data consistency
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       // Check if subscription exists
       const existingSubscription = await tx.subscription.findUnique({
         where: { userID }
       });
-      
+
       if (!existingSubscription) {
         throw new Error(`No subscription found for user with ID ${userID}`);
       }
-      
+
       // Delete the subscription record
       const deletedSubscription = await tx.subscription.delete({
         where: { userID }
       });
-      
+
       return deletedSubscription;
     });
-    
+
     console.log("Subscriber removed:", result);
     return result;
-    
+
   } catch (error) {
     console.error("Failed to remove subscriber:", error);
-    
+
     if (error instanceof Error) {
       throw error;
     } else {
@@ -359,7 +360,7 @@ export const getSubscriberByUserId = async (userID: string) => {
         }
       }
     });
-    
+
     return subscription;
   } catch (error) {
     console.error("Failed to get subscriber:", error);
@@ -385,7 +386,7 @@ export const getSubscriberByCustomerId = async (customerID: string) => {
         }
       }
     });
-    
+
     return subscription;
   } catch (error) {
     console.error("Failed to get subscriber by customer ID:", error);
@@ -439,7 +440,7 @@ export async function setMealLiked(mealId: string, isLiked: boolean, userId: str
         },
       },
     });
-    
+
     console.log(`Meal ${mealId} like status updated to: ${isLiked} for user ${userId}`);
     return updatedMeal;
   } catch (error) {
@@ -459,7 +460,7 @@ export async function getMealLikeStatus(mealId: string, userId: string) {
         },
       },
     });
-    
+
     return !!favorite;
   } catch (error) {
     console.error('Error getting meal like status:', error);
@@ -479,7 +480,7 @@ export async function addToFavorites(mealId: string, userId: string) {
         meal: true,
       },
     });
-    
+
     console.log(`Meal ${mealId} added to favorites for user ${userId}`);
     return favorite;
   } catch (error: any) {
@@ -501,7 +502,7 @@ export async function removeFromFavorites(mealId: string, userId: string) {
         mealId,
       },
     });
-    
+
     console.log(`Meal ${mealId} removed from favorites for user ${userId}`);
     return deleted.count > 0;
   } catch (error) {
@@ -531,7 +532,7 @@ export async function getUserFavorites(userId: string) {
         createdAt: 'desc',
       },
     });
-    
+
     return favorites.map((favorite: any) => favorite.meal);
   } catch (error) {
     console.error('Error getting user favorites:', error);
@@ -549,7 +550,7 @@ export async function isMealFavorited(mealId: string, userId: string) {
         },
       },
     });
-    
+
     return !!favorite;
   } catch (error) {
     console.error('Error checking if meal is favorited:', error);
@@ -672,7 +673,7 @@ export async function upgradeUserToPro(userId: string) {
 
 export async function downgradeUserToFree(userId: string) {
   try {
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       // Update subscription to free plan
       const updatedSubscription = await tx.subscription.upsert({
         where: { userID: userId },
@@ -1012,7 +1013,7 @@ export async function validateAndIncrementMealSwap(userId: string) {
     const endOfWeek = new Date(startOfWeek);
     endOfWeek.setDate(startOfWeek.getDate() + 7);
 
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       let swapRecord = await tx.mealSwapCount.findFirst({
         where: {
           userId: userId,
@@ -1035,7 +1036,7 @@ export async function validateAndIncrementMealSwap(userId: string) {
         if (swapRecord.swapCount >= 3) {
           throw new Error("Swap limit reached");
         }
-        
+
         swapRecord = await tx.mealSwapCount.update({
           where: { id: swapRecord.id },
           data: {
@@ -1059,7 +1060,7 @@ export async function validateAndIncrementMealSwap(userId: string) {
     if (error instanceof Error && error.message === "Swap limit reached") {
       const now = new Date();
       const startOfWeek = new Date(now);
-      startOfWeek.setDate(now.getDate() - now.getDay()); 
+      startOfWeek.setDate(now.getDate() - now.getDay());
       startOfWeek.setHours(0, 0, 0, 0);
 
       const endOfWeek = new Date(startOfWeek);
@@ -1086,7 +1087,7 @@ export async function validateAndIncrementMealSwap(userId: string) {
         maxSwaps: maxSwaps,
       };
     }
-    
+
     console.error("Error validating and incrementing meal swap:", error);
     throw error;
   }
@@ -1105,7 +1106,7 @@ export async function fixNegativeGenerationCounts() {
         generationCount: 0
       }
     });
-    
+
     console.log(`Fixed ${result.count} negative generation counts`);
     return result.count;
   } catch (error) {
@@ -1133,9 +1134,9 @@ export async function checkAndNotifyGenerationReset(userId: string) {
     // Get last week's record to check if there was a reset
     const lastWeekStart = new Date(startOfWeek);
     lastWeekStart.setDate(startOfWeek.getDate() - 7);
-    
+
     const lastWeekEnd = new Date(startOfWeek);
-    
+
     const lastWeekRecord = await prisma.mealPlanGeneration.findUnique({
       where: { userId }
     });
@@ -1155,7 +1156,7 @@ export async function checkAndNotifyGenerationReset(userId: string) {
           body: JSON.stringify({
             title: '🎉 Your meal plan generations have reset!',
             message: 'You now have 3 new meal plan generations available this week. Start planning your perfect meals!',
-            url: `${process.env.NEXT_PUBLIC_APP_URL}/meal-plans/new`,
+            url: `${process.env.NEXT_PUBLIC_APP_URL}/chat`,
             category: 'generation-reset',
             userId: userId
           }),
@@ -1192,10 +1193,10 @@ export async function checkAndNotifyGenerationReset(userId: string) {
 export async function getSafeMealPlanGenerationCount(userId: string) {
   try {
     const data = await getMealPlanGenerationCount(userId);
-    
+
     // Ensure the count is never negative
     const safeCount = Math.max(0, data.generationCount);
-    
+
     // If the count was negative, fix it in the database
     if (data.generationCount < 0) {
       await fixNegativeGenerationCounts();
@@ -1203,7 +1204,7 @@ export async function getSafeMealPlanGenerationCount(userId: string) {
 
     // Check for generation reset and send notification if needed
     await checkAndNotifyGenerationReset(userId);
-    
+
     return {
       ...data,
       generationCount: safeCount

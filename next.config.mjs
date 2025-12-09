@@ -3,8 +3,7 @@ import withPWA from 'next-pwa';
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   experimental: {},
-  // Empty turbopack config to silence Next.js 16 Turbopack warning
-  turbopack: {},
+
   // Externalize packages with dynamic requires that don't work with Turbopack
   serverExternalPackages: [],
   images: {

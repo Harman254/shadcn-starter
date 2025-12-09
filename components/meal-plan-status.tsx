@@ -292,7 +292,7 @@ const MealPlanStatusCard = ({ hasMealPlan, mealPlan, meals }: Props) => {
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            onClick={() => router.push('/meal-plans/new')}
+            onClick={() => router.push('/chat')}
             className="group relative px-10 py-5 bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 hover:from-emerald-500 hover:via-teal-500 hover:to-cyan-500 text-white rounded-2xl font-bold shadow-2xl hover:shadow-emerald-500/50 transition-all duration-500 overflow-hidden"
           >
             <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />

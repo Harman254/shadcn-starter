@@ -3,7 +3,8 @@
  */
 
 import { UserPreference } from '@/types';
-import { summarizePreferences as summarizePreferencesAI } from '@/ai/flows/chat/summarize-preferences';
+import { generateText } from 'ai';
+import { google } from '@ai-sdk/google';
 
 /**
  * Formatted preference type for AI context (excludes database fields)
@@ -50,7 +51,7 @@ export function validatePreferences(
 }
 
 /**
- * Summarizes user preferences into a one-sentence summary using AI
+ * Summarizes user preferences into a one-sentence summary using AI SDK
  * This reduces token usage when passing preferences to chat context
  */
 export async function summarizePreferencesForChat(
@@ -66,15 +67,34 @@ export async function summarizePreferencesForChat(
       return '';
     }
 
-    return await summarizePreferencesAI(formatted);
+    const firstPref = formatted[0];
+
+    // Use AI SDK generateText for summarization
+    const result = await generateText({
+      model: google('gemini-2.0-flash'),
+      temperature: 0.3,
+      maxTokens: 100,
+      prompt: `Summarize these user preferences in ONE short sentence (max 20 words) for a meal planning AI context:
+- Dietary: ${firstPref.dietaryPreference}
+- Goal: ${firstPref.goal}
+- Household: ${firstPref.householdSize} people
+- Cuisines: ${firstPref.cuisinePreferences.join(', ')}
+
+Return ONLY the summary sentence, nothing else.`,
+    });
+
+    return result.text.trim() || createFallbackSummary(preferences[0]);
   } catch (error) {
     console.error('[summarizePreferencesForChat] Error:', error);
-    // Fallback: create a simple summary manually
-    const firstPref = preferences[0];
-    if (firstPref) {
-      return `${firstPref.dietaryPreference} diet for ${firstPref.goal}, ${firstPref.householdSize}-person household`;
-    }
-    return '';
+    return createFallbackSummary(preferences[0]);
   }
+}
+
+/**
+ * Creates a simple summary without AI when AI fails
+ */
+function createFallbackSummary(pref: UserPreference): string {
+  if (!pref) return '';
+  return `${pref.dietaryPreference} diet for ${pref.goal}, ${pref.householdSize}-person household`;
 }
 

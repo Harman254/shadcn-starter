@@ -1,24 +1,18 @@
 'use server';
 
-import {
-  chat as contextAwareChat,
-  type ContextAwareChatInput,
-} from '@/ai/flows/chat/context-aware';
-import {
-  answerQuestion,
-  type AnswerQuestionInput,
-} from '@/ai/flows/chat/dynamic-select-tools';
-import {
-  generateChatTitle,
-  type GenerateChatTitleInput,
-} from '@/ai/flows/chat/generate-chat-title';
+import { generateText, generateObject } from 'ai';
+import { google } from '@ai-sdk/google';
+import { z } from 'zod';
 import type { Message } from '@/types';
 import { randomUUID } from 'crypto';
 
 /**
- * Handles chat responses for both context-aware and tool-selection chat types.
- * This function is server-side and safely handles AI or schema failures
+ * Handles chat responses using AI SDK.
+ * This function is server-side and safely handles AI failures
  * to ensure the user always gets a graceful response.
+ * 
+ * Note: This is used by the offline chat system for fallback.
+ * The main chat uses lib/orchestration/orchestrated-chat-flow.ts
  */
 export async function getResponse(
   chatType: 'context-aware' | 'tool-selection',
@@ -32,107 +26,43 @@ export async function getResponse(
   }
 
   try {
-    let responseContent = '';
+    // Build chat history for context
+    const chatHistory = messages.slice(-5, -1).map((m) => ({
+      role: m.role as 'user' | 'assistant',
+      content: m.content,
+    }));
 
-    if (chatType === 'context-aware') {
-      // 🧠 Context-aware chat — uses message history for context
-      // Limit to last 10 messages to avoid token limits (the flow will further limit to 5)
-      // CRITICAL: Re-embed UI metadata (meal plans, grocery lists) back into content
-      // so the AI flow can extract them for grocery list generation
-      const allHistory = messages.slice(0, -1).map((m) => {
-        let content = m.content;
-        
-        // If message has UI metadata (meal plan or grocery list), re-embed it as [UI_METADATA:]
-        // This ensures meal plans are available for grocery list generation
-        if (m.ui) {
-          const uiMetadata: any = {};
-          
-          if (m.ui.mealPlan) {
-            uiMetadata.mealPlan = m.ui.mealPlan;
-          }
-          
-          if (m.ui.groceryList) {
-            uiMetadata.groceryList = m.ui.groceryList;
-          }
-          
-          // Only embed if we have actual metadata to embed
-          if (Object.keys(uiMetadata).length > 0) {
-            // Encode as base64 (browser-compatible)
-            const jsonString = JSON.stringify(uiMetadata);
-            const base64String = Buffer.from(jsonString).toString('base64');
-            
-            // Append [UI_METADATA:] to content if not already present
-            if (!content.includes('[UI_METADATA:')) {
-              content = content + ' [UI_METADATA:' + base64String + ']';
-            }
-          }
-        }
-        
-        return {
-          role: m.role as 'user' | 'assistant',
-          content,
-        };
-      });
-      
-      // Limit chat history early to prevent passing too much data
-      // Reduced from 10 to 5 messages to reduce token usage
-      const MAX_HISTORY = 5;
-      const chatHistory = allHistory.length > MAX_HISTORY 
-        ? allHistory.slice(-MAX_HISTORY) 
-        : allHistory;
-      
-      // Limit message content length to prevent token overflow
-      // The context-aware flow will further limit this, but we limit here too for safety
-      const MAX_CURRENT_MESSAGE_CHARS = 700;
-      const limitedMessage = lastMessage.content.length > MAX_CURRENT_MESSAGE_CHARS 
-        ? lastMessage.content.substring(0, MAX_CURRENT_MESSAGE_CHARS) + '...' 
-        : lastMessage.content;
-      
-      // 🎯 Only include preferences summary on the very first message (when conversation is new)
-      // After that, the AI will remember preferences from the initial context
-      // This reduces token usage by not repeating preferences on every message
-      // chatHistory.length === 0 means this is the first message in the conversation
-      const isFirstMessage = chatHistory.length === 0;
-      const shouldIncludePreferences = isFirstMessage && preferencesSummary;
-      
-      // Log context for debugging (only in development)
-      if (process.env.NODE_ENV === 'development') {
-        const totalChars = chatHistory.reduce((sum, m) => sum + m.content.length, 0) + limitedMessage.length + (shouldIncludePreferences ? preferencesSummary.length : 0);
-        console.log(`[Context-Aware] Passing ${chatHistory.length} messages (${totalChars} chars) as context`);
-        if (shouldIncludePreferences) {
-          console.log(`[Context-Aware] Including preferences summary (first message): "${preferencesSummary}"`);
-        } else if (preferencesSummary && !isFirstMessage) {
-          console.log(`[Context-Aware] Skipping preferences summary (conversation ongoing, AI remembers from context)`);
-        } else {
-          console.log(`[Context-Aware] No user preferences provided`);
-        }
-      }
-      
-      const input: ContextAwareChatInput = {
-        message: limitedMessage,
-        chatHistory: chatHistory, // Limited conversation history for context-awareness
-        preferencesSummary: shouldIncludePreferences ? preferencesSummary : undefined, // Only include on first message
-      };
+    // Limit message length
+    const MAX_MESSAGE_CHARS = 700;
+    const limitedMessage = lastMessage.content.length > MAX_MESSAGE_CHARS
+      ? lastMessage.content.substring(0, MAX_MESSAGE_CHARS) + '...'
+      : lastMessage.content;
 
-      const result = await contextAwareChat(input);
+    // Build system prompt
+    let systemPrompt = `You are MealWise, a friendly AI meal planning assistant. 
+Help users with meal planning, recipes, nutrition advice, and grocery lists.
+Be concise, helpful, and personalized.`;
 
-      // ✅ Defensive handling for missing or invalid results
-      responseContent =
-        result?.response ??
-        'Sorry, I could not generate a response at the moment.';
-    } else {
-      // 🧠 Tool-selection chat — uses dynamic tool AI flow
-      const input: AnswerQuestionInput = {
-        question: lastMessage.content,
-      };
-
-      const result = await answerQuestion(input);
-
-      // ✅ Defensive handling for missing or invalid results
-      responseContent =
-        result?.answer ??
-        'Sorry, I could not generate an answer at the moment.';
+    if (preferencesSummary && chatHistory.length === 0) {
+      systemPrompt += `\n\nUser preferences: ${preferencesSummary}`;
     }
+
+    // Build conversation context
+    const conversationContext = chatHistory.length > 0
+      ? `\n\nRecent conversation:\n${chatHistory.map(m => `${m.role}: ${m.content}`).join('\n')}`
+      : '';
+
+    // Generate response using AI SDK
+    const result = await generateText({
+      model: google('gemini-2.0-flash'),
+      temperature: 0.7,
+      maxTokens: 1000,
+      system: systemPrompt,
+      prompt: `${conversationContext}\n\nUser: ${limitedMessage}\n\nAssistant:`,
+    });
+
+    const responseContent = result.text.trim() ||
+      'Sorry, I could not generate a response at the moment.';
 
     // ✅ Always return a valid message object
     return {
@@ -141,18 +71,12 @@ export async function getResponse(
       content: responseContent,
     };
   } catch (error) {
-    // 🔍 Log the error for debugging with more details
+    // 🔍 Log the error for debugging
     console.error(`Error in getResponse (${chatType}):`, error);
-    
-    // Log error details in development
-    if (process.env.NODE_ENV === 'development') {
-      if (error instanceof Error) {
-        console.error('Error message:', error.message);
-        console.error('Error stack:', error.stack);
-      }
-      if (error && typeof error === 'object' && 'cause' in error) {
-        console.error('Error cause:', error.cause);
-      }
+
+    if (process.env.NODE_ENV === 'development' && error instanceof Error) {
+      console.error('Error message:', error.message);
+      console.error('Error stack:', error.stack);
     }
 
     // ✅ Graceful fallback message to the user
@@ -167,7 +91,7 @@ export async function getResponse(
 
 /**
  * Generates a title for a chat session based on the conversation messages.
- * This is called after a few messages to create a meaningful title.
+ * Uses AI SDK generateObject for structured output.
  */
 export async function generateSessionTitle(
   messages: Message[]
@@ -178,17 +102,29 @@ export async function generateSessionTitle(
       return 'New Chat';
     }
 
-    const input: GenerateChatTitleInput = {
-      messages: messages.map((m) => ({
-        role: m.role as 'user' | 'assistant',
-        content: m.content,
-      })),
-    };
+    // Take first few messages for context
+    const contextMessages = messages.slice(0, 4).map((m) => ({
+      role: m.role,
+      content: m.content.substring(0, 200), // Limit content length
+    }));
 
-    const result = await generateChatTitle(input);
-    return result?.title || 'New Chat';
+    const result = await generateObject({
+      model: google('gemini-2.0-flash'),
+      temperature: 0.3,
+      schema: z.object({
+        title: z.string().describe('A short, descriptive title for this chat (3-6 words)'),
+      }),
+      prompt: `Generate a short, descriptive title (3-6 words) for this chat conversation:
+
+${contextMessages.map(m => `${m.role}: ${m.content}`).join('\n')}
+
+The title should capture the main topic or intent of the conversation.`,
+    });
+
+    return result.object?.title || 'New Chat';
   } catch (error) {
     console.error('Error generating chat title:', error);
     return 'New Chat';
   }
 }
+

@@ -93,9 +93,17 @@ import { headers } from 'next/headers';
 
 export default async function IndexPage() {
   // Check if user is authenticated
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
+  let session;
+  try {
+    session = await auth.api.getSession({
+      headers: await headers(),
+    });
+  } catch (error) {
+    console.error("DEBUG: auth.api.getSession failed:", error);
+    // Continue without session or rethrow depending on desired behavior.
+    // For debugging, we logging it is enough, but we need session for logic.
+    // If it fails, session is undefined, which falls through to landing page.
+  }
 
   // If user is logged in, redirect to chat page (default page)
   if (session?.user?.id) {
