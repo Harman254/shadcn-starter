@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Menu, Wand2, Plus, History, MessageSquare } from 'lucide-react';
+import { Pacifico } from 'next/font/google';
 import dynamic from 'next/dynamic';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -42,7 +43,7 @@ import { Button } from '@/components/ui/button';
 import { UserPreference } from '@/types';
 import { cn } from '@/lib/utils';
 import { useChatStore } from '@/store/chat-store';
-import { Pacifico} from 'next/font/google';
+
 
 interface ChatPageClientProps {
   preferences?: UserPreference[];
@@ -99,8 +100,15 @@ export function ChatPageClient({ preferences = [], preferencesSummary = '' }: Ch
             <SheetContent side="left" className="w-[280px] p-0 flex flex-col">
               <SheetHeader className="p-4 border-b border-border/40 text-left">
                 <SheetTitle className="flex items-center gap-2">
-                  <Wand2 className="h-5 w-5 text-primary" />
-                  Mealwise
+                  
+                  <span
+                    className={cn(
+                      "bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 via-black/90 to-rose-500 dark:from-indigo-300 dark:via-white/90 dark:to-rose-300 ",
+                      pacifico.className,
+                    )}
+                  >
+                    Mealwise
+                  </span>
                 </SheetTitle>
               </SheetHeader>
 
