@@ -1,12 +1,47 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Calendar, UtensilsCrossed, Star, ChevronDown, ShoppingCart, Wand2, ChefHat, Check, Save, Loader2, Flame, Clock, Apple, Zap, TrendingUp, Timer, Users } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { useToast } from "@/hooks/use-toast"
 import { useRouter } from "next/navigation"
+import { Card, CardContent } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+
+// Cloudinary images for random selection
+const MEAL_IMAGES = [
+  "https://res.cloudinary.com/dcidanigq/image/upload/v1742112002/samples/breakfast.jpg", // Breakfast
+  "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&q=80", // Lunch
+  "https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=800&q=80", // Dinner
+  "https://images.unsplash.com/photo-1543339308-43e59d6b73a6?w=800&q=80", // Snack
+  "https://images.unsplash.com/photo-1499028344343-cd173ffc68a9?w=800&q=80", // Burger
+  "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=800&q=80", // Salad
+  "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=800&q=80", // Pizza
+  "https://images.unsplash.com/photo-1604908176997-125f25cc6f3d?w=800&q=80", // Chicken
+]
+
+// Meal type colors from reference
+const mealTypeColors: Record<string, string> = {
+  breakfast: "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300",
+  lunch: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300",
+  dinner: "bg-violet-100 text-violet-800 dark:bg-violet-900/30 dark:text-violet-300",
+  snack: "bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-300",
+};
+
+// Helper to normalize meal type for color mapping
+const getMealTypeColor = (index: number, name: string): string => {
+  const lowerName = name.toLowerCase();
+  if (lowerName.includes('breakfast')) return mealTypeColors.breakfast;
+  if (lowerName.includes('lunch')) return mealTypeColors.lunch;
+  if (lowerName.includes('dinner') || lowerName.includes('supper')) return mealTypeColors.dinner;
+  if (lowerName.includes('snack')) return mealTypeColors.snack;
+  
+  // Fallback by index
+  const types = ['breakfast', 'lunch', 'dinner', 'snack'];
+  return mealTypeColors[types[index % 4]];
+};
 
 interface MealPlanDisplayProps {
   mealPlan: any
@@ -17,9 +52,20 @@ export function MealPlanDisplay({ mealPlan, onActionClick }: MealPlanDisplayProp
   const [expandedDay, setExpandedDay] = useState<number | null>(1)
   const [saving, setSaving] = useState(false)
   const [savedId, setSavedId] = useState<string | null>(null)
-  const [hoveredMeal, setHoveredMeal] = useState<string | null>(null)
   const { toast } = useToast()
   const router = useRouter()
+
+  // Generate random images for each meal on mount (stable across re-renders)
+  const mealImages = useMemo(() => {
+    const images: Record<string, string> = {}
+    mealPlan.days.forEach((day: any, dIndex: number) => {
+      day.meals.forEach((_: any, mIndex: number) => {
+        const key = `${dIndex}-${mIndex}`
+        images[key] = MEAL_IMAGES[Math.floor(Math.random() * MEAL_IMAGES.length)]
+      })
+    })
+    return images
+  }, [mealPlan])
 
   const toggleDay = (day: number) => {
     setExpandedDay(expandedDay === day ? null : day)
@@ -51,360 +97,174 @@ export function MealPlanDisplay({ mealPlan, onActionClick }: MealPlanDisplayProp
 
   const totalMeals = mealPlan.days.reduce((sum: any, day: any) => sum + day.meals.length, 0)
 
-  // Meal type config with colors and icons
-  const getMealConfig = (index: number) => {
-    const configs = [
-      { icon: <Flame className="h-4 w-4" />, label: "Breakfast", gradient: "from-amber-500 to-orange-500", bg: "bg-amber-500/10", border: "border-amber-500/20" },
-      { icon: <Apple className="h-4 w-4" />, label: "Lunch", gradient: "from-emerald-500 to-teal-500", bg: "bg-emerald-500/10", border: "border-emerald-500/20" },
-      { icon: <UtensilsCrossed className="h-4 w-4" />, label: "Dinner", gradient: "from-violet-500 to-purple-500", bg: "bg-violet-500/10", border: "border-violet-500/20" },
-      { icon: <Zap className="h-4 w-4" />, label: "Snack", gradient: "from-pink-500 to-rose-500", bg: "bg-pink-500/10", border: "border-pink-500/20" }
-    ]
-    return configs[index % configs.length]
-  }
-
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20, scale: 0.98 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-      className="w-full max-w-2xl mx-auto"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="w-full max-w-2xl space-y-6"
     >
-      <div className={cn(
-        "relative overflow-hidden rounded-[2rem]",
-        "bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950",
-        "border border-white/[0.08]",
-        "shadow-2xl shadow-black/50"
-      )}>
-        {/* Ambient glow effects */}
-        <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-emerald-500/30 to-teal-500/20 rounded-full blur-[100px] animate-pulse" />
-          <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-br from-violet-500/25 to-purple-500/15 rounded-full blur-[100px]" />
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-gradient-to-br from-white/[0.02] to-transparent" />
-        </div>
-        
-        {/* Hero Header Section */}
-        <div className="relative">
-          <div className="relative h-56 sm:h-64 w-full overflow-hidden">
-            {/* Image with overlay */}
-            <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/90 to-slate-950/60 z-10" />
-            <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/20 via-transparent to-violet-500/20 mix-blend-overlay z-10" />
-            <motion.img 
-              initial={{ scale: 1.1 }}
-              animate={{ scale: 1 }}
-              transition={{ duration: 1.2, ease: "easeOut" }}
-              src="https://res.cloudinary.com/dcidanigq/image/upload/v1742112002/samples/breakfast.jpg" 
-              alt="Meal Plan" 
-              className="w-full h-full object-cover"
-            />
-            
-            {/* Floating AI Badge */}
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.8, y: -10 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              transition={{ delay: 0.4, duration: 0.5 }}
-              className="absolute top-5 right-5 z-20"
-            >
-              <div className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-gradient-to-r from-emerald-500/20 to-teal-500/20 backdrop-blur-xl border border-emerald-500/30 shadow-lg shadow-emerald-500/10">
-                <Wand2 className="h-4 w-4 text-emerald-400 animate-pulse" />
-                <span className="text-sm font-semibold text-emerald-300">AI Crafted</span>
-              </div>
-            </motion.div>
-
-            {/* Title Section */}
-            <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-8 z-20">
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2, duration: 0.5 }}
-              >
-                <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white mb-4 tracking-tight leading-tight">
-                  {mealPlan.title}
-                </h2>
-                
-                {/* Stats Row */}
-                <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-                  <motion.div 
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 0.3 }}
-                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/[0.08] backdrop-blur-sm border border-white/[0.08] shadow-lg"
-                  >
-                    <Calendar className="h-4 w-4 text-emerald-400" />
-                    <span className="font-semibold text-white text-sm">{mealPlan.duration} Days</span>
-                  </motion.div>
-                  <motion.div 
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 0.35 }}
-                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/[0.08] backdrop-blur-sm border border-white/[0.08] shadow-lg"
-                  >
-                    <UtensilsCrossed className="h-4 w-4 text-violet-400" />
-                    <span className="font-semibold text-white text-sm">{mealPlan.mealsPerDay} Per Day</span>
-                  </motion.div>
-                  <motion.div 
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 0.4 }}
-                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/20 shadow-lg"
-                  >
-                    <Star className="h-4 w-4 text-amber-400" />
-                    <span className="font-semibold text-amber-200 text-sm">{totalMeals} Meals</span>
-                  </motion.div>
-                </div>
-              </motion.div>
-            </div>
+      {/* Header Section */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-card border border-border/50 rounded-xl p-4 shadow-sm">
+        <div>
+          <h3 className="text-xl font-bold text-foreground">{mealPlan.title}</h3>
+          <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
+            <span className="flex items-center gap-1"><Calendar className="w-3 h-3" /> {mealPlan.duration} Days</span>
+            <span>•</span>
+            <span className="flex items-center gap-1"><UtensilsCrossed className="w-3 h-3" /> {totalMeals} Meals</span>
           </div>
         </div>
-
-        {/* Days Timeline */}
-        <div className="relative px-4 sm:px-6 py-6 space-y-3">
-          {mealPlan.days.map((day: any, dayIndex: number) => {
-            const isExpanded = expandedDay === day.day
-            return (
-              <motion.div
-                key={dayIndex}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: dayIndex * 0.08 + 0.5 }}
-                layout
-                className={cn(
-                  "group rounded-2xl overflow-hidden transition-all duration-500",
-                  isExpanded 
-                    ? "bg-gradient-to-br from-white/[0.08] to-white/[0.04] backdrop-blur-xl border border-white/[0.15] shadow-xl shadow-black/20" 
-                    : "bg-white/[0.03] border border-white/[0.05] hover:bg-white/[0.06] hover:border-white/[0.1]"
-                )}
-              >
-                <button
-                  onClick={() => toggleDay(day.day)}
-                  className="w-full flex items-center justify-between p-4 sm:p-5 text-left"
-                >
-                  <div className="flex items-center gap-4">
-                    <div className={cn(
-                      "relative flex items-center justify-center w-14 h-14 rounded-2xl text-xl font-bold transition-all duration-500",
-                      isExpanded 
-                        ? "bg-gradient-to-br from-emerald-500 to-teal-500 text-white shadow-lg shadow-emerald-500/30" 
-                        : "bg-gradient-to-br from-white/[0.08] to-white/[0.04] text-white/70 group-hover:text-white"
-                    )}>
-                      {isExpanded && (
-                        <motion.div 
-                          className="absolute inset-0 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-400 opacity-20"
-                          animate={{ scale: [1, 1.2, 1] }}
-                          transition={{ duration: 2, repeat: Infinity }}
-                        />
-                      )}
-                      <span className="relative z-10">{day.day}</span>
-                    </div>
-                    <div>
-                      <h5 className="font-bold text-white text-lg">Day {day.day}</h5>
-                      <p className="text-sm text-white/40 flex items-center gap-1.5">
-                        <UtensilsCrossed className="h-3 w-3" />
-                        {day.meals.length} meals planned
-                      </p>
-                    </div>
-                  </div>
-                  <motion.div
-                    animate={{ rotate: isExpanded ? 180 : 0 }}
-                    transition={{ duration: 0.3, ease: "easeInOut" }}
-                    className={cn(
-                      "p-2 rounded-xl transition-colors",
-                      isExpanded ? "bg-white/10" : "bg-transparent"
-                    )}
-                  >
-                    <ChevronDown className="h-5 w-5 text-white/50" />
-                  </motion.div>
-                </button>
-
-                <AnimatePresence>
-                  {isExpanded && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: "auto", opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-                    >
-                      <div className="px-4 sm:px-5 pb-5 space-y-3">
-                        <div className="h-px w-full bg-gradient-to-r from-transparent via-white/10 to-transparent" />
-                        
-                        {day.meals.map((meal: any, mealIndex: number) => {
-                          const config = getMealConfig(mealIndex)
-                          const mealId = `${dayIndex}-${mealIndex}`
-                          return (
-                            <motion.div 
-                              key={mealIndex}
-                              initial={{ opacity: 0, y: 15 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              transition={{ delay: mealIndex * 0.1 }}
-                              className={cn(
-                                "relative p-4 rounded-xl overflow-hidden",
-                                "bg-gradient-to-br from-white/[0.06] to-white/[0.02]",
-                                "border border-white/[0.08]",
-                                "hover:border-white/[0.15] hover:from-white/[0.08]",
-                                "transition-all duration-300 cursor-pointer group/meal"
-                              )}
-                              onMouseEnter={() => setHoveredMeal(mealId)}
-                              onMouseLeave={() => setHoveredMeal(null)}
-                              onClick={() => onActionClick?.(`Show me the full recipe for ${meal.name}`)}
-                            >
-                              {/* Hover effect line */}
-                              <motion.div 
-                                className={cn("absolute left-0 top-0 bottom-0 w-1 rounded-full bg-gradient-to-b", config.gradient)}
-                                initial={{ opacity: 0.3, scaleY: 0.5 }}
-                                animate={{ 
-                                  opacity: hoveredMeal === mealId ? 1 : 0.3,
-                                  scaleY: hoveredMeal === mealId ? 1 : 0.5
-                                }}
-                                transition={{ duration: 0.3 }}
-                              />
-                              
-                              <div className="flex items-start gap-4 pl-3">
-                                {/* Meal Type Icon */}
-                                <div className={cn(
-                                  "flex items-center justify-center w-11 h-11 rounded-xl shrink-0",
-                                  "bg-gradient-to-br", config.gradient,
-                                  "text-white shadow-lg shadow-black/20"
-                                )}>
-                                  {config.icon}
-                                </div>
-                                
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-start justify-between gap-2">
-                                    <div>
-                                      <span className={cn("text-[10px] font-semibold uppercase tracking-wider", 
-                                        mealIndex === 0 ? "text-amber-400" : 
-                                        mealIndex === 1 ? "text-emerald-400" : 
-                                        mealIndex === 2 ? "text-violet-400" : "text-pink-400"
-                                      )}>
-                                        {config.label}
-                                      </span>
-                                      <h6 className="font-semibold text-white text-base mt-0.5 group-hover/meal:text-emerald-300 transition-colors">
-                                        {meal.name}
-                                      </h6>
-                                    </div>
-                                    {meal.cookTime && (
-                                      <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-white/[0.05] text-white/50 text-xs shrink-0">
-                                        <Timer className="h-3 w-3" />
-                                        {meal.cookTime}
-                                      </div>
-                                    )}
-                                  </div>
-                                  
-                                  {meal.description && (
-                                    <p className="text-sm text-white/40 mt-1.5 line-clamp-2 leading-relaxed">
-                                      {meal.description}
-                                    </p>
-                                  )}
-                                  
-                                  {/* Ingredients Pills */}
-                                  <div className="flex flex-wrap gap-1.5 mt-3">
-                                    {meal.ingredients?.slice(0, 4).map((ing: string, i: number) => (
-                                      <span key={i} className="px-2.5 py-1 rounded-lg text-xs bg-white/[0.05] border border-white/[0.08] text-white/60">
-                                        {ing}
-                                      </span>
-                                    ))}
-                                    {meal.ingredients?.length > 4 && (
-                                      <span className="px-2.5 py-1 rounded-lg text-xs bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-medium">
-                                        +{meal.ingredients.length - 4} more
-                                      </span>
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
-                            </motion.div>
-                          )
-                        })}
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </motion.div>
-            )
-          })}
-        </div>
-
-        {/* Actions Footer */}
-        <div className="relative px-4 sm:px-6 pb-6">
-          <div className="h-px w-full bg-gradient-to-r from-transparent via-white/10 to-transparent mb-6" />
-          
-          {/* Main CTAs */}
-          <div className="flex flex-col sm:flex-row gap-3">
-            <Button
-              size="lg"
-              className={cn(
-                "flex-1 h-14 rounded-2xl font-bold gap-2 text-base transition-all duration-300",
-                savedId 
-                  ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/30" 
-                  : "bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white shadow-xl shadow-emerald-500/25 hover:shadow-emerald-500/40 hover:scale-[1.02]"
-              )}
-              onClick={handleSave}
-              disabled={saving || !!savedId}
-            >
-              {saving ? (
-                <><Loader2 className="h-5 w-5 animate-spin" /> Saving...</>
-              ) : savedId ? (
-                <><Check className="h-5 w-5" /> Saved to Collection</>
-              ) : (
-                <><Save className="h-5 w-5" /> Save This Plan</>
-              )}
-            </Button>
-            
-            {onActionClick && (
-              <Button 
-                size="lg"
-                variant="outline"
-                className="flex-1 h-14 rounded-2xl font-bold gap-2 text-base bg-white/[0.05] border-white/[0.1] text-white hover:bg-white/[0.1] hover:border-white/[0.2] hover:scale-[1.02] transition-all duration-300"
-                onClick={() => onActionClick("Generate a grocery list for this plan")}
-              >
-                <ShoppingCart className="h-5 w-5" />
-                Get Shopping List
-              </Button>
+        <div className="flex items-center gap-2">
+          <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20">
+            <Wand2 className="w-3 h-3 mr-1" />
+            AI Generated
+          </Badge>
+          <Button 
+            size="sm" 
+            onClick={handleSave} 
+            disabled={saving || !!savedId}
+            className={cn(
+              "gap-1.5 transition-all",
+              savedId ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200 border-emerald-200" : ""
             )}
-          </div>
-
-          {/* Secondary Actions */}
-          {onActionClick && (
-            <motion.div 
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.6 }}
-              className="flex flex-wrap justify-center gap-2 mt-5"
-            >
-              <Button 
-                variant="ghost" 
-                size="sm"
-                className="h-9 rounded-xl px-4 text-sm text-white/50 hover:text-white hover:bg-white/[0.08] transition-all"
-                onClick={() => onActionClick("Analyze the nutrition of this meal plan")}
-              >
-                <TrendingUp className="h-4 w-4 mr-1.5" />
-                Nutrition
-              </Button>
-              <Button 
-                variant="ghost" 
-                size="sm"
-                className="h-9 rounded-xl px-4 text-sm text-white/50 hover:text-white hover:bg-white/[0.08] transition-all"
-                onClick={() => onActionClick("Create a meal prep timeline for this plan")}
-              >
-                <Timer className="h-4 w-4 mr-1.5" />
-                Prep Timeline
-              </Button>
-              <Button 
-                variant="ghost" 
-                size="sm"
-                className="h-9 rounded-xl px-4 text-sm text-white/50 hover:text-white hover:bg-white/[0.08] transition-all"
-                onClick={() => {
-                  if (savedId) router.push(`/meal-plans/${savedId}/explore`)
-                  else {
-                    sessionStorage.setItem('mealPlanPreview', JSON.stringify(mealPlan))
-                    router.push('/meal-plans/preview')
-                  }
-                }}
-              >
-                <ChefHat className="h-4 w-4 mr-1.5" />
-                Full View
-              </Button>
-            </motion.div>
-          )}
+            variant={savedId ? "outline" : "default"}
+          >
+            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : 
+             savedId ? <Check className="w-4 h-4" /> : 
+             <Save className="w-4 h-4" />}
+            {savedId ? "Saved" : "Save Plan"}
+          </Button>
         </div>
       </div>
+
+      {/* Days List */}
+      <div className="space-y-4">
+        {mealPlan.days.map((day: any, dayIndex: number) => {
+          const isExpanded = expandedDay === day.day
+          return (
+            <div key={dayIndex} className="bg-transparent">
+              <button
+                onClick={() => toggleDay(day.day)}
+                className="w-full flex items-center justify-between py-2 px-1 mb-2 hover:bg-muted/50 rounded-lg transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <div className={cn(
+                    "flex items-center justify-center w-8 h-8 rounded-lg font-bold text-sm transition-colors",
+                    isExpanded ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+                  )}>
+                    {day.day}
+                  </div>
+                  <h4 className="font-semibold text-foreground">Day {day.day}</h4>
+                </div>
+                <ChevronDown className={cn("w-4 h-4 text-muted-foreground transition-transform", isExpanded && "rotate-180")} />
+              </button>
+
+              <AnimatePresence>
+                {isExpanded && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="overflow-hidden"
+                  >
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pb-2">
+                      {day.meals.map((meal: any, mealIndex: number) => {
+                        const mealId = `${dayIndex}-${mealIndex}`
+                        const colorClass = getMealTypeColor(mealIndex, meal.name)
+                        
+                        return (
+                          <Card 
+                            key={mealIndex} 
+                            className="overflow-hidden border-border/50 hover:border-primary/30 transition-all hover:shadow-md cursor-pointer group"
+                            onClick={() => onActionClick?.(`Generate the full recipe for ${meal.name}`)}
+                          >
+                            <div className="relative h-32 overflow-hidden">
+                              <img
+                                src={mealImages[mealId] || MEAL_IMAGES[0]}
+                                alt={meal.name}
+                                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                              />
+                              <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors" />
+                              <Badge 
+                                className={cn("absolute top-2 left-2 border-0 shadow-sm", colorClass)}
+                              >
+                                {['Breakfast', 'Lunch', 'Dinner', 'Snack'][mealIndex % 4]}
+                              </Badge>
+                            </div>
+                            <CardContent className="p-3">
+                              <h4 className="font-medium text-foreground text-sm line-clamp-1 mb-2 group-hover:text-primary transition-colors">
+                                {meal.name}
+                              </h4>
+                              <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                                {meal.calories && (
+                                  <span className="flex items-center gap-1">
+                                    <Flame className="w-3 h-3 text-orange-500" />
+                                    {meal.calories}
+                                  </span>
+                                )}
+                                {meal.cookTime && (
+                                  <span className="flex items-center gap-1">
+                                    <Clock className="w-3 h-3" />
+                                    {meal.cookTime}
+                                  </span>
+                                )}
+                                {meal.servings && (
+                                  <span className="flex items-center gap-1">
+                                    <Users className="w-3 h-3" />
+                                    {meal.servings}
+                                  </span>
+                                )}
+                              </div>
+                              {meal.description && (
+                                <p className="text-xs text-muted-foreground/80 mt-2 line-clamp-2">
+                                  {meal.description}
+                                </p>
+                              )}
+                            </CardContent>
+                          </Card>
+                        )
+                      })}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          )
+        })}
+      </div>
+
+      {/* Footer Actions */}
+      {onActionClick && (
+        <div className="flex flex-wrap gap-2 pt-4 border-t border-border/50">
+          <Button 
+            variant="outline" 
+            size="sm"
+            className="flex-1 gap-2 border-dashed border-border hover:border-primary/50"
+            onClick={() => onActionClick("Generate a grocery list for this plan")}
+          >
+            <ShoppingCart className="w-4 h-4" />
+            Shopping List
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="sm"
+            className="flex-1 gap-2"
+            onClick={() => onActionClick("Analyze the nutrition of this meal plan")}
+          >
+            <TrendingUp className="w-4 h-4" />
+            Nutrition
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="sm"
+            className="flex-1 gap-2"
+            onClick={() => onActionClick("Create a meal prep timeline for this plan")}
+          >
+            <Timer className="w-4 h-4" />
+            Timeline
+          </Button>
+        </div>
+      )}
     </motion.div>
   )
 }

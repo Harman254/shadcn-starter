@@ -106,8 +106,8 @@ export function validateMealPlanInput(input: SaveMealPlanInput): ValidationResul
           }
 
           // Validate meal description
-          if (!meal.description || typeof meal.description !== 'string' || !meal.description.trim()) {
-            errors.push(`${mealPrefix}: description is required and must be a non-empty string`);
+          if (typeof meal.description !== 'string') {
+            errors.push(`${mealPrefix}: description must be a string`);
           } else if (meal.description.length > 1000) {
             errors.push(`${mealPrefix}: description must be 1000 characters or less`);
           }
@@ -124,8 +124,9 @@ export function validateMealPlanInput(input: SaveMealPlanInput): ValidationResul
           }
 
           // Validate instructions
-          if (!meal.instructions || typeof meal.instructions !== 'string' || !meal.instructions.trim()) {
-            errors.push(`${mealPrefix}: instructions is required and must be a non-empty string`);
+          // Relaxed validation: Allow empty instructions, just ensure it's a string
+          if (typeof meal.instructions !== 'string') {
+            errors.push(`${mealPrefix}: instructions must be a string`);
           } else if (meal.instructions.length > 5000) {
             errors.push(`${mealPrefix}: instructions must be 5000 characters or less`);
           }

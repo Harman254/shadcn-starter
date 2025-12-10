@@ -179,6 +179,7 @@ export class OrchestratedChatFlow {
           // 3. Execute
           const fullHistory = [
             ...input.conversationHistory,
+            // DO NOT filter the [IMAGE_CONTEXT] here, ensure it reaches the Tool Executor
             { role: 'user' as const, content: input.message }
           ];
 
@@ -386,18 +387,26 @@ AVAILABLE TOOLS:
 - generateGroceryList: Create shopping list (optional mealPlanId, works from context)
 - searchFoodData: Search real-world food data (nutrition, prices, availability, substitutions)
 - analyzeNutrition: Analyze nutrition (optional mealPlanId, works from context)
+- analyzePantryImage: Analyze an image of a fridge/pantry for ingredients (Requires imageUrl)
+- planFromInventory: Plan meals based on available ingredients
+- generatePrepTimeline: Create a meal prep schedule
 
 CRITICAL ORCHESTRATION RULES:
-1. **Meal Planning Flow**:
+1. **VISION CAPABILITIES**:
+   - If the user message contains "[IMAGE_CONTEXT]: https://...", you MUST call the "analyzePantryImage" tool.
+   - Extract the URL from the message and pass it as the "imageUrl" argument.
+   - Do NOT try to analyze it yourself - use the tool.
+
+2. **Meal Planning Flow**:
    - ALWAYS start by checking/fetching user preferences if not provided.
    - Then generate the meal plan.
    - AFTER generating the plan, you can offer to generate a grocery list or analyze nutrition.
    
-2. **Grocery Flow**:
+3. **Grocery Flow**:
    - Generate the list first using "generateGroceryList".
    - THEN offer to optimize it using "optimizeGroceryList" (especially if user mentions specific stores or saving money).
 
-3. **Recipe Flow**:
+4. **Recipe Flow**:
    - If user asks for a recipe for a specific meal in the plan, use "generateMealRecipe".
 
 Remember: ALWAYS use tools for user requests. Be helpful and concise in your responses.`;
