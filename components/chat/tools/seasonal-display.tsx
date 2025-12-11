@@ -3,6 +3,7 @@
 import { motion } from "framer-motion"
 import { Leaf, Sun, Snowflake, Cloud, Flower2, DollarSign, MapPin, ChefHat } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { Button } from "@/components/ui/button"
 
 interface SeasonalDisplayProps {
   data: {
@@ -22,9 +23,10 @@ interface SeasonalDisplayProps {
     }>
     shoppingTip: string
   }
+  onActionClick?: (action: string) => void
 }
 
-export function SeasonalDisplay({ data }: SeasonalDisplayProps) {
+export function SeasonalDisplay({ data, onActionClick }: SeasonalDisplayProps) {
   const seasonIcons: Record<string, React.ReactNode> = {
     'Spring': <Flower2 className="h-5 w-5" />,
     'Summer': <Sun className="h-5 w-5" />,
@@ -145,7 +147,19 @@ export function SeasonalDisplay({ data }: SeasonalDisplayProps) {
                     <h4 className="font-medium text-white">{recipe.name}</h4>
                     <span className="text-xs text-white/40">feat. {recipe.featuredIngredient}</span>
                   </div>
-                  <p className="text-sm text-white/50 mt-1">{recipe.description}</p>
+
+                  <p className="text-sm text-white/50 mt-1 mb-2">{recipe.description}</p>
+                  
+                  {onActionClick && (
+                    <Button 
+                      size="sm" 
+                      variant="ghost"
+                      className="w-full justify-between bg-white/5 hover:bg-white/10 text-emerald-400 hover:text-emerald-300 h-8 text-xs font-medium"
+                      onClick={() => onActionClick(`Recipe for ${recipe.name} with ${recipe.featuredIngredient}`)}
+                    >
+                      View Recipe <ChefHat className="h-3 ml-2" />
+                    </Button>
+                  )}
                 </motion.div>
               ))}
             </div>

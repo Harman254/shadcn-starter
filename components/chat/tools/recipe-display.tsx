@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { Clock, Users, ChefHat, Flame, Play, Check, ArrowLeft, ArrowRight, Save, ShoppingCart, Calendar, Loader2, Wand2, Timer, Gauge, Pause, RotateCcw, BookOpen } from "lucide-react"
+import { Clock, Users, ChefHat, Flame, Play, Check, ArrowLeft, ArrowRight, Save, ShoppingCart, Calendar, Loader2, Wand2, Timer, Gauge, Pause, RotateCcw, BookOpen, ExternalLink, Utensils } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { useToast } from "@/hooks/use-toast"
@@ -191,6 +191,27 @@ export function RecipeDisplay({ recipe, onActionClick }: RecipeDisplayProps) {
             className="w-full h-full object-cover"
           />
           
+          {/* Source Link */}
+          {recipe.sourceUrl && (
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="absolute top-4 left-4 z-20"
+            >
+               <a
+                href={recipe.sourceUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/20 backdrop-blur-md border border-white/10 text-white text-xs font-medium hover:bg-black/40 transition-colors"
+              >
+                <ExternalLink className="h-3.5 w-3.5 text-white/80" />
+                <span className="truncate max-w-[150px]">{new URL(recipe.sourceUrl).hostname.replace('www.', '')}</span>
+              </a>
+            </motion.div>
+          )}
+
           {/* Badge */}
           <motion.div
             initial={{ opacity: 0, y: -20 }}

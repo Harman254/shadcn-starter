@@ -870,7 +870,7 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
               transition={{ duration: 0.3 }}
               className="w-full max-w-2xl mx-auto"
             >
-              <NutritionDisplay nutrition={uiData.nutrition} />
+              <NutritionDisplay nutrition={uiData.nutrition} onActionClick={onActionClick} />
             </motion.div>
           )}
 
@@ -930,7 +930,7 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
               transition={{ duration: 0.3 }}
               className="w-full max-w-2xl mx-auto"
             >
-              <SeasonalDisplay data={uiData.seasonal} />
+              <SeasonalDisplay data={uiData.seasonal} onActionClick={onActionClick} />
             </motion.div>
           )}
 
@@ -969,7 +969,7 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
               transition={{ duration: 0.3 }}
               className="w-full max-w-2xl mx-auto"
             >
-              <FoodDataDisplay data={uiData.foodData} />
+              <FoodDataDisplay data={uiData.foodData} onActionClick={onActionClick} />
             </motion.div>
           )}
         </div>

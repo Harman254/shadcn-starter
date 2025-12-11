@@ -1,12 +1,14 @@
 "use client"
 
 import { motion } from "framer-motion"
-import { Activity, Flame, Droplets, Wheat, Zap, TrendingUp, AlertCircle, Wand2, Heart } from "lucide-react"
+import { Activity, Flame, Droplets, Wheat, Zap, TrendingUp, AlertCircle, Wand2, Heart, Calendar, MessageSquare, ArrowRight } from "lucide-react"
+import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { CitationList } from "./citation-link"
 
 interface NutritionDisplayProps {
   nutrition: any
+  onActionClick?: (action: string) => void
 }
 
 function AnimatedDonut({ protein, carbs, fat, size = 160 }: { protein: number, carbs: number, fat: number, size?: number }) {
@@ -141,7 +143,7 @@ function MacroCard({ icon: Icon, label, value, unit, color, delay }: {
   )
 }
 
-export function NutritionDisplay({ nutrition }: NutritionDisplayProps) {
+export function NutritionDisplay({ nutrition, onActionClick }: NutritionDisplayProps) {
   const data = nutrition.type === 'plan' ? nutrition.dailyAverage : nutrition.total
   const calories = Math.round(data.calories)
   const protein = Math.round(data.protein)
@@ -328,6 +330,32 @@ export function NutritionDisplay({ nutrition }: NutritionDisplayProps) {
             </p>
           </div>
         </div>
+
+        {/* Action Buttons */}
+        {onActionClick && (
+          <div className="relative p-6 sm:p-8 pt-0">
+            <div className="h-px w-full bg-gradient-to-r from-transparent via-white/20 to-transparent mb-6" />
+            
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Button
+                size="lg"
+                className="flex-1 rounded-2xl font-semibold gap-2 bg-gradient-to-r from-blue-500 to-violet-500 hover:from-blue-600 hover:to-violet-600 text-white shadow-lg shadow-blue-500/25"
+                onClick={() => onActionClick("Generate a meal plan with these nutritional targets")}
+              >
+                <Calendar className="h-4 w-4" /> Use as Target
+              </Button>
+              
+              <Button
+                size="lg"
+                variant="outline"
+                className="flex-1 rounded-2xl font-semibold gap-2 bg-white/5 border-white/10 text-white hover:bg-white/10"
+                onClick={() => onActionClick("Explain this nutrition data in simple terms")}
+              >
+                <MessageSquare className="h-4 w-4" /> Explain
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
     </motion.div>
   )

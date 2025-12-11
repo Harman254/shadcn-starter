@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { ShoppingCart, MapPin, Tag, DollarSign, Save, Check, Loader2, Copy, Share2, Wand2, CheckCircle2, Circle, Package } from "lucide-react"
+import { ShoppingCart, MapPin, Tag, DollarSign, Save, Check, Loader2, Copy, Share2, Wand2, CheckCircle2, Circle, Package, ChefHat } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { useToast } from "@/hooks/use-toast"
@@ -302,25 +302,38 @@ export function GroceryListDisplay({ groceryList, mealPlanId, onActionClick }: G
         <div className="relative p-6 sm:p-8 pt-0">
           <div className="h-px w-full bg-gradient-to-r from-transparent via-white/20 to-transparent mb-6" />
           
-          <Button
-            size="lg"
-            className={cn(
-              "w-full h-14 rounded-2xl font-semibold text-base gap-3",
-              savedId 
-                ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/30" 
-                : "bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white shadow-lg shadow-emerald-500/25"
+          <div className="grid grid-cols-2 gap-3">
+            <Button
+              size="lg"
+              className={cn(
+                "h-14 rounded-2xl font-semibold text-base gap-3",
+                savedId 
+                  ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/30" 
+                  : "bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white shadow-lg shadow-emerald-500/25"
+              )}
+              onClick={handleSave}
+              disabled={saving || !!savedId}
+            >
+              {saving ? (
+                <><Loader2 className="h-5 w-5 animate-spin" /> Saving...</>
+              ) : savedId ? (
+                <><CheckCircle2 className="h-5 w-5" /> Saved</>
+              ) : (
+                <><Save className="h-5 w-5" /> Save List</>
+              )}
+            </Button>
+
+            {onActionClick && (
+              <Button
+                size="lg"
+                variant="outline"
+                className="h-14 rounded-2xl font-semibold text-base gap-3 bg-white/5 border-white/10 text-white hover:bg-white/10"
+                onClick={() => onActionClick("Suggest meals I can cook with these ingredients")}
+              >
+                <ChefHat className="h-5 w-5" /> Meal Ideas
+              </Button>
             )}
-            onClick={handleSave}
-            disabled={saving || !!savedId}
-          >
-            {saving ? (
-              <><Loader2 className="h-5 w-5 animate-spin" /> Saving...</>
-            ) : savedId ? (
-              <><CheckCircle2 className="h-5 w-5" /> Saved to Collection</>
-            ) : (
-              <><Save className="h-5 w-5" /> Save List</>
-            )}
-          </Button>
+          </div>
         </div>
       </div>
     </motion.div>

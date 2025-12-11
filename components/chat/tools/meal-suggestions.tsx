@@ -3,6 +3,7 @@
 import { motion } from "framer-motion"
 import { Clock, Wand2, ChefHat, ArrowRight, Star, Flame, ExternalLink, Search, Globe, Zap, Users } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { Button } from "@/components/ui/button"
 
 interface MealSuggestionsProps {
   results: any[]
@@ -98,132 +99,112 @@ export function MealSuggestions({ results, title, onActionClick }: MealSuggestio
           </motion.div>
         </div>
 
-        {/* Recipe Cards */}
+        {/* Recipe Cards Grid */}
         <div className="relative px-4 sm:px-6 pb-6 sm:pb-8">
-          <div className="space-y-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {results.map((recipe: any, idx: number) => (
               <motion.button
                 key={idx}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3 + idx * 0.1 }}
-                whileHover={{ scale: 1.01 }}
-                whileTap={{ scale: 0.99 }}
+                whileHover={{ y: -4 }}
+                whileTap={{ scale: 0.98 }}
                 onClick={() => onActionClick?.(`Give me the full recipe for ${recipe.name}`)}
                 className={cn(
-                  "w-full p-4 sm:p-5 rounded-2xl text-left",
-                  "bg-gradient-to-br from-white/[0.08] to-white/[0.03]",
-                  "border border-white/[0.08] hover:border-white/[0.15]",
-                  "backdrop-blur-sm",
-                  "transition-all duration-300 group",
-                  "hover:shadow-lg hover:shadow-rose-500/5"
+                  "group relative w-full flex flex-col overflow-hidden rounded-2xl text-left h-full",
+                  "bg-gradient-to-br from-white/[0.08] to-white/[0.02]",
+                  "border border-white/[0.08] hover:border-rose-500/30",
+                  "transition-all duration-300",
+                  "hover:shadow-2xl hover:shadow-rose-500/10"
                 )}
               >
-                <div className="flex items-start gap-4">
-                  {/* Recipe Image with Placeholder Fallback */}
-                  <div className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-xl overflow-hidden shrink-0 bg-gradient-to-br from-rose-500/10 to-pink-500/10 border border-white/[0.05]">
-                    <motion.img
-                      initial={{ scale: 1.1 }}
-                      animate={{ scale: 1 }}
-                      transition={{ duration: 0.5 }}
-                      src={recipe.imageUrl || `https://source.unsplash.com/400x400/?${encodeURIComponent(recipe.name.split(' ').slice(0, 2).join(','))},food`}
-                      alt={recipe.name}
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                      onError={(e) => {
-                        // Fallback to a static food placeholder if Unsplash fails
-                        (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=400&fit=crop';
-                      }}
-                    />
-                    {/* Gradient overlay */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-                    
-                    {/* Arrow indicator on hover */}
-                    <motion.div 
-                      className="absolute bottom-2 right-2 p-1.5 rounded-lg bg-white/20 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity"
-                    >
-                      <ArrowRight className="h-4 w-4 text-white" />
-                    </motion.div>
+                {/* Hero Image */}
+                <div className="relative w-full aspect-[4/3] overflow-hidden bg-slate-900/50">
+                  <motion.img
+                    src={recipe.imageUrl || `https://source.unsplash.com/800x600/?${encodeURIComponent(recipe.name)},food`}
+                    alt={recipe.name}
+                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&q=80';
+                    }}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/20 to-transparent opacity-80" />
+                  
+                  {/* Floating Badges */}
+                  <div className="absolute top-3 right-3 flex flex-col gap-2">
+                     {recipe.rating && (
+                        <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-black/40 backdrop-blur-md border border-white/10 text-xs font-medium text-amber-400 shadow-sm">
+                           <Star className="h-3 w-3 fill-amber-400" /> {recipe.rating}
+                        </div>
+                     )}
+                  </div>
+                  
+                  <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between">
+                     <div className="flex items-center gap-2">
+                        {recipe.calories && (
+                           <div className="flex items-center gap-1 px-2 py-1 rounded-md bg-white/10 backdrop-blur-sm border border-white/10 text-[10px] font-medium text-white/90">
+                              <Flame className="h-3 w-3 text-orange-400" /> {recipe.calories} kcal
+                           </div>
+                        )}
+                        {recipe.totalTime && (
+                           <div className="flex items-center gap-1 px-2 py-1 rounded-md bg-white/10 backdrop-blur-sm border border-white/10 text-[10px] font-medium text-white/90">
+                              <Clock className="h-3 w-3 text-blue-400" /> {recipe.totalTime}
+                           </div>
+                        )}
+                     </div>
+                  </div>
+                </div>
+
+                {/* Content */}
+                <div className="flex-1 p-4 flex flex-col gap-3">
+                  <div>
+                    <h3 className="font-bold text-lg text-white leading-tight group-hover:text-rose-400 transition-colors">
+                      {recipe.name}
+                    </h3>
+                    <p className="text-sm text-white/50 line-clamp-2 mt-1.5 leading-relaxed">
+                      {recipe.description || "A delicious culinary experience tailored just for you."}
+                    </p>
                   </div>
 
-                  {/* Recipe Info */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-2 mb-2">
-                      <h3 className="font-bold text-white text-base sm:text-lg group-hover:text-rose-300 transition-colors line-clamp-2">
-                        {recipe.name}
-                      </h3>
-                    </div>
-                    
-                    <p className="text-sm text-white/40 line-clamp-2 mb-3 leading-relaxed">
-                      {recipe.description || "Delicious recipe awaits..."}
-                    </p>
+                  {/* Spacer */}
+                  <div className="flex-1" />
 
-                    {/* Tags & Meta */}
-                    <div className="flex flex-wrap items-center gap-2">
-                      {recipe.prepTime && (
-                        <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/[0.05] border border-white/[0.08] text-xs text-white/60">
-                          <Clock className="h-3.5 w-3.5 text-blue-400" />
-                          {recipe.prepTime}
-                        </span>
-                      )}
-                      {recipe.cookTime && (
-                        <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/[0.05] border border-white/[0.08] text-xs text-white/60">
-                          <Flame className="h-3.5 w-3.5 text-orange-400" />
-                          {recipe.cookTime}
-                        </span>
-                      )}
-                      {recipe.difficulty && (
-                        <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/[0.05] border border-white/[0.08] text-xs text-white/60">
-                          <Zap className="h-3.5 w-3.5 text-yellow-400" />
-                          {recipe.difficulty}
-                        </span>
-                      )}
-                      {recipe.calories && (
-                        <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-400 font-medium">
-                          {recipe.calories} cal
-                        </span>
-                      )}
-                      {recipe.rating && (
-                        <span className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-500/10 border border-amber-500/20 text-xs text-amber-400 font-medium">
-                          <Star className="h-3.5 w-3.5 fill-amber-400" />
-                          {recipe.rating}
-                        </span>
-                      )}
-                    </div>
-                    
-                    {/* Source URL - Only for web search results */}
-                    {recipe.sourceUrl && (
-                      <motion.a
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: 0.5 }}
-                        href={recipe.sourceUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={(e) => e.stopPropagation()}
-                        className="inline-flex items-center gap-1.5 mt-3 text-xs text-blue-400 hover:text-blue-300 transition-colors"
-                      >
-                        <ExternalLink className="h-3 w-3" />
-                        <span className="truncate max-w-[200px]">
-                          {new URL(recipe.sourceUrl).hostname.replace('www.', '')}
-                        </span>
-                      </motion.a>
+                  {/* Actions Footer */}
+                  <div className="pt-3 border-t border-white/5 flex items-center justify-between gap-3 mt-auto">
+                    {recipe.sourceUrl ? (
+                        <a
+                           href={recipe.sourceUrl}
+                           target="_blank"
+                           rel="noopener noreferrer"
+                           onClick={(e) => e.stopPropagation()}
+                           className="flex items-center gap-1.5 text-xs text-blue-400 hover:text-blue-300 transition-colors"
+                        >
+                           <ExternalLink className="h-3 w-3" />
+                           <span className="max-w-[80px] truncate">{new URL(recipe.sourceUrl).hostname.replace('www.', '')}</span>
+                        </a>
+                    ) : (
+                        <span className="text-[10px] text-rose-400/50 uppercase tracking-wider font-medium">Original Recipe</span>
                     )}
-                    
-                    {/* Tags */}
-                    {recipe.tags?.length > 0 && (
-                      <div className="flex flex-wrap gap-1.5 mt-3">
-                        {recipe.tags.slice(0, 3).map((tag: string, i: number) => (
-                          <span key={i} className="px-2 py-0.5 rounded-md text-[10px] bg-white/[0.05] border border-white/[0.08] text-white/50">
-                            #{tag}
-                          </span>
-                        ))}
-                      </div>
-                    )}
+
+                    <Button
+                         size="sm"
+                         variant="secondary"
+                         className="h-8 text-xs bg-white/10 hover:bg-white/20 text-white border-0"
+                         onClick={(e) => {
+                           e.stopPropagation();
+                           onActionClick?.(`Give me the full recipe for ${recipe.name}`);
+                         }}
+                       >
+                        View
+                        <ArrowRight className="h-3 w-3 ml-1.5 opacity-50 group-hover:opacity-100 transition-opacity" />
+                    </Button>
                   </div>
                 </div>
               </motion.button>
             ))}
           </div>
+
 
           {/* Footer hint */}
           <motion.p

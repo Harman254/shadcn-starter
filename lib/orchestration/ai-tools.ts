@@ -96,6 +96,11 @@ function getRandomImage(mealType: 'breakfast' | 'lunch' | 'dinner' | 'snack'): s
     return images[Math.floor(Math.random() * images.length)];
 }
 
+function getRandomRecipeImage(): string {
+    const allImages = Object.values(MEAL_IMAGES).flat();
+    return allImages[Math.floor(Math.random() * allImages.length)];
+}
+
 export const generateMealPlan = tool({
     description: 'Generate a meal plan based on user preferences, duration, and meals per day.',
     parameters: z.object({
@@ -1579,8 +1584,8 @@ Return valid JSON.`,
 
             const recipe = {
                 ...result.object,
-                // Use Cloudinary placeholder for consistent image display
-                imageUrl: 'https://res.cloudinary.com/dcidanigq/image/upload/v1742111994/samples/food/fish-vegetables.jpg'
+                // Use random Cloudinary image for variety
+                imageUrl: getRandomRecipeImage()
             };
 
             // 3. Create UI Metadata with Save Action
