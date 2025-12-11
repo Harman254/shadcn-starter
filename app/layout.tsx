@@ -31,13 +31,6 @@ interface RootLayoutProps {
 export const metadata = {
   title: 'MealWise - AI Meal Planning',
   description: 'Plan your meals, create grocery lists, and manage your diet with ease using AI.',
-  manifest: '/manifest.json',
-  themeColor: '#6366f1',
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: 'default',
-    title: 'MealWise',
-  },
   icons: {
     icon: '/favicon.ico',
     apple: '/apple-touch-icon.png',
@@ -45,6 +38,7 @@ export const metadata = {
 }
 
 export const viewport = {
+  themeColor: '#6366f1',
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
@@ -55,13 +49,7 @@ export const viewport = {
 export default async function RootLayout({ children }: RootLayoutProps) {
   return (
     <html suppressHydrationWarning lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
-      <head>
-        <link rel="manifest" href="/manifest.json" />
-        <meta name="theme-color" content="#6366f1" />
-        <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-        <meta name="apple-mobile-web-app-title" content="MealWise" />
-      </head>
+
       <body suppressHydrationWarning className="font-sans antialiased">
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <AuthModalProvider>
