@@ -173,6 +173,7 @@ ${userPrefsContext || 'No saved preferences. Use balanced diet.'}
 5. **Timing:** Provide realistic prep times (5-45 min).
 6. **Servings:** Suggest 1-4 servings per meal.
 7. **Structure:** Generate exactly ${duration} days with ${mealsPerDay} meals each.
+8. **Title:** Create a catchy, descriptive title for the plan (e.g. "Mediterranean 3-Day Reset", "High-Protein Keto Week").
 
 Return a valid JSON object.`,
             });

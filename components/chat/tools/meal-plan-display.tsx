@@ -51,7 +51,12 @@ export function MealPlanDisplay({ mealPlan, onActionClick }: MealPlanDisplayProp
       const response = await fetch('/api/savemealplan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...mealPlan, createdAt: new Date().toISOString() }),
+        body: JSON.stringify({ 
+          ...mealPlan, 
+          duration: Math.round(Number(mealPlan.duration)) || mealPlan.days?.length || 1,
+          mealsPerDay: Math.round(Number(mealPlan.mealsPerDay)) || (mealPlan.days?.[0]?.meals?.length) || 3,
+          createdAt: new Date().toISOString() 
+        }),
       })
       const result = await response.json()
       if (response.ok && result.success) {
