@@ -14,6 +14,10 @@ export interface Meal {
   ingredients: string[];
   instructions: string;
   imageUrl?: string;
+  calories?: number;
+  prepTime?: string;
+  servings?: number;
+  mealType?: 'breakfast' | 'lunch' | 'dinner' | 'snack';
 }
 
 export interface SaveMealPlanInput {

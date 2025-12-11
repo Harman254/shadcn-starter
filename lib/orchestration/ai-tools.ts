@@ -58,6 +58,44 @@ export const fetchUserPreferences = tool({
 // MEAL PLAN GENERATION TOOL
 // ============================================================================
 
+// Cloudinary food image pools for realistic meal display
+const MEAL_IMAGES = {
+    breakfast: [
+        'https://res.cloudinary.com/dcidanigq/image/upload/v1742112002/samples/breakfast.jpg',
+        'https://res.cloudinary.com/dcidanigq/image/upload/v1742111996/samples/food/spices.jpg',
+    ],
+    lunch: [
+        'https://res.cloudinary.com/dcidanigq/image/upload/v1742111994/samples/food/fish-vegetables.jpg',
+        'https://res.cloudinary.com/dcidanigq/image/upload/v1742112004/cld-sample-4.jpg',
+    ],
+    dinner: [
+        'https://res.cloudinary.com/dcidanigq/image/upload/v1742111994/samples/food/fish-vegetables.jpg',
+        'https://res.cloudinary.com/dcidanigq/image/upload/v1742112004/cld-sample-5.jpg',
+    ],
+    snack: [
+        'https://res.cloudinary.com/dcidanigq/image/upload/v1742111996/samples/food/spices.jpg',
+        'https://res.cloudinary.com/dcidanigq/image/upload/v1742112002/samples/breakfast.jpg',
+    ],
+};
+
+function getMealTypeFromIndex(index: number, mealsPerDay: number): 'breakfast' | 'lunch' | 'dinner' | 'snack' {
+    if (mealsPerDay <= 3) {
+        if (index === 0) return 'breakfast';
+        if (index === 1) return 'lunch';
+        return 'dinner';
+    }
+    // For 4+ meals per day
+    if (index === 0) return 'breakfast';
+    if (index === 1) return 'lunch';
+    if (index === mealsPerDay - 1) return 'dinner';
+    return 'snack';
+}
+
+function getRandomImage(mealType: 'breakfast' | 'lunch' | 'dinner' | 'snack'): string {
+    const images = MEAL_IMAGES[mealType];
+    return images[Math.floor(Math.random() * images.length)];
+}
+
 export const generateMealPlan = tool({
     description: 'Generate a meal plan based on user preferences, duration, and meals per day.',
     parameters: z.object({
@@ -111,6 +149,9 @@ export const generateMealPlan = tool({
                             description: z.string(),
                             ingredients: z.array(z.string()),
                             instructions: z.string(),
+                            calories: z.number().describe('Estimated calories for this meal'),
+                            prepTime: z.string().describe('Prep time like "15 min" or "30 min"'),
+                            servings: z.number().min(1).max(8).describe('Number of servings'),
                         }))
                     }))
                 }),
@@ -128,7 +169,10 @@ ${userPrefsContext || 'No saved preferences. Use balanced diet.'}
 1. **Specific Requests:** If user asked for specific foods (e.g. "ugali", "keto", "pasta"), YOU MUST INCLUDE THEM.
 2. **Variety:** Ensure meals are diverse and not repetitive.
 3. **Completeness:** For each meal, provide a name, brief description, full ingredient list, and simple instructions.
-4. **Structure:** Generate exactly ${duration} days.
+4. **Nutrition:** Estimate realistic calories for each meal (300-800 for most meals).
+5. **Timing:** Provide realistic prep times (5-45 min).
+6. **Servings:** Suggest 1-4 servings per meal.
+7. **Structure:** Generate exactly ${duration} days with ${mealsPerDay} meals each.
 
 Return a valid JSON object.`,
             });
@@ -137,14 +181,27 @@ Return a valid JSON object.`,
                 throw new Error('Failed to generate meal plan data');
             }
 
+            // 3. Enrich meals with images and meal types
+            const enrichedDays = result.object.days.map(day => ({
+                day: day.day,
+                meals: day.meals.map((meal, mealIndex) => {
+                    const mealType = getMealTypeFromIndex(mealIndex, mealsPerDay);
+                    return {
+                        ...meal,
+                        mealType,
+                        imageUrl: getRandomImage(mealType),
+                    };
+                })
+            }));
+
             const mealPlanData = {
                 title: result.object.title,
                 duration,
                 mealsPerDay,
-                days: result.object.days
+                days: enrichedDays
             };
 
-            // 3. Create UI Metadata for Save Button
+            // 4. Create UI Metadata for Save Button
             const uiMetadata = {
                 actions: [
                     {
@@ -158,7 +215,7 @@ Return a valid JSON object.`,
 
             const uiMetadataEncoded = Buffer.from(JSON.stringify(uiMetadata)).toString('base64');
 
-            // 4. Return Success Response
+            // 5. Return Success Response
             const totalMeals = mealPlanData.days.reduce((sum, day) => sum + day.meals.length, 0);
 
             return successResponse(
@@ -174,6 +231,7 @@ Return a valid JSON object.`,
         }
     },
 });
+
 
 // ============================================================================
 // NUTRITION ANALYSIS TOOL

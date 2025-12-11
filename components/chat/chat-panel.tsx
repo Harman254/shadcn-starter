@@ -319,6 +319,7 @@ setMessages(storeMessages);
               messages={messages} 
               isLoading={isLoading}
               data={data}
+              onActionClick={handleManualSubmit}
             />
           )}
         </div>

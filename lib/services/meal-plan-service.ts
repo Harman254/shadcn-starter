@@ -123,14 +123,16 @@ export async function saveMealPlanService(
         // Create Meal records for this day
         for (let mealIndex = 0; mealIndex < day.meals.length; mealIndex++) {
           const meal = day.meals[mealIndex];
-          const mealType = getMealType(mealIndex, input.mealsPerDay);
+          // Use AI-provided mealType if available, otherwise derive from index
+          const mealType = meal.mealType || getMealType(mealIndex, input.mealsPerDay);
 
           await tx.meal.create({
             data: {
               name: meal.name.trim(),
               type: mealType,
               description: meal.description.trim(),
-              calories: calculateCalories(meal.ingredients),
+              // Use AI-provided calories if available, otherwise fallback to heuristic
+              calories: meal.calories || calculateCalories(meal.ingredients),
               ingredients: meal.ingredients.map(ing => ing.trim()).filter(ing => ing.length > 0),
               imageUrl: meal.imageUrl?.trim() || null,
               dayMealId: dayMeal.id,
