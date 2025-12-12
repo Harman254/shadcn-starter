@@ -1897,14 +1897,109 @@ Return valid JSON.`,
 export const generatePrepTimeline = tool({
     description: 'Generate an optimized meal prep timeline/schedule. Use when user wants to "batch cook", "meal prep", "prep ahead", or asks "how to prepare multiple meals efficiently".',
     parameters: z.object({
-        recipes: z.array(z.string()).describe('List of recipe names to prep'),
+        recipes: z.array(z.string()).optional().describe('List of recipe names to prep. Optional if context has a meal plan.'),
         targetDate: z.string().optional().describe('When the meals should be ready (e.g., "Sunday dinner", "this week")'),
         prepStyle: z.enum(['batch', 'same-day', 'week-ahead']).default('batch').describe('Prep strategy'),
         availableTime: z.number().optional().describe('Available prep time in minutes'),
+        mealPlanId: z.string().optional().describe('ID of the meal plan to prep'),
+        chatMessages: z.array(z.object({
+            role: z.enum(['user', 'assistant']),
+            content: z.string(),
+            toolInvocations: z.array(z.any()).optional(),
+        })).optional().describe('Recent chat messages to understand context'),
     }),
-    execute: async ({ recipes, targetDate, prepStyle, availableTime }): Promise<ToolResult> => {
+    execute: async ({ recipes, targetDate, prepStyle, availableTime, mealPlanId, chatMessages }, options): Promise<ToolResult> => {
         try {
-            console.log(`[generatePrepTimeline] ⏱️ Creating prep timeline for ${recipes.length} recipes...`);
+            // PRO CHECK
+            const { auth } = await import('@/lib/auth');
+            const { headers } = await import('next/headers');
+            const { checkUserProStatus } = await import('@/lib/subscription');
+
+            const session = await auth.api.getSession({ headers: await headers() });
+            if (!session?.user?.id) {
+                return errorResponse('You must be logged in to use this feature.', ErrorCode.UNAUTHORIZED);
+            }
+
+            const isPro = await checkUserProStatus(session.user.id);
+            if (!isPro) {
+                return successResponse(
+                    {
+                        ui: {
+                            upgradePrompt: {
+                                featureName: "Prep Timelines",
+                                description: "Get step-by-step prep schedules optimized for your kitchen's flow. Upgrade to Pro to unlock this advanced AI chef feature."
+                            }
+                        }
+                    },
+                    "I'd love to organize your prep time, but that's a Pro feature! 👩‍🍳"
+                );
+            }
+
+            console.log(`[generatePrepTimeline] ⏱️ Creating prep timeline...`);
+            // ... (rest of logic) ...
+
+            let recipesToPrep: string[] = recipes || [];
+
+            // Context Resolution Logic
+            if (recipesToPrep.length === 0) {
+                // @ts-ignore
+                const context = (options as any)?.context;
+                // @ts-ignore
+                const messages = chatMessages || (options as any)?.messages || context?.messages;
+
+                let sourcePlanOrRecipe = null;
+
+                if (mealPlanId) {
+                    const prisma = (await import('@/lib/prisma')).default;
+                    const mealPlan = await prisma.mealPlan.findUnique({
+                        where: { id: mealPlanId },
+                        include: { days: { include: { meals: true } } }
+                    });
+                    if (mealPlan) sourcePlanOrRecipe = mealPlan;
+                } else {
+                    // Try to find from context (messages OR lastToolResult)
+                    const findToolResult = (toolName: string) => {
+                        if (!messages) return null;
+                        for (let i = messages.length - 1; i >= 0; i--) {
+                            const m = messages[i];
+                            if (m.role === 'assistant' && m.toolInvocations) {
+                                const invocation = m.toolInvocations.find((t: any) => t.toolName === toolName && (t.result?.success || t.state === 'result'));
+                                if (invocation?.result) {
+                                    return invocation.result[toolName === 'generateMealRecipe' ? 'recipe' : 'mealPlan'] ||
+                                        invocation.result.data?.[toolName === 'generateMealRecipe' ? 'recipe' : 'mealPlan'];
+                                }
+                            }
+                        }
+                        return null;
+                    };
+
+                    sourcePlanOrRecipe =
+                        context?.lastToolResult?.generateMealPlan?.data?.mealPlan ||
+                        context?.lastToolResult?.modifyMealPlan?.data?.mealPlan ||
+                        context?.lastToolResult?.swapMeal?.data?.mealPlan ||
+                        context?.lastToolResult?.generateMealRecipe?.data?.recipe ||
+                        findToolResult('generateMealPlan') ||
+                        findToolResult('generateMealRecipe');
+                }
+
+                if (sourcePlanOrRecipe) {
+                    if (sourcePlanOrRecipe.days) {
+                        // It's a meal plan
+                        console.log('[generatePrepTimeline] Found meal plan in context');
+                        recipesToPrep = sourcePlanOrRecipe.days.flatMap((d: any) => d.meals.map((m: any) => m.name));
+                    } else if (sourcePlanOrRecipe.name) {
+                        // It's a single recipe
+                        console.log('[generatePrepTimeline] Found recipe in context');
+                        recipesToPrep = [sourcePlanOrRecipe.name];
+                    }
+                }
+            }
+
+            if (recipesToPrep.length === 0) {
+                return errorResponse("I couldn't find a meal plan or recipes to create a schedule for. Please generate a meal plan first.", ErrorCode.INVALID_INPUT);
+            }
+
+            console.log(`[generatePrepTimeline] ⏱️ Generating for ${recipesToPrep.length} items: ${recipesToPrep.slice(0, 3).join(', ')}...`);
 
             const { generateObject } = await import('ai');
             const { google } = await import('@ai-sdk/google');
@@ -1937,7 +2032,7 @@ export const generatePrepTimeline = tool({
                 prompt: `You are a meal prep efficiency expert.
 
 ## RECIPES TO PREP
-${recipes.map((r, i) => `${i + 1}. ${r}`).join('\n')}
+${recipesToPrep.map((r, i) => `${i + 1}. ${r}`).join('\n')}
 
 ## PREP STYLE
 - Style: ${prepStyle}
@@ -1966,7 +2061,7 @@ Return valid JSON.`,
 
             const uiMetadata = {
                 prepTimeline: result.object,
-                recipes: recipes,
+                recipes: recipesToPrep,
             };
             const uiMetadataEncoded = Buffer.from(JSON.stringify(uiMetadata)).toString('base64');
 
@@ -1978,7 +2073,7 @@ Return valid JSON.`,
                 {
                     ...result.object,
                 },
-                `✅ Created prep timeline for ${recipes.length} recipes! Total time: ${hours > 0 ? hours + 'h ' : ''}${mins}m (${result.object.totalActiveTime}m active). [UI_METADATA:${uiMetadataEncoded}]`
+                `✅ Created prep timeline for ${recipesToPrep.length} recipes! Total time: ${hours > 0 ? hours + 'h ' : ''}${mins}m (${result.object.totalActiveTime}m active). [UI_METADATA:${uiMetadataEncoded}]`
             );
 
         } catch (error) {
@@ -1999,6 +2094,31 @@ export const analyzePantryImage = tool({
     }),
     execute: async ({ imageUrl }): Promise<ToolResult> => {
         try {
+            // PRO CHECK
+            const { auth } = await import('@/lib/auth');
+            const { headers } = await import('next/headers');
+            const { checkUserProStatus } = await import('@/lib/subscription');
+
+            const session = await auth.api.getSession({ headers: await headers() });
+            if (!session?.user?.id) {
+                return errorResponse('You must be logged in to use this feature.', ErrorCode.UNAUTHORIZED);
+            }
+
+            const isPro = await checkUserProStatus(session.user.id);
+            if (!isPro) {
+                return successResponse(
+                    {
+                        ui: {
+                            upgradePrompt: {
+                                featureName: "Pantry Vision",
+                                description: "Snap a photo of your fridge and let AI identify ingredients instantly. This magical vision feature is exclusive to Pro members."
+                            }
+                        }
+                    },
+                    "I can see you're excited to try Pantry Vision! Upgrade to Pro to unlock it. 📸"
+                );
+            }
+
             console.log(`[analyzePantryImage] 📸 Analyzing image: ${imageUrl}`);
 
             const { generateObject } = await import('ai');

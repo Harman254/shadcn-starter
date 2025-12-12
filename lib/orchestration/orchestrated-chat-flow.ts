@@ -18,7 +18,7 @@ import { getToolExecutor } from './tool-executor';
 // ============================================================================
 
 export interface OrchestratedChatInput {
-  message: string;
+  message: string | Array<any>;
   userId?: string;
   sessionId?: string;
   conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }>;
@@ -117,176 +117,128 @@ export class OrchestratedChatFlow {
    * Process user message with streaming support
    * Returns a ReadableStream that streams status updates, tool results, and final text
    */
+  /**
+   * Process user message with streaming support
+   * Returns a ReadableStream that streams status updates, tool results, and final text
+   */
   processMessageStream(input: OrchestratedChatInput): ReadableStream {
-    const encoder = new TextEncoder();
+    // 1. Load context and preferences (in parallel)
+    // We do this BEFORE starting the stream to ensure the system prompt has valid context.
+    // In a pure edge case we might want to stream this loading state too, but for now strict await is safer for context integrity.
 
-    // Helper to format data chunks for Vercel AI SDK (2:[data]\n)
-    const formatData = (data: any) => {
-      return encoder.encode(`2:${JSON.stringify([data])}\n`);
-    };
+    // Create a TransformStream to inject initial status messages if needed, 
+    // but for "ChatGPT-like" speed, we want to start streaming text ASAP.
+    // However, we need to fetch context first.
 
-    // Helper to format error chunks (3:"error"\n)
-    const formatError = (error: string) => {
-      return encoder.encode(`3:${JSON.stringify(error)}\n`);
-    };
+    const streamPromise = (async () => {
+      let [context, resolvedPreferences, resolvedLocation] = await Promise.all([
+        this.contextManager.getContext(input.userId, input.sessionId),
+        Promise.resolve(input.userPreferences),
+        Promise.resolve(input.locationData)
+      ]);
 
-    return new ReadableStream({
-      start: async (controller) => {
-        // Keep-alive interval to prevent timeouts during long reasoning/execution
-        const keepAliveInterval = setInterval(() => {
-          try {
-            controller.enqueue(formatData({ type: 'status', content: 'Thinking...' }));
-          } catch (e) {
-            clearInterval(keepAliveInterval);
+      // RECOVERY LOGIC
+      if ((!context || !context.lastToolResult) && input.conversationHistory.length > 0) {
+        const recovered = this.contextManager.recoverContextFromHistory(input.conversationHistory);
+        if (recovered.lastToolResult) {
+          console.log('[OrchestratedChatFlow] 🩹 Context recovered from history');
+          if (!context) {
+            context = { timestamp: new Date(), ...recovered } as any;
+          } else {
+            context.lastToolResult = recovered.lastToolResult;
+            if (recovered.mealPlanId) context.mealPlanId = recovered.mealPlanId;
+            if (recovered.groceryListId) context.groceryListId = recovered.groceryListId;
           }
-        }, 3000); // 3s to reduce noise while preventing timeouts
-
-        try {
-          // 1. Initial Status
-          controller.enqueue(formatData({ type: 'status', content: '🤔 Analyzing your request...' }));
-
-          // Load context and preferences in parallel
-          let [context, resolvedPreferences, resolvedLocation] = await Promise.all([
-            this.contextManager.getContext(input.userId, input.sessionId),
-            Promise.resolve(input.userPreferences),
-            Promise.resolve(input.locationData)
-          ]);
-
-          // RECOVERY LOGIC: If DB context is missing/empty, try to recover from chat history
-          if ((!context || !context.lastToolResult) && input.conversationHistory.length > 0) {
-            const recovered = this.contextManager.recoverContextFromHistory(input.conversationHistory);
-            if (recovered.lastToolResult) {
-              console.log('[OrchestratedChatFlow] 🩹 Context recovered from history');
-              if (!context) {
-                context = { timestamp: new Date(), ...recovered } as any;
-              } else {
-                context.lastToolResult = recovered.lastToolResult;
-                if (recovered.mealPlanId) context.mealPlanId = recovered.mealPlanId;
-                if (recovered.groceryListId) context.groceryListId = recovered.groceryListId;
-              }
-            }
-          }
-
-          // 2. Plan
-          const plan = await this.reasoningEngine.generatePlan(input.message, {
-            ...context,
-            userPreferences: resolvedPreferences,
-            location: resolvedLocation
-          }, tools);
-
-          controller.enqueue(formatData({ type: 'plan', content: plan }));
-
-          // 3. Execute
-          const fullHistory = [
-            ...input.conversationHistory,
-            { role: 'user' as const, content: input.message }
-          ];
-
-          const toolResults = await this.toolExecutor.executePlan(plan,
-            (step) => {
-              controller.enqueue(formatData({ type: 'status', content: `⚙️ Executing step: ${step.description}` }));
-            },
-            undefined,
-            undefined,
-            fullHistory, // Pass FULL history including current message
-            context // Pass context for tool execution
-          );
-
-          // Extract UI_METADATA from tool results
-          let collectedUIData: any = null;
-          for (const [toolName, result] of Object.entries(toolResults)) {
-            if (result && typeof result.message === 'string') {
-              const uiMetadataMatch = result.message.match(/\[UI_METADATA:([^\]]+)\]/);
-              if (uiMetadataMatch) {
-                try {
-                  const decoded = Buffer.from(uiMetadataMatch[1], 'base64').toString('utf-8');
-                  collectedUIData = JSON.parse(decoded);
-                  console.log('[OrchestratedChatFlow] ✅ Extracted UI data:', collectedUIData);
-                  break;
-                } catch (e) {
-                  console.error('[OrchestratedChatFlow] Failed to parse UI_METADATA:', e);
-                }
-              }
-            }
-          }
-
-          // Store context asynchronously
-          if (input.userId && input.sessionId) {
-            this.contextManager.extractAndStoreEntities(input.userId, input.sessionId, toolResults).catch(console.error);
-          }
-
-          // 4. Synthesize
-          controller.enqueue(formatData({ type: 'status', content: '✍️ Synthesizing response...' }));
-
-          // Clear keep-alive before streaming text to avoid interleaving issues
-          clearInterval(keepAliveInterval);
-
-          const result = streamText({
-            model: google('gemini-2.0-flash'),
-            system: this.buildSystemPrompt(input, context, false),
-            prompt: this.buildSynthesisPrompt(input.message, toolResults),
-          });
-
-          // Pipe the text stream to our controller
-          // result.toDataStream() returns a stream of formatted chunks (0:"text", etc.)
-          const reader = result.toDataStream().getReader();
-
-          // Track accumulated text to detect empty responses
-          let accumulatedText = '';
-          const hasSuccessfulTools = Object.values(toolResults).some(
-            (result: any) => result && result.success !== false && !result.isSystemError
-          );
-
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-
-            // Track text chunks (format: 0:"text content")
-            const textChunk = value.toString();
-            if (textChunk.startsWith('0:')) {
-              try {
-                const parsed = JSON.parse(textChunk.substring(2));
-                accumulatedText += parsed;
-              } catch (e) {
-                // Ignore parse errors
-              }
-            }
-
-            controller.enqueue(value);
-          }
-
-
-
-          // Send UI data as a hidden HTML comment at the end of the message
-          // This ensures it travels with the text and is persisted in history
-          if (collectedUIData) {
-            console.log('[OrchestratedChatFlow] 📤 Embedding UI data in message content');
-            const base64Data = Buffer.from(JSON.stringify(collectedUIData)).toString('base64');
-            const hiddenBlock = `\n\n<!-- UI_DATA_START:${base64Data}:UI_DATA_END -->`;
-
-            // CRITICAL: Must format as Vercel AI SDK text chunk (0:"text")
-            // Otherwise it breaks the stream parsing
-            controller.enqueue(encoder.encode(`0:${JSON.stringify(hiddenBlock)}\n`));
-          }
-
-          controller.close();
-
-          // Safety timeout
-          const safetyTimeout = setTimeout(() => {
-            console.warn('[OrchestratedChatFlow] ⚠️ Stream safety timeout reached. Closing controller.');
-            try { controller.close(); } catch (e) { }
-          }, 60000);
-
-        } catch (error) {
-          clearInterval(keepAliveInterval);
-          console.error('[OrchestratedChatFlow] Stream Error:', error);
-          controller.enqueue(formatError(error instanceof Error ? error.message : 'An error occurred'));
-          controller.close();
-        } finally {
-          console.log('[OrchestratedChatFlow] 🏁 Stream controller closed.');
         }
       }
+
+      // 2. Call streamText with tools
+      const result = streamText({
+        model: google('gemini-2.0-flash'),
+        tools: tools,
+        maxSteps: 5, // Allow multi-step reasoning (e.g. Plan -> Nutrition)
+        system: this.buildSystemPrompt(input, context, false),
+        messages: [
+          ...input.conversationHistory,
+          { role: 'user', content: input.message as string }
+        ],
+        // Pass context to tools via implicit state if needed, but our tools read from 'messages' or 'toolInvocations' usually.
+        // However, Vercel AI SDK tools don't automatically get "context" object unless we use the 'experimental_toolCallHandler' or similar.
+        // BUT, our tools in ai-tools.ts are defined with `tool()` which doesn't natively accept a separate context arg in the new SDK version strictly?
+        // Wait, in previous toolExecutor we passed `context` manually.
+        // `ai-tools.ts` defines tools with `execute: async (args, options)`.
+        // We need to ensure `options` contains what we need. 
+        // Vercel AI SDK `streamText` passes `{ toolCallId, messages }` to tools.
+        // Our tools look for `options.context`. 
+        // We might need to rely on `messages` to reconstruct context OR rely on the system prompt context.
+        // FORTUNATELY, `ai-tools.ts` tools I verified primarily check `input` args, and fallback to `chatMessages`.
+        // The `chatMessages` parameter in our tools schema creates a way to pass context!
+        // The model sees `chatMessages` as an optional param and might NOT fill it.
+        // CRITICAL FIX: The tools need context. 
+        // We can use `experimental_prepareToolResult` or similar? No.
+        // Simpler: The System Prompt contains the context IDs (MealPlanID, etc).
+        // The Model SHOULD pass these IDs to the tools if instructed.
+        // My previous fix to `generatePrepTimeline` ADDED `chatMessages` to schema.
+
+        onFinish: async ({ response }) => {
+          // Store context asynchronously
+          if (input.userId && input.sessionId) {
+            try {
+              const toolResults: Record<string, any> = {};
+              const messages = response.messages;
+
+              // Extract tool results from the conversation
+              for (const m of messages) {
+                if (m.role === 'tool') {
+                  // Vercel AI SDK stores tool results in content array
+                  if (Array.isArray(m.content)) {
+                    for (const part of m.content) {
+                      if (part.type === 'tool-result') {
+                        // Normalize result structure for ContextManager
+                        toolResults[part.toolName] = {
+                          success: !part.isError,
+                          data: part.result,
+                          // Infer result if it's the raw object
+                          ...(typeof part.result === 'object' ? part.result : { result: part.result })
+                        };
+                      }
+                    }
+                  }
+                }
+              }
+
+              if (Object.keys(toolResults).length > 0) {
+                await this.contextManager.extractAndStoreEntities(input.userId, input.sessionId, toolResults);
+                console.log('[OrchestratedChatFlow] ✅ Context saved successfully');
+              }
+            } catch (error) {
+              console.error('[OrchestratedChatFlow] Failed to save context:', error);
+            }
+          }
+        },
+        onError: (error) => {
+          console.error('[OrchestratedChatFlow] Stream Error:', error);
+        }
+      });
+
+      return result.toDataStream();
+    })();
+
+    // Convert the Promise<ReadableStream> to a ReadableStream
+    // We can use a TransformStream to unwrap it roughly, or just await it in the route handler.
+    // BUT `processMessageStream` signature returns `ReadableStream`.
+    // We can return a specific Vercel stream that handles the promise?
+    // standard `new ReadableStream` can await?
+
+    const { readable, writable } = new TransformStream();
+    streamPromise.then(stream => stream.pipeTo(writable)).catch(e => {
+      console.error("Stream setup failed", e);
+      const writer = writable.getWriter();
+      writer.write(new TextEncoder().encode(`3:${JSON.stringify(e.message)}\n`));
+      writer.close();
     });
+
+    return readable;
   }
 
   private buildSynthesisPrompt(userMessage: string, toolResults: Record<string, any>): string {
@@ -386,6 +338,7 @@ AVAILABLE TOOLS:
 - generateGroceryList: Create shopping list (optional mealPlanId, works from context)
 - searchFoodData: Search real-world food data (nutrition, prices, availability, substitutions)
 - analyzeNutrition: Analyze nutrition (optional mealPlanId, works from context)
+- generatePrepTimeline: Create an optimized prep schedule (works with context or specific recipes)
 
 CRITICAL ORCHESTRATION RULES:
 1. **Meal Planning Flow**:

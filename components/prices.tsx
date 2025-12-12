@@ -63,7 +63,7 @@ const CheckoutPage = () => {
           </div>
           <div className="p-8">
             <div className="uppercase tracking-wide text-sm text-indigo-500 font-semibold">Premium Plan</div>
-            <h2 className="mt-2 text-2xl font-bold">Pro</h2>
+            <h2 className="mt-2 text-2xl font-bold">Pro Chef</h2>
             <p className="mt-2 text-slate-500">Unlock all premium features and support.</p>
 
             <div className="mt-4">
@@ -79,23 +79,27 @@ const CheckoutPage = () => {
                 </li>
                 <li className="flex items-center">
                   <CheckIcon />
-                  <span className="ml-2">Unlimited AI meal plan generations</span>
+                  <span className="ml-2">Unlimited Meal Plans</span>
                 </li>
                 <li className="flex items-center">
                   <CheckIcon />
-                  <span className="ml-2">Unlimited meal swaps</span>
+                  <span className="ml-2">Advanced AI Analytics & Insights</span>
                 </li>
                 <li className="flex items-center">
                   <CheckIcon />
-                  <span className="ml-2">Grocery lists with local pricing</span>
+                  <span className="ml-2">Detailed Prep Timelines</span>
                 </li>
                 <li className="flex items-center">
                   <CheckIcon />
-                  <span className="ml-2">Advanced nutrition insights</span>
+                  <span className="ml-2">Pantry Image Analysis</span>
                 </li>
                 <li className="flex items-center">
                   <CheckIcon />
-                  <span className="ml-2">Priority support from the Mealwise team</span>
+                  <span className="ml-2">Unlimited Recipe Storage</span>
+                </li>
+                <li className="flex items-center">
+                  <CheckIcon />
+                  <span className="ml-2">Priority support</span>
                 </li>
               </ul>
 

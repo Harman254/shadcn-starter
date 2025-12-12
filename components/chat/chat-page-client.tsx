@@ -43,6 +43,7 @@ import { Button } from '@/components/ui/button';
 import { UserPreference } from '@/types';
 import { cn } from '@/lib/utils';
 import { useChatStore } from '@/store/chat-store';
+import { ProUpgradeButton } from '@/components/chat/pro-upgrade-button';
 
 
 interface ChatPageClientProps {
@@ -72,18 +73,7 @@ export function ChatPageClient({ preferences = [], preferencesSummary = '' }: Ch
           <ChatHistoryClient chatType="context-aware" />
         </div>
         <div className="p-4 border-t border-border/40">
-           <div className="flex items-center gap-3 px-2 py-2 rounded-lg bg-primary/5 text-sm font-medium text-primary">
-              <div className="p-1.5 bg-primary/10 rounded-md">
-                <Wand2 className="h-4 w-4" />
-              </div>
-              <span
-                              className={cn(
-                                "bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 via-black/90 to-rose-500 dark:from-indigo-300 dark:via-white/90 dark:to-rose-300 ",
-                                pacifico.className,
-                              )}
-                            >Mealwise
-                              </span>
-           </div>
+           <ProUpgradeButton />
         </div>
       </div>
 
@@ -117,6 +107,9 @@ export function ChatPageClient({ preferences = [], preferencesSummary = '' }: Ch
                   chatType="context-aware"
                   onSessionSelect={() => setHistoryOpen(false)}
                 />
+              </div>
+              <div className="p-4 border-t border-border/40">
+                  <ProUpgradeButton />
               </div>
             </SheetContent>
           </Sheet>

@@ -221,25 +221,34 @@ setMessages(storeMessages);
 
 
   // We need to override the default submit handler to use append() so we can control the ID
-  const handleManualSubmit = async (value: string) => {
-     if (!value.trim()) return;
+  const handleManualSubmit = async (value: string, attachments?: string[]) => {
+     if (!value.trim() && (!attachments || attachments.length === 0)) return;
      if (!isAuthenticated) {
         openAuthModal('sign-in');
         return;
      }
 
      if (!navigator.onLine) {
-        queueMessage(value.trim());
+        queueMessage(value.trim()); // Offline chat doesn't support attachments yet
         handleInputChange({ target: { value: '' } } as React.ChangeEvent<HTMLInputElement>);
         return;
      }
 
      const messageId = crypto.randomUUID();
+     
+     // Construct content properly for store
+     // If we have attachments, we'll store them in a way our UI renders? 
+     // For now, let's just append. The store might not handle images well without update, 
+     // but 'append' will send it to backend.
+     
      const userMsg: Message = {
         id: messageId,
         role: 'user',
         content: value,
         timestamp: new Date(),
+        // We aren't storing the image in local history yet for persistent render, 
+        // relying on the ephemeral display for now or tool result.
+        // Ideally we should add 'experimental_attachments' to Message type.
      };
      
      isUserSubmittingRef.current = true;
@@ -248,11 +257,16 @@ setMessages(storeMessages);
      // Clear input
      handleInputChange({ target: { value: '' } } as React.ChangeEvent<HTMLInputElement>);
      
-     // Append with same ID
+     // Append with attachments
      append({
         id: messageId,
         role: 'user',
         content: value,
+        experimental_attachments: attachments ? attachments.map(url => ({
+            name: 'image.jpg',
+            contentType: 'image/jpeg', // We force jpeg/png in input
+            url: url
+        })) : undefined
      });
   };
   // Auto-scroll to bottom when chat first loads

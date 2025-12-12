@@ -29,11 +29,60 @@ interface RootLayoutProps {
 }
 
 export const metadata = {
-  title: 'MealWise - AI Meal Planning',
+  metadataBase: new URL('https://www.aimealwise.com'),
+  title: {
+    default: 'MealWise - AI Meal Planning',
+    template: '%s | MealWise',
+  },
   description: 'Plan your meals, create grocery lists, and manage your diet with ease using AI.',
+  keywords: [
+    'AI meal planning',
+    'personalized meal plans',
+    'smart nutrition',
+    'medical meal planning',
+    'grocery lists'
+  ],
+  authors: [{ name: 'MealWise Team' }],
+  creator: 'MealWise',
+  openGraph: {
+    type: 'website',
+    locale: 'en_US',
+    url: 'https://www.aimealwise.com',
+    title: 'MealWise - AI Meal Planning',
+    description: 'Plan your meals, create grocery lists, and manage your diet with ease using AI.',
+    siteName: 'MealWise',
+    images: [
+      {
+        url: '/og-home.png',
+        width: 1200,
+        height: 630,
+        alt: 'MealWise AI Meal Planning',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'MealWise - AI Meal Planning',
+    description: 'Plan your meals, create grocery lists, and manage your diet with ease using AI.',
+    images: ['/og-home.png'],
+    creator: '@mealwise',
+  },
   icons: {
     icon: '/favicon.ico',
+    shortcut: '/favicon-16x16.png',
     apple: '/apple-touch-icon.png',
+  },
+  manifest: '/manifest.json',
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
   },
 }
 

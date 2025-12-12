@@ -201,7 +201,10 @@ model UserAnalytics {
   weeklyMealPlanCompletion Int @default(0)
   caloriesThisWeek  Int      @default(0)
   targetCalories    Int      @default(0)
-  // Add more fields as needed for nutrition, trends, etc.
+  
+  // New Analytics Fields
+  qualitativeTrends Json?    // AI Summary: { flavorProfile, suggestions, healthSummary }
+  lastAiAnalysis    DateTime? // Cache invalidation
 
   user              User     @relation(fields: [userId], references: [id])
   createdAt         DateTime @default(now())

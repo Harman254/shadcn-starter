@@ -5,200 +5,183 @@ import { CalorieChart } from "./CalorieChart";
 import { RecentMeals } from "./recentMeals";
 import { MealPlanProgress } from "./MealPlanProgress";
 import { GroceryInsights } from "./GroceryInsights";
-import { Utensils, CalendarCheck, ShoppingCart, TrendingUp } from "lucide-react";
+import { Utensils, CalendarCheck, ShoppingCart, TrendingUp, Lock } from "lucide-react";
+import { getUserAnalytics } from "@/lib/analytics";
+import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { ProGate } from "@/components/analytics/ProGate";
+import { RefreshInsightsButton } from "@/components/analytics/RefreshInsightsButton";
+import { checkUserProStatus } from "@/lib/subscription";
 
-// Mock data
-const nutritionData = [
-  { name: "Protein", value: 125, color: "hsl(152, 55%, 42%)" },
-  { name: "Carbs", value: 280, color: "hsl(40, 95%, 55%)" },
-  { name: "Fats", value: 65, color: "hsl(24, 85%, 60%)" },
-  { name: "Fiber", value: 32, color: "hsl(200, 85%, 55%)" },
-];
+const Index = async () => {
+    const session = await auth.api.getSession({
+        headers: await headers()
+    });
 
-const calorieData = [
-  { day: "Mon", calories: 1850, target: 2000 },
-  { day: "Tue", calories: 2100, target: 2000 },
-  { day: "Wed", calories: 1920, target: 2000 },
-  { day: "Thu", calories: 1780, target: 2000 },
-  { day: "Fri", calories: 2050, target: 2000 },
-  { day: "Sat", calories: 2200, target: 2000 },
-  { day: "Sun", calories: 1950, target: 2000 },
-];
+    if (!session?.user?.id) {
+        redirect("/sign-in");
+    }
 
-const recentMeals = [
-  {
-    id: "1",
-    name: "Avocado Toast with Eggs",
-    time: "8:30 AM",
-    calories: 420,
-    image: "https://images.unsplash.com/photo-1525351484163-7529414344d8?w=200&h=200&fit=crop",
-    type: "breakfast" as const,
-  },
-  {
-    id: "2",
-    name: "Grilled Chicken Salad",
-    time: "12:45 PM",
-    calories: 550,
-    image: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=200&h=200&fit=crop",
-    type: "lunch" as const,
-  },
-  {
-    id: "3",
-    name: "Salmon with Quinoa",
-    time: "7:00 PM",
-    calories: 680,
-    image: "https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=200&h=200&fit=crop",
-    type: "dinner" as const,
-  },
-  {
-    id: "4",
-    name: "Greek Yogurt Parfait",
-    time: "3:30 PM",
-    calories: 220,
-    image: "https://images.unsplash.com/photo-1488477181946-6428a0291777?w=200&h=200&fit=crop",
-    type: "snack" as const,
-  },
-];
+    // Parallel data fetching for performance
+    const [analytics, isPro] = await Promise.all([
+        getUserAnalytics(session.user.id),
+        checkUserProStatus(session.user.id)
+    ]);
 
-const weeklyPlans = [
-  { day: "Mon", completed: true, meals: 4 },
-  { day: "Tue", completed: true, meals: 3 },
-  { day: "Wed", completed: true, meals: 4 },
-  { day: "Thu", completed: true, meals: 3 },
-  { day: "Fri", completed: false, meals: 2 },
-  { day: "Sat", completed: false, meals: 0 },
-  { day: "Sun", completed: false, meals: 0 },
-];
+    const { overview, trends, aiInsights } = analytics;
+    const hasData = overview.totalMealsPlanned > 0;
 
-const groceryCategories = [
-  { name: "Vegetables", amount: 24, percentage: 12, trend: "down" as const, color: "hsl(152, 55%, 42%)" },
-  { name: "Proteins", amount: 18, percentage: 8, trend: "up" as const, color: "hsl(24, 85%, 60%)" },
-  { name: "Dairy", amount: 12, percentage: 5, trend: "down" as const, color: "hsl(200, 85%, 55%)" },
-  { name: "Grains", amount: 8, percentage: 3, trend: "down" as const, color: "hsl(40, 95%, 55%)" },
-];
-
-const Index = () => {
-  return (
-    <div className="min-h-screen bg-gradient-subtle">
-      <div className="container mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        <AnalyticsHeader />
-
-        {/* Stats Grid */}
-        <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <StatCard
-            title="Total Meals"
-            value={47}
-            change="+12% from last week"
-            changeType="positive"
-            icon={Utensils}
-            iconColor="bg-primary/10 text-primary"
-            delay={0}
-          />
-          <StatCard
-            title="Meal Plans"
-            value={6}
-            change="2 active plans"
-            changeType="neutral"
-            icon={CalendarCheck}
-            iconColor="bg-warning/10 text-warning"
-            delay={100}
-          />
-          <StatCard
-            title="Groceries"
-            value={62}
-            change="-8% vs last week"
-            changeType="positive"
-            icon={ShoppingCart}
-            iconColor="bg-accent/10 text-accent"
-            delay={200}
-          />
-          <StatCard
-            title="Avg. Calories"
-            value="1,978"
-            change="On target"
-            changeType="positive"
-            icon={TrendingUp}
-            iconColor="bg-info/10 text-info"
-            delay={300}
-          />
-        </div>
-
-        {/* Charts Row */}
-        <div className="mt-8 grid gap-6 lg:grid-cols-3">
-          {/* Calorie Trend */}
-          <div className="lg:col-span-2 rounded-2xl bg-card p-6 shadow-card">
-            <div className="mb-4 flex items-center justify-between">
-              <div>
-                <h2 className="text-lg font-semibold">Calorie Intake</h2>
-                <p className="text-sm text-muted-foreground">Daily calories vs target</p>
-              </div>
-              <div className="flex items-center gap-4 text-sm">
-                <div className="flex items-center gap-2">
-                  <div className="h-2 w-2 rounded-full bg-primary" />
-                  <span className="text-muted-foreground">Actual</span>
+    return (
+        <div className="min-h-screen bg-gradient-subtle">
+            <div className="container mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+                <div className="flex items-center justify-between mb-8">
+                     <AnalyticsHeader />
+                     {isPro && <RefreshInsightsButton hasData={hasData} />}
                 </div>
-                <div className="flex items-center gap-2">
-                  <div className="h-2 w-2 rounded-full bg-warning" />
-                  <span className="text-muted-foreground">Target</span>
+
+                {/* AI Insight Card (Pro Only) */}
+                <ProGate isPro={isPro} blurAmount="md">
+                    <div className="mt-8 rounded-2xl bg-gradient-to-br from-indigo-500/10 to-purple-500/10 p-6 border border-indigo-500/20 shadow-sm relative overflow-hidden min-h-[160px]">
+                        <div className="relative z-10 p-2">
+                             {aiInsights ? (
+                                <>
+                                    <h2 className="text-lg font-semibold flex items-center gap-2 text-indigo-700 dark:text-indigo-300">
+                                        <TrendingUp className="h-5 w-5" />
+                                        AI Flavor Profile
+                                    </h2>
+                                    <p className="mt-2 text-foreground/80 font-medium italic">
+                                        "{aiInsights.flavorProfile}"
+                                    </p>
+                                    <div className="mt-4 flex flex-wrap gap-2">
+                                        {aiInsights.suggestions.map((s, i) => (
+                                            <span key={i} className="text-xs bg-background/50 backdrop-blur-sm px-2 py-1 rounded-md border border-indigo-200 dark:border-indigo-800">
+                                                💡 {s}
+                                            </span>
+                                        ))}
+                                    </div>
+                                </>
+                             ) : (
+                                <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-2">
+                                     <p>Generate your first AI analysis to see insights.</p>
+                                     {/* If Pro but no data yet, show instructions or empty state */}
+                                     {!aiInsights && isPro && hasData && (
+                                         <p className="text-xs">Click "Generate AI Insights" above.</p>
+                                     )}
+                                     {!hasData && (
+                                         <p className="text-xs">Create some meal plans first!</p>
+                                     )}
+                                </div>
+                             )}
+                        </div>
+                    </div>
+                </ProGate>
+
+
+                {/* Stats Grid (Visible to All) */}
+                <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                    <StatCard
+                        title="Total Meals"
+                        value={overview.totalMealsPlanned}
+                        change="Lifetime planned"
+                        changeType="neutral"
+                        icon={Utensils}
+                        iconColor="bg-primary/10 text-primary"
+                        delay={0}
+                    />
+                    <StatCard
+                        title="Meal Plans"
+                        value={overview.totalGenerations}
+                        change="Generations created"
+                        changeType="neutral"
+                        icon={CalendarCheck}
+                        iconColor="bg-warning/10 text-warning"
+                        delay={100}
+                    />
+                    <StatCard
+                        title="Recipes Saved"
+                        value={overview.totalRecipesSaved}
+                        change="Favorites"
+                        changeType="positive"
+                        icon={ShoppingCart}
+                        iconColor="bg-accent/10 text-accent"
+                        delay={200}
+                    />
+                    <StatCard
+                        title="Est. Saved"
+                        value={`$${overview.estimatedMoneySaved}`}
+                        change="vs Takeout"
+                        changeType="positive"
+                        icon={TrendingUp}
+                        iconColor="bg-info/10 text-info"
+                        delay={300}
+                    />
                 </div>
-              </div>
-            </div>
-            <CalorieChart data={calorieData} />
-          </div>
 
-          {/* Nutrition Breakdown */}
-          <div className="rounded-2xl bg-card p-6 shadow-card">
-            <h2 className="text-lg font-semibold">Nutrition Breakdown</h2>
-            <p className="text-sm text-muted-foreground">Today&apos;s macros distribution</p>
-            <NutritionDonut
-              data={nutritionData}
-              centerLabel="Total"
-              centerValue="502g"
-            />
-            <NutritionLegend data={nutritionData} />
-          </div>
+                 {/* Charts Row - Gated for Pro */}
+                <div className="mt-8 grid gap-6 lg:grid-cols-3">
+                    <div className="lg:col-span-2 rounded-2xl bg-card p-6 shadow-card relative">
+                        <ProGate isPro={isPro} blurAmount="sm">
+                             <div className="mb-4 flex items-center justify-between">
+                                <div>
+                                    <h2 className="text-lg font-semibold">Activity Trend</h2>
+                                    <p className="text-sm text-muted-foreground">Planning frequency (Last 30 Days)</p>
+                                </div>
+                            </div>
+                             <div className="h-[200px] w-full flex items-end justify-between px-4 gap-2">
+                                 {trends.weeklyActivity.length > 0 ? trends.weeklyActivity.map((day, i) => (
+                                     <div key={i} className="flex flex-col items-center gap-1 group w-full">
+                                          <div 
+                                            className="w-full bg-primary/20 rounded-t-md hover:bg-primary/40 transition-all relative"
+                                            style={{ height: `${Math.min(day.count * 20, 100)}%` }}
+                                          >
+                                              <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-popover text-popover-foreground text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">
+                                                  {day.count} plans
+                                              </div>
+                                          </div>
+                                          <span className="text-[10px] text-muted-foreground truncate w-full text-center">{day.date.slice(5)}</span>
+                                     </div>
+                                 )) : (
+                                     <div className="w-full h-full flex items-center justify-center text-muted-foreground/50">
+                                         No activity data yet
+                                     </div>
+                                 )}
+                             </div>
+                        </ProGate>
+                    </div>
+
+                    {/* Upsell / Info Card */}
+                    <div className="rounded-2xl bg-card p-6 shadow-card flex flex-col items-center justify-center text-center">
+                        {isPro ? (
+                             <>
+                                <div className="h-12 w-12 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mb-4">
+                                    <TrendingUp className="h-6 w-6 text-green-600 dark:text-green-400" />
+                                </div>
+                                <h3 className="font-semibold text-lg">Pro Status Active</h3>
+                                <p className="text-sm text-muted-foreground mt-2">
+                                    You have full access to advanced analytics.
+                                </p>
+                             </>
+                        ) : (
+                            <>
+                                 <div className="h-12 w-12 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center mb-4">
+                                    <Lock className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
+                                 </div>
+                                 <h3 className="font-semibold text-lg">Unlock Full Analytics</h3>
+                                 <p className="text-sm text-muted-foreground mt-2 mb-4">
+                                     See your detailed nutrition trends and cost savings.
+                                 </p>
+                                <Button variant="outline" className="w-full" asChild>
+                                    <a href="/pricing">Upgrade Now</a>
+                                </Button>
+                            </>
+                        )}
+                    </div>
+                </div>
+            </div>
         </div>
-
-        {/* Bottom Row */}
-        <div className="mt-8 grid gap-6 lg:grid-cols-3">
-          {/* Recent Meals */}
-          <div className="rounded-2xl bg-card p-6 shadow-card">
-            <div className="mb-4">
-              <h2 className="text-lg font-semibold">Recent Meals</h2>
-              <p className="text-sm text-muted-foreground">Your latest logged meals</p>
-            </div>
-            <RecentMeals meals={recentMeals} />
-          </div>
-
-          {/* Meal Plan Progress */}
-          <div className="rounded-2xl bg-card p-6 shadow-card">
-            <div className="mb-4">
-              <h2 className="text-lg font-semibold">Meal Plan Progress</h2>
-              <p className="text-sm text-muted-foreground">This week&apos;s adherence</p>
-            </div>
-            <MealPlanProgress
-              completed={14}
-              total={21}
-              weeklyPlans={weeklyPlans}
-            />
-          </div>
-
-          {/* Grocery Insights */}
-          <div className="rounded-2xl bg-card p-6 shadow-card">
-            <div className="mb-4">
-              <h2 className="text-lg font-semibold">Grocery Insights</h2>
-              <p className="text-sm text-muted-foreground">Shopping breakdown by category</p>
-            </div>
-            <GroceryInsights
-              categories={groceryCategories}
-              totalItems={62}
-              totalSpent="$124.50"
-            />
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+    );
 };
 
 export default Index;

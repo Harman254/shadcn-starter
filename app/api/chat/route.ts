@@ -100,9 +100,23 @@ export async function POST(req: Request) {
         // Initialize Orchestrated Chat Flow
         const chatFlow = getOrchestratedChatFlow();
 
+        // Helper to formatting message content
+        const formatMessageContent = (msg: any) => {
+            if (msg.experimental_attachments && msg.experimental_attachments.length > 0) {
+                return [
+                    { type: 'text', text: msg.content },
+                    ...msg.experimental_attachments.map((att: any) => ({
+                        type: 'image',
+                        image: att.url // Base64 or URL
+                    }))
+                ];
+            }
+            return msg.content;
+        };
+
         // Process message with streaming
         const stream = chatFlow.processMessageStream({
-            message: lastMessage.content,
+            message: formatMessageContent(lastMessage),
             userId: session.user.id,
             sessionId: session.session?.id || session.user.id, // Fallback if session.id missing
             conversationHistory: messages.slice(0, -1).map((m: any) => ({

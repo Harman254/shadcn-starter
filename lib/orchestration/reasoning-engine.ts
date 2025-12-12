@@ -71,6 +71,7 @@ export class ReasoningEngine {
           * If for a recipe, pass '{"source": "recipe"}'.
         - If the user asks for nutrition, call 'analyzeNutrition'. Do NOT invent a mealPlanId. Leave args empty to use context.
         - If the user asks for pricing, call 'getGroceryPricing'. Do NOT invent a mealPlanId. Leave args empty to use context.
+        - If the user asks for a prep schedule, timeline, or batch cooking plan, call 'generatePrepTimeline'. Leave args empty to use context unless specific recipes are named.
         - **Recipe Requests**:
           * **Single Dish**: If the user asks for a specific dish (e.g. "Chapati", "Sushi", "How to make X"), call 'generateMealRecipe'.
             - Example: "Chapati" -> Call 'generateMealRecipe' with args '{"name": "Chapati"}'.

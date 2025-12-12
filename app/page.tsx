@@ -15,41 +15,15 @@ import AboutUs1 from '@/components/about';
 
 
 export const metadata: Metadata = {
-  title: 'MealWise - Personalized AI Meal Plans for Your Lifestyle | Smart Nutrition Planning',
+  title: 'Personalized AI Meal Plans for Your Lifestyle',
   description: 'Transform your eating habits with MealWise. Get personalized AI meal plans tailored to your lifestyle, goals, and preferences. Save time, eat healthier, and enjoy delicious meals with smart grocery lists and expert nutrition guidance.',
-  keywords: [
-    'AI meal planning',
-    'personalized meal plans',
-    'smart nutrition',
-    'meal planning app',
-    'healthy eating',
-    'diet planning',
-    'meal prep',
-    'grocery lists',
-    'nutrition planning',
-    'lifestyle meal plans',
-    'smart recipes',
-    'budget meal planning',
-    'fitness meal plans',
-    'family meal planning'
-  ],
-  authors: [{ name: 'MealWise Team' }],
-  creator: 'MealWise',
-  publisher: 'MealWise',
-  formatDetection: {
-    email: false,
-    address: false,
-    telephone: false,
-  },
-  metadataBase: new URL('https://www.aimealwise.com'),
   alternates: {
     canonical: '/',
   },
   openGraph: {
-    title: 'MealWise - Personalized AI Meal Plans for Your Lifestyle | Smart Nutrition Planning',
-    description: 'Transform your eating habits with MealWise. Get personalized AI meal plans tailored to your lifestyle, goals, and preferences. Save time, eat healthier, and enjoy delicious meals with smart grocery lists and expert nutrition guidance.',
+    title: 'Personalized AI Meal Plans for Your Lifestyle | MealWise',
+    description: 'Transform your eating habits with MealWise. Get personalized AI meal plans tailored to your lifestyle, goals, and preferences.',
     url: 'https://www.aimealwise.com',
-    siteName: 'MealWise',
     images: [
       {
         url: '/og-home.png',
@@ -58,32 +32,12 @@ export const metadata: Metadata = {
         alt: 'MealWise - AI-Powered Personalized Meal Planning Platform',
       },
     ],
-    locale: 'en_US',
-    type: 'website',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'MealWise - Personalized AI Meal Plans for Your Lifestyle | Smart Nutrition Planning',
-    description: 'Transform your eating habits with MealWise. Get personalized AI meal plans tailored to your lifestyle, goals, and preferences. Save time, eat healthier, and enjoy delicious meals with smart grocery lists and expert nutrition guidance.',
+    title: 'Personalized AI Meal Plans for Your Lifestyle | MealWise',
+    description: 'Transform your eating habits with MealWise. Get personalized AI meal plans tailored to your lifestyle, goals, and preferences.',
     images: ['/og-home.png'],
-    creator: '@mealwise',
-    site: '@mealwise',
-  },
-  robots: {
-    index: true,
-    follow: true,
-    googleBot: {
-      index: true,
-      follow: true,
-      'max-video-preview': -1,
-      'max-image-preview': 'large',
-      'max-snippet': -1,
-    },
-  },
-  verification: {
-    google: 'your-google-verification-code',
-    yandex: 'your-yandex-verification-code',
-    yahoo: 'your-yahoo-verification-code',
   },
 }
 
@@ -125,10 +79,10 @@ export default async function IndexPage() {
       dangerouslySetInnerHTML={{
         __html: JSON.stringify({
           '@context': 'https://schema.org',
-          '@type': 'SoftwareApplication',
+          '@type': 'WebApplication',
           name: 'MealWise',
           applicationCategory: 'HealthApplication',
-          operatingSystem: 'iOS, Android, Web',
+          operatingSystem: 'Any',
           offers: {
             '@type': 'Offer',
             price: '0',
@@ -140,6 +94,11 @@ export default async function IndexPage() {
             ratingCount: '12050',
           },
           description: 'AI-powered meal planning app that creates personalized nutrition plans, grocery lists, and recipes tailored to your lifestyle.',
+          sameAs: [
+            "https://twitter.com/mealwise",
+            "https://www.facebook.com/mealwise",
+            "https://www.instagram.com/mealwise"
+          ]
         }),
       }}
     />

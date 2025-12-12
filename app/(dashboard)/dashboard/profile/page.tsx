@@ -446,8 +446,8 @@ export default function ProfilePage() {
                   </div>
 
                   <div className="space-y-3">
-                    <Button className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700">
-                      Manage Subscription
+                    <Button asChild className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700">
+                      <a href="/api/auth/polar/portal">Manage Subscription</a>
                     </Button>
                     <Button variant="outline" className="w-full bg-transparent">
                       Update Payment Method

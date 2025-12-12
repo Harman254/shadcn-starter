@@ -31,7 +31,13 @@ import { SubstitutionDisplay } from "./tools/substitution-display"
 import { SeasonalDisplay } from "./tools/seasonal-display"
 import { InventoryPlanDisplay } from "./tools/inventory-plan-display"
 import { PrepTimelineDisplay } from "./tools/prep-timeline-display"
-import { FoodDataDisplay } from "./tools/food-data-display"
+import { UpgradeDisplay } from './tools/upgrade-display';
+import { FoodDataDisplay } from './tools/food-data-display';
+import { PantryDisplay } from "./tools/pantry-display"
+
+// ... imports remain the same ...
+
+
 
 interface ChatMessageProps {
   message?: Message
@@ -331,22 +337,17 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
     if (message.ui) return message.ui;
     
     // 2. Check for embedded UI data in the message content
-    // Format: <!-- UI_DATA_START:BASE64_JSON:UI_DATA_END --> OR [UI_METADATA:BASE64_JSON]
     if (message.content) {
-      // Try standard format first
       let match = message.content.match(/<!-- UI_DATA_START:([^:]+):UI_DATA_END -->/);
-      
-      // Try alternative format if not found
       if (!match) {
         match = message.content.match(/\[UI_METADATA:([^\]]+)\]/);
       }
 
       if (match && match[1]) {
         try {
-          const decoded = Buffer.from(match[1], 'base64').toString('utf-8');
-          const parsed = JSON.parse(decoded);
-          console.log('[ChatMessage] Extracted embedded UI data:', parsed);
-          return parsed;
+          // Use atob for client-side base64 decoding
+          const decoded = atob(match[1]);
+          return JSON.parse(decoded);
         } catch (e) {
           console.error('[ChatMessage] Failed to parse embedded UI data:', e);
         }
@@ -357,20 +358,33 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
     if (message.toolInvocations) {
       for (const tool of message.toolInvocations) {
         if (tool.state === 'result') {
-          if (tool.toolName === 'generateMealPlan' && tool.result?.success) {
+          // Check for upgrade prompt first
+          if (tool.result?.ui?.upgradePrompt) {
+              return { upgradePrompt: tool.result.ui.upgradePrompt };
+          }
+
+          const success = tool.result?.success;
+          
+          if (tool.toolName === 'analyzePantryImage' && success) {
+             // Ensure we always return an object for pantryAnalysis
+             const items = tool.result.items || [];
+             const imageUrl = tool.result.summary?.includes("imageUrl") ? tool.result.summary : undefined;
+             return { pantryAnalysis: { items, imageUrl } };
+          }
+          
+          if (tool.toolName === 'generateMealPlan' && success) {
              return { mealPlan: tool.result.mealPlan };
           }
-          if (tool.toolName === 'generateGroceryList' && tool.result?.success) {
+          if (tool.toolName === 'generateGroceryList' && success) {
              return { groceryList: tool.result.groceryList };
           }
-          if (tool.toolName === 'getMealSuggestions' && tool.result?.success) {
+          if (tool.toolName === 'getMealSuggestions' && success) {
              return { mealSuggestions: tool.result.suggestions };
           }
-          if (tool.toolName === 'generateMealRecipe' && tool.result?.success) {
+          if (tool.toolName === 'generateMealRecipe' && success) {
              return { mealRecipe: tool.result.recipe };
           }
-          if (tool.toolName === 'analyzeNutrition' && tool.result?.success) {
-             // Construct nutrition object to match UI expectation
+          if (tool.toolName === 'analyzeNutrition' && success) {
              return { 
                nutrition: {
                  total: tool.result.totalNutrition,
@@ -378,20 +392,20 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
                  insights: tool.result.insights,
                  healthScore: tool.result.healthScore,
                  summary: tool.result.summary,
-                 type: 'plan' // Default assumption if missing
+                 type: 'plan'
                }
              };
           }
-          if (tool.toolName === 'getGroceryPricing' && tool.result?.success) {
+          if (tool.toolName === 'getGroceryPricing' && success) {
              return { prices: tool.result.prices };
           }
-          if (tool.toolName === 'searchRecipes' && tool.result?.success) {
+          if (tool.toolName === 'searchRecipes' && success) {
              return { recipeResults: tool.result.recipes, query: tool.result.query };
           }
-          if (tool.toolName === 'modifyMealPlan' && tool.result?.success) {
+          if (tool.toolName === 'modifyMealPlan' && success) {
              return { mealPlan: tool.result.mealPlan };
           }
-          if (tool.toolName === 'swapMeal' && tool.result?.success) {
+          if (tool.toolName === 'swapMeal' && success) {
              return { mealPlan: tool.result.mealPlan };
           }
         }
@@ -776,12 +790,33 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
       </article>
 
       {/* Tool call results (meal plan/grocery list) - Full width immersive display - BREAKS OUT OF CONTAINER */}
-      {isAssistant && (uiData?.mealPlan || uiData?.groceryList || uiData?.mealSuggestions || uiData?.mealRecipe || uiData?.nutrition || uiData?.prices || uiData?.recipeResults || uiData?.substitutions || uiData?.seasonal || uiData?.inventoryPlan || uiData?.prepTimeline || uiData?.foodData) && (
+      {isAssistant && (uiData?.mealPlan || uiData?.groceryList || uiData?.mealSuggestions || uiData?.mealRecipe || uiData?.nutrition || uiData?.prices || uiData?.recipeResults || uiData?.substitutions || uiData?.seasonal || uiData?.inventoryPlan || uiData?.prepTimeline || uiData?.foodData || uiData?.upgradePrompt || uiData?.pantryAnalysis) && (
         <div className={cn(
           "w-full max-w-3xl mx-auto", // Constrain to same width
           "px-0 sm:px-0", // Remove padding for immersive feel
           "my-4 sm:my-6" // Vertical spacing
         )}>
+          {/* Upgrade Prompt Display */}
+          {uiData?.upgradePrompt && (
+             <UpgradeDisplay featureName={uiData.upgradePrompt.featureName} description={uiData.upgradePrompt.description} />
+          )}
+
+          {/* Pantry Analysis Display */}
+          {uiData?.pantryAnalysis && (
+             <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.3 }}
+                className="w-full max-w-xl mx-auto mb-6"
+             >
+                <PantryDisplay 
+                    items={uiData.pantryAnalysis.items || (Array.isArray(uiData.pantryAnalysis) ? uiData.pantryAnalysis : [])} 
+                    imageUrl={uiData.pantryAnalysis.imageUrl}
+                    onAddItems={(items) => onActionClick && onActionClick(`Add ${items.map(i => i.name).join(', ')} to my pantry`)}
+                />
+             </motion.div>
+          )}
+
           {/* Meal Plan Display */}
           {uiData?.mealPlan && (
             <motion.div
