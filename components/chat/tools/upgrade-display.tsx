@@ -3,7 +3,7 @@
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Sparkles, ArrowRight, Lock, Crown } from "lucide-react"
+import { Star, ArrowRight, Lock, Crown } from "lucide-react"
 import Link from "next/link"
 import { motion } from "framer-motion"
 
@@ -39,7 +39,7 @@ export function UpgradeDisplay({ featureName = "Premium Feature", description }:
             </p>
             <div className="flex justify-center gap-2 mb-2">
                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 dark:bg-indigo-900/50 dark:text-indigo-300">
-                    <Sparkles className="w-3 h-3 mr-1" />
+                    <Star className="w-3 h-3 mr-1" />
                     AI Powered
                 </span>
                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300">
