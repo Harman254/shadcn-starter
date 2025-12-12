@@ -72,7 +72,14 @@ export class OrchestratedChatFlow {
       const context = await this.contextManager.getContext(input.userId, input.sessionId);
 
       // 1. Plan
-      const plan = await this.reasoningEngine.generatePlan(input.message, {
+      // Ensure message is a string
+      const messageText = typeof input.message === 'string'
+        ? input.message
+        : Array.isArray(input.message)
+          ? input.message.map((part: any) => part.text || JSON.stringify(part)).join(' ')
+          : String(input.message);
+
+      const plan = await this.reasoningEngine.generatePlan(messageText, {
         ...context,
         userPreferences: input.userPreferences,
         location: input.locationData
@@ -87,7 +94,7 @@ export class OrchestratedChatFlow {
       const { text } = await generateText({
         model: google('gemini-2.0-flash'),
         system: this.buildSystemPrompt(input, context, false),
-        prompt: this.buildSynthesisPrompt(input.message, toolResults),
+        prompt: this.buildSynthesisPrompt(messageText, toolResults),
       });
 
       // Store context
