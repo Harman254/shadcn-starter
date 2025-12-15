@@ -5,6 +5,7 @@ import { headers } from 'next/headers';
 import { UserPreference } from '@/types';
 import { getOrGeneratePreferencesSummary } from '@/lib/utils/preferences-cache';
 import { Metadata } from 'next';
+import { isDatabaseConnectionError } from '@/lib/prisma';
 
 export const metadata: Metadata = {
   title: 'Chat | Mealwise',
@@ -27,17 +28,30 @@ export default async function ChatPage() {
     });
     } catch (sessionError) {
       // Handle database connection errors when fetching session
-      console.error('[ChatPage] Error fetching session:', sessionError);
-      if (process.env.NODE_ENV === 'development') {
-        if (sessionError instanceof Error) {
-          console.error('[ChatPage] Session error details:', {
-            message: sessionError.message,
-            stack: sessionError.stack,
-          });
+      const isConnectionError = isDatabaseConnectionError(sessionError);
+      
+      if (isConnectionError) {
+        console.error('[ChatPage] Database connection error - continuing without session:', {
+          message: sessionError instanceof Error ? sessionError.message : 'Unknown error',
+        });
+        if (process.env.NODE_ENV === 'development') {
+          console.warn('[ChatPage] Database is unavailable. Chat will work in offline mode using localStorage.');
         }
-        console.warn('[ChatPage] Continuing without session - chat will still function');
+      } else {
+        console.error('[ChatPage] Error fetching session:', sessionError);
+        if (process.env.NODE_ENV === 'development') {
+          if (sessionError instanceof Error) {
+            console.error('[ChatPage] Session error details:', {
+              message: sessionError.message,
+              stack: sessionError.stack,
+            });
+          }
+        }
       }
+      
       // Continue without session - chat can work without preferences
+      // The chat interface will work in offline mode using localStorage
+      // Users can still chat, but preferences won't be loaded
       session = null;
     }
     

@@ -347,7 +347,11 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
           try {
             // Use atob for client-side base64 decoding
             const decoded = atob(match[1].trim());
-            return JSON.parse(decoded);
+            const parsed = JSON.parse(decoded);
+            if (process.env.NODE_ENV === 'development') {
+              console.log('[ChatMessage] ✅ Extracted UI metadata from message content:', Object.keys(parsed));
+            }
+            return parsed;
           } catch (e) {
             // Silently fail or warn for malformed legacy data to prevent console spam/errors
             if (process.env.NODE_ENV === 'development') {
@@ -355,14 +359,42 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
             }
             return null;
           }
+        } else if (process.env.NODE_ENV === 'development' && message.content.includes('recipe')) {
+          // Debug: Check if recipe-related content has UI metadata
+          console.log('[ChatMessage] ⚠️ Recipe-related message but no UI_METADATA found:', {
+            contentPreview: message.content.substring(0, 100),
+            hasToolInvocations: !!message.toolInvocations,
+            toolInvocationsCount: message.toolInvocations?.length || 0
+          });
         }
       }
     
     // 3. Fallback to toolInvocations (legacy)
-    if (message.toolInvocations) {
+    if (message.toolInvocations && message.toolInvocations.length > 0) {
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[ChatMessage] Found toolInvocations:', {
+          count: message.toolInvocations.length,
+          toolNames: message.toolInvocations.map(t => t.toolName),
+          states: message.toolInvocations.map(t => t.state)
+        });
+      }
+      
       for (const tool of message.toolInvocations) {
         if (tool.state === 'result') {
           const result = tool.result;
+          
+          // Debug logging in development for all tools
+          if (process.env.NODE_ENV === 'development') {
+            console.log(`[ChatMessage] Tool result for ${tool.toolName}:`, {
+              toolName: tool.toolName,
+              resultType: typeof result,
+              resultKeys: result && typeof result === 'object' ? Object.keys(result) : null,
+              hasData: result?.data !== undefined,
+              hasSuccess: result?.success !== undefined,
+              fullResult: result
+            });
+          }
+          
           const data = result?.data || result; // Handle ToolResult wrapper
           
           // Check for upgrade prompt first
@@ -370,7 +402,19 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
               return { upgradePrompt: data.ui.upgradePrompt };
           }
 
-          const success = result?.success;
+          const success = result?.success !== false; // Default to true if not explicitly false
+          
+          // Debug logging in development for recipe tool
+          if (process.env.NODE_ENV === 'development' && tool.toolName === 'generateMealRecipe') {
+            console.log('[ChatMessage] generateMealRecipe tool result:', {
+              toolName: tool.toolName,
+              resultType: typeof result,
+              resultKeys: result && typeof result === 'object' ? Object.keys(result) : null,
+              hasData: result?.data !== undefined,
+              hasRecipe: result?.data?.recipe !== undefined,
+              fullResult: result
+            });
+          }
           
           if (tool.toolName === 'analyzePantryImage' && success) {
              // Ensure we always return an object for pantryAnalysis
@@ -379,59 +423,122 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
              return { pantryAnalysis: { items, imageUrl } };
           }
           
-          if (tool.toolName === 'generateMealPlan' && success) {
-             return { mealPlan: data?.mealPlan };
+          if (tool.toolName === 'generateMealPlan') {
+            // Try multiple paths to find mealPlan data
+            const mealPlan = data?.mealPlan || result?.mealPlan || (typeof result === 'object' && 'mealPlan' in result ? result.mealPlan : null);
+            if (mealPlan) {
+              if (process.env.NODE_ENV === 'development') {
+                console.log('[ChatMessage] ✅ Found mealPlan in tool result:', { hasMealPlan: !!mealPlan, mealPlanKeys: mealPlan && typeof mealPlan === 'object' ? Object.keys(mealPlan) : null });
+              }
+              return { mealPlan };
+            } else if (process.env.NODE_ENV === 'development') {
+              console.warn('[ChatMessage] ⚠️ generateMealPlan tool result found but no mealPlan data:', { result, data });
+            }
           }
-          if (tool.toolName === 'generateGroceryList' && success) {
-             return { groceryList: data?.groceryList };
+          // Generate Grocery List
+          if (tool.toolName === 'generateGroceryList') {
+            const groceryList = data?.groceryList || result?.groceryList || (typeof result === 'object' && 'groceryList' in result ? result.groceryList : null);
+            if (groceryList) return { groceryList };
           }
-          if (tool.toolName === 'getMealSuggestions' && success) {
-             return { mealSuggestions: data?.suggestions };
+          
+          // Meal Suggestions
+          if (tool.toolName === 'getMealSuggestions') {
+            const suggestions = data?.suggestions || result?.suggestions || (typeof result === 'object' && 'suggestions' in result ? result.suggestions : null);
+            if (suggestions) return { mealSuggestions: suggestions };
           }
-          if (tool.toolName === 'generateMealRecipe' && success) {
-             return { mealRecipe: data?.recipe };
+          
+          // Generate Meal Recipe
+          if (tool.toolName === 'generateMealRecipe') {
+            const recipe = data?.recipe || result?.recipe || (typeof result === 'object' && 'recipe' in result ? result.recipe : null);
+            if (recipe) {
+              if (process.env.NODE_ENV === 'development') {
+                console.log('[ChatMessage] ✅ Found recipe in tool result:', { hasRecipe: !!recipe, recipeKeys: recipe && typeof recipe === 'object' ? Object.keys(recipe) : null });
+              }
+              return { mealRecipe: recipe };
+            } else if (process.env.NODE_ENV === 'development') {
+              console.warn('[ChatMessage] ⚠️ generateMealRecipe tool result found but no recipe data:', { result, data });
+            }
           }
-          if (tool.toolName === 'analyzeNutrition' && success) {
-             return { 
-               nutrition: {
-                 total: data?.totalNutrition,
-                 dailyAverage: data?.dailyAverage,
-                 insights: data?.insights,
-                 healthScore: data?.healthScore,
-                 summary: data?.summary,
-                 type: 'plan'
-               }
-             };
+          
+          // Analyze Nutrition
+          if (tool.toolName === 'analyzeNutrition') {
+            const nutrition = data?.totalNutrition || data?.nutrition || result?.nutrition;
+            if (nutrition || data?.totalNutrition || data?.dailyAverage) {
+              return { 
+                nutrition: {
+                  total: data?.totalNutrition,
+                  dailyAverage: data?.dailyAverage,
+                  insights: data?.insights,
+                  healthScore: data?.healthScore,
+                  summary: data?.summary,
+                  type: 'plan'
+                }
+              };
+            }
           }
-          if (tool.toolName === 'getGroceryPricing' && success) {
-             return { prices: data?.prices };
+          
+          // Get Grocery Pricing
+          if (tool.toolName === 'getGroceryPricing') {
+            const prices = data?.prices || result?.prices || (typeof result === 'object' && 'prices' in result ? result.prices : null);
+            if (prices) return { prices };
           }
-          if (tool.toolName === 'searchRecipes' && success) {
-             return { recipeResults: data?.recipes, query: data?.query };
+          
+          // Search Recipes
+          if (tool.toolName === 'searchRecipes') {
+            const recipes = data?.recipes || result?.recipes || (typeof result === 'object' && 'recipes' in result ? result.recipes : null);
+            const query = data?.query || result?.query;
+            if (recipes) return { recipeResults: recipes, query };
           }
-          if (tool.toolName === 'modifyMealPlan' && success) {
-             return { mealPlan: data?.mealPlan };
+          
+          // Modify Meal Plan
+          if (tool.toolName === 'modifyMealPlan') {
+            const mealPlan = data?.mealPlan || result?.mealPlan || (typeof result === 'object' && 'mealPlan' in result ? result.mealPlan : null);
+            if (mealPlan) return { mealPlan };
           }
-          if (tool.toolName === 'swapMeal' && success) {
-             return { mealPlan: data?.mealPlan };
+          
+          // Swap Meal
+          if (tool.toolName === 'swapMeal') {
+            const mealPlan = data?.mealPlan || result?.mealPlan || (typeof result === 'object' && 'mealPlan' in result ? result.mealPlan : null);
+            if (mealPlan) return { mealPlan };
           }
-          if (tool.toolName === 'optimizeGroceryList' && success) {
-             return { optimization: data?.optimization };
+          
+          // Optimize Grocery List
+          if (tool.toolName === 'optimizeGroceryList') {
+            const optimization = data?.optimization || result?.optimization || (typeof result === 'object' && 'optimization' in result ? result.optimization : null);
+            if (optimization) return { optimization };
           }
-          if (tool.toolName === 'suggestIngredientSubstitutions' && success) {
-             return { substitutions: data };
+          
+          // Suggest Ingredient Substitutions
+          if (tool.toolName === 'suggestIngredientSubstitutions') {
+            const substitutions = data?.substitutions || data || result?.substitutions || result;
+            if (substitutions) return { substitutions };
           }
-          if (tool.toolName === 'getSeasonalIngredients' && success) {
-             return { seasonal: data };
+          
+          // Get Seasonal Ingredients
+          if (tool.toolName === 'getSeasonalIngredients') {
+            const seasonal = data?.seasonal || data || result?.seasonal || result;
+            if (seasonal) return { seasonal };
           }
-          if (tool.toolName === 'planFromInventory' && success) {
-             return { inventoryPlan: data };
+          
+          // Plan From Inventory
+          if (tool.toolName === 'planFromInventory') {
+            const inventoryPlan = data?.inventoryPlan || data || result?.inventoryPlan || result;
+            if (inventoryPlan) return { inventoryPlan };
           }
-          if (tool.toolName === 'generatePrepTimeline' && success) {
-             return { prepTimeline: data };
+          
+          // Generate Prep Timeline
+          if (tool.toolName === 'generatePrepTimeline') {
+            const prepTimeline = data?.prepTimeline || data || result?.prepTimeline || result;
+            if (prepTimeline) return { prepTimeline };
           }
-          if (tool.toolName === 'searchFoodData' && success) {
-             return { foodData: data };
+          
+          // Search Food Data
+          if (tool.toolName === 'searchFoodData') {
+            // searchFoodData returns the data directly, not wrapped in data property
+            const foodData = data || result || (typeof result === 'object' && !result.success ? result : null);
+            if (foodData && (foodData.query || foodData.summary || foodData.nutrition || foodData.pricing)) {
+              return { foodData };
+            }
           }
 
         }
@@ -445,12 +552,27 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
     if (!message?.toolInvocations) return null;
     const active = message.toolInvocations.find(t => t.state !== 'result');
     if (active) {
-      if (active.toolName === 'generateMealPlan') return 'Creating meal plan...';
-      if (active.toolName === 'generateGroceryList') return 'Listing ingredients...';
-      if (active.toolName === 'analyzeNutrition') return 'Analyzing nutrition...';
-      if (active.toolName === 'getGroceryPricing') return 'Checking prices...';
-      if (active.toolName === 'getMealSuggestions') return 'Finding suggestions...';
-      if (active.toolName === 'searchRecipes') return 'Searching recipes...';
+      const statusMessages: Record<string, string> = {
+        'generateMealPlan': 'Creating meal plan...',
+        'modifyMealPlan': 'Generating new meal plan...',
+        'swapMeal': 'Swapping meal...',
+        'generateGroceryList': 'Listing ingredients...',
+        'optimizeGroceryList': 'Optimizing grocery list...',
+        'analyzeNutrition': 'Analyzing nutrition...',
+        'getGroceryPricing': 'Checking prices...',
+        'getMealSuggestions': 'Finding suggestions...',
+        'searchRecipes': 'Searching recipes...',
+        'generateMealRecipe': 'Generating recipe...',
+        'searchFoodData': 'Searching food data...',
+        'suggestIngredientSubstitutions': 'Finding substitutions...',
+        'getSeasonalIngredients': 'Finding seasonal ingredients...',
+        'planFromInventory': 'Planning from inventory...',
+        'generatePrepTimeline': 'Creating prep timeline...',
+        'analyzePantryImage': 'Analyzing pantry image...',
+        'updatePantry': 'Updating pantry...',
+        'fetchUserPreferences': 'Loading preferences...',
+      };
+      return statusMessages[active.toolName] || 'Processing...';
     }
     return null;
   }, [message]);
@@ -816,7 +938,7 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
       </article>
 
       {/* Tool call results (meal plan/grocery list) - Full width immersive display - BREAKS OUT OF CONTAINER */}
-      {isAssistant && (uiData?.mealPlan || uiData?.groceryList || uiData?.mealSuggestions || uiData?.mealRecipe || uiData?.nutrition || uiData?.prices || uiData?.recipeResults || uiData?.substitutions || uiData?.seasonal || uiData?.inventoryPlan || uiData?.prepTimeline || uiData?.foodData || uiData?.upgradePrompt || uiData?.pantryAnalysis) && (
+      {isAssistant && (uiData?.mealPlan || uiData?.groceryList || uiData?.optimization || uiData?.mealSuggestions || uiData?.mealRecipe || uiData?.nutrition || uiData?.prices || uiData?.recipeResults || uiData?.substitutions || uiData?.seasonal || uiData?.inventoryPlan || uiData?.prepTimeline || uiData?.foodData || uiData?.upgradePrompt || uiData?.pantryAnalysis) && (
         <div className={cn(
           "w-full max-w-3xl mx-auto", // Constrain to same width
           "px-0 sm:px-0", // Remove padding for immersive feel

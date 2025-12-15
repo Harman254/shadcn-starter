@@ -110,24 +110,23 @@ export const ChatMessagesVirtual = memo(function ChatMessagesVirtual({
   // Use virtual scrolling only if we have many messages AND library is available
   const useVirtual = messages.length >= VIRTUAL_SCROLL_THRESHOLD && useVirtualizer !== null;
 
-  // Auto-scroll to bottom when new messages arrive
+  // Smooth auto-scroll to bottom when new messages arrive
   useEffect(() => {
     if (!parentRef.current) return;
 
-    // Only auto-scroll if user is near the bottom (within 200px)
+    // Only auto-scroll if user is near the bottom (within 300px)
     const viewport = parentRef.current;
     const isNearBottom = 
-      viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight < 200;
+      viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight < 300;
 
     if (isNearBottom || scrollToBottomRef.current) {
       requestAnimationFrame(() => {
-        if (useVirtual && useVirtualizer) {
-          // For virtual scrolling, we'll handle this in the VirtualizedMessages component
-          // For now, just scroll normally
-          viewport.scrollTop = viewport.scrollHeight;
-        } else {
-          // Regular scroll to bottom
-          viewport.scrollTop = viewport.scrollHeight;
+        if (parentRef.current) {
+          // Use smooth scroll behavior
+          parentRef.current.scrollTo({
+            top: parentRef.current.scrollHeight,
+            behavior: 'smooth'
+          });
         }
         scrollToBottomRef.current = false;
       });
@@ -141,17 +140,22 @@ export const ChatMessagesVirtual = memo(function ChatMessagesVirtual({
     }
   }, [messages.length]);
 
-  // Scroll to bottom on initial load (when messages are first rendered)
+  // Smooth scroll to bottom on initial load (when messages are first rendered)
   const hasInitialScrolledRef = useRef(false);
   useEffect(() => {
     if (!parentRef.current || hasInitialScrolledRef.current) return;
     if (messages.length > 0) {
       hasInitialScrolledRef.current = true;
-      // Small delay to ensure DOM is fully rendered
+      // Small delay to ensure DOM is fully rendered, then smooth scroll
       requestAnimationFrame(() => {
-        if (parentRef.current) {
-          parentRef.current.scrollTop = parentRef.current.scrollHeight;
-        }
+        setTimeout(() => {
+          if (parentRef.current) {
+            parentRef.current.scrollTo({
+              top: parentRef.current.scrollHeight,
+              behavior: 'smooth'
+            });
+          }
+        }, 150);
       });
     }
   }, [messages.length]);
@@ -174,8 +178,9 @@ export const ChatMessagesVirtual = memo(function ChatMessagesVirtual({
       <div 
         className={cn(
           "h-full w-full overflow-y-auto overflow-x-hidden",
-          "overflow-scroll-smooth" // Smooth scrolling on mobile
+          "scroll-smooth" // Smooth scrolling
         )}
+        style={{ scrollBehavior: 'smooth' }}
         ref={parentRef}
         role="log" 
         aria-live="polite" 
@@ -198,8 +203,9 @@ export const ChatMessagesVirtual = memo(function ChatMessagesVirtual({
       className={cn(
         "h-full w-full overflow-y-auto overflow-x-hidden",
         "scrollbar-thin scrollbar-thumb-primary/20 scrollbar-track-transparent",
-        "overflow-scroll-smooth" // Smooth scrolling on mobile
+        "scroll-smooth" // Smooth scrolling
       )}
+      style={{ scrollBehavior: 'smooth' }}
       ref={parentRef}
       role="log" 
       aria-live="polite" 

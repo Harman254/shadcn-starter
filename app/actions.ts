@@ -20,14 +20,29 @@ export async function getResponse(
   preferencesSummary?: string
 ): Promise<Message> {
   // 🧩 Ensure the last message exists and is from the user
-  const lastMessage = messages[messages.length - 1];
-  if (!lastMessage || lastMessage.role !== 'user') {
-    throw new Error('Invalid request: Last message must be from the user.');
+  // Filter out any invalid messages first
+  const validMessages = messages.filter(m => m && m.role && m.content);
+  
+  if (validMessages.length === 0) {
+    throw new Error('Invalid request: No valid messages provided.');
   }
+  
+  // Find the last user message (in case assistant messages were added)
+  const lastUserMessage = [...validMessages].reverse().find(m => m.role === 'user');
+  if (!lastUserMessage) {
+    throw new Error('Invalid request: No user message found in the conversation.');
+  }
+  
+  // Use the last user message as the current message
+  const lastMessage = lastUserMessage;
+  
+  // Get messages up to and including the last user message for context
+  const lastUserIndex = validMessages.findIndex(m => m.id === lastUserMessage.id);
+  const contextMessages = validMessages.slice(0, lastUserIndex + 1);
 
   try {
-    // Build chat history for context
-    const chatHistory = messages.slice(-5, -1).map((m) => ({
+    // Build chat history for context (exclude the last user message)
+    const chatHistory = contextMessages.slice(-5, -1).map((m) => ({
       role: m.role as 'user' | 'assistant',
       content: m.content,
     }));

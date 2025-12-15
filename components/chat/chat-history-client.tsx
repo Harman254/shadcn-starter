@@ -257,6 +257,7 @@ export function ChatHistoryClient({ chatType, initialSessions = [], onSessionSel
           syncFromDatabase(sessionsToSync);
         
           // Auto-select the most recent session if none is set
+          // This ensures users can continue their last conversation when they return
           // serverSessions are already sorted by updatedAt descending, so first = most recent
           const finalState = useChatStore.getState();
           if (!finalState.currentSessionId && serverSessions.length > 0) {
@@ -264,8 +265,26 @@ export function ChatHistoryClient({ chatType, initialSessions = [], onSessionSel
             if (mostRecentSession.chatType === chatType) {
               setCurrentSession(mostRecentSession.id);
               
+              // Automatically load messages for the restored session
+              // This ensures smooth continuation of the conversation
+              setTimeout(() => {
+                handleSessionSelect(mostRecentSession.id);
+              }, 100);
+              
               if (process.env.NODE_ENV === 'development') {
-                console.log('[ChatHistoryClient] 🎯 Auto-selected most recent chat:', mostRecentSession.id, mostRecentSession.title);
+                console.log('[ChatHistoryClient] 🎯 Auto-selected and loading most recent chat:', mostRecentSession.id, mostRecentSession.title);
+              }
+            }
+          } else if (finalState.currentSessionId) {
+            // If we already have a current session, ensure it's loaded
+            const currentSession = finalState.sessions[finalState.currentSessionId];
+            if (currentSession && currentSession.chatType === chatType) {
+              // Session exists, check if messages need to be loaded
+              if (currentSession.messages.length === 0) {
+                // Load messages for the current session
+                setTimeout(() => {
+                  handleSessionSelect(finalState.currentSessionId!);
+                }, 100);
               }
             }
           }
@@ -496,6 +515,9 @@ export function ChatHistoryClient({ chatType, initialSessions = [], onSessionSel
     setCurrentSession(sessionId);
     onSessionSelect?.(sessionId);
     
+    // Smooth transition - add a brief delay for better UX
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
     if (process.env.NODE_ENV === 'development') {
       console.log('[ChatHistoryClient] ✅ Switching to session:', sessionId);
       console.log('[ChatHistoryClient] Lock will be updated in chat-panel.tsx');
@@ -616,6 +638,9 @@ export function ChatHistoryClient({ chatType, initialSessions = [], onSessionSel
               addMessages(sessionId, missingMessages);
             }
           }
+          
+          // Messages will auto-scroll via the chat-panel smooth scroll handler
+          // No need to manually scroll here as it's handled automatically
           
           if (process.env.NODE_ENV === 'development') {
             const finalMessages = useChatStore.getState().sessions[sessionId]?.messages || [];

@@ -59,9 +59,49 @@ export function useOfflineChat({
 
         // Get fresh messages list including the user message
         const currentMessages = getCurrentSession()?.messages || [];
+        
+        // Ensure we only pass messages up to and including the queued user message
+        // Filter to only include messages up to the queued message
+        const messageIndex = currentMessages.findIndex(m => m.id === queuedMessage.id);
+        const messagesToSend = messageIndex >= 0 
+          ? currentMessages.slice(0, messageIndex + 1)
+          : currentMessages;
+        
+        // Ensure the last message is the user's queued message
+        if (messagesToSend.length === 0 || messagesToSend[messagesToSend.length - 1].role !== 'user') {
+          logger.warn('[OfflineChat] Invalid message order, filtering messages');
+          // Filter to only user messages and the last one
+          const userMessages = messagesToSend.filter(m => m.role === 'user');
+          if (userMessages.length === 0) {
+            throw new Error('No user message found to process');
+          }
+          // Use the last user message and all messages before it
+          const lastUserMsg = userMessages[userMessages.length - 1];
+          const lastUserIndex = messagesToSend.findIndex(m => m.id === lastUserMsg.id);
+          const filteredMessages = messagesToSend.slice(0, lastUserIndex + 1);
+          
+          // Get AI response with filtered messages
+          const response = await getResponse(chatType, filteredMessages);
+          const assistantMessage: Message = {
+            ...response,
+            timestamp: new Date(),
+          };
+
+          // Add assistant message
+          addMessage(sessionId, assistantMessage);
+
+          // Update user message status to sent
+          updateMessageStatus(sessionId, queuedMessage.id, 'sent');
+
+          // Notify callback
+          onMessageSynced?.(queuedMessage.id);
+
+          logger.log('[OfflineChat] ✅ Successfully synced message:', queuedMessage.id);
+          return;
+        }
 
         // Get AI response
-        const response = await getResponse(chatType, currentMessages);
+        const response = await getResponse(chatType, messagesToSend);
         const assistantMessage: Message = {
           ...response,
           timestamp: new Date(),

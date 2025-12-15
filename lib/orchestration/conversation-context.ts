@@ -6,7 +6,7 @@
  * SCALABILITY UPDATE: Now uses Prisma/Database for persistence instead of in-memory storage.
  */
 
-import prisma from '@/lib/prisma';
+import prisma, { isDatabaseConnectionError } from '@/lib/prisma';
 
 export interface ConversationEntity {
     mealPlanId?: string;
@@ -163,9 +163,16 @@ export class ConversationContextManager {
                 }
             });
         } catch (error) {
-            // Log as warning instead of error for background cleanup tasks
-            // This prevents alarming logs when DB is temporarily unreachable (e.g. Neon pausing)
-            console.warn('[ConversationContext] Warning: Failed to cleanup expired contexts (DB might be unreachable):', error instanceof Error ? error.message : error);
+            // Check if it's a database connection error - if so, silently skip (DB is unreachable)
+            if (isDatabaseConnectionError(error) || 
+                isDatabaseConnectionError(error?.cause) ||
+                isDatabaseConnectionError(error?.body?.error)) {
+                // Silently skip - database is unreachable, cleanup will retry on next interval
+                // Don't log to avoid noise when DB is temporarily unavailable (e.g. Neon pausing)
+                return;
+            }
+            // Log as warning for other errors (not connection issues)
+            console.warn('[ConversationContext] Warning: Failed to cleanup expired contexts:', error instanceof Error ? error.message : error);
         }
     }
     /**

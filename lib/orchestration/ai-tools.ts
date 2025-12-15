@@ -1523,7 +1523,7 @@ Return valid JSON with ONLY the relevant sections populated.`,
 });
 
 export const generateMealRecipe = tool({
-    description: 'Generate a detailed recipe for a specific dish. Use this when the user asks for a specific recipe (e.g. "Recipe for Chapati") OR simply mentions a dish name (e.g. "Chicken Biryani", "Omelette").',
+    description: 'MANDATORY: Use this tool whenever a user asks for a recipe (e.g., "recipe for X", "how to make X", "full recipe for X", "give me recipe for X", "show me recipe for X") OR mentions a specific dish name (e.g., "Jamaican Beef Patties", "Chicken Biryani", "Omelette"). DO NOT generate text recipes. This tool generates a rich UI card with ingredients, instructions, and nutrition. If you write the recipe in text, the user sees NOTHING useful.',
     parameters: z.object({
         name: z.string().describe('The name of the dish to generate a recipe for.'),
         description: z.string().optional().describe('Additional context or preferences (e.g. "spicy", "vegan").'),

@@ -35,6 +35,17 @@ const INTENT_PATTERNS = {
         keywords: [
             /\b(recipe|how\s+to\s+make|cook|prepare)\s+/i,
             /\b(ingredients|steps)\s+for\s+/i,
+            /\b(full\s+recipe|complete\s+recipe|give\s+me\s+recipe|show\s+me\s+recipe|recipe\s+for)\s+/i,
+            /\brecipe\s+for\s+/i,
+            // Match "full recipe for X" pattern - HIGH PRIORITY
+            /full\s+recipe\s+for\s+/i,
+            // Match dish names (common patterns) - more flexible
+            /\b(jamaican|chicken|beef|pork|fish|pasta|rice|ugali|chapati|biryani|curry|stew|soup|salad|sandwich|burger|pizza|omelette|scramble|pancake|waffle|smoothie|patties|jerk)\s+/i,
+            // Match standalone dish names (capitalized words that might be dish names)
+            /\b[A-Z][a-z]+(?:\s+[A-Z][a-z]+)+\s+(patties|pizza|burger|sandwich|salad|stew|curry|biryani|omelette|pancake|waffle)/i,
+            // Match "Jamaican Beef Patties" pattern specifically
+            /jamaican\s+beef\s+patties/i,
+            /jamaican\s+\w+\s+patties/i,
         ],
         tools: ['generateMealRecipe'],
         confidence: 'high' as const,
@@ -67,10 +78,14 @@ const INTENT_PATTERNS = {
     },
     MEAL_PLAN_REQUIRED: {
         keywords: [
-            /\b(plan|create|generate|make)\s+(a\s+)?meal\s*plan/i,
+            /\b(plan|create|generate|make|get|give|show)\s+(me\s+)?(a\s+)?meal\s*plan/i,
             /\bmeal\s*plan\s+(for|over|spanning)/i,
             /\b\d+\s*day\s+(meal|plan|diet)/i,
             /\bplan\s+meals?\s+for\s+\d+/i,
+            /\b(what\s+should\s+i\s+eat|what\s+to\s+eat|suggest\s+meals)/i,
+            /\b(just\s+get\s+me|get\s+me\s+something|give\s+me\s+something)/i,
+            /\b(do\s+it\s+again|generate\s+again|create\s+again|make\s+another)/i,
+            /\b(new\s+plan|another\s+plan|different\s+plan)/i,
         ],
         tools: ['generateMealPlan'],
         confidence: 'high' as const,
@@ -103,6 +118,36 @@ const INTENT_PATTERNS = {
         tools: ['getGroceryPricing'],
         confidence: 'medium' as const,
         contextNeeded: ['mealPlanId'],
+    },
+    OPTIMIZE_GROCERY_LIST: {
+        keywords: [
+            /\boptimize\s+(grocery|shopping)\s*list/i,
+            /\bfind\s+best\s+prices/i,
+            /\bcheapest\s+options/i,
+        ],
+        tools: ['optimizeGroceryList'],
+        confidence: 'high' as const,
+    },
+    SEARCH_FOOD_DATA: {
+        keywords: [
+            /\b(calories|nutrition|protein|carbs|fat)\s+in\s+/i,
+            /\bhow\s+much\s+(calories|protein|carbs)/i,
+            /\b(price|cost)\s+of\s+/i,
+            /\bwhere\s+to\s+buy/i,
+            /\bis\s+\w+\s+available/i,
+            /\balternative\s+to\s+/i,
+            /\b(substitute|replace)\s+\w+/i,
+        ],
+        tools: ['searchFoodData'],
+        confidence: 'high' as const,
+    },
+    UPDATE_PANTRY: {
+        keywords: [
+            /\b(add|update|save)\s+(to\s+)?(my\s+)?(pantry|inventory)/i,
+            /\b(add|put)\s+\w+\s+(in|to)\s+(my\s+)?(pantry|inventory)/i,
+        ],
+        tools: ['updatePantry'],
+        confidence: 'high' as const,
     },
 };
 

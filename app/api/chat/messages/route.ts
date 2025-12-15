@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
-import prisma from '@/lib/prisma';
+import prisma, { isDatabaseConnectionError } from '@/lib/prisma';
 import { rateLimit as checkRateLimit } from '@/lib/rate-limit';
 
 // POST - Save messages to a chat session
@@ -21,13 +21,19 @@ export async function POST(request: NextRequest) {
     try {
       session = await auth.api.getSession({ headers: await headers() });
     } catch (sessionError) {
-      // Handle database connection errors when fetching session
-      console.error('[POST /api/chat/messages] Error fetching session:', sessionError);
-      // Return error - can't save without authentication
-      return NextResponse.json(
-        { error: 'Database connection failed. Please try again later.' },
-        { status: 503 }
-      );
+      // Check if it's actually a database connection error
+      if (isDatabaseConnectionError(sessionError) || 
+          isDatabaseConnectionError(sessionError?.cause) ||
+          isDatabaseConnectionError(sessionError?.body?.error)) {
+        console.error('[POST /api/chat/messages] Database connection error when fetching session:', sessionError);
+        return NextResponse.json(
+          { error: 'Database connection failed. Please try again later.' },
+          { status: 503 }
+        );
+      }
+      // For other auth errors (not database), return 401
+      console.error('[POST /api/chat/messages] Auth error (non-database):', sessionError);
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     // Require authentication
@@ -232,10 +238,17 @@ export async function GET(request: NextRequest) {
     try {
       session = await auth.api.getSession({ headers: await headers() });
     } catch (sessionError) {
-      // Handle database connection errors when fetching session
-      console.error('[GET /api/chat/messages] Error fetching session:', sessionError);
-      // Return empty array instead of error - allows frontend to work offline
-      return NextResponse.json({ messages: [], total: 0, hasMore: false });
+      // Check if it's actually a database connection error
+      if (isDatabaseConnectionError(sessionError) || 
+          isDatabaseConnectionError(sessionError?.cause) ||
+          isDatabaseConnectionError(sessionError?.body?.error)) {
+        console.error('[GET /api/chat/messages] Database connection error when fetching session:', sessionError);
+        // Return empty array instead of error - allows frontend to work offline
+        return NextResponse.json({ messages: [], total: 0, hasMore: false });
+      }
+      // For other auth errors (not database), return 401
+      console.error('[GET /api/chat/messages] Auth error (non-database):', sessionError);
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     // Require authentication
