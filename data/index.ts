@@ -783,6 +783,7 @@ export async function incrementMealPlanGeneration(userId: string) {
         });
       } else {
         if (generationRecord.generationCount >= 3) {
+          await notifyGenerationLimitReached(userId);
           throw new Error("Generation limit reached");
         }
         generationRecord = await prisma.mealPlanGeneration.update({
@@ -932,6 +933,7 @@ export async function validateAndIncrementMealPlanGeneration(userId: string) {
         });
       } else {
         if (generationRecord.generationCount >= 3) {
+          await notifyGenerationLimitReached(userId);
           return {
             success: false,
             canGenerate: false,

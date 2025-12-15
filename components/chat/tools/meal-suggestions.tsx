@@ -5,6 +5,33 @@ import { Clock, Wand2, ChefHat, ArrowRight, Star, Flame, ExternalLink, Search, G
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 
+const FOOD_IMAGES = [
+  "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&q=80", // Healthy bowl
+  "https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=800&q=80", // Pancakes
+  "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=800&q=80", // Pizza
+  "https://images.unsplash.com/photo-1484723091739-30a097e8f929?w=800&q=80", // Toast
+  "https://images.unsplash.com/photo-1482049016688-2d3e1b311543?w=800&q=80", // Sandwich
+  "https://images.unsplash.com/photo-1473093295043-cdd812d0e601?w=800&q=80", // Pasta
+  "https://images.unsplash.com/photo-1499028344343-cd173ffc68a9?w=800&q=80", // Burger
+  "https://images.unsplash.com/photo-1455619452474-d2be8b1e70cd?w=800&q=80", // Curry
+  "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800&q=80", // Steak
+  "https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=800&q=80", // Sushi
+  "https://images.unsplash.com/photo-1493770348161-369560ae357d?w=800&q=80", // Breakfast
+  "https://images.unsplash.com/photo-1476718408415-c934f70faaa3?w=800&q=80", // Soup
+  "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=800&q=80", // Healthy
+  "https://images.unsplash.com/photo-1498837167922-ddd27525d352?w=800&q=80", // Pancakes top down
+  "https://images.unsplash.com/photo-1497215728101-856f4ea42174?w=800&q=80", // Waffles
+];
+
+function getFallbackImage(term: string) {
+  let hash = 0;
+  for (let i = 0; i < term.length; i++) {
+    hash = term.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const index = Math.abs(hash) % FOOD_IMAGES.length;
+  return FOOD_IMAGES[index];
+}
+
 interface MealSuggestionsProps {
   results: any[]
   title?: string
@@ -16,6 +43,7 @@ export function MealSuggestions({ results, title, onActionClick }: MealSuggestio
 
   // Check if this is from a search (has sourceUrl) vs AI generated
   const isFromSearch = results.some(r => r.sourceUrl)
+
 
   return (
     <motion.div
@@ -103,7 +131,7 @@ export function MealSuggestions({ results, title, onActionClick }: MealSuggestio
         <div className="relative px-4 sm:px-6 pb-6 sm:pb-8">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {results.map((recipe: any, idx: number) => (
-              <motion.button
+              <motion.div
                 key={idx}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -112,7 +140,7 @@ export function MealSuggestions({ results, title, onActionClick }: MealSuggestio
                 whileTap={{ scale: 0.98 }}
                 onClick={() => onActionClick?.(`Give me the full recipe for ${recipe.name}`)}
                 className={cn(
-                  "group relative w-full flex flex-col overflow-hidden rounded-2xl text-left h-full",
+                  "group relative w-full flex flex-col overflow-hidden rounded-2xl text-left h-full cursor-pointer",
                   "bg-gradient-to-br from-white/[0.08] to-white/[0.02]",
                   "border border-white/[0.08] hover:border-rose-500/30",
                   "transition-all duration-300",
@@ -122,11 +150,11 @@ export function MealSuggestions({ results, title, onActionClick }: MealSuggestio
                 {/* Hero Image */}
                 <div className="relative w-full aspect-[4/3] overflow-hidden bg-slate-900/50">
                   <motion.img
-                    src={recipe.imageUrl || `https://source.unsplash.com/800x600/?${encodeURIComponent(recipe.name)},food`}
+                    src={recipe.imageUrl || getFallbackImage(recipe.name)}
                     alt={recipe.name}
                     className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                     onError={(e) => {
-                      (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&q=80';
+                      (e.target as HTMLImageElement).src = getFallbackImage(recipe.name + "fallback");
                     }}
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/20 to-transparent opacity-80" />
@@ -201,7 +229,7 @@ export function MealSuggestions({ results, title, onActionClick }: MealSuggestio
                     </Button>
                   </div>
                 </div>
-              </motion.button>
+              </motion.div>
             ))}
           </div>
 

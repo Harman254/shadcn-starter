@@ -1,10 +1,5 @@
 import { AnalyticsHeader } from "./AnalyticsHeader";
 import { StatCard } from "./StatCard";
-import { NutritionDonut, NutritionLegend } from "./NutritionDonut";
-import { CalorieChart } from "./CalorieChart";
-import { RecentMeals } from "./recentMeals";
-import { MealPlanProgress } from "./MealPlanProgress";
-import { GroceryInsights } from "./GroceryInsights";
 import { Utensils, CalendarCheck, ShoppingCart, TrendingUp, Lock } from "lucide-react";
 import { getUserAnalytics } from "@/lib/analytics";
 import { auth } from "@/lib/auth";
@@ -129,24 +124,26 @@ const Index = async () => {
                                     <p className="text-sm text-muted-foreground">Planning frequency (Last 30 Days)</p>
                                 </div>
                             </div>
-                             <div className="h-[200px] w-full flex items-end justify-between px-4 gap-2">
-                                 {trends.weeklyActivity.length > 0 ? trends.weeklyActivity.map((day, i) => (
-                                     <div key={i} className="flex flex-col items-center gap-1 group w-full">
-                                          <div 
-                                            className="w-full bg-primary/20 rounded-t-md hover:bg-primary/40 transition-all relative"
-                                            style={{ height: `${Math.min(day.count * 20, 100)}%` }}
-                                          >
-                                              <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-popover text-popover-foreground text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">
-                                                  {day.count} plans
+                             <div className="overflow-x-auto pb-2">
+                                 <div className="h-[200px] w-full min-w-[600px] flex items-end justify-between px-4 gap-2">
+                                     {trends.weeklyActivity.length > 0 ? trends.weeklyActivity.map((day, i) => (
+                                         <div key={i} className="flex flex-col items-center gap-1 group w-full">
+                                              <div 
+                                                className="w-full bg-primary/20 rounded-t-md hover:bg-primary/40 transition-all relative"
+                                                style={{ height: `${Math.min(day.count * 20, 100)}%` }}
+                                              >
+                                                  <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-popover text-popover-foreground text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10 pointer-events-none">
+                                                      {day.count} plans
+                                                  </div>
                                               </div>
-                                          </div>
-                                          <span className="text-[10px] text-muted-foreground truncate w-full text-center">{day.date.slice(5)}</span>
-                                     </div>
-                                 )) : (
-                                     <div className="w-full h-full flex items-center justify-center text-muted-foreground/50">
-                                         No activity data yet
-                                     </div>
-                                 )}
+                                              <span className="text-[10px] text-muted-foreground truncate w-full text-center">{day.date.slice(5)}</span>
+                                         </div>
+                                     )) : (
+                                         <div className="w-full h-full flex items-center justify-center text-muted-foreground/50">
+                                             No activity data yet
+                                         </div>
+                                     )}
+                                 </div>
                              </div>
                         </ProGate>
                     </div>

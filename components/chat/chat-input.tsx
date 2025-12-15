@@ -196,6 +196,7 @@ export function ChatInput({ onSubmit, isLoading, disabled = false, input, handle
             onBlur={() => setIsFocused(false)}
             placeholder={disabled ? "Sign in to start chatting..." : "Ask anything about food..."}
             rows={1}
+            autoFocus={!disabled}
             className={cn(
               "flex-1 resize-none bg-transparent border-none",
               "text-foreground text-[15px] sm:text-base",

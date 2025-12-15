@@ -61,20 +61,32 @@ export const fetchUserPreferences = tool({
 // Cloudinary food image pools for realistic meal display
 const MEAL_IMAGES = {
     breakfast: [
-        'https://res.cloudinary.com/dcidanigq/image/upload/v1742112002/samples/breakfast.jpg',
-        'https://res.cloudinary.com/dcidanigq/image/upload/v1742111996/samples/food/spices.jpg',
+        'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&q=80', // Bowl
+        'https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=800&q=80', // Pancakes
+        'https://images.unsplash.com/photo-1484723091739-30a097e8f929?w=800&q=80', // Toast
+        'https://images.unsplash.com/photo-1493770348161-369560ae357d?w=800&q=80', // Breakfast
+        'https://images.unsplash.com/photo-1498837167922-ddd27525d352?w=800&q=80', // Pancakes top down
+        'https://images.unsplash.com/photo-1497215728101-856f4ea42174?w=800&q=80', // Waffles
     ],
     lunch: [
-        'https://res.cloudinary.com/dcidanigq/image/upload/v1742111994/samples/food/fish-vegetables.jpg',
-        'https://res.cloudinary.com/dcidanigq/image/upload/v1742112004/cld-sample-4.jpg',
+        'https://images.unsplash.com/photo-1482049016688-2d3e1b311543?w=800&q=80', // Sandwich
+        'https://images.unsplash.com/photo-1476718408415-c934f70faaa3?w=800&q=80', // Soup
+        'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=800&q=80', // Healthy
+        'https://images.unsplash.com/photo-1499028344343-cd173ffc68a9?w=800&q=80', // Burger
+        'https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?w=800&q=80', // Chicken
     ],
     dinner: [
-        'https://res.cloudinary.com/dcidanigq/image/upload/v1742111994/samples/food/fish-vegetables.jpg',
-        'https://res.cloudinary.com/dcidanigq/image/upload/v1742112004/cld-sample-5.jpg',
+        'https://images.unsplash.com/photo-1473093295043-cdd812d0e601?w=800&q=80', // Pasta
+        'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800&q=80', // Steak
+        'https://images.unsplash.com/photo-1455619452474-d2be8b1e70cd?w=800&q=80', // Curry
+        'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=800&q=80', // Pizza
+        'https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=800&q=80', // Sushi
+        'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=800&q=80', // BBQ
     ],
     snack: [
-        'https://res.cloudinary.com/dcidanigq/image/upload/v1742111996/samples/food/spices.jpg',
-        'https://res.cloudinary.com/dcidanigq/image/upload/v1742112002/samples/breakfast.jpg',
+        'https://images.unsplash.com/photo-1484723091739-30a097e8f929?w=800&q=80', // Toast
+        'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=800&q=80', // Healthy
+        'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&q=80', // Bowl
     ],
 };
 
@@ -101,8 +113,10 @@ function getRandomRecipeImage(): string {
     return allImages[Math.floor(Math.random() * allImages.length)];
 }
 
+
+
 export const generateMealPlan = tool({
-    description: 'Generate a meal plan based on user preferences, duration, and meals per day.',
+    description: 'MANDATORY: Use this tool whenever a user asks for a meal plan (e.g., "create a plan", "what should I eat", "plan for 3 days"). Do NOT generate text plans. Generate a meal plan based on user preferences, duration, and meals per day.',
     parameters: z.object({
         duration: z.number().min(1).max(30).default(1).describe('Number of days for the meal plan'),
         mealsPerDay: z.number().min(1).max(5).default(3).describe('Number of meals per day'),
@@ -112,7 +126,7 @@ export const generateMealPlan = tool({
             content: z.string()
         })).optional().describe('Recent chat messages to understand context and specific requests'),
     }),
-    execute: async ({ duration, mealsPerDay, preferences, chatMessages }): Promise<ToolResult> => {
+    execute: async ({ duration, mealsPerDay, preferences, chatMessages }, options): Promise<ToolResult> => {
         try {
             console.log('[generateMealPlan] 🍳 Generating plan with AI SDK. Duration:', duration, 'Context:', chatMessages?.length || 0, 'msgs');
 
@@ -172,13 +186,14 @@ ${userPrefsContext || 'No saved preferences. Use balanced diet.'}
 
 ## Requirements
 1. **Specific Requests:** If user asked for specific foods (e.g. "ugali", "keto", "pasta"), YOU MUST INCLUDE THEM.
-2. **Variety:** Ensure meals are diverse and not repetitive.
-3. **Completeness:** For each meal, provide a name, brief description, full ingredient list, and simple instructions.
-4. **Nutrition:** Estimate realistic calories for each meal (300-800 for most meals).
-5. **Timing:** Provide realistic prep times (5-45 min).
-6. **Servings:** Suggest 1-4 servings per meal.
-7. **Structure:** Generate exactly ${duration} days with ${mealsPerDay} meals each.
-8. **Title:** Create a catchy, descriptive title for the plan (e.g. "Mediterranean 3-Day Reset", "High-Protein Keto Week").
+2. **Relatable & Realistic:** Focus on meals people actually consume day-to-day. Avoid overly exotic, complex, or "AI-sounding" dishes unless requested. Keep it grounded.
+3. **Variety:** Ensure meals are diverse. Do NOT repeat the same main ingredient (e.g. eggs, chicken) for every meal unless the user explicitly requested it.
+4. **Completeness:** For each meal, provide a name, brief description, full ingredient list, and simple instructions.
+5. **Nutrition:** Estimate realistic calories for each meal (300-800 for most meals).
+6. **Timing:** Provide realistic prep times (5-45 min).
+7. **Servings:** Suggest 1-4 servings per meal.
+8. **Structure:** Generate exactly ${duration} days with ${mealsPerDay} meals each.
+9. **Title:** Create a catchy, descriptive title for the plan (e.g. "Mediterranean 3-Day Reset", "High-Protein Keto Week").
 
 Return a valid JSON object.`,
             });
@@ -239,6 +254,8 @@ Return a valid JSON object.`,
 });
 
 
+
+
 // ============================================================================
 // NUTRITION ANALYSIS TOOL
 // ============================================================================
@@ -253,7 +270,11 @@ export const analyzeNutrition = tool({
         chatMessages: z.array(z.object({
             role: z.enum(['user', 'assistant']),
             content: z.string(),
-            toolInvocations: z.array(z.any()).optional(),
+            toolInvocations: z.array(z.object({
+                toolName: z.string(),
+                toolCallId: z.string().optional(),
+                result: z.any().optional(),
+            }).passthrough()).optional(),
         })).optional().describe('Recent chat messages to understand context and find previous meal plans or lists'),
     }),
     execute: async ({ query, mealPlanId, recipeName, groceryListId, chatMessages }, options): Promise<ToolResult> => {
@@ -311,7 +332,7 @@ export const analyzeNutrition = tool({
                 // Try to find from context (messages OR lastToolResult)
                 // Use explicit chatMessages param first, then fallback to options
                 // @ts-ignore
-                const messages = chatMessages || (options as any)?.messages || context?.messages;
+                const messages = (options as any)?.messages || context?.messages || chatMessages;
 
                 console.log(`[analyzeNutrition] 🔍 Searching context in ${messages?.length || 0} messages...`);
 
@@ -486,7 +507,11 @@ export const getGroceryPricing = tool({
         chatMessages: z.array(z.object({
             role: z.enum(['user', 'assistant']),
             content: z.string(),
-            toolInvocations: z.array(z.any()).optional(),
+            toolInvocations: z.array(z.object({
+                toolName: z.string(),
+                toolCallId: z.string().optional(),
+                result: z.any().optional(),
+            }).passthrough()).optional(),
         })).optional().describe('Recent chat messages to understand context'),
     }),
     execute: async ({ mealPlanId, city, country, chatMessages }, options): Promise<ToolResult> => {
@@ -497,7 +522,7 @@ export const getGroceryPricing = tool({
             // @ts-ignore
             const context = (options as any)?.context;
             // @ts-ignore
-            const messages = chatMessages || (options as any)?.messages || context?.messages;
+            const messages = (options as any)?.messages || context?.messages || chatMessages;
 
             let mealPlan;
             let recipe;
@@ -656,7 +681,11 @@ export const generateGroceryList = tool({
         chatMessages: z.array(z.object({
             role: z.enum(['user', 'assistant']),
             content: z.string(),
-            toolInvocations: z.array(z.any()).optional(),
+            toolInvocations: z.array(z.object({
+                toolName: z.string(),
+                toolCallId: z.string().optional(),
+                result: z.any().optional(),
+            }).passthrough()).optional(),
         })).optional().describe('Recent chat messages to understand context'),
     }),
     execute: async ({ source, mealPlanId, mealPlan, recipeName, ingredients, fromContext, chatMessages }, options): Promise<ToolResult> => {
@@ -710,7 +739,7 @@ export const generateGroceryList = tool({
                 // @ts-ignore - context is injected by ToolExecutor via options
                 const context = (options as any)?.context;
                 // @ts-ignore
-                const messages = chatMessages || (options as any)?.messages || context?.messages;
+                const messages = (options as any)?.messages || context?.messages || chatMessages;
 
                 // Helper to safely check tool invocations
                 const findToolResult = (toolName: string) => {
@@ -879,7 +908,7 @@ Return JSON only.`,
                         totalEstimatedCost: `${currency}${totalCost.toFixed(2)} `
                     }
                 },
-                `✅ Generated and saved grocery list for ${planTitle}! ${result.object.groceryList.length} items, approx ${currency}${totalCost.toFixed(2)}.[UI_METADATA: ${uiMetadataEncoded}]`
+                `✅ Generated and saved grocery list for ${planTitle}! ${result.object.groceryList.length} items, approx ${currency}${totalCost.toFixed(2)}.[UI_METADATA:${uiMetadataEncoded}]`
             );
 
         } catch (error) {
@@ -907,7 +936,7 @@ export const modifyMealPlan = tool({
         })).optional().describe('Recent chat messages to understand context'),
         differentFrom: z.string().optional().describe('Context about what to make different from previous plan'),
     }),
-    execute: async ({ duration, mealsPerDay, preferences, chatMessages, differentFrom }): Promise<ToolResult> => {
+    execute: async ({ duration, mealsPerDay, preferences, chatMessages, differentFrom }, options): Promise<ToolResult> => {
         try {
             console.log('[modifyMealPlan] 🔄 Generating DIFFERENT meal plan variant. Duration:', duration, 'Context:', chatMessages?.length || 0, 'msgs');
 
@@ -1225,7 +1254,7 @@ export const searchRecipes = tool({
         query: z.string().describe('The search query or description of the recipe(s) to find.'),
         count: z.number().min(1).max(5).default(3).describe('Number of recipes to return (default 3).'),
     }),
-    execute: async ({ query, count }): Promise<ToolResult> => {
+    execute: async ({ query, count }, options): Promise<ToolResult> => {
         try {
             console.log(`[searchRecipes] 🔍 Searching for "${query}"(Limit: ${count})`);
 
@@ -1494,7 +1523,7 @@ Return valid JSON with ONLY the relevant sections populated.`,
 });
 
 export const generateMealRecipe = tool({
-    description: 'Generate a detailed recipe for a specific dish. Use this when the user asks for a specific recipe (e.g. "Recipe for Chapati", "How to make Sushi") or clicks on a recipe suggestion.',
+    description: 'Generate a detailed recipe for a specific dish. Use this when the user asks for a specific recipe (e.g. "Recipe for Chapati") OR simply mentions a dish name (e.g. "Chicken Biryani", "Omelette").',
     parameters: z.object({
         name: z.string().describe('The name of the dish to generate a recipe for.'),
         description: z.string().optional().describe('Additional context or preferences (e.g. "spicy", "vegan").'),
@@ -1503,7 +1532,7 @@ export const generateMealRecipe = tool({
             content: z.string()
         })).optional().describe('Recent chat messages to understand context and specific requests'),
     }),
-    execute: async ({ name, description, chatMessages }): Promise<ToolResult> => {
+    execute: async ({ name, description, chatMessages }, options): Promise<ToolResult> => {
         try {
             console.log(`[generateMealRecipe] 🍳 Generating recipe for "${name}"...`);
 
@@ -1524,6 +1553,11 @@ export const generateMealRecipe = tool({
             }
 
             // 2. Generate Recipe with AI SDK
+            // @ts-ignore
+            const context = (options as any)?.context;
+            // @ts-ignore
+            const messages = (options as any)?.messages || context?.messages || chatMessages;
+
             const { generateObject } = await import('ai');
             const { google } = await import('@ai-sdk/google');
             const { z } = await import('zod');
@@ -1565,7 +1599,7 @@ export const generateMealRecipe = tool({
 ${userPrefsContext || 'No saved preferences.'}
 
 ## Recent Chat Context (if relevant)
-${chatMessages?.slice(-5).map(m => `${m.role.toUpperCase()}: ${m.content}`).join('\n') || 'No recent context.'}
+${messages?.slice(-5).map((m: any) => `${m.role.toUpperCase()}: ${m.content}`).join('\n') || 'No recent context.'}
 
 ## INSTRUCTIONS
 1. **USE SEARCH:** Find REAL recipes from reputable sources. Extract accurate measurements and techniques.
@@ -1627,7 +1661,7 @@ export const suggestIngredientSubstitutions = tool({
         recipeContext: z.string().optional().describe('The recipe or dish context (e.g., "brownies", "stir fry") to ensure substitution works'),
         quantity: z.string().optional().describe('Original quantity to calculate substitution ratios'),
     }),
-    execute: async ({ ingredient, reason, recipeContext, quantity }): Promise<ToolResult> => {
+    execute: async ({ ingredient, reason, recipeContext, quantity }, options): Promise<ToolResult> => {
         try {
             console.log(`[suggestIngredientSubstitutions] 🔄 Finding substitutes for "${ingredient}" (${reason})`);
 
@@ -1814,7 +1848,7 @@ export const planFromInventory = tool({
         mealType: z.enum(['any', 'breakfast', 'lunch', 'dinner', 'snack']).default('any'),
         maxCookTime: z.number().optional().describe('Maximum cooking time in minutes'),
     }),
-    execute: async ({ ingredients, preferences, mealType, maxCookTime }): Promise<ToolResult> => {
+    execute: async ({ ingredients, preferences, mealType, maxCookTime }, options): Promise<ToolResult> => {
         try {
             console.log(`[planFromInventory] 🏠 Planning with ${ingredients.length} ingredients...`);
 
@@ -1905,7 +1939,11 @@ export const generatePrepTimeline = tool({
         chatMessages: z.array(z.object({
             role: z.enum(['user', 'assistant']),
             content: z.string(),
-            toolInvocations: z.array(z.any()).optional(),
+            toolInvocations: z.array(z.object({
+                toolName: z.string(),
+                toolCallId: z.string().optional(),
+                result: z.any().optional(),
+            }).passthrough()).optional(),
         })).optional().describe('Recent chat messages to understand context'),
     }),
     execute: async ({ recipes, targetDate, prepStyle, availableTime, mealPlanId, chatMessages }, options): Promise<ToolResult> => {
@@ -1945,7 +1983,7 @@ export const generatePrepTimeline = tool({
                 // @ts-ignore
                 const context = (options as any)?.context;
                 // @ts-ignore
-                const messages = chatMessages || (options as any)?.messages || context?.messages;
+                const messages = (options as any)?.messages || context?.messages || chatMessages;
 
                 let sourcePlanOrRecipe = null;
 

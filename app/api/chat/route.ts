@@ -134,8 +134,16 @@ export async function POST(req: Request) {
             }
         });
 
-    } catch (error) {
-        console.error('Error in chat API:', error);
-        return new Response('Internal Server Error', { status: 500 });
+    } catch (error: any) {
+        console.error('CRITICAL ERROR in chat API:', {
+            message: error.message,
+            stack: error.stack,
+            name: error.name,
+            cause: error.cause
+        });
+        return new Response(JSON.stringify({ error: 'Internal Server Error', details: error.message }), {
+            status: 500,
+            headers: { 'Content-Type': 'application/json' }
+        });
     }
 }

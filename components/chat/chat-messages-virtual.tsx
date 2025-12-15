@@ -215,7 +215,7 @@ export const ChatMessagesVirtual = memo(function ChatMessagesVirtual({
         })}
         {isLoading && (
           <div role="status" aria-label="AI is typing">
-            <ChatMessage isLoading data={data} />
+            <ChatMessage isLoading />
           </div>
         )}
       </div>

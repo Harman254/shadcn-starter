@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react'
 import Image from 'next/image'
+import Link from 'next/link'
 import { Bookmark, Clock, Flame, ChefHat, Loader2, Zap } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { FeedItem } from '@/lib/data/feed-data'
@@ -45,10 +46,11 @@ export function StoryCard({
   const displayImageUrl = enableAIImage ? imageUrl : item.imageUrl
 
   return (
+    <Link href={`/stories/${item.id}`} className="block h-full">
     <article
       onClick={onClick}
       className={cn(
-        'group relative bg-card rounded-2xl overflow-hidden border border-border/50',
+        'group relative bg-card rounded-2xl overflow-hidden border border-border/50 h-full',
         'hover:border-primary/30 transition-all duration-500',
         'hover:shadow-2xl hover:shadow-primary/10',
         'cursor-pointer transform hover:-translate-y-1',
@@ -139,6 +141,7 @@ export function StoryCard({
         {/* Bookmark button */}
         <button
           onClick={(e) => {
+            e.preventDefault() // Prevent navigation when clicking bookmark
             e.stopPropagation()
             onBookmarkToggle(item.id)
           }}
@@ -209,5 +212,6 @@ export function StoryCard({
         )}
       </div>
     </article>
+    </Link>
   )
 }

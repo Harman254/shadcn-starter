@@ -240,7 +240,7 @@ function ThinkingAnimation() {
   }, []);
 
   return (
-    <span className="text-sm text-muted-foreground font-medium min-w-[80px]">
+    <span className="text-sm text-muted-foreground font-medium min-w-[80px] font-sans tracking-tight">
       {text}
     </span>
   );
@@ -337,77 +337,103 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
     if (message.ui) return message.ui;
     
     // 2. Check for embedded UI data in the message content
-    if (message.content) {
-      let match = message.content.match(/<!-- UI_DATA_START:([^:]+):UI_DATA_END -->/);
-      if (!match) {
-        match = message.content.match(/\[UI_METADATA:([^\]]+)\]/);
-      }
-
-      if (match && match[1]) {
-        try {
-          // Use atob for client-side base64 decoding
-          const decoded = atob(match[1]);
-          return JSON.parse(decoded);
-        } catch (e) {
-          console.error('[ChatMessage] Failed to parse embedded UI data:', e);
+      if (message.content) {
+        let match = message.content.match(/<!-- UI_DATA_START:([\s\S]+?):UI_DATA_END -->/);
+        if (!match) {
+          match = message.content.match(/\[UI_METADATA:([\s\S]+?)\]/);
+        }
+  
+        if (match && match[1]) {
+          try {
+            // Use atob for client-side base64 decoding
+            const decoded = atob(match[1].trim());
+            return JSON.parse(decoded);
+          } catch (e) {
+            // Silently fail or warn for malformed legacy data to prevent console spam/errors
+            if (process.env.NODE_ENV === 'development') {
+                console.warn('[ChatMessage] Failed to parse embedded UI data (ignoring):', e);
+            }
+            return null;
+          }
         }
       }
-    }
     
     // 3. Fallback to toolInvocations (legacy)
     if (message.toolInvocations) {
       for (const tool of message.toolInvocations) {
         if (tool.state === 'result') {
+          const result = tool.result;
+          const data = result?.data || result; // Handle ToolResult wrapper
+          
           // Check for upgrade prompt first
-          if (tool.result?.ui?.upgradePrompt) {
-              return { upgradePrompt: tool.result.ui.upgradePrompt };
+          if (data?.ui?.upgradePrompt) {
+              return { upgradePrompt: data.ui.upgradePrompt };
           }
 
-          const success = tool.result?.success;
+          const success = result?.success;
           
           if (tool.toolName === 'analyzePantryImage' && success) {
              // Ensure we always return an object for pantryAnalysis
-             const items = tool.result.items || [];
-             const imageUrl = tool.result.summary?.includes("imageUrl") ? tool.result.summary : undefined;
+             const items = data?.items || [];
+             const imageUrl = data?.summary?.includes("imageUrl") ? data.summary : undefined;
              return { pantryAnalysis: { items, imageUrl } };
           }
           
           if (tool.toolName === 'generateMealPlan' && success) {
-             return { mealPlan: tool.result.mealPlan };
+             return { mealPlan: data?.mealPlan };
           }
           if (tool.toolName === 'generateGroceryList' && success) {
-             return { groceryList: tool.result.groceryList };
+             return { groceryList: data?.groceryList };
           }
           if (tool.toolName === 'getMealSuggestions' && success) {
-             return { mealSuggestions: tool.result.suggestions };
+             return { mealSuggestions: data?.suggestions };
           }
           if (tool.toolName === 'generateMealRecipe' && success) {
-             return { mealRecipe: tool.result.recipe };
+             return { mealRecipe: data?.recipe };
           }
           if (tool.toolName === 'analyzeNutrition' && success) {
              return { 
                nutrition: {
-                 total: tool.result.totalNutrition,
-                 dailyAverage: tool.result.dailyAverage,
-                 insights: tool.result.insights,
-                 healthScore: tool.result.healthScore,
-                 summary: tool.result.summary,
+                 total: data?.totalNutrition,
+                 dailyAverage: data?.dailyAverage,
+                 insights: data?.insights,
+                 healthScore: data?.healthScore,
+                 summary: data?.summary,
                  type: 'plan'
                }
              };
           }
           if (tool.toolName === 'getGroceryPricing' && success) {
-             return { prices: tool.result.prices };
+             return { prices: data?.prices };
           }
           if (tool.toolName === 'searchRecipes' && success) {
-             return { recipeResults: tool.result.recipes, query: tool.result.query };
+             return { recipeResults: data?.recipes, query: data?.query };
           }
           if (tool.toolName === 'modifyMealPlan' && success) {
-             return { mealPlan: tool.result.mealPlan };
+             return { mealPlan: data?.mealPlan };
           }
           if (tool.toolName === 'swapMeal' && success) {
-             return { mealPlan: tool.result.mealPlan };
+             return { mealPlan: data?.mealPlan };
           }
+          if (tool.toolName === 'optimizeGroceryList' && success) {
+             return { optimization: data?.optimization };
+          }
+          if (tool.toolName === 'suggestIngredientSubstitutions' && success) {
+             return { substitutions: data };
+          }
+          if (tool.toolName === 'getSeasonalIngredients' && success) {
+             return { seasonal: data };
+          }
+          if (tool.toolName === 'planFromInventory' && success) {
+             return { inventoryPlan: data };
+          }
+          if (tool.toolName === 'generatePrepTimeline' && success) {
+             return { prepTimeline: data };
+          }
+          if (tool.toolName === 'searchFoodData' && success) {
+             return { foodData: data };
+          }
+
         }
       }
     }

@@ -67,9 +67,12 @@ const CheckoutPage = () => {
             <p className="mt-2 text-slate-500">Unlock all premium features and support.</p>
 
             <div className="mt-4">
-              <div className="flex items-baseline">
-                <span className="text-3xl font-bold">$5</span>
-                <span className="text-slate-500 ml-1">/month</span>
+              <div className="flex flex-col">
+                <div className="flex items-baseline">
+                  <span className="text-3xl font-bold">$5</span>
+                  <span className="text-slate-500 ml-1">/month</span>
+                </div>
+                <span className="text-sm text-emerald-600 font-semibold mt-1">First 7 days free</span>
               </div>
 
               <ul className="mt-6 space-y-3 text-sm">
@@ -119,7 +122,7 @@ const CheckoutPage = () => {
                   disabled={isPending}
                   className="w-full px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-700 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all duration-200"
                 >
-                  {isPending ? 'Processing...' : 'Upgrade Now'}
+                  {isPending ? 'Processing...' : 'Start 7-Day Free Trial'}
                 </button>
               </div>
             </div>

@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowRight, LogIn, Wand2, ChefHat, UtensilsCrossed, BookOpen, Coffee, Pizza, RefreshCw } from 'lucide-react';
+import { ArrowRight, Star, ChefHat, UtensilsCrossed, ShoppingBag, Leaf, Monitor, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -11,244 +11,167 @@ interface EmptyScreenProps {
   requireAuth?: boolean;
 }
 
-const iconMap = {
-  ChefHat,
-  UtensilsCrossed,
-  BookOpen,
-  Coffee,
-  Pizza,
-};
-
-interface Suggestion {
-  heading: string;
-  message: string;
-  iconName: keyof typeof iconMap;
-}
-
-const defaultSuggestions: Suggestion[] = [
-  {
-    heading: 'Week Meal Plan',
-    message: 'Create a healthy 7-day meal plan for weight loss with 3 meals per day',
-    iconName: 'ChefHat',
-  },
-  {
-    heading: 'Budget Meals',
-    message: 'Show me budget-friendly dinner ideas under $5 per serving',
-    iconName: 'Pizza',
-  },
-  {
-    heading: 'High Protein',
-    message: 'Generate high-protein meal ideas for muscle building',
-    iconName: 'UtensilsCrossed',
-  },
-];
-
 const containerVariants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
     transition: {
       staggerChildren: 0.1,
-      delayChildren: 0.2,
+      delayChildren: 0.1,
     },
   },
 };
 
 const itemVariants = {
-  hidden: { opacity: 0, y: 20 },
+  hidden: { opacity: 0, y: 10 },
   visible: {
     opacity: 1,
     y: 0,
     transition: {
-      duration: 0.4,
+      duration: 0.5,
       ease: [0.22, 1, 0.36, 1],
     },
   },
 };
 
+interface Suggestion {
+    label: string;
+    message: string;
+    icon: any;
+    color: string;
+}
+
+const suggestions: Suggestion[] = [
+    {
+        label: 'Create Meal Plan',
+        message: 'Create a healthy 3-day meal plan. I like Italian and Mexican food.',
+        icon: ChefHat,
+        color: 'text-orange-500',
+    },
+    {
+        label: 'Empty My Fridge',
+        message: 'I have chicken breast, spinach, and heavy cream. What can I make?',
+        icon: UtensilsCrossed,
+        color: 'text-blue-500',
+    },
+    {
+        label: 'Seasonal Produce',
+        message: 'What fruits and vegetables are in season right now?',
+        icon: Leaf,
+        color: 'text-green-500',
+    },
+    {
+        label: 'Quick Recipe',
+        message: 'I need a dinner recipe ready in 20 minutes.',
+        icon: Star,
+        color: 'text-purple-500',
+    },
+];
+
 export function EmptyScreen({ onExampleClick, requireAuth = false }: EmptyScreenProps) {
-  const [suggestions, setSuggestions] = useState<Suggestion[]>(defaultSuggestions);
-  const [isLoading, setIsLoading] = useState(false);
-
-  const fetchSuggestions = async () => {
-    setIsLoading(true);
-    try {
-      const response = await fetch('/api/suggestions', {
-        method: 'POST',
-        body: JSON.stringify({ context: '' }),
-      });
-      if (response.ok) {
-        const data = await response.json();
-        if (data.suggestions && Array.isArray(data.suggestions)) {
-          setSuggestions(data.suggestions);
-        }
-      }
-    } catch (error) {
-      console.error('Failed to fetch suggestions:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (!requireAuth) {
-      fetchSuggestions();
-    }
-  }, [requireAuth]);
+  
+  // Auth Screen Variant
   if (requireAuth) {
     return (
       <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-        className="h-full flex items-center justify-center p-4 sm:p-6 md:p-8 overflow-auto min-h-[60vh]"
-        role="region"
-        aria-labelledby="auth-title"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="h-full flex flex-col items-center justify-center p-8 text-center"
       >
-        <div className="max-w-md w-full mx-auto text-center">
-          <motion.div
-            initial={{ scale: 0, rotate: -180 }}
-            animate={{ scale: 1, rotate: 0 }}
-            transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-            className="inline-block p-4 sm:p-5 bg-gradient-to-br from-primary/20 to-primary/10 rounded-2xl mb-6 border border-primary/20"
-            aria-hidden="true"
-          >
-            <LogIn className="h-8 w-8 sm:h-10 sm:w-10 text-primary" />
-          </motion.div>
-          
-          <motion.h2
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2, duration: 0.4 }}
-            id="auth-title"
-            className="text-2xl sm:text-3xl md:text-4xl font-bold text-foreground mb-3 tracking-tight bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text"
-          >
-            Sign in to Chat
-          </motion.h2>
-          
-          <motion.p
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3, duration: 0.4 }}
-            className="mt-2 text-muted-foreground text-sm sm:text-base leading-relaxed max-w-sm mx-auto"
-          >
-            Sign in to start chatting with your AI kitchen assistant. Get personalized recipes, meal tracking, and cooking tips.
-          </motion.p>
-          
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4, duration: 0.4 }}
-            className="mt-8 space-y-3"
-          >
-            <Button
-              onClick={() => onExampleClick('')}
-              className={cn(
-                "w-full h-auto py-3.5 sm:py-4 px-6",
-                "bg-primary text-primary-foreground",
-                "hover:bg-primary/90",
-                "font-semibold text-base",
-                "rounded-xl sm:rounded-2xl",
-                "shadow-lg shadow-primary/20",
-                "transition-all duration-200",
-                "hover:shadow-xl hover:shadow-primary/30",
-                "hover:scale-[1.02] active:scale-[0.98]"
-              )}
-              aria-label="Sign in to continue chatting"
-            >
-              <LogIn className="h-4 w-4 mr-2" />
-              Sign in to Continue
-            </Button>
-            <p className="text-xs text-muted-foreground/70 mt-4">
-              New to Mealwise? Sign up for free to get started.
-            </p>
-          </motion.div>
-        </div>
+        <motion.div
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ duration: 0.5, ease: "backOut" }}
+          className="bg-primary/5 p-6 rounded-full mb-6 ring-1 ring-primary/10"
+        >
+            <ChefHat className="h-10 w-10 text-primary" />
+        </motion.div>
+        <h2 className="text-2xl font-semibold tracking-tight font-sans mb-2">
+            Welcome to Your Kitchen AI
+        </h2>
+        <p className="text-muted-foreground max-w-sm mb-8 font-sans">
+            Sign in to start planning meals, tracking nutrition, and organizing your grocery lists.
+        </p>
+        <Button 
+            onClick={() => onExampleClick('')} 
+            className="rounded-full px-8 font-medium font-sans"
+        >
+            Sign In to Start
+            <ArrowRight className="ml-2 h-4 w-4" />
+        </Button>
       </motion.div>
     );
   }
 
+  // Default Chat Start Interface
   return (
     <motion.div
       variants={containerVariants}
       initial="hidden"
       animate="visible"
-      className={cn(
-        "h-full flex flex-col items-center justify-center",
-        "overflow-y-auto overflow-x-hidden",
-        "px-4 pb-20" // Add padding bottom to account for chat input
-      )}
-      role="region"
-      aria-labelledby="empty-title"
+      className="h-full flex flex-col items-center justify-center p-4 sm:p-8 overflow-y-auto"
     >
-      <div className="max-w-3xl w-full mx-auto flex flex-col items-center text-center space-y-8">
-        {/* Header */}
-        <motion.div
-          variants={itemVariants}
-          className="space-y-4"
-        >
-          <motion.div
-            initial={{ scale: 0, rotate: -180 }}
-            animate={{ scale: 1, rotate: 0 }}
-            transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-            className="inline-flex items-center justify-center p-4 bg-primary/10 rounded-full mb-2 ring-1 ring-primary/20"
-          >
-            <Wand2 className="h-8 w-8 text-primary" />
-          </motion.div>
-          
-          <h2 
-            id="empty-title" 
-            className="text-3xl sm:text-4xl font-bold tracking-tight text-foreground"
-          >
-            What are we cooking?
-          </h2>
-          <p className="text-muted-foreground text-base sm:text-lg max-w-md mx-auto leading-relaxed">
-            I can help you plan meals, find recipes, or create a grocery list for your next shop.
-          </p>
+      <div className="max-w-2xl w-full flex flex-col items-center text-center">
+        
+        {/* Hero Section */}
+        <motion.div variants={itemVariants} className="mb-8 sm:mb-12 space-y-4">
+            <div className="inline-flex items-center justify-center p-3 sm:p-4 bg-background border rounded-2xl shadow-sm mb-4">
+               <span className="text-2xl sm:text-3xl">🍳</span>
+            </div>
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight font-sans bg-clip-text text-transparent bg-gradient-to-b from-foreground to-foreground/70">
+                What are we cooking?
+            </h1>
+            <p className="text-muted-foreground text-base sm:text-lg max-w-md mx-auto font-sans leading-relaxed">
+                I'm your personal AI chef. Ask me to plan meals, find recipes, or verify nutrition facts.
+            </p>
         </motion.div>
 
-        {/* Example Messages - Redesigned as Chips */}
-        <motion.div
-          variants={containerVariants}
-          className="flex flex-wrap justify-center gap-2 w-full max-w-xl"
-          role="group"
-          aria-label="Example conversation starters"
+        {/* Suggestions Grid */}
+        <motion.div 
+            variants={containerVariants}
+            className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 w-full"
         >
-          {suggestions.map((example, index) => {
-            const Icon = iconMap[example.iconName] || Coffee;
-            return (
-              <motion.button
-                key={example.heading}
-                variants={itemVariants}
-                whileHover={{ scale: 1.02, y: -2 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => onExampleClick(example.message)}
-                className={cn(
-                  "flex items-center gap-2 px-4 py-2.5",
-                  "bg-card/50 hover:bg-card border border-border/50 hover:border-primary/30",
-                  "rounded-full shadow-sm hover:shadow-md",
-                  "transition-all duration-200",
-                  "text-sm font-medium text-foreground/80 hover:text-primary"
-                )}
-              >
-                <Icon className="h-4 w-4 opacity-70" />
-                <span>{example.heading}</span>
-              </motion.button>
-            );
-          })}
-          
-          <motion.button
-            variants={itemVariants}
-            whileHover={{ scale: 1.05, rotate: 180 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={fetchSuggestions}
-            disabled={isLoading}
-            className="flex items-center justify-center w-10 h-10 rounded-full border border-dashed border-border hover:border-primary/50 hover:bg-primary/5 transition-colors"
-            aria-label="Refresh suggestions"
-          >
-            <RefreshCw className={cn("h-4 w-4 text-muted-foreground", isLoading && "animate-spin")} />
-          </motion.button>
+            {suggestions.map((item, i) => (
+                <motion.button
+                    key={item.label}
+                    variants={itemVariants}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => onExampleClick(item.message)}
+                    className={cn(
+                        "group flex items-center gap-3 p-4 text-left",
+                        "bg-card/50 hover:bg-card border border-border/50 hover:border-primary/20",
+                        "rounded-xl transition-all duration-200",
+                        "shadow-sm hover:shadow-md"
+                    )}
+                >
+                    <div className={cn(
+                        "flex items-center justify-center w-10 h-10 rounded-lg",
+                        "bg-background ring-1 ring-border/50 group-hover:ring-primary/20 transition-colors",
+                        item.color
+                    )}>
+                        <item.icon className="h-5 w-5" />
+                    </div>
+                    <div>
+                        <div className="font-medium font-sans text-foreground/90 group-hover:text-primary transition-colors">
+                            {item.label}
+                        </div>
+                        <div className="text-xs text-muted-foreground line-clamp-1 font-sans mt-0.5">
+                            {item.message}
+                        </div>
+                    </div>
+                </motion.button>
+            ))}
         </motion.div>
+
+        {/* Footer/Input Hint */}
+        {/* <motion.p 
+            variants={itemVariants} 
+            className="mt-8 text-xs sm:text-sm text-muted-foreground/60 font-sans"
+        >
+            Or just type whatever you're craving below...
+        </motion.p> */}
       </div>
     </motion.div>
   );

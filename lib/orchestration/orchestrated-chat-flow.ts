@@ -71,7 +71,6 @@ export class OrchestratedChatFlow {
     try {
       const context = await this.contextManager.getContext(input.userId, input.sessionId);
 
-      // 1. Plan
       // Ensure message is a string
       const messageText = typeof input.message === 'string'
         ? input.message
@@ -79,32 +78,82 @@ export class OrchestratedChatFlow {
           ? input.message.map((part: any) => part.text || JSON.stringify(part)).join(' ')
           : String(input.message);
 
-      const plan = await this.reasoningEngine.generatePlan(messageText, {
-        ...context,
-        userPreferences: input.userPreferences,
-        location: input.locationData
-      }, tools);
+      // Analyze Intent for Robustness (Unified Logic)
+      const intentAnalysis = this.validator.analyzeIntent(messageText);
+      const intentSystemInstruction = intentAnalysis.confidence === 'high' && intentAnalysis.expectedTools.length > 0
+        ? `\n\n🚨 SYSTEM OVERRIDE: User intent detected as ${intentAnalysis.intent}. You MUST use the tool "${intentAnalysis.expectedTools[0]}" to satisfy this request. Do not generate text only.`
+        : '';
 
-      // 2. Execute
-      const toolResults = await this.toolExecutor.executePlan(plan);
-
-      // 3. Synthesize
-      // We use generateText here instead of streamText
+      // Use AI SDK generateText for unified execution
       const { generateText } = await import('ai');
-      const { text } = await generateText({
+      const { text, steps } = await generateText({
         model: google('gemini-2.0-flash'),
-        system: this.buildSystemPrompt(input, context, false),
-        prompt: this.buildSynthesisPrompt(messageText, toolResults),
+        tools: tools,
+        maxSteps: 5,
+        system: this.buildSystemPrompt(input, context, false) + intentSystemInstruction,
+        messages: [
+          ...input.conversationHistory,
+          { role: 'user', content: messageText }
+        ],
       });
 
+      // Extract tool results from steps
+      const toolResults: Record<string, any> = {};
+
+      for (const step of steps) {
+        if (step.toolCalls) {
+          for (const toolCall of step.toolCalls) {
+            // The SDK executes the tool, but we need the result.
+            // Steps contain toolCalls and toolResults if we use the right structure.
+            // Actually generateText returns 'steps' which include 'toolCalls' and 'toolResults'.
+            // We need to match the toolResult with the call by ID or just collect them.
+          }
+        }
+      }
+
+      // Better extraction from flat tool executions if available or iterate steps
+      // generateText steps: { text, toolCalls, toolResults }[]
+      for (const step of steps) {
+        if (step.toolResults) {
+          for (const tr of step.toolResults) {
+            const baseResult = { success: true, data: tr.result };
+            toolResults[tr.toolName] = typeof tr.result === 'object' ? { ...baseResult, ...tr.result } : { ...baseResult, result: tr.result };
+          }
+        }
+      }
+
       // Store context
-      if (input.userId && input.sessionId) {
+      if (input.userId && input.sessionId && Object.keys(toolResults).length > 0) {
         await this.contextManager.extractAndStoreEntities(input.userId, input.sessionId, toolResults);
+      }
+
+      // Map tool results to structuredData for UI rendering
+      const structuredData: any = {};
+
+      // Check for meal plan in tool results
+      if (toolResults.generateMealPlan && toolResults.generateMealPlan.data) {
+        // The tool result structure from ai-tools.ts: { mealPlan: ... } inside the data
+        if (toolResults.generateMealPlan.data.mealPlan) {
+          structuredData.mealPlan = toolResults.generateMealPlan.data.mealPlan;
+        } else if (toolResults.generateMealPlan.data.result?.mealPlan) {
+          // Handle potential nesting variation
+          structuredData.mealPlan = toolResults.generateMealPlan.data.result.mealPlan;
+        }
+      }
+
+      // Check for grocery list in tool results
+      if (toolResults.generateGroceryList && toolResults.generateGroceryList.data) {
+        if (toolResults.generateGroceryList.data.groceryList) {
+          structuredData.groceryList = toolResults.generateGroceryList.data.groceryList;
+        } else if (toolResults.generateGroceryList.data.result?.groceryList) {
+          structuredData.groceryList = toolResults.generateGroceryList.data.result.groceryList;
+        }
       }
 
       return {
         response: text,
         toolResults,
+        structuredData,
         confidence: 'high'
       };
 
@@ -159,12 +208,24 @@ export class OrchestratedChatFlow {
         }
       }
 
+      // 1.5 Analyze Intent for Robustness (Scalable Pattern)
+      const messageText = typeof input.message === 'string'
+        ? input.message
+        : Array.isArray(input.message)
+          ? input.message.map((p: any) => p.text || '').join(' ')
+          : '';
+
+      const intentAnalysis = this.validator.analyzeIntent(messageText);
+      const intentSystemInstruction = intentAnalysis.confidence === 'high' && intentAnalysis.expectedTools.length > 0
+        ? `\n\n🚨 SYSTEM OVERRIDE: User intent detected as ${intentAnalysis.intent}. You MUST use the tool "${intentAnalysis.expectedTools[0]}" to satisfy this request. Do not generate text only.`
+        : '';
+
       // 2. Call streamText with tools
       const result = streamText({
         model: google('gemini-2.0-flash'),
         tools: tools,
         maxSteps: 5, // Allow multi-step reasoning (e.g. Plan -> Nutrition)
-        system: this.buildSystemPrompt(input, context, false),
+        system: this.buildSystemPrompt(input, context, false) + intentSystemInstruction,
         messages: [
           ...input.conversationHistory,
           { role: 'user', content: input.message as string }
@@ -287,9 +348,10 @@ export class OrchestratedChatFlow {
       
       CREATIVE RESPONSE GUIDELINES:
       ${hasResults ? `
-      - The UI is ALREADY showing the full data (meal plan cards, grocery lists, etc.)
-      - Write a SHORT, creative acknowledgment (1-2 sentences MAX)
-      - DO NOT describe what's in the data - the user can SEE it
+      - The UI is ALREADY showing the full data cards.
+      - DO NOT summarize or describe the data (e.g. dont say "Here is the recipe for...").
+      - Be ULTRA-CONCISE (under 15 words).
+      - Just say a quick creative confirmation or nothing at all if not needed.
       - BE CREATIVE! Vary your responses each time:
         * Use different greetings (Awesome! / Voilà! / Ta-da! / Here you go! / Done!)
         * Add relevant emojis sparingly (🎉 🍳 🥗 ✨)
@@ -321,7 +383,8 @@ Your goal is to help users plan meals, analyze nutrition, check grocery prices, 
 You are also a knowledgeable culinary expert who can discuss food, recipes, ingredients, and cooking techniques freely.
 
 CRITICAL RULE: When users request specific actions (Meals, Meal planning, shoppinglist generation, analysis, nutrition, Recipes, Recipe analysis), you MUST use the corresponding tools.
-HOWEVER, if the user asks a general question (e.g., "What is Ugali?", "How do I cook rice?"), you should intelligently ANSWER DIRECTLY without using tools.
+HOWEVER, if the user asks a non-food general question (e.g., "How does this app work?"), answer directly.
+If the user mentions a specific food item or dish (e.g., "Chicken Biryani", "Ugali"), you SHOULD use "generateMealRecipe" (for dishes) or "searchFoodData" (for ingredients/nutrition) to provide rich content, UNLESS they explicitly ask for a simple text definition only.
 
 CONTEXT RESET: If the user says "Start over", "New plan", "Reset", or "Forget context", you should IGNORE the previous context (Meal Plan ID, Grocery List ID) and treat it as a fresh request. Explicitly mention that you are starting fresh.`;
 
@@ -337,30 +400,49 @@ ${context?.groceryListId ? `- Previous Grocery List ID: ${context.groceryListId}
 ${contextInfo}
 
 AVAILABLE TOOLS:
-- fetchUserPreferences: Fetch stored user preferences (dietary, allergies, goals)
-- generateMealPlan: Create a meal plan (parameters: duration, mealsPerDay, preferences)
-- modifyMealPlan: Generate a different meal plan variant
-- swapMeal: Swap a specific meal in the plan
-- generateMealRecipe: Generate detailed recipe for a meal
-- generateGroceryList: Create shopping list (optional mealPlanId, works from context)
-- searchFoodData: Search real-world food data (nutrition, prices, availability, substitutions)
-- analyzeNutrition: Analyze nutrition (optional mealPlanId, works from context)
-- generatePrepTimeline: Create an optimized prep schedule (works with context or specific recipes)
+    - fetchUserPreferences: Fetch stored user preferences(dietary, allergies, goals)
+      - generateMealPlan: Create a meal plan(parameters: duration, mealsPerDay, preferences)
+        - modifyMealPlan: Generate a different meal plan variant
+          - swapMeal: Swap a specific meal in the plan
+            - generateMealRecipe: Generate detailed recipe for a meal
+              - generateGroceryList: Create shopping list(optional mealPlanId, works from context)
+                - searchFoodData: Search real - world food data(nutrition, prices, availability, substitutions)
+                  - analyzeNutrition: Analyze nutrition of a plan or recipe
+                    - planFromInventory: Plan meals based on available ingredients
+                      - getSeasonalIngredients: Find seasonal produce for the location
+                        - generatePrepTimeline: Create an optimized prep schedule
+                          - analyzePantryImage: Identify ingredients from a photo
+                            - updatePantry: Add items to user's pantry
+                              - suggestIngredientSubstitutions: Find alternatives for ingredients
 
 CRITICAL ORCHESTRATION RULES:
-1. **Meal Planning Flow**:
-   - ALWAYS start by checking/fetching user preferences if not provided.
+      1. ** Meal Planning Flow **:
+    - ALWAYS start by checking / fetching user preferences if not provided.
    - Then generate the meal plan.
    - AFTER generating the plan, you can offer to generate a grocery list or analyze nutrition.
    
-2. **Grocery Flow**:
-   - Generate the list first using "generateGroceryList".
-   - THEN offer to optimize it using "optimizeGroceryList" (especially if user mentions specific stores or saving money).
+2. ** Text vs Tools(ABSOLUTE RULE - DO NOT VIOLATE) **:
+    - 🛑 STOP! NEVER generate a meal plan, recipe, grocery list, or prep schedule as text in the chat.
+   - 🛑 NEVER write lists of ingredients or instructions in the chat message.
+   - ✅ YOU MUST USE THE TOOLS.The tools generate the UI cards.
+   - If you write the plan in text, the user sees NOTHING useful.You MUST use 'generateMealPlan'.
+   - If the user asks for "a one day plan", use 'generateMealPlan' with duration = 1.
 
-3. **Recipe Flow**:
-   - If user asks for a recipe for a specific meal in the plan, use "generateMealRecipe".
+3. ** Thinking Process **:
+    - Before answering, think: "Does this request need a UI card?"
+      - Meal Request -> UI Card -> Use Tool 'generateMealPlan' or 'generateMealRecipe'.
+   - Grocery Request -> UI Card -> Use Tool 'generateGroceryList'.
 
-Remember: ALWAYS use tools for user requests. Be helpful and concise in your responses.`;
+4. ** Response Style After Tool Usage(CRITICAL) **:
+    - When a tool returns data, the UI AUTOMATICALLY shows a rich card.
+   - DO NOT repeat the ingredients, steps, or list items.
+   - INSTEAD, add value: share a chef's tip, mention why this dish is great, or suggest a pairing.
+      - "Here is the recipe! It's great because..." is better than just "Here is the recipe."
+
+    5. ** Errors **:
+    - If a tool fails, tell the user gracefully.Do not try to fake the UI with text.
+
+      Remember: ALWAYS use tools for user requests.Be helpful and concise in your responses.`;
   }
 }
 
@@ -376,3 +458,4 @@ export function getOrchestratedChatFlow(): OrchestratedChatFlow {
   }
   return chatFlowInstance;
 }
+

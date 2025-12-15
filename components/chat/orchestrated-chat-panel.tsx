@@ -52,9 +52,19 @@ export function OrchestratedChatPanel({
 
     try {
       // Process with orchestrated chat
+      // Strip UI metadata and specialized fields to minimize payload size and avoid 413 Payload Too Large
+      // STRICT LIMIT: Only send last 20 messages to avoid Vercel Function Payload limits (4.5MB total / 1MB helper)
+      const cleanHistory = messages
+        .slice(-20) 
+        .map(msg => ({
+          id: msg.id,
+          role: msg.role,
+          content: msg.content || '[Empty]', // Ensure no nulls
+      }));
+
       const result = await processOrchestratedChat({
         message: value.trim(),
-        conversationHistory: messages,
+        conversationHistory: cleanHistory as any[], 
       });
 
       // Create assistant message

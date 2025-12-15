@@ -31,6 +31,40 @@ export interface ValidationResult {
  * Intent patterns with high-confidence keywords
  */
 const INTENT_PATTERNS = {
+    RECIPE_REQUIRED: {
+        keywords: [
+            /\b(recipe|how\s+to\s+make|cook|prepare)\s+/i,
+            /\b(ingredients|steps)\s+for\s+/i,
+        ],
+        tools: ['generateMealRecipe'],
+        confidence: 'high' as const,
+    },
+    PANTRY_ANALYSIS: {
+        keywords: [
+            /\b(scan|analyze|check|look\s+at)\s+(my\s+)?(fridge|pantry|inventory|shelf)/i,
+            /\b(what\s+do\s+i\s+have|what's\s+in\s+my)/i,
+        ],
+        tools: ['analyzePantryImage'],
+        confidence: 'high' as const,
+    },
+    INGREDIENT_SUBSTITUTION: {
+        keywords: [
+            /\b(substitute|replace|swap|alternative)\s+(for\s+)?/i,
+            /\binstead\s+of\s+/i,
+            /\b(don't\s+have|no)\s+/i,
+        ],
+        tools: ['suggestIngredientSubstitutions'],
+        confidence: 'medium' as const,
+    },
+    PREP_TIMELINE: {
+        keywords: [
+            /\b(prep|batch|cooking)\s+(schedule|timeline|plan)/i,
+            /\b(when|how)\s+to\s+prep/i,
+        ],
+        tools: ['generatePrepTimeline'],
+        confidence: 'high' as const,
+        contextNeeded: ['mealPlanId'],
+    },
     MEAL_PLAN_REQUIRED: {
         keywords: [
             /\b(plan|create|generate|make)\s+(a\s+)?meal\s*plan/i,

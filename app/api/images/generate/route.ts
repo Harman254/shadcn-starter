@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
         try {
             // Generate image using Imagen 3
             const response = await genai.models.generateImages({
-                model: 'imagen-3.0-generate-002',
+                model: 'imagen-3.0-generate-001',
                 prompt: prompt,
                 config: {
                     numberOfImages: 1,

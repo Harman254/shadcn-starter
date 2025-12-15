@@ -166,6 +166,9 @@ export async function saveMealPlanService(
       }
 
       return completeMealPlan;
+    }, {
+      maxWait: 5000, // Wait up to 5s for connection
+      timeout: 20000, // Allow 20s for the transaction to complete (for large meal plans)
     });
 
     // Increment meal plan generation count (outside transaction)

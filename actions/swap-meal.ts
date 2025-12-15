@@ -8,6 +8,7 @@ import { fetchOnboardingData } from "@/data";
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { headers } from "next/headers";
+import { checkUserProStatus } from "@/lib/subscription";
 
 type SwapAndUpdateMealProps = {
   id: string;
@@ -59,6 +60,11 @@ export async function swapAndUpdateMeal(input: SwapAndUpdateMealProps) {
 
   if (!session || !session.user?.id) {
     throw new Error("Unauthorized: User session not found");
+  }
+
+  const isPro = await checkUserProStatus(session.user.id);
+  if (!isPro) {
+    throw new Error("Pro subscription required to swap meals");
   }
 
   const userPreferencesArray = await fetchOnboardingData(session.user.id);

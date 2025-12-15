@@ -92,7 +92,7 @@ export function ToolProgress({
 
   return (
     <div className={cn(
-      "w-full space-y-3",
+      "w-full space-y-3 font-sans",
       compact && "space-y-2"
     )}>
       {/* Overall Progress */}
