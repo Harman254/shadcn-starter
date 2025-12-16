@@ -1904,7 +1904,21 @@ export const generatePrepTimeline = tool({
     }),
     execute: async ({ recipes, targetDate, prepStyle, availableTime }): Promise<ToolResult> => {
         try {
-            console.log(`[generatePrepTimeline] ⏱️ Creating prep timeline for ${recipes.length} recipes...`);
+            // Validate recipes array
+            if (!recipes || !Array.isArray(recipes) || recipes.length === 0) {
+                console.error('[generatePrepTimeline] ❌ No recipes provided');
+                return errorResponse('No recipes provided. Please specify which recipes to prep.', ErrorCode.INVALID_INPUT, true);
+            }
+
+            // Filter out empty recipe names
+            const validRecipes = recipes.filter(r => r && typeof r === 'string' && r.trim().length > 0);
+            
+            if (validRecipes.length === 0) {
+                console.error('[generatePrepTimeline] ❌ No valid recipes found');
+                return errorResponse('No valid recipe names found. Please provide recipe names.', ErrorCode.INVALID_INPUT, true);
+            }
+
+            console.log(`[generatePrepTimeline] ⏱️ Creating prep timeline for ${validRecipes.length} recipes:`, validRecipes);
 
             const { generateObject } = await import('ai');
             const { google } = await import('@ai-sdk/google');
@@ -1937,7 +1951,7 @@ export const generatePrepTimeline = tool({
                 prompt: `You are a meal prep efficiency expert.
 
 ## RECIPES TO PREP
-${recipes.map((r, i) => `${i + 1}. ${r}`).join('\n')}
+${validRecipes.map((r, i) => `${i + 1}. ${r}`).join('\n')}
 
 ## PREP STYLE
 - Style: ${prepStyle}
@@ -1966,7 +1980,7 @@ Return valid JSON.`,
 
             const uiMetadata = {
                 prepTimeline: result.object,
-                recipes: recipes,
+                recipes: validRecipes,
             };
             const uiMetadataEncoded = Buffer.from(JSON.stringify(uiMetadata)).toString('base64');
 
@@ -1978,7 +1992,7 @@ Return valid JSON.`,
                 {
                     ...result.object,
                 },
-                `✅ Created prep timeline for ${recipes.length} recipes! Total time: ${hours > 0 ? hours + 'h ' : ''}${mins}m (${result.object.totalActiveTime}m active). [UI_METADATA:${uiMetadataEncoded}]`
+                `✅ Created prep timeline for ${validRecipes.length} recipes! Total time: ${hours > 0 ? hours + 'h ' : ''}${mins}m (${result.object.totalActiveTime}m active). [UI_METADATA:${uiMetadataEncoded}]`
             );
 
         } catch (error) {

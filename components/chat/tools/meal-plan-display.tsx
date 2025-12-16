@@ -236,11 +236,16 @@ export function MealPlanDisplay({ mealPlan, onActionClick }: MealPlanDisplayProp
                 // Extract all meal names from the meal plan
                 const mealNames = mealPlan.days.flatMap((day: any) => 
                   day.meals.map((meal: any) => meal.name)
-                );
-                const recipesList = mealNames.length > 0 
-                  ? mealNames.join(', ')
-                  : 'these meals';
-                onActionClick(`Create a prep schedule for this meal plan with recipes: ${recipesList}`);
+                ).filter(Boolean); // Remove any empty names
+                
+                if (mealNames.length === 0) {
+                  onActionClick("Create a prep schedule for this meal plan");
+                  return;
+                }
+                
+                // Format recipes list clearly for AI parsing
+                const recipesList = mealNames.join(', ');
+                onActionClick(`Create a prep schedule for this meal plan. Recipes to prep: ${recipesList}`);
               }}
             >
               <Timer className="w-3.5 h-3.5 mr-1.5" /> Prep Schedule
