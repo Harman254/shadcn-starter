@@ -336,7 +336,14 @@ export function GroceryListDisplay({ groceryList, mealPlanId, onActionClick }: G
                 size="lg"
                 variant="outline"
                 className="h-14 rounded-2xl font-semibold text-base gap-3 bg-white/5 border-white/10 text-white hover:bg-white/10"
-                onClick={() => onActionClick("Suggest meals I can cook with these ingredients")}
+                onClick={() => {
+                  // Extract ingredient names from grocery list items
+                  const ingredients = groceryList.items?.map((item: any) => item.item || item.name || item).filter(Boolean) || [];
+                  const ingredientsList = ingredients.length > 0 
+                    ? ingredients.join(', ')
+                    : 'these ingredients';
+                  onActionClick(`Suggest meals I can cook with these ingredients: ${ingredientsList}`);
+                }}
               >
                 <ChefHat className="h-5 w-5" /> Meal Ideas
               </Button>

@@ -76,6 +76,13 @@ export class ReasoningEngine {
             - Example: "Chapati" -> Call 'generateMealRecipe' with args '{"name": "Chapati"}'.
           * **Search/List**: If the user asks for ideas or a list (e.g. "Find me pasta recipes", "Breakfast ideas"), call 'searchRecipes'.
             - Example: "Pasta recipes" -> Call 'searchRecipes' with args '{"query": "pasta recipes", "count": 3}'.
+        - **Ingredient-Based Meal Suggestions**:
+          * If the user asks for meal suggestions based on ingredients they have (e.g. "Suggest meals I can cook with these ingredients: X, Y, Z", "What can I make with...", "I have X, Y, Z..."), call 'planFromInventory'.
+          * Extract the ingredient list from the message. Ingredients may be listed after a colon (":") or in the message text.
+          * Parse ingredients as an array of strings, splitting by commas and trimming whitespace.
+          * Example: "Suggest meals I can cook with these ingredients: Salt, Pepper, Onions" -> Call 'planFromInventory' with args '{"ingredients": ["Salt", "Pepper", "Onions"]}'.
+          * Example: "What can I make with chicken, rice, and vegetables?" -> Call 'planFromInventory' with args '{"ingredients": ["chicken", "rice", "vegetables"]}'.
+          * If meal type is mentioned (breakfast, lunch, dinner, snack), include it in 'mealType'. Otherwise, use 'any'.
         - **General Chat / Info**: ONLY if the user asks a general question unrelated to generating content (e.g. "Hi", "How are you?"), return an EMPTY array.
           * CRITICAL: Do NOT return empty for food items. "Chapati" is NOT general chat, it is a recipe request.
         - ALWAYS provide tool arguments as a valid JSON string.
