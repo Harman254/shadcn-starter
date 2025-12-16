@@ -229,7 +229,20 @@ export function MealPlanDisplay({ mealPlan, onActionClick }: MealPlanDisplayProp
             <Button variant="ghost" size="sm" onClick={() => onActionClick("Analyze the nutrition")}>
               <TrendingUp className="w-3.5 h-3.5 mr-1.5" /> Nutrition
             </Button>
-            <Button variant="ghost" size="sm" onClick={() => onActionClick("Create a prep schedule")}>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => {
+                // Extract all meal names from the meal plan
+                const mealNames = mealPlan.days.flatMap((day: any) => 
+                  day.meals.map((meal: any) => meal.name)
+                );
+                const recipesList = mealNames.length > 0 
+                  ? mealNames.join(', ')
+                  : 'these meals';
+                onActionClick(`Create a prep schedule for this meal plan with recipes: ${recipesList}`);
+              }}
+            >
               <Timer className="w-3.5 h-3.5 mr-1.5" /> Prep Schedule
             </Button>
              {savedId && (

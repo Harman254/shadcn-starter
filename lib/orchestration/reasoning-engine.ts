@@ -83,6 +83,14 @@ export class ReasoningEngine {
           * Example: "Suggest meals I can cook with these ingredients: Salt, Pepper, Onions" -> Call 'planFromInventory' with args '{"ingredients": ["Salt", "Pepper", "Onions"]}'.
           * Example: "What can I make with chicken, rice, and vegetables?" -> Call 'planFromInventory' with args '{"ingredients": ["chicken", "rice", "vegetables"]}'.
           * If meal type is mentioned (breakfast, lunch, dinner, snack), include it in 'mealType'. Otherwise, use 'any'.
+        - **Prep Schedule/Timeline Requests**:
+          * If the user asks for a prep schedule, prep timeline, or meal prep plan (e.g. "Create a prep schedule", "Prep timeline", "Meal prep plan"), call 'generatePrepTimeline'.
+          * Extract recipe names from the message. Recipes may be listed after "recipes:" or "for this meal plan with recipes:".
+          * Parse recipes by splitting on commas and trimming whitespace. Each recipe name should be a separate string in the array.
+          * Example: "Create a prep schedule for this meal plan with recipes: Chicken Curry, Rice, Salad" -> Call 'generatePrepTimeline' with args '{"recipes": ["Chicken Curry", "Rice", "Salad"], "prepStyle": "batch"}'.
+          * Example: "Create a prep schedule for this meal plan with recipes: Swahili-Inspired Peanut Butter Banana Curry, Italian Scrambled Eggs with Pesto and Parmesan" -> Call 'generatePrepTimeline' with args '{"recipes": ["Swahili-Inspired Peanut Butter Banana Curry", "Italian Scrambled Eggs with Pesto and Parmesan"], "prepStyle": "batch"}'.
+          * If recipes are mentioned in the message, ALWAYS extract them. If not, check context for the last meal plan and extract meal names from it.
+          * If no recipes are provided and no meal plan is in context, return an error or ask the user for recipes.
         - **General Chat / Info**: ONLY if the user asks a general question unrelated to generating content (e.g. "Hi", "How are you?"), return an EMPTY array.
           * CRITICAL: Do NOT return empty for food items. "Chapati" is NOT general chat, it is a recipe request.
         - ALWAYS provide tool arguments as a valid JSON string.
