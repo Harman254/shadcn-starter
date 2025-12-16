@@ -105,11 +105,10 @@ export async function saveMealPlanService(
       };
     }
 
-    // Extract cover image from first meal's imageUrl or use first meal's image
+    // Extract cover image from first meal's imageUrl
     // Validate URL before using it
     const rawCoverImageUrl = input.coverImageUrl || 
       (input.days?.[0]?.meals?.[0]?.imageUrl) || 
-      (input.days?.[0]?.meals?.[0]?.image) || 
       null;
     const coverImageUrl = rawCoverImageUrl && isValidUrl(rawCoverImageUrl) ? rawCoverImageUrl : null;
 
