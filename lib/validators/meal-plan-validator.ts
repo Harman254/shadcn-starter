@@ -26,6 +26,7 @@ export interface SaveMealPlanInput {
   mealsPerDay: number;
   days: DayMealPlan[];
   createdAt: string;
+  coverImageUrl?: string;
 }
 
 export interface ValidationResult {

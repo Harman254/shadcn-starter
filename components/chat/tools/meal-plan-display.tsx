@@ -1,12 +1,13 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { ExternalLink, Clock, Flame, Users, Bookmark, Check, Loader2, ShoppingCart, TrendingUp, Timer, ChefHat } from "lucide-react"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
+import { CldImage } from 'next-cloudinary'
 
 interface Meal {
   id: string;
@@ -42,7 +43,37 @@ const mealTypeColors: Record<string, string> = {
 export function MealPlanDisplay({ mealPlan, onActionClick }: MealPlanDisplayProps) {
   const [saving, setSaving] = useState(false)
   const [savedId, setSavedId] = useState<string | null>(null)
+  const [checkingSave, setCheckingSave] = useState(true)
   const router = useRouter()
+
+  // Check if meal plan is already saved on mount
+  useEffect(() => {
+    const checkSaved = async () => {
+      if (!mealPlan.title) {
+        setCheckingSave(false)
+        return
+      }
+      try {
+        const response = await fetch('/api/getmealplans')
+        if (response.ok) {
+          const data = await response.json()
+          // Handle different response formats
+          const mealPlans = Array.isArray(data) ? data : data.mealPlans || data.data || []
+          const existing = mealPlans.find((mp: any) => 
+            mp.title?.toLowerCase().trim() === mealPlan.title.toLowerCase().trim()
+          )
+          if (existing) {
+            setSavedId(existing.id)
+          }
+        }
+      } catch (e) {
+        // Silently fail - user can still save
+      } finally {
+        setCheckingSave(false)
+      }
+    }
+    checkSaved()
+  }, [mealPlan.title])
 
   const handleSave = async () => {
     if (savedId) return
@@ -131,12 +162,26 @@ export function MealPlanDisplay({ mealPlan, onActionClick }: MealPlanDisplayProp
                   onClick={() => onActionClick?.(`Show me the full recipe for ${meal.name}`)}
                 >
                   <div className="relative h-32 overflow-hidden">
-                    <img
-                      // Use imageUrl from tool, fallback to placeholders if needed
-                      src={meal.imageUrl || meal.image || "https://res.cloudinary.com/dcidanigq/image/upload/v1742112004/cld-sample-4.jpg"}
-                      alt={meal.name}
-                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                    />
+                    {meal.imageUrl && meal.imageUrl.includes('cloudinary.com') ? (
+                      <CldImage
+                        src={meal.imageUrl}
+                        alt={meal.name}
+                        width={400}
+                        height={256}
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                        loading="lazy"
+                      />
+                    ) : (
+                      <img
+                        src={meal.imageUrl || meal.image || "https://res.cloudinary.com/dcidanigq/image/upload/v1742112004/cld-sample-4.jpg"}
+                        alt={meal.name}
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                        loading="lazy"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = 'https://res.cloudinary.com/dcidanigq/image/upload/v1742112004/cld-sample-4.jpg';
+                        }}
+                      />
+                    )}
                     <Badge 
                       className={`absolute top-2 left-2 text-xs border-0 ${mealTypeColors[meal.mealType] || "bg-primary/20 text-primary"}`}
                     >

@@ -4,6 +4,7 @@ import { motion } from "framer-motion"
 import { Clock, Wand2, ChefHat, ArrowRight, Star, Flame, ExternalLink, Search, Globe, Zap, Users } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
+import { CldImage } from 'next-cloudinary'
 
 interface MealSuggestionsProps {
   results: any[]
@@ -121,14 +122,26 @@ export function MealSuggestions({ results, title, onActionClick }: MealSuggestio
               >
                 {/* Hero Image */}
                 <div className="relative w-full aspect-[4/3] overflow-hidden bg-slate-900/50">
-                  <motion.img
-                    src={recipe.imageUrl || `https://source.unsplash.com/800x600/?${encodeURIComponent(recipe.name)},food`}
-                    alt={recipe.name}
-                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&q=80';
-                    }}
-                  />
+                  {recipe.imageUrl && recipe.imageUrl.includes('cloudinary.com') ? (
+                    <CldImage
+                      src={recipe.imageUrl}
+                      alt={recipe.name}
+                      width={800}
+                      height={600}
+                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                      loading="lazy"
+                    />
+                  ) : (
+                    <motion.img
+                      src={recipe.imageUrl || 'https://res.cloudinary.com/dcidanigq/image/upload/v1742112004/cld-sample-4.jpg'}
+                      alt={recipe.name}
+                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                      loading="lazy"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = 'https://res.cloudinary.com/dcidanigq/image/upload/v1742112004/cld-sample-4.jpg';
+                      }}
+                    />
+                  )}
                   <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/20 to-transparent opacity-80" />
                   
                   {/* Floating Badges */}

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { ShoppingCart, MapPin, Tag, DollarSign, Save, Check, Loader2, Copy, Share2, Wand2, CheckCircle2, Circle, Package, ChefHat } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -18,8 +18,16 @@ export function GroceryListDisplay({ groceryList, mealPlanId, onActionClick }: G
   const [checkedItems, setCheckedItems] = useState<Set<string>>(new Set())
   const [saving, setSaving] = useState(false)
   const [savedId, setSavedId] = useState<string | null>(null)
+  const [checkingSave, setCheckingSave] = useState(true)
   const { toast } = useToast()
   const router = useRouter()
+
+  // Check if grocery list is already saved on mount (by mealPlanId if provided)
+  // Note: Since grocery lists don't have a GET endpoint, we skip this check
+  // The save button will handle duplicates on the server side
+  useEffect(() => {
+    setCheckingSave(false)
+  }, [])
 
   const toggleItem = (id: string) => {
     const next = new Set(checkedItems)

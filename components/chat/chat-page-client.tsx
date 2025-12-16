@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { Menu, Wand2, Plus, History, MessageSquare } from 'lucide-react';
 import { Pacifico } from 'next/font/google';
 import dynamic from 'next/dynamic';
-import { Skeleton } from '@/components/ui/skeleton';
 
 
 
@@ -27,14 +26,8 @@ const ChatPanel = dynamic(() => import('@/components/chat/chat-panel').then(mod 
   ssr: false // Chat relies heavily on client state
 });
 
+// ChatHistoryClient handles its own loading state, so no need for skeleton here
 const ChatHistoryClient = dynamic(() => import('@/components/chat/chat-history-client').then(mod => mod.ChatHistoryClient), {
-  loading: () => (
-    <div className="p-4 space-y-4">
-      {[1, 2, 3, 4, 5].map((i) => (
-        <Skeleton key={i} className="h-12 w-full rounded-lg bg-muted/50" />
-      ))}
-    </div>
-  ),
   ssr: false
 });
 
@@ -97,7 +90,7 @@ export function ChatPageClient({ preferences = [], preferencesSummary = '' }: Ch
                 <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="w-[280px] p-0 flex flex-col">
+            <SheetContent side="left" className="w-[320px] sm:w-[320px] p-0 flex flex-col">
               <SheetHeader className="p-4 border-b border-border/40 text-left">
                 <SheetTitle className="flex items-center gap-2">
                   

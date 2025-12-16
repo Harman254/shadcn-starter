@@ -303,7 +303,18 @@ export function ChatHistory({ chatType, onSessionSelect }: ChatHistoryProps) {
           return true;
         }
         // Only include sessions with messages (conversations that have started)
-        return session.chatType === chatType && session.messages && session.messages.length > 0;
+        if (session.chatType !== chatType || !session.messages || session.messages.length === 0) {
+          return false;
+        }
+        // Filter out sessions with "New Chat" titles or default titles
+        const title = session.title?.trim();
+        if (title && 
+            (title === 'New Chat' || 
+             title.startsWith('Chat ') || 
+             title.match(/^Chat \d+\/\d+\/\d+$/))) {
+          return false;
+        }
+        return true;
       }
     );
     return [...filtered].sort((a, b) => {

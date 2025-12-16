@@ -335,6 +335,12 @@ export function useChatSync(sessionId: string | null, chatType: 'context-aware' 
           throw new Error(result.error || `Failed to save messages: ${response.status}`);
         }
 
+        // Check if session exists - if not, messages will be saved when session is created with title
+        if (result.sessionExists === false) {
+          logger.debug(`[useChatSync] ⏳ Session doesn't exist yet. Messages will be saved when session is created with title.`);
+          return; // Don't mark as saved, will retry when session is created
+        }
+
         // Check response - API returns success with saved count
         if (result.saved === 0) {
           // All messages already existed in database (no new ones to save)

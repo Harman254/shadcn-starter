@@ -105,12 +105,8 @@ export default async function IndexPage() {
     // If it fails, session is undefined, which falls through to landing page.
   }
 
-  // If user is logged in, redirect to chat page (default page)
-  if (session?.user?.id) {
-    redirect('/chat');
-  }
-
-  // If not authenticated, show landing page
+  // Show landing page for both authenticated and unauthenticated users
+  // Logged-in users can navigate to chat via navigation or homepage CTA
   const image = {
     src: "/image01.jpg",
     alt: "Hero section demo image showing interface components",

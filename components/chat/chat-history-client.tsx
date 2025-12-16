@@ -86,6 +86,7 @@ const SessionItem = memo(function SessionItem({
     <div
       className={cn(
         "group relative flex items-center gap-2 px-3 py-2.5 text-sm transition-all rounded-lg cursor-pointer",
+        "min-w-0", // Ensure flex children can shrink
         // ChatGPT-style: subtle left border when active
         isActive 
           ? "bg-accent/80 text-foreground before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-5 before:w-1 before:bg-primary before:rounded-r-full" 
@@ -93,22 +94,7 @@ const SessionItem = memo(function SessionItem({
       )}
       onClick={() => onSelect(session.id)}
     >
-      {/* Chat icon for visual hint */}
-      <div className={cn(
-        "h-5 w-5 shrink-0 flex items-center justify-center rounded-md transition-colors",
-        isActive ? "text-primary" : "text-muted-foreground/50"
-      )}>
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
-          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-        </svg>
-      </div>
-
-      {/* Title - clean, single line */}
-      <div className="flex-1 min-w-0 truncate font-medium">
-        {session.title || (session.messageCount > 0 ? 'New conversation' : 'New chat')}
-      </div>
-
-      {/* Delete button - ONLY visible on hover (ChatGPT style) */}
+      {/* Delete button - FIRST element, always visible */}
       <AlertDialog>
         <AlertDialogTrigger asChild>
           <div
@@ -116,7 +102,7 @@ const SessionItem = memo(function SessionItem({
             tabIndex={0}
             className={cn(
               "h-7 w-7 shrink-0 flex items-center justify-center rounded-md transition-all",
-              "opacity-0 group-hover:opacity-100", // Hidden until hover
+              "opacity-60 hover:opacity-100", // Always visible, more opaque on hover
               "text-muted-foreground hover:text-destructive hover:bg-destructive/10",
               "cursor-pointer"
             )}
@@ -155,6 +141,21 @@ const SessionItem = memo(function SessionItem({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Chat icon for visual hint */}
+      <div className={cn(
+        "h-5 w-5 shrink-0 flex items-center justify-center rounded-md transition-colors",
+        isActive ? "text-primary" : "text-muted-foreground/50"
+      )}>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+        </svg>
+      </div>
+
+      {/* Title - clean, single line with truncation */}
+      <div className="flex-1 min-w-0 truncate font-medium">
+        {session.title || (session.messageCount > 0 ? 'New conversation' : 'New chat')}
+      </div>
     </div>
   );
 });
@@ -365,9 +366,17 @@ export function ChatHistoryClient({ chatType, initialSessions = [], onSessionSel
     // Store sessions take precedence (they have latest updates)
     const sessionMap = new Map<string, SessionData>();
     
-    // Add server sessions (these should all have messages since they're from DB)
+    // Add server sessions (filter out "New Chat" titles and empty sessions)
     sessions.forEach((s) => {
-      sessionMap.set(s.id, s);
+      // Filter out sessions with "New Chat" titles or no messages
+      const title = s.title?.trim();
+      if (title && 
+          title !== 'New Chat' && 
+          !title.startsWith('Chat ') && 
+          !title.match(/^Chat \d+\/\d+\/\d+$/) &&
+          s.messageCount > 0) {
+        sessionMap.set(s.id, s);
+      }
     });
     
     // Update with store sessions (which may have newer data)
@@ -379,6 +388,15 @@ export function ChatHistoryClient({ chatType, initialSessions = [], onSessionSel
       // Only include sessions with messages OR the current active session
       if (!hasMessages && !isCurrentSession) {
         return; // Skip empty sessions that aren't active
+      }
+      
+      // Filter out sessions with "New Chat" titles (unless it's the current session)
+      const title = s.title?.trim();
+      if (!isCurrentSession && title && 
+          (title === 'New Chat' || 
+           title.startsWith('Chat ') || 
+           title.match(/^Chat \d+\/\d+\/\d+$/))) {
+        return; // Skip sessions with default titles
       }
       
       if (existing) {
