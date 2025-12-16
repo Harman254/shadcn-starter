@@ -160,9 +160,11 @@ export async function fetchAnalyticsData(userId: string, range: 'week' | 'month'
     const mealsChangeValue = previousMeals > 0 
       ? Math.round(((totalMeals - previousMeals) / previousMeals) * 100)
       : totalMeals > 0 ? 100 : 0;
+    const mealsChangeType: 'positive' | 'negative' | 'neutral' = 
+      mealsChangeValue > 0 ? 'positive' : mealsChangeValue < 0 ? 'negative' : 'neutral';
     const mealsChange = {
       value: mealsChangeValue,
-      type: mealsChangeValue > 0 ? 'positive' : mealsChangeValue < 0 ? 'negative' : 'neutral' as const,
+      type: mealsChangeType,
     };
 
     const previousMealPlans = previousPeriodMealPlans.length;
@@ -316,9 +318,9 @@ export async function fetchAnalyticsData(userId: string, range: 'week' | 'month'
       totalMealPlans: 0,
       totalGroceryItems: 0,
       avgCalories: 0,
-      mealsChange: { value: 0, type: 'neutral' },
-      mealPlansChange: { value: '0 plans', type: 'neutral' },
-      groceriesChange: { value: 0, type: 'neutral' },
+      mealsChange: { value: 0, type: 'neutral' as const },
+      mealPlansChange: { value: '0 plans', type: 'neutral' as const },
+      groceriesChange: { value: 0, type: 'neutral' as const },
       calorieChartData: [],
       nutritionBreakdown: [],
       recentMeals: [],
