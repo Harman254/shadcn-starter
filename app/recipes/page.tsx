@@ -1,32 +1,59 @@
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { ChefHat, Clock, Users, Flame } from "lucide-react"
+import { ChefHat, Clock, Users, Flame, Loader2 } from "lucide-react"
 import { auth } from "@/lib/auth"
 import { headers } from "next/headers"
 import { redirect } from "next/navigation"
 import prisma from "@/lib/prisma"
 import Image from "next/image"
 import { CldImage } from 'next-cloudinary'
+import { Suspense } from 'react'
 
-export default async function SavedRecipesPage() {
-  const session = await auth.api.getSession({
-    headers: await headers()
-  });
+export const dynamic = 'force-dynamic'
+
+function LoadingFallback() {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 flex items-center justify-center">
+      <div className="text-center">
+        <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
+        <p className="text-muted-foreground">Loading recipes...</p>
+      </div>
+    </div>
+  );
+}
+
+async function RecipesContent() {
+  let session;
+  try {
+    session = await auth.api.getSession({
+      headers: await headers()
+    });
+  } catch (error) {
+    console.error('[Recipes Page] Error fetching session:', error);
+    redirect('/sign-in');
+  }
 
   if (!session?.user?.id) {
     redirect('/sign-in');
   }
 
-  // Fetch saved recipes from database
-  const recipes = await prisma.recipe.findMany({
-    where: {
-      userId: session.user.id,
-    },
-    orderBy: {
-      createdAt: 'desc',
-    },
-  });
+  // Fetch saved recipes from database with error handling
+  let recipes: any[] = [];
+  try {
+    recipes = await prisma.recipe.findMany({
+      where: {
+        userId: session.user.id,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+  } catch (error) {
+    console.error('[Recipes Page] Error fetching recipes:', error);
+    // Return empty array on error - page will show empty state
+    recipes = [];
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
@@ -166,5 +193,13 @@ export default async function SavedRecipesPage() {
       )}
       </div>
     </div>
-  )
+  );
+}
+
+export default function SavedRecipesPage() {
+  return (
+    <Suspense fallback={<LoadingFallback />}>
+      <RecipesContent />
+    </Suspense>
+  );
 }

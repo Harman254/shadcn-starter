@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useCallback } from 'react'
 import Image from 'next/image'
 import { Bookmark, Clock, Flame, ChefHat, Loader2, Zap } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -44,14 +44,21 @@ export function StoryCard({
   // Use the generated URL or fallback - always show something
   const displayImageUrl = enableAIImage ? (imageUrl || item.imageUrl) : item.imageUrl
 
+  const handleClick = useCallback((e: React.MouseEvent) => {
+    if (onClick) {
+      e.preventDefault()
+      onClick()
+    }
+  }, [onClick])
+
   return (
     <article
-      onClick={onClick}
+      onClick={handleClick}
       className={cn(
         'group relative bg-card rounded-2xl overflow-hidden border border-border/50',
         'hover:border-primary/30 transition-all duration-500',
         'hover:shadow-2xl hover:shadow-primary/10',
-        'cursor-pointer transform hover:-translate-y-1',
+        onClick ? 'cursor-pointer transform hover:-translate-y-1' : '',
         'backdrop-blur-sm'
       )}
     >

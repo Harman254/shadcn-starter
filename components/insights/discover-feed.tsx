@@ -74,13 +74,11 @@ export function DiscoverFeed({ className }: DiscoverFeedProps) {
   }, [activeCategory, showBookmarksOnly, bookmarks, aiStories])
 
   const handleStoryClick = useCallback((item: FeedItem) => {
-    // Check if it's an AI-generated story (has ai-story prefix)
-    if (item.id.startsWith('ai-story-')) {
-      router.push(`/meal-plans/insights/${item.id}?title=${encodeURIComponent(item.title)}&description=${encodeURIComponent(item.description)}`)
-    } else {
-      // For static items, you might want to handle differently or just do nothing
-      // Or navigate to a recipe page if available
-    }
+    // Make all stories clickable - navigate to insights detail page
+    // Both AI-generated and static stories can be viewed
+    const title = encodeURIComponent(item.title || 'Meal Insight')
+    const description = encodeURIComponent(item.description || '')
+    router.push(`/meal-plans/insights/${item.id}?title=${title}&description=${description}`)
   }, [router])
 
   const handleRefresh = useCallback(() => {
