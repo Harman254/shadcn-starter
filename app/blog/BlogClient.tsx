@@ -2,6 +2,8 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { Calendar, Clock, Heart, MessageCircle, ArrowRight, BookOpen, TrendingUp, Search, Filter, Star, Eye, Zap, Users, Award, Sun, Moon } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
+import { CldImage } from 'next-cloudinary';
 
 const categories = ["All", "AI & Technology", "Meal Prep", "Nutrition", "Sustainability", "Psychology", "Budget"];
 
@@ -180,11 +182,24 @@ export default function BlogClient({ posts }: BlogClientProps) {
               }`}>
                 <div className="flex flex-col lg:flex-row">
                   <div className="relative lg:w-1/2 overflow-hidden">
-                    <img
-                      src={featuredPost.image}
-                      alt={featuredPost.title}
-                      className="w-full h-80 lg:h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                    />
+                    {featuredPost.image.includes('cloudinary.com') ? (
+                      <CldImage
+                        src={featuredPost.image}
+                        alt={featuredPost.title}
+                        width={800}
+                        height={600}
+                        className="w-full h-80 lg:h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                        loading="lazy"
+                      />
+                    ) : (
+                      <Image
+                        src={featuredPost.image}
+                        alt={featuredPost.title}
+                        fill
+                        className="object-cover group-hover:scale-110 transition-transform duration-700"
+                        loading="lazy"
+                      />
+                    )}
                     <div className="absolute top-6 left-6">
                       <span className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 py-2 rounded-full text-sm font-bold shadow-lg">
                         {featuredPost.category}
@@ -287,12 +302,25 @@ export default function BlogClient({ posts }: BlogClientProps) {
                     ? 'bg-gray-800 border border-gray-700 hover:border-gray-600' 
                     : 'bg-white border border-slate-100'
                 }`}>
-                  <div className="relative overflow-hidden">
-                    <img
-                      src={post.image}
-                      alt={post.title}
-                      className="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-700"
-                    />
+                  <div className="relative overflow-hidden h-48">
+                    {post.image.includes('cloudinary.com') ? (
+                      <CldImage
+                        src={post.image}
+                        alt={post.title}
+                        width={600}
+                        height={400}
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                        loading="lazy"
+                      />
+                    ) : (
+                      <Image
+                        src={post.image}
+                        alt={post.title}
+                        fill
+                        className="object-cover group-hover:scale-110 transition-transform duration-700"
+                        loading="lazy"
+                      />
+                    )}
                     <div className="absolute top-4 left-4">
                       <span className={`backdrop-blur-sm px-3 py-1 rounded-full text-xs font-medium shadow-lg ${
                         isDark ? 'bg-gray-900/80 text-gray-200' : 'bg-white/95 text-slate-700'

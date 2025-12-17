@@ -4,6 +4,24 @@ import { headers } from 'next/headers'
 import { generateText } from 'ai'
 import { google } from '@ai-sdk/google'
 
+export const dynamic = 'force-dynamic'
+export const revalidate = 1800 // Cache story details for 30 minutes
+
+// Fallback images pool (same as stories route)
+const FALLBACK_IMAGES = [
+  'https://res.cloudinary.com/dcidanigq/image/upload/v1742112004/cld-sample-4.jpg',
+  'https://res.cloudinary.com/dcidanigq/image/upload/v1742112004/cld-sample-5.jpg',
+  '/feed-images/salmon-bowl.png',
+  '/feed-images/pasta.png',
+  '/feed-images/smoothie.png',
+  '/feed-images/salad.png',
+  '/feed-images/curry.png',
+  '/feed-images/soup.png',
+  '/feed-images/stir-fry.png',
+  '/feed-images/dessert.png',
+  '/feed-images/breakfast.png',
+]
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -25,6 +43,16 @@ export async function GET(
         { error: 'Title and description are required' },
         { status: 400 }
       )
+    }
+
+    // Determine image URL based on story ID
+    // For AI stories, use the same fallback image logic
+    let imageUrl = FALLBACK_IMAGES[0]; // Default fallback
+    if (id.startsWith('ai-story-')) {
+      // Extract index from ID if possible, or use hash of ID
+      const indexMatch = id.match(/-(\d+)$/);
+      const index = indexMatch ? parseInt(indexMatch[1]) : id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+      imageUrl = FALLBACK_IMAGES[index % FALLBACK_IMAGES.length];
     }
 
     // Generate detailed content for the story
@@ -51,6 +79,7 @@ Format the response in markdown with proper headings, lists, and paragraphs.`,
       title,
       description,
       content: result.text,
+      imageUrl, // Include image URL in response
     })
   } catch (error) {
     console.error('[Story Detail] Error:', error)

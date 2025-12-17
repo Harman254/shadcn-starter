@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import { useProfileStore } from '@/store/profile-store';
 import {
   ArrowRight,
   ChefHat,
@@ -29,8 +30,16 @@ const  Dashboard = () =>{
                   session?.user?.email === 'harmanmalova@gmail.com' ||
                   false; // Add your admin role check here
 
+  const { getProfile } = useProfileStore();
+
   useEffect(() => {
     const fetchMealPlans = async () => {
+      // Check cache first for meal stats
+      const cached = getProfile();
+      if (cached?.mealStats) {
+        // Use cached data if available, but still fetch fresh meal plans
+      }
+
       try {
         const response = await axios.get('/api/getmealplans');
         const { mealPlan, meals } = response.data;
@@ -50,7 +59,7 @@ const  Dashboard = () =>{
     if (!isPending && session) {
       fetchMealPlans();
     }
-  }, [!isPending, session]);
+  }, [!isPending, session, getProfile]);
 
   if (isPending || isFetching) {
     return (
@@ -63,14 +72,14 @@ const  Dashboard = () =>{
   }
 
   return (
-    <div className="min-h-screen bg-[#EAEFEF] dark:bg-[#222222]">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
       <div className="max-w-6xl mx-auto px-4 py-12">
         {/* Welcome Section */}
         <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-primary mb-3">
+          <h1 className="text-4xl font-bold text-foreground mb-3">
             Welcome back, {session?.user?.name}
           </h1>
-          <p className="text-gray-600">
+          <p className="text-muted-foreground text-lg">
             Let&apos;s make your meal planning journey delicious and easy.
           </p>
         </div>
@@ -149,10 +158,10 @@ function QuickNavCard({
 }) {
   return (
     <div 
-      className={`relative overflow-hidden rounded-2xl p-7 shadow-lg transition-all duration-500 transform hover:-translate-y-2 hover:scale-[1.02] cursor-pointer group backdrop-blur-md ${
+      className={`relative overflow-hidden rounded-2xl p-7 shadow-lg transition-all duration-500 transform hover:-translate-y-2 hover:scale-[1.02] cursor-pointer group backdrop-blur-md bg-card/80 border border-border/50 hover:shadow-xl ${
         isAdmin 
-          ? 'bg-gradient-to-br from-amber-50/90 via-white/95 to-red-50/80 dark:from-amber-900/30 dark:via-slate-900/95 dark:to-red-900/30 shadow-amber-200/60 dark:shadow-amber-950/60 border border-amber-200/60 dark:border-amber-700/60 hover:shadow-2xl hover:shadow-amber-300/40 dark:hover:shadow-amber-900/60'
-          : 'bg-gradient-to-br from-slate-50/90 via-white/95 to-emerald-50/80 dark:from-slate-800/90 dark:via-slate-900/95 dark:to-emerald-900/80 shadow-slate-200/60 dark:shadow-slate-950/60 border border-slate-200/60 dark:border-slate-700/60 hover:shadow-2xl hover:shadow-emerald-300/40 dark:hover:shadow-emerald-900/60'
+          ? 'hover:shadow-amber-300/40 dark:hover:shadow-amber-900/60'
+          : 'hover:shadow-primary/40 dark:hover:shadow-primary/60'
       }`}
     >
       {/* Animated background glow */}

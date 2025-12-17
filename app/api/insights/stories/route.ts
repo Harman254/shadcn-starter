@@ -6,6 +6,9 @@ import { generateObject } from 'ai'
 import { google } from '@ai-sdk/google'
 import { z } from 'zod'
 
+export const dynamic = 'force-dynamic'
+export const revalidate = 3600 // Cache for 1 hour (stories are personalized, but don't need to regenerate too often)
+
 // Fallback images pool for unique assignment
 const FALLBACK_IMAGES = [
   'https://res.cloudinary.com/dcidanigq/image/upload/v1742112004/cld-sample-4.jpg',

@@ -11,6 +11,7 @@ import { CldImage } from 'next-cloudinary'
 import { Suspense } from 'react'
 
 export const dynamic = 'force-dynamic'
+export const revalidate = 60 // Revalidate every 60 seconds
 
 function LoadingFallback() {
   return (
@@ -103,34 +104,51 @@ async function RecipesContent() {
             >
               {/* Recipe Image - Enhanced with hover effect and proper image handling */}
               <div className="relative h-48 sm:h-56 w-full bg-muted overflow-hidden">
-                {recipe.imageUrl && recipe.imageUrl.trim() && recipe.imageUrl.includes('cloudinary.com') ? (
-                  <CldImage
-                    src={recipe.imageUrl}
-                    alt={recipe.name}
-                    width={800}
-                    height={600}
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                    loading="lazy"
-                  />
-                ) : recipe.imageUrl && recipe.imageUrl.trim() ? (
-                  <img
-                    src={recipe.imageUrl}
-                    alt={recipe.name}
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                    loading="lazy"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src = 'https://res.cloudinary.com/dcidanigq/image/upload/v1742112004/cld-sample-4.jpg';
-                    }}
-                  />
-                ) : (
-                  <Image
-                    src="https://res.cloudinary.com/dcidanigq/image/upload/v1742112004/cld-sample-4.jpg"
-                    alt={recipe.name}
-                    fill
-                    className="object-cover transition-transform duration-500 group-hover:scale-110"
-                    loading="lazy"
-                  />
-                )}
+                {(() => {
+                  const imageUrl = recipe.imageUrl?.trim();
+                  const fallbackUrl = 'https://res.cloudinary.com/dcidanigq/image/upload/v1742112004/cld-sample-4.jpg';
+                  
+                  // If no image URL or empty string, use fallback
+                  if (!imageUrl || imageUrl === '') {
+                    return (
+                      <Image
+                        src={fallbackUrl}
+                        alt={recipe.name}
+                        fill
+                        className="object-cover transition-transform duration-500 group-hover:scale-110"
+                        loading="lazy"
+                      />
+                    );
+                  }
+                  
+                  // For Cloudinary URLs, use CldImage for optimization
+                  // CldImage accepts the full Cloudinary URL directly
+                  if (imageUrl.includes('cloudinary.com')) {
+                    return (
+                      <CldImage
+                        src={imageUrl}
+                        alt={recipe.name}
+                        width={800}
+                        height={600}
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                        loading="lazy"
+                      />
+                    );
+                  }
+                  
+                  // Regular image URL (not Cloudinary)
+                  return (
+                    <img
+                      src={imageUrl}
+                      alt={recipe.name}
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                      loading="lazy"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = fallbackUrl;
+                      }}
+                    />
+                  );
+                })()}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               </div>
 

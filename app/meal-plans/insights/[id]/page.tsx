@@ -4,6 +4,9 @@ import { Loader2 } from 'lucide-react'
 import { auth } from '@/lib/auth'
 import { StoryDetailClient } from './story-detail-client'
 
+export const dynamic = 'force-dynamic'
+export const revalidate = 300 // Revalidate every 5 minutes (stories don't change often)
+
 function LoadingFallback() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background">

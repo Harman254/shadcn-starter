@@ -9,6 +9,7 @@ import { StoryCard } from './story-card'
 import { useBookmarks } from '@/hooks/use-bookmarks'
 import { FEED_ITEMS, type FeedCategory, type FeedItem } from '@/lib/data/feed-data'
 import { Button } from '@/components/ui/button'
+import { useInsightsStore } from '@/store/insights-store'
 
 interface DiscoverFeedProps {
   className?: string
@@ -32,6 +33,7 @@ export function DiscoverFeed({ className }: DiscoverFeedProps) {
   const [aiStories, setAiStories] = useState<FeedItem[]>([])
   const [isLoadingStories, setIsLoadingStories] = useState(false)
   const { isBookmarked, toggleBookmark, bookmarks, isLoaded } = useBookmarks()
+  const { getAiStories, setAiStories: setCachedAiStories, clearAiStories } = useInsightsStore()
 
   // Fetch AI-generated stories
   useEffect(() => {
@@ -41,12 +43,23 @@ export function DiscoverFeed({ className }: DiscoverFeedProps) {
         return
       }
 
+      // Check Zustand cache first
+      const cached = getAiStories(activeCategory)
+      if (cached) {
+        setAiStories(cached)
+        return
+      }
+
       try {
         setIsLoadingStories(true)
         const response = await fetch(`/api/insights/stories?t=${Date.now()}`)
         if (response.ok) {
           const data = await response.json()
-          setAiStories(data.stories || [])
+          const stories = data.stories || []
+          setAiStories(stories)
+          
+          // Cache in Zustand (automatically persisted to localStorage)
+          setCachedAiStories(stories, activeCategory)
         }
       } catch (error) {
         console.error('[DiscoverFeed] Error fetching AI stories:', error)
@@ -56,7 +69,7 @@ export function DiscoverFeed({ className }: DiscoverFeedProps) {
     }
 
     fetchAiStories()
-  }, [activeCategory, showBookmarksOnly, refreshKey])
+  }, [activeCategory, showBookmarksOnly, refreshKey, getAiStories, setCachedAiStories])
 
   // Combine static feed items with AI stories
   const feedItems = useMemo(() => {
@@ -78,12 +91,15 @@ export function DiscoverFeed({ className }: DiscoverFeedProps) {
     // Both AI-generated and static stories can be viewed
     const title = encodeURIComponent(item.title || 'Meal Insight')
     const description = encodeURIComponent(item.description || '')
-    router.push(`/meal-plans/insights/${item.id}?title=${title}&description=${description}`)
+    const imageUrl = encodeURIComponent(item.imageUrl || '')
+    router.push(`/meal-plans/insights/${item.id}?title=${title}&description=${description}&imageUrl=${imageUrl}`)
   }, [router])
 
   const handleRefresh = useCallback(() => {
+    // Clear cache and refresh
+    clearAiStories()
     setRefreshKey(k => k + 1)
-  }, [])
+  }, [clearAiStories])
 
   const handleCategoryChange = useCallback((category: FeedCategory) => {
     setActiveCategory(category)

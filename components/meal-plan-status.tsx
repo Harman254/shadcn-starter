@@ -247,7 +247,51 @@ const MealPlanStatusCard = ({ hasMealPlan, mealPlan, meals }: Props) => {
             <motion.button 
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              onClick={() => router.push(`/grocery-list/${mealPlan.id}`)}
+              onClick={async () => {
+                // Get user location if available
+                const LOCATION_KEY = 'mealwise_user_location'
+                let cached: { lat: number; lon: number } | null = null
+                try {
+                  const raw = localStorage.getItem(LOCATION_KEY)
+                  if (raw) {
+                    const parsed = JSON.parse(raw)
+                    if (
+                      typeof parsed.lat === 'number' &&
+                      typeof parsed.lon === 'number' &&
+                      Math.abs(parsed.lat) <= 90 &&
+                      Math.abs(parsed.lon) <= 180
+                    ) {
+                      cached = parsed
+                    }
+                  }
+                } catch (e) {
+                  // Ignore parse errors
+                }
+
+                if (cached) {
+                  router.push(`/grocery-list/${mealPlan.id}?lat=${cached.lat}&lon=${cached.lon}`)
+                  return
+                }
+
+                // No cached location, prompt user
+                if (navigator.geolocation) {
+                  navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                      const { latitude, longitude } = position.coords
+                      try {
+                        localStorage.setItem(LOCATION_KEY, JSON.stringify({ lat: latitude, lon: longitude }))
+                      } catch (e) {}
+                      router.push(`/grocery-list/${mealPlan.id}?lat=${latitude}&lon=${longitude}`)
+                    },
+                    () => {
+                      router.push(`/grocery-list/${mealPlan.id}`)
+                    },
+                    { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+                  )
+                } else {
+                  router.push(`/grocery-list/${mealPlan.id}`)
+                }
+              }}
               className="group relative px-8 py-4 border-2 border-purple-400/50 text-purple-300 hover:text-white hover:border-purple-400 rounded-2xl font-bold transition-all duration-300 backdrop-blur-sm hover:bg-purple-500/20 shadow-lg hover:shadow-purple-500/30"
             >
               <div className="flex items-center justify-center gap-3">

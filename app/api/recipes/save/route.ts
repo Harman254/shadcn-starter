@@ -80,6 +80,10 @@ export async function POST(request: Request) {
             }
         });
 
+        // Revalidate the recipes page to show the new recipe immediately
+        const { revalidatePath } = await import('next/cache');
+        revalidatePath('/recipes');
+
         return NextResponse.json({
             success: true,
             recipe: savedRecipe,
