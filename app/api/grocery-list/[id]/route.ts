@@ -41,6 +41,10 @@ export async function GET(
         ? existingList.items 
         : JSON.parse(existingList.items as string)
       
+      // Extract location info from items if available, or use defaults
+      const firstItem = items[0]
+      const cityFromItem = firstItem?.suggestedLocation?.split(',')[0] || 'Local'
+      
       return NextResponse.json({
         items: items.map((item: any, index: number) => ({
           id: item.id || `item-${index}`,
@@ -52,8 +56,8 @@ export async function GET(
           checked: false,
         })),
         userLocation: {
-          city: existingList.city || 'Local',
-          country: existingList.country || 'Area',
+          city: cityFromItem,
+          country: 'Area',
           currencySymbol: existingList.currency || '$',
         },
       })
@@ -114,8 +118,6 @@ export async function GET(
           groceryListData.totalEstimatedCost?.replace(/[^0-9.]/g, '') || '0'
         ),
         currency: groceryListData.locationInfo?.currencySymbol || '$',
-        city: groceryListData.locationInfo?.localStores?.[0]?.split(',')[0] || 'Local',
-        country: 'Area',
       },
     })
 
