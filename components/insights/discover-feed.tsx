@@ -1,6 +1,7 @@
 'use client'
 
-import React, { useState, useMemo, useCallback } from 'react'
+import React, { useState, useMemo, useCallback, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { RefreshCw, Bookmark } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { CategoryTabs } from './category-tabs'
@@ -24,18 +25,63 @@ const CATEGORY_ITEMS: Record<FeedCategory, FeedItem[]> = {
 }
 
 export function DiscoverFeed({ className }: DiscoverFeedProps) {
+  const router = useRouter()
   const [activeCategory, setActiveCategory] = useState<FeedCategory>('for-you')
   const [showBookmarksOnly, setShowBookmarksOnly] = useState(false)
   const [refreshKey, setRefreshKey] = useState(0)
+  const [aiStories, setAiStories] = useState<FeedItem[]>([])
+  const [isLoadingStories, setIsLoadingStories] = useState(false)
   const { isBookmarked, toggleBookmark, bookmarks, isLoaded } = useBookmarks()
 
-  // Stable feed items - no random sorting, no useEffect
+  // Fetch AI-generated stories
+  useEffect(() => {
+    const fetchAiStories = async () => {
+      if (activeCategory !== 'for-you' || showBookmarksOnly) {
+        setAiStories([])
+        return
+      }
+
+      try {
+        setIsLoadingStories(true)
+        const response = await fetch(`/api/insights/stories?t=${Date.now()}`)
+        if (response.ok) {
+          const data = await response.json()
+          setAiStories(data.stories || [])
+        }
+      } catch (error) {
+        console.error('[DiscoverFeed] Error fetching AI stories:', error)
+      } finally {
+        setIsLoadingStories(false)
+      }
+    }
+
+    fetchAiStories()
+  }, [activeCategory, showBookmarksOnly, refreshKey])
+
+  // Combine static feed items with AI stories
   const feedItems = useMemo(() => {
     if (showBookmarksOnly) {
-      return FEED_ITEMS.filter(item => bookmarks.includes(item.id))
+      const allItems = [...FEED_ITEMS, ...aiStories]
+      return allItems.filter(item => bookmarks.includes(item.id))
     }
+    
+    if (activeCategory === 'for-you') {
+      // Combine AI stories with static items for "For You" category
+      return [...aiStories, ...CATEGORY_ITEMS[activeCategory]].slice(0, 12)
+    }
+    
     return CATEGORY_ITEMS[activeCategory] || []
-  }, [activeCategory, showBookmarksOnly, bookmarks])
+  }, [activeCategory, showBookmarksOnly, bookmarks, aiStories])
+
+  const handleStoryClick = useCallback((item: FeedItem) => {
+    // Check if it's an AI-generated story (has ai-story prefix)
+    if (item.id.startsWith('ai-story-')) {
+      router.push(`/meal-plans/insights/${item.id}?title=${encodeURIComponent(item.title)}&description=${encodeURIComponent(item.description)}`)
+    } else {
+      // For static items, you might want to handle differently or just do nothing
+      // Or navigate to a recipe page if available
+    }
+  }, [router])
 
   const handleRefresh = useCallback(() => {
     setRefreshKey(k => k + 1)
@@ -112,6 +158,7 @@ export function DiscoverFeed({ className }: DiscoverFeedProps) {
                 item={item}
                 isBookmarked={isBookmarked(item.id)}
                 onBookmarkToggle={handleBookmarkToggle}
+                onClick={() => handleStoryClick(item)}
                 priority={index < 2}
                 enableAIImage={true}
               />

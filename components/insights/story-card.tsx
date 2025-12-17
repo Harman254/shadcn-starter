@@ -41,8 +41,8 @@ export function StoryCard({
     Hard: 'bg-red-500/20 text-red-400',
   }
 
-  // Use the generated URL or fallback
-  const displayImageUrl = enableAIImage ? imageUrl : item.imageUrl
+  // Use the generated URL or fallback - always show something
+  const displayImageUrl = enableAIImage ? (imageUrl || item.imageUrl) : item.imageUrl
 
   return (
     <article
@@ -60,7 +60,7 @@ export function StoryCard({
         {/* Gradient overlay */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent z-10" />
         
-        {/* Image or placeholder */}
+        {/* Image - always show fallback if available, then upgrade to generated */}
         {displayImageUrl && !imageError ? (
           <>
             {/* For base64 data URLs or regular URLs */}
@@ -95,10 +95,10 @@ export function StoryCard({
           </>
         ) : (
           <div className="absolute inset-0 bg-gradient-to-br from-primary/30 via-secondary to-accent flex items-center justify-center">
-            {(isGenerating || (!imageLoaded && !imageError)) && (
+            {isGenerating && !imageLoaded && (
               <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
             )}
-            {imageError && (
+            {imageError && !isGenerating && (
               <ChefHat className="w-12 h-12 text-muted-foreground/50" />
             )}
           </div>

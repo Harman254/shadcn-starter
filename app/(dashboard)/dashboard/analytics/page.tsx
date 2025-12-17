@@ -53,12 +53,18 @@ async function AnalyticsContent() {
     : '0';
 
   return (
-    <div className="min-h-screen bg-gradient-subtle">
-      <div className="container mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
+      {/* Animated background elements */}
+      <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-primary/10 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-accent/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+      </div>
+
+      <div className="container mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
         <AnalyticsHeader />
 
-        {/* Stats Grid */}
-        <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {/* Stats Grid - Enhanced with better spacing and animations */}
+        <div className="mt-6 sm:mt-8 grid gap-4 sm:gap-5 sm:grid-cols-2 lg:grid-cols-4">
           <StatCard
             title="Total Meals"
             value={analyticsData.totalMeals}
@@ -97,10 +103,10 @@ async function AnalyticsContent() {
           />
         </div>
 
-        {/* Charts Row */}
-        <div className="mt-8 grid gap-6 lg:grid-cols-3">
+        {/* Charts Row - Enhanced responsive design */}
+        <div className="mt-6 sm:mt-8 grid gap-4 sm:gap-6 lg:grid-cols-3">
           {/* Calorie Trend */}
-          <div className="lg:col-span-2 rounded-2xl bg-card p-6 shadow-card">
+          <div className="lg:col-span-2 rounded-2xl bg-card/80 backdrop-blur-sm border border-border/50 p-4 sm:p-6 shadow-lg hover:shadow-xl transition-all duration-300">
             <div className="mb-4 flex items-center justify-between">
               <div>
                 <h2 className="text-lg font-semibold">Calorie Intake</h2>
@@ -121,7 +127,7 @@ async function AnalyticsContent() {
           </div>
 
           {/* Nutrition Breakdown */}
-          <div className="rounded-2xl bg-card p-6 shadow-card">
+          <div className="rounded-2xl bg-card/80 backdrop-blur-sm border border-border/50 p-4 sm:p-6 shadow-lg hover:shadow-xl transition-all duration-300">
             <h2 className="text-lg font-semibold">Nutrition Breakdown</h2>
             <p className="text-sm text-muted-foreground">Today&apos;s macros distribution</p>
             <NutritionDonut
@@ -133,10 +139,10 @@ async function AnalyticsContent() {
           </div>
         </div>
 
-        {/* Bottom Row */}
-        <div className="mt-8 grid gap-6 lg:grid-cols-3">
+        {/* Bottom Row - Enhanced responsive grid */}
+        <div className="mt-6 sm:mt-8 grid gap-4 sm:gap-6 lg:grid-cols-3">
           {/* Recent Meals */}
-          <div className="rounded-2xl bg-card p-6 shadow-card">
+          <div className="rounded-2xl bg-card/80 backdrop-blur-sm border border-border/50 p-4 sm:p-6 shadow-lg hover:shadow-xl transition-all duration-300">
             <div className="mb-4">
               <h2 className="text-lg font-semibold">Recent Meals</h2>
               <p className="text-sm text-muted-foreground">Your latest logged meals</p>
@@ -145,7 +151,7 @@ async function AnalyticsContent() {
           </div>
 
           {/* Meal Plan Progress */}
-          <div className="rounded-2xl bg-card p-6 shadow-card">
+          <div className="rounded-2xl bg-card/80 backdrop-blur-sm border border-border/50 p-4 sm:p-6 shadow-lg hover:shadow-xl transition-all duration-300">
             <div className="mb-4">
               <h2 className="text-lg font-semibold">Meal Plan Progress</h2>
               <p className="text-sm text-muted-foreground">This week&apos;s adherence</p>
@@ -158,7 +164,7 @@ async function AnalyticsContent() {
           </div>
 
           {/* Grocery Insights */}
-          <div className="rounded-2xl bg-card p-6 shadow-card">
+          <div className="rounded-2xl bg-card/80 backdrop-blur-sm border border-border/50 p-4 sm:p-6 shadow-lg hover:shadow-xl transition-all duration-300">
             <div className="mb-4">
               <h2 className="text-lg font-semibold">Grocery Insights</h2>
               <p className="text-sm text-muted-foreground">Shopping breakdown by category</p>
