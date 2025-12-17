@@ -1,10 +1,25 @@
-import React from 'react'
+import React, { Suspense } from 'react'
 import { Metadata } from 'next'
 import Preferences from './pref'
 import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import Footer from '@/components/footer';
+import { Loader2 } from 'lucide-react';
+
+export const dynamic = 'force-dynamic';
+export const revalidate = 300; // Revalidate every 5 minutes
+
+function LoadingFallback() {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 flex items-center justify-center">
+      <div className="text-center">
+        <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
+        <p className="text-muted-foreground">Loading preferences...</p>
+      </div>
+    </div>
+  );
+}
 
 export const metadata: Metadata = {
   title: 'Preferences & Settings | MealWise - Customize Your Meal Planning Experience',
@@ -74,6 +89,10 @@ export const metadata: Metadata = {
   },
 }
 
+async function PreferencesContent({ userId }: { userId: string }) {
+  return <Preferences userId={userId} />
+}
+
 const PreferencesPage = async () => {
   const session = await auth.api.getSession({
     headers: await headers() // you need to pass the headers object.
@@ -83,10 +102,10 @@ const PreferencesPage = async () => {
     redirect("/sign-in");
   }
   return (
-    <>
-    <Preferences userId={session.user.id}  />
-    <Footer />
-    </>
+    <Suspense fallback={<LoadingFallback />}>
+      <PreferencesContent userId={session.user.id} />
+      <Footer />
+    </Suspense>
   )
 }
 

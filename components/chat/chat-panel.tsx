@@ -18,6 +18,7 @@ import { logger } from '@/utils/logger';
 import { fetchWithRetry } from '@/utils/api-retry';
 import { useChat } from '@ai-sdk/react';
 import { Button } from '@/components/ui/button';
+import { motion, AnimatePresence } from 'framer-motion';
 
 // Cache empty arrays outside component to ensure stable references
 const EMPTY_MESSAGES: Message[] = [];
@@ -51,20 +52,25 @@ export function ChatPanel({
   const titleGeneratedRef = useRef<string | null>(null);
   const lockedSessionRef = useRef<string | null>(null);
   const lockInitializedRef = useRef(false);
+  const isUserSubmittingRef = useRef(false);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const hasInitialScrolledRef = useRef(false);
   
-  // Initialize lock from localStorage
-  useEffect(() => {
-    if (lockInitializedRef.current) return;
+  // Synchronously initialize lock from localStorage to prevent creating new session on refresh
+  // This is safe because ChatPanel is loaded with ssr: false
+  if (!lockInitializedRef.current && typeof window !== 'undefined') {
     lockInitializedRef.current = true;
     try {
       const stored = localStorage.getItem('chat-storage');
       if (stored) {
         const parsed = JSON.parse(stored);
         const storedSessionId = parsed?.state?.currentSessionId;
-        if (storedSessionId) lockedSessionRef.current = storedSessionId;
+        if (storedSessionId) {
+            lockedSessionRef.current = storedSessionId;
+        }
       }
     } catch (e) { /* Ignore */ }
-  }, []);
+  }
   
   // Session Logic
   const finalSessionId = useMemo(() => {
@@ -114,6 +120,7 @@ export function ChatPanel({
       preferencesSummary,
     },
     onFinish: async (message) => {
+      isUserSubmittingRef.current = false;
       if (!finalSessionId) return;
       
       // Extract UI data from the stream data
@@ -160,30 +167,58 @@ export function ChatPanel({
       
       addMessage(finalSessionId, assistantMsg);
       
-      // Save to DB (both user and assistant messages are now in store)
-      // We need to fetch the latest state to get the user message too
+      // Get current messages (both user and assistant messages are now in store)
       const currentMessages = useChatStore.getState().sessions[finalSessionId]?.messages || [];
-      saveToDatabase(currentMessages);
-
-      // Generate Title if needed
+      
+      // Generate Title if needed and create session BEFORE saving messages
+      // This ensures sessions are only saved when they have a proper title
       if (currentMessages.length === 2 && !titleGeneratedRef.current) {
         titleGeneratedRef.current = finalSessionId;
         try {
           const title = await generateSessionTitle(currentMessages);
           if (title && title !== 'New Chat') {
-            updateSessionTitle(finalSessionId, title);
-            fetchWithRetry(`/api/chat/sessions/${finalSessionId}`, {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ title }),
+            // Create the session with the generated title
+            const createResponse = await fetchWithRetry('/api/chat/sessions', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ 
+                sessionId: finalSessionId,
+                chatType,
+                title 
+              }),
             });
+
+            if (createResponse.ok) {
+              // Update local store
+              updateSessionTitle(finalSessionId, title);
+              
+              // Now save the messages since the session exists
+              saveToDatabase(currentMessages);
+            } else {
+              const errorText = await createResponse.text();
+              console.error('Failed to create session with title:', errorText);
+              // Don't save messages if session creation failed
+            }
+          } else {
+            // Title generation returned "New Chat" or empty - don't create session
+            // Messages won't be saved, preventing empty sessions in history
+            if (process.env.NODE_ENV === 'development') {
+              console.log('[ChatPanel] Title generation returned invalid title, skipping session creation');
+            }
           }
         } catch (e) {
-          console.error('Title generation failed', e);
+          console.error('Title generation or session creation failed', e);
+          // Don't save messages if session creation failed
         }
+      } else if (currentMessages.length > 2) {
+        // Session should already exist if we have more than 2 messages
+        // Save messages normally
+        saveToDatabase(currentMessages);
       }
+      // If we have less than 2 messages, don't save yet (wait for title generation)
     },
     onError: (error) => {
+      isUserSubmittingRef.current = false;
       console.error('[ChatPanel] useChat error:', error);
       toast({
         title: 'Message failed',
@@ -204,37 +239,68 @@ export function ChatPanel({
   });
 
   // Sync store messages to useChat when session changes
-  useEffect(() => {
-    setMessages(storeMessages);
-  }, [finalSessionId]); 
+   // CRITICAL: Don't sync during streaming or we'll overwrite the streaming message!
+useEffect(() => {
+if (!isLoading && !isUserSubmittingRef.current) {
+setMessages(storeMessages);
+}
+}, [finalSessionId, storeMessages, isLoading, setMessages]);
 
-  const onFormSubmit = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    if (!input.trim()) return;
 
-    if (!isAuthenticated) {
-      openAuthModal('sign-in');
-      return;
-    }
+  // We need to override the default submit handler to use append() so we can control the ID
+  const handleManualSubmit = async (value: string) => {
+     if (!value.trim()) return;
+     if (!isAuthenticated) {
+        openAuthModal('sign-in');
+        return;
+     }
 
-    if (!navigator.onLine) {
-      queueMessage(input.trim());
-      handleInputChange({ target: { value: '' } } as React.ChangeEvent<HTMLInputElement>);
-      return;
-    }
+     if (!navigator.onLine) {
+        queueMessage(value.trim());
+        handleInputChange({ target: { value: '' } } as React.ChangeEvent<HTMLInputElement>);
+        return;
+     }
 
-    // Optimistically add user message to store
-    const userMsg: Message = {
-      id: crypto.randomUUID(),
-      role: 'user',
-      content: input,
-      timestamp: new Date(),
-    };
-    addMessage(finalSessionId, userMsg);
-    
-    // Trigger useChat submit
-    handleSubmit(e);
+     const messageId = crypto.randomUUID();
+     const userMsg: Message = {
+        id: messageId,
+        role: 'user',
+        content: value,
+        timestamp: new Date(),
+     };
+     
+     isUserSubmittingRef.current = true;
+     addMessage(finalSessionId, userMsg);
+     
+     // Clear input
+     handleInputChange({ target: { value: '' } } as React.ChangeEvent<HTMLInputElement>);
+     
+     // Append with same ID
+     append({
+        id: messageId,
+        role: 'user',
+        content: value,
+     });
   };
+  // Auto-scroll to bottom when chat first loads
+  useEffect(() => {
+    if (!scrollContainerRef.current) return;
+    if (messages.length > 0 && !hasInitialScrolledRef.current) {
+      hasInitialScrolledRef.current = true;
+      setTimeout(() => {
+        if (scrollContainerRef.current) {
+          scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
+        }
+      }, 100);
+    }
+  }, [messages.length]);
+
+  // Scroll during streaming
+  useEffect(() => {
+    if (!scrollContainerRef.current || !isLoading) return;
+    scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
+  }, [messages, isLoading]);
+
 
   const handleClearChat = useCallback(async () => {
     if (!finalSessionId) return;
@@ -245,58 +311,59 @@ export function ChatPanel({
   }, [finalSessionId, clearSession, clearFromDatabase, toast, setMessages]);
 
   return (
-    <div className="flex flex-col h-full w-full relative">
-      <div className="flex-1 overflow-y-auto overflow-x-hidden pb-4 sm:pb-6">
-        {messages.length === 0 ? (
-          <EmptyScreen onExampleClick={(val) => {
-             if (!isAuthenticated) {
-                openAuthModal('sign-in');
-                return;
-             }
-             const userMsg: Message = {
-                id: crypto.randomUUID(),
-                role: 'user',
-                content: val,
-                timestamp: new Date(),
-             };
-             addMessage(finalSessionId, userMsg);
-             append({ role: 'user', content: val });
-          }} />
-        ) : (
-          <ChatMessages 
-            messages={messages} 
-            isLoading={isLoading}
-            data={data}
-          />
-        )}
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.5 }}
+      className="flex flex-col h-full w-full relative"
+    >
+      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto overflow-x-hidden min-h-0">
+        <div className="max-w-3xl mx-auto w-full pb-32 sm:pb-40 px-4">
+          {messages.length === 0 ? (
+            <EmptyScreen onExampleClick={(val) => {
+               if (!isAuthenticated) {
+                  openAuthModal('sign-in');
+                  return;
+               }
+               const messageId = crypto.randomUUID();
+               const userMsg: Message = {
+                  id: messageId,
+                  role: 'user',
+                  content: val,
+                  timestamp: new Date(),
+               };
+               isUserSubmittingRef.current = true;
+               addMessage(finalSessionId, userMsg);
+               append({ 
+                  id: messageId,
+                  role: 'user', 
+                  content: val 
+               });
+            }} />
+          ) : (
+            <ChatMessages 
+              messages={messages} 
+              isLoading={isLoading}
+              data={data}
+              onActionClick={handleManualSubmit}
+            />
+          )}
+        </div>
       </div>
       
-      <div className="shrink-0 z-20 bg-background/50 backdrop-blur-sm">
-         <ChatInput 
-           onSubmit={(val) => {
-             // ChatInput calls onSubmit with the value
-             // We need to update useChat's input state then submit
-             handleInputChange({ target: { value: val } } as React.ChangeEvent<HTMLInputElement>);
-             // We need to wait for state update? No, handleInputChange is sync-ish.
-             // Actually, handleSubmit uses the *current* input state.
-             // Better: use append() for direct submission without form event
-             if (!isAuthenticated) {
-                openAuthModal('sign-in');
-                return;
-             }
-             const userMsg: Message = {
-                id: crypto.randomUUID(),
-                role: 'user',
-                content: val,
-                timestamp: new Date(),
-             };
-             addMessage(finalSessionId, userMsg);
-             append({ role: 'user', content: val });
-           }}
-           isLoading={isLoading}
-           disabled={!isAuthenticated}
-         />
+      {/* Floating Input Container */}
+      <div className="fixed bottom-0 right-0 z-50 px-4 pb-4 sm:pb-6 pointer-events-none left-0 md:left-[260px]">
+          <div className="max-w-3xl mx-auto w-full pointer-events-auto">
+            <ChatInput 
+              onSubmit={handleManualSubmit}
+              isLoading={isLoading}
+              disabled={!isAuthenticated}
+              input={input}
+              handleInputChange={handleInputChange}
+            />
+          </div>
       </div>
-    </div>
+    </motion.div>
   );
 }

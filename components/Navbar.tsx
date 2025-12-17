@@ -74,6 +74,11 @@ const Navbar = () => {
       href: "/chat",
     },
     {
+      title: "Recipes",
+      description: "Your saved recipes collection",
+      href: "/recipes",
+    },
+    {
       title: "Analytics",
       description: "Track Meal Plans, Recipes, and progress",
       href: "/dashboard/analytics",

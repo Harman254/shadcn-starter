@@ -49,14 +49,31 @@ export async function getChatSessions(chatType: 'context-aware' | 'tool-selectio
     });
 
     // Transform to match client component format - only title needed
-    return chatSessions.map((s) => ({
-      id: s.id,
-      chatType: s.chatType as 'context-aware' | 'tool-selection',
-      title: s.title || undefined,
-      messageCount: s._count?.messages || 0,
-      lastMessage: undefined, // Not needed - only showing titles
-      updatedAt: s.updatedAt,
-    }));
+    // Filter out sessions with "New Chat" titles or no messages
+    return chatSessions
+      .filter((s) => {
+        // Exclude sessions with "New Chat" title or default titles
+        const title = s.title?.trim();
+        if (!title || 
+            title === 'New Chat' || 
+            title.startsWith('Chat ') || 
+            title.match(/^Chat \d+\/\d+\/\d+$/)) {
+          return false;
+        }
+        // Exclude sessions with no messages
+        if ((s._count?.messages || 0) === 0) {
+          return false;
+        }
+        return true;
+      })
+      .map((s) => ({
+        id: s.id,
+        chatType: s.chatType as 'context-aware' | 'tool-selection',
+        title: s.title || undefined,
+        messageCount: s._count?.messages || 0,
+        lastMessage: undefined, // Not needed - only showing titles
+        updatedAt: s.updatedAt,
+      }));
   } catch (error) {
     console.error('Error fetching chat sessions:', error);
     return [];

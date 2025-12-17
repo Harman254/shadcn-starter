@@ -85,7 +85,7 @@ export class OrchestratedChatFlow {
       // We use generateText here instead of streamText
       const { generateText } = await import('ai');
       const { text } = await generateText({
-        model: google('gemini-2.0-flash-exp'),
+        model: google('gemini-2.0-flash'),
         system: this.buildSystemPrompt(input, context, false),
         prompt: this.buildSynthesisPrompt(input.message, toolResults),
       });
@@ -139,18 +139,33 @@ export class OrchestratedChatFlow {
           } catch (e) {
             clearInterval(keepAliveInterval);
           }
-        }, 2000);
+        }, 3000); // 3s to reduce noise while preventing timeouts
 
         try {
           // 1. Initial Status
           controller.enqueue(formatData({ type: 'status', content: '🤔 Analyzing your request...' }));
 
           // Load context and preferences in parallel
-          const [context, resolvedPreferences, resolvedLocation] = await Promise.all([
+          let [context, resolvedPreferences, resolvedLocation] = await Promise.all([
             this.contextManager.getContext(input.userId, input.sessionId),
             Promise.resolve(input.userPreferences),
             Promise.resolve(input.locationData)
           ]);
+
+          // RECOVERY LOGIC: If DB context is missing/empty, try to recover from chat history
+          if ((!context || !context.lastToolResult) && input.conversationHistory.length > 0) {
+            const recovered = this.contextManager.recoverContextFromHistory(input.conversationHistory);
+            if (recovered.lastToolResult) {
+              console.log('[OrchestratedChatFlow] 🩹 Context recovered from history');
+              if (!context) {
+                context = { timestamp: new Date(), ...recovered } as any;
+              } else {
+                context.lastToolResult = recovered.lastToolResult;
+                if (recovered.mealPlanId) context.mealPlanId = recovered.mealPlanId;
+                if (recovered.groceryListId) context.groceryListId = recovered.groceryListId;
+              }
+            }
+          }
 
           // 2. Plan
           const plan = await this.reasoningEngine.generatePlan(input.message, {
@@ -207,7 +222,7 @@ export class OrchestratedChatFlow {
           clearInterval(keepAliveInterval);
 
           const result = streamText({
-            model: google('gemini-2.0-flash-exp'),
+            model: google('gemini-2.0-flash'),
             system: this.buildSystemPrompt(input, context, false),
             prompt: this.buildSynthesisPrompt(input.message, toolResults),
           });
@@ -216,11 +231,31 @@ export class OrchestratedChatFlow {
           // result.toDataStream() returns a stream of formatted chunks (0:"text", etc.)
           const reader = result.toDataStream().getReader();
 
+          // Track accumulated text to detect empty responses
+          let accumulatedText = '';
+          const hasSuccessfulTools = Object.values(toolResults).some(
+            (result: any) => result && result.success !== false && !result.isSystemError
+          );
+
           while (true) {
             const { done, value } = await reader.read();
             if (done) break;
+
+            // Track text chunks (format: 0:"text content")
+            const textChunk = value.toString();
+            if (textChunk.startsWith('0:')) {
+              try {
+                const parsed = JSON.parse(textChunk.substring(2));
+                accumulatedText += parsed;
+              } catch (e) {
+                // Ignore parse errors
+              }
+            }
+
             controller.enqueue(value);
           }
+
+
 
           // Send UI data as a hidden HTML comment at the end of the message
           // This ensures it travels with the text and is persisted in history
@@ -236,11 +271,19 @@ export class OrchestratedChatFlow {
 
           controller.close();
 
+          // Safety timeout
+          const safetyTimeout = setTimeout(() => {
+            console.warn('[OrchestratedChatFlow] ⚠️ Stream safety timeout reached. Closing controller.');
+            try { controller.close(); } catch (e) { }
+          }, 60000);
+
         } catch (error) {
           clearInterval(keepAliveInterval);
           console.error('[OrchestratedChatFlow] Stream Error:', error);
           controller.enqueue(formatError(error instanceof Error ? error.message : 'An error occurred'));
           controller.close();
+        } finally {
+          console.log('[OrchestratedChatFlow] 🏁 Stream controller closed.');
         }
       }
     });
@@ -251,7 +294,7 @@ export class OrchestratedChatFlow {
     const toolMessages = Object.entries(toolResults)
       .map(([tool, result]) => {
         if (result) {
-          if (result.status === 'error') {
+          if (result.success === false || result.isSystemError) {
             return `Tool '${tool}' FAILED: ${result.error || 'Unknown error'}`;
           }
           if (typeof result.message === 'string') {
@@ -265,28 +308,43 @@ export class OrchestratedChatFlow {
     const hasResults = toolMessages.length > 0;
     const hasErrors = toolMessages.some(m => m.includes('FAILED'));
 
+    // Randomize personality for variety
+    const personalities = [
+      'a friendly chef who loves sharing food wisdom',
+      'an enthusiastic food blogger excited about healthy eating',
+      'a warm kitchen companion who makes cooking fun',
+      'a supportive nutritionist who celebrates every meal',
+      'a cheerful sous chef who loves to help'
+    ];
+    const personality = personalities[Math.floor(Math.random() * personalities.length)];
+
     return `
       USER MESSAGE: "${userMessage}"
       
       TOOL EXECUTION SUMMARY:
       ${hasResults ? toolMessages.join('\n') : 'No tools were executed.'}
       
-      CRITICAL INSTRUCTIONS:
+      YOUR PERSONALITY: You are ${personality}.
+      
+      CREATIVE RESPONSE GUIDELINES:
       ${hasResults ? `
       - The UI is ALREADY showing the full data (meal plan cards, grocery lists, etc.)
-      - Your job is to write a SHORT, friendly acknowledgment (1-2 sentences MAX)
-      - DO NOT describe what's in the meal plan - the user can see it in the UI
-      - DO NOT list meals, ingredients, or prices - they're already displayed
-      - Just say something like "I've created your meal plan! Enjoy!" or "Here's your grocery list!"
-      - If there are ERRORS in the summary, apologize specifically for that part (e.g. "I couldn't get the prices, but here is the plan.")
-      - Keep it enthusiastic but VERY brief
+      - Write a creative, engaging response (a paragraph or more is fine - be thorough and helpful)
+      - DO NOT describe what's in the data - the user can SEE it
+      - BE CREATIVE! Vary your responses each time:
+        * Use different greetings (Awesome! / Voilà! / Ta-da! / Here you go! / Done!)
+        * Add relevant emojis sparingly (🎉 🍳 🥗 ✨)
+        * Occasionally add a fun food fact or tip
+        * Sometimes ask a follow-up question ("Want me to adjust anything?")
+        * Provide helpful context, tips, or suggestions related to what was generated
+      - If there are ERRORS, be honest but helpful ("Hmm, couldn't get prices, but here's your plan!")
+      - Match the user's energy - if they're excited, be excited back!
       ` : `
-      - No tools were executed. This means the user likely asked a general question, just said hello, or is following up on a previous message.
-      - CHECK THE CONVERSATION HISTORY. If the user says "??" or "Hello?", they might be waiting for a response to their previous message.
-      - Answer the user's question directly and helpfully.
-      - Be conversational, friendly, and engaging.
-      - If they asked about the app's capabilities, explain that you can help with meal planning, grocery lists, and nutrition.
-      - Do NOT apologize unless there was an actual error.
+      - No tools were executed - this is a general chat.
+      - Be conversational, witty, and engaging.
+      - Show your food expertise naturally.
+      - Ask clarifying questions if unsure what they need.
+      - If they said hello, greet them warmly and ask how you can help with their meal planning.
       `}
       `;
   }
@@ -300,12 +358,14 @@ export class OrchestratedChatFlow {
     isRetry: boolean,
     forcedTools?: string[]
   ): string {
-    const basePrompt = `You are an expert AI assistant for a meal planning application.
+    const basePrompt = `You are a diverse expert AI assistant for a meal planning application.
 Your goal is to help users plan meals, analyze nutrition, check grocery prices, and generate grocery lists.
 You are also a knowledgeable culinary expert who can discuss food, recipes, ingredients, and cooking techniques freely.
 
-CRITICAL RULE: When users request specific actions (planning, list generation, analysis), you MUST use the corresponding tools.
-HOWEVER, if the user asks a general question (e.g., "What is Ugali?", "How do I cook rice?"), you should ANSWER DIRECTLY without using tools.`;
+CRITICAL RULE: When users request specific actions (Meals, Meal planning, shoppinglist generation, analysis, nutrition, Recipes, Recipe analysis), you MUST use the corresponding tools.
+HOWEVER, if the user asks a general question (e.g., "What is Ugali?", "How do I cook rice?"), you should intelligently ANSWER DIRECTLY without using tools.
+
+CONTEXT RESET: If the user says "Start over", "New plan", "Reset", or "Forget context", you should IGNORE the previous context (Meal Plan ID, Grocery List ID) and treat it as a fresh request. Explicitly mention that you are starting fresh.`;
 
     const contextInfo = `
 CURRENT CONTEXT:
@@ -319,10 +379,27 @@ ${context?.groceryListId ? `- Previous Grocery List ID: ${context.groceryListId}
 ${contextInfo}
 
 AVAILABLE TOOLS:
+- fetchUserPreferences: Fetch stored user preferences (dietary, allergies, goals)
 - generateMealPlan: Create a meal plan (parameters: duration, mealsPerDay, preferences)
-- analyzeNutrition: Analyze nutrition for a meal plan (requires: mealPlanId)
-- getGroceryPricing: Get pricing for a meal plan (requires: mealPlanId)
-- generateGroceryList: Create a grocery list (requires: mealPlanId)
+- modifyMealPlan: Generate a different meal plan variant
+- swapMeal: Swap a specific meal in the plan
+- generateMealRecipe: Generate detailed recipe for a meal
+- generateGroceryList: Create shopping list (optional mealPlanId, works from context)
+- searchFoodData: Search real-world food data (nutrition, prices, availability, substitutions)
+- analyzeNutrition: Analyze nutrition (optional mealPlanId, works from context)
+
+CRITICAL ORCHESTRATION RULES:
+1. **Meal Planning Flow**:
+   - ALWAYS start by checking/fetching user preferences if not provided.
+   - Then generate the meal plan.
+   - AFTER generating the plan, you can offer to generate a grocery list or analyze nutrition.
+   
+2. **Grocery Flow**:
+   - Generate the list first using "generateGroceryList".
+   - THEN offer to optimize it using "optimizeGroceryList" (especially if user mentions specific stores or saving money).
+
+3. **Recipe Flow**:
+   - If user asks for a recipe for a specific meal in the plan, use "generateMealRecipe".
 
 Remember: ALWAYS use tools for user requests. Be helpful and concise in your responses.`;
   }

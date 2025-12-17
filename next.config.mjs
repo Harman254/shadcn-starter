@@ -3,6 +3,12 @@ import withPWA from 'next-pwa';
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   experimental: {},
+
+  // Empty turbopack config to silence the webpack/turbopack conflict warning on Vercel
+  turbopack: {},
+
+  // Externalize packages with dynamic requires that don't work with Turbopack
+  serverExternalPackages: [],
   images: {
     remotePatterns: [
       {
@@ -11,7 +17,19 @@ const nextConfig = {
         port: '',
         pathname: '/**',
       },
-    
+      {
+        protocol: 'https',
+        hostname: 'res.cloudinary.com',
+        port: '',
+        pathname: '/**',
+      },
+    ],
+    // Allow local placeholder images with query strings
+    localPatterns: [
+      {
+        pathname: '/**',
+        search: '',
+      },
     ],
     dangerouslyAllowSVG: true,
     contentDispositionType: 'attachment',

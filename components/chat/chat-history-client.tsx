@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useMemo, useCallback, memo } from 'react';
+import { useEffect, useState, useMemo, useCallback, memo, useRef } from 'react';
 import { useChatStore } from '@/store/chat-store';
 import { useSession } from '@/lib/auth-client';
 import { useAuthModal } from '@/components/AuthModalProvider';
@@ -52,6 +52,29 @@ interface SessionItemProps {
   onDelete: (sessionId: string) => void;
 }
 
+// Helper for date grouping
+function getDateGroup(date: Date): string {
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const sevenDaysAgo = new Date(today);
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+  const checkDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+
+  if (checkDate.getTime() === today.getTime()) {
+    return 'Today';
+  }
+  if (checkDate.getTime() === yesterday.getTime()) {
+    return 'Yesterday';
+  }
+  if (checkDate > sevenDaysAgo) {
+    return 'Previous 7 Days';
+  }
+  return 'Older';
+}
+
 const SessionItem = memo(function SessionItem({
   session,
   isActive,
@@ -62,112 +85,116 @@ const SessionItem = memo(function SessionItem({
   return (
     <div
       className={cn(
-        "group relative",
-        "px-3 py-3 sm:py-3",
-        "rounded-xl",
-        "cursor-pointer transition-all duration-300 ease-out",
-        "border",
-        isActive
-          ? "bg-gradient-to-r from-primary/20 to-primary/10 border-primary/30 shadow-md shadow-primary/5 translate-x-1"
-          : "border-transparent hover:bg-muted/50 hover:border-border/50 bg-transparent hover:translate-x-1"
+        "group relative flex items-center gap-2 px-3 py-2.5 text-sm transition-all rounded-lg cursor-pointer",
+        "min-w-0", // Ensure flex children can shrink
+        // ChatGPT-style: subtle left border when active
+        isActive 
+          ? "bg-accent/80 text-foreground before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-5 before:w-1 before:bg-primary before:rounded-r-full" 
+          : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
       )}
       onClick={() => onSelect(session.id)}
     >
-      <div className="flex items-center gap-3 w-full">
-        {/* Icon/Indicator */}
-        <div className={cn(
-          "shrink-0 flex items-center justify-center w-8 h-8 rounded-lg transition-all duration-300",
-          isActive 
-            ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20 scale-110" 
-            : "bg-muted/50 text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary group-hover:scale-110"
-        )}>
-          {isActive ? (
-            <div className="h-2 w-2 rounded-full bg-white animate-pulse" />
-          ) : (
-            <History className="h-4 w-4" />
-          )}
-        </div>
-
-        {/* Content */}
-        <div className="flex-1 min-w-0 flex flex-col gap-0.5">
-          <div className="flex items-center justify-between gap-2">
-            <p className={cn(
-              "text-sm font-medium truncate transition-colors",
-              "max-w-[180px] sm:max-w-none", // Force truncation on mobile to ensure delete button visibility
-              isActive ? "text-primary" : "text-foreground group-hover:text-foreground"
-            )}>
-              {session.title || (session.messageCount > 0 ? 'New conversation' : 'New chat')}
-            </p>
-            {session.updatedAt && (
-              <span className="text-[10px] text-muted-foreground/60 shrink-0">
-                {new Date(session.updatedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-              </span>
+      {/* Delete button - FIRST element, always visible */}
+      <AlertDialog>
+        <AlertDialogTrigger asChild>
+          <div
+            role="button"
+            tabIndex={0}
+            className={cn(
+              "h-7 w-7 shrink-0 flex items-center justify-center rounded-md transition-all",
+              "opacity-60 hover:opacity-100", // Always visible, more opaque on hover
+              "text-muted-foreground hover:text-destructive hover:bg-destructive/10",
+              "cursor-pointer"
+            )}
+            onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.stopPropagation();
+              }
+            }}
+          >
+            {isDeleting ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Trash2 className="h-3.5 w-3.5" />
             )}
           </div>
-          <p className="text-xs text-muted-foreground/70 truncate">
-            {session.messageCount} {session.messageCount === 1 ? 'message' : 'messages'}
-          </p>
-        </div>
-        
-        {/* Delete button - visible on hover or when active on desktop, always on mobile */}
-        <div className={cn(
-          "shrink-0 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-200",
-          isDeleting && "opacity-100"
-        )}>
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                disabled={isDeleting}
-                className={cn(
-                  "h-8 w-8",
-                  "text-muted-foreground hover:text-destructive",
-                  "hover:bg-destructive/10",
-                  "rounded-lg",
-                  "transition-colors",
-                  isDeleting && "opacity-60 cursor-not-allowed"
-                )}
-                onClick={(e) => e.stopPropagation()}
-              >
-                {isDeleting ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Trash2 className="h-4 w-4" />
-                )}
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent className="sm:max-w-md">
-              <AlertDialogHeader>
-                <AlertDialogTitle>Delete conversation?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  This will permanently delete this conversation and all its messages. This action cannot be undone.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter className="flex-col sm:flex-row gap-2 sm:gap-0">
-                <AlertDialogCancel className="w-full sm:w-auto">Cancel</AlertDialogCancel>
-                <AlertDialogAction
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onDelete(session.id);
-                  }}
-                  className="w-full sm:w-auto bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                >
-                  Delete
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        </div>
+        </AlertDialogTrigger>
+        <AlertDialogContent className="sm:max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete conversation?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete this conversation and cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-col sm:flex-row gap-2 sm:gap-0">
+            <AlertDialogCancel className="w-full sm:w-auto">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete(session.id);
+              }}
+              className="w-full sm:w-auto bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Chat icon for visual hint */}
+      <div className={cn(
+        "h-5 w-5 shrink-0 flex items-center justify-center rounded-md transition-colors",
+        isActive ? "text-primary" : "text-muted-foreground/50"
+      )}>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+        </svg>
+      </div>
+
+      {/* Title - clean, single line with truncation */}
+      <div className="flex-1 min-w-0 truncate font-medium">
+        {session.title || (session.messageCount > 0 ? 'New conversation' : 'New chat')}
       </div>
     </div>
   );
 });
 
 export function ChatHistoryClient({ chatType, initialSessions = [], onSessionSelect }: ChatHistoryClientProps) {
+  // Initialize from store if available to prevent layout shift/loading
+  const storeSessions = useChatStore((state) => state.sessions);
+  const hasStoreSessions = Object.values(storeSessions).some(s => s.chatType === chatType);
+  
   const [isMounted, setIsMounted] = useState(false);
-  const [sessions, setSessions] = useState<SessionData[]>(initialSessions);
-  const [isLoading, setIsLoading] = useState(!initialSessions.length);
+  // Initialize with store sessions if available, otherwise initialSessions
+  const [sessions, setSessions] = useState<SessionData[]>(() => {
+    if (initialSessions.length > 0) return initialSessions;
+    
+    // Convert store sessions to SessionData format
+    const storeSessionList = Object.values(storeSessions)
+      .filter(s => s.chatType === chatType)
+      .map(s => ({
+        id: s.id,
+        chatType: s.chatType,
+        title: s.title,
+        messageCount: s.messages.length,
+        lastMessage: s.messages.length > 0 ? {
+          id: s.messages[s.messages.length - 1].id,
+          role: s.messages[s.messages.length - 1].role,
+          content: s.messages[s.messages.length - 1].content,
+          timestamp: s.messages[s.messages.length - 1].timestamp || new Date(),
+        } : undefined,
+        updatedAt: s.updatedAt,
+      }));
+      
+    return storeSessionList.sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
+  });
+
+  const [isLoading, setIsLoading] = useState(() => {
+    // If we have sessions from store or props, don't show loading
+    return !hasStoreSessions && initialSessions.length === 0;
+  });
+  
   const [deletingSessionId, setDeletingSessionId] = useState<string | null>(null);
   const [isClearingAll, setIsClearingAll] = useState(false);
   const [loadingSessionId, setLoadingSessionId] = useState<string | null>(null);
@@ -175,6 +202,9 @@ export function ChatHistoryClient({ chatType, initialSessions = [], onSessionSel
   const isAuthenticated = !!session?.user;
   const { open: openAuthModal } = useAuthModal();
   const { toast } = useToast();
+  
+  // Track if we've already loaded to prevent duplicate fetches
+  const hasLoadedRef = useRef(false);
   
   // Zustand store for reactive updates
   const currentSessionId = useChatStore((state) => state.currentSessionId);
@@ -184,14 +214,10 @@ export function ChatHistoryClient({ chatType, initialSessions = [], onSessionSel
   const syncFromDatabase = useChatStore((state) => state.syncFromDatabase);
 
   // Load sessions from server action on mount if not provided
+  // This effect runs ONCE on mount to load initial data
   useEffect(() => {
-    // CRITICAL: If currentSessionId is set (user selected a session), NEVER load
-    // This prevents overriding the user's selection
-    if (currentSessionId) {
-      if (process.env.NODE_ENV === 'development') {
-        console.log('[ChatHistoryClient] 🚫 BLOCKED initial load - user selected session:', currentSessionId);
-      }
-      setIsLoading(false);
+    // Prevent duplicate loads - only run once
+    if (hasLoadedRef.current) {
       return;
     }
 
@@ -202,95 +228,63 @@ export function ChatHistoryClient({ chatType, initialSessions = [], onSessionSel
       }
 
       try {
-        setIsLoading(true);
+        // Only show loading if we don't have data yet
+        if (!hasStoreSessions && sessions.length === 0) {
+          setIsLoading(true);
+        }
+        
+        if (process.env.NODE_ENV === 'development') {
+          console.log('[ChatHistoryClient] 📥 Loading sessions from server (background refresh)');
+        }
+        
         const serverSessions = await getChatSessions(chatType);
         setSessions(serverSessions);
         
-        // CRITICAL: Check again if currentSessionId was set while fetching
-        const currentState = useChatStore.getState();
-        if (currentState.currentSessionId) {
-          if (process.env.NODE_ENV === 'development') {
-            console.log('[ChatHistoryClient] 🚫 User selected session during fetch, skipping sync');
-          }
-          setIsLoading(false);
-          return;
-        }
-        
-          // Sync to store - merge sessions, don't replace (preserves user-selected sessions)
-          if (serverSessions.length > 0) {
-            const sessionsToSync = serverSessions.map((s) => ({
-              id: s.id,
-              chatType: s.chatType,
-              title: s.title || undefined,
-              messages: s.lastMessage ? [{
-                id: s.lastMessage.id,
-                role: s.lastMessage.role,
-                content: s.lastMessage.content,
-                timestamp: new Date(s.lastMessage.timestamp),
-              }] : [],
-              updatedAt: new Date(s.updatedAt),
-            }));
-            
-            // CRITICAL: Don't use replaceForChatType on initial load
-            // This preserves local sessions that haven't been saved to DB yet
-            syncFromDatabase(sessionsToSync);
+        // Sync to store - merge sessions, don't replace (preserves user-selected sessions)
+        if (serverSessions.length > 0) {
+          const sessionsToSync = serverSessions.map((s) => ({
+            id: s.id,
+            chatType: s.chatType,
+            title: s.title || undefined,
+            messages: s.lastMessage ? [{
+              id: s.lastMessage.id,
+              role: s.lastMessage.role,
+              content: s.lastMessage.content,
+              timestamp: new Date(s.lastMessage.timestamp),
+            }] : [],
+            updatedAt: new Date(s.updatedAt),
+          }));
           
-          // Set current session if none is set (don't override user selection)
-          // Double-check currentSessionId is still null
+          syncFromDatabase(sessionsToSync);
+        
+          // Auto-select the most recent session if none is set
+          // serverSessions are already sorted by updatedAt descending, so first = most recent
           const finalState = useChatStore.getState();
-          if (!finalState.currentSessionId) {
-            const matchingSession = serverSessions.find((s) => s.chatType === chatType);
-            if (matchingSession) {
-              setCurrentSession(matchingSession.id);
+          if (!finalState.currentSessionId && serverSessions.length > 0) {
+            const mostRecentSession = serverSessions[0]; // Already sorted, first is most recent
+            if (mostRecentSession.chatType === chatType) {
+              setCurrentSession(mostRecentSession.id);
+              
+              if (process.env.NODE_ENV === 'development') {
+                console.log('[ChatHistoryClient] 🎯 Auto-selected most recent chat:', mostRecentSession.id, mostRecentSession.title);
+              }
             }
           }
         }
       } catch (error) {
-        console.error('Failed to load sessions:', error);
+        console.error('[ChatHistoryClient] Failed to load sessions:', error);
       } finally {
         setIsLoading(false);
+        hasLoadedRef.current = true; // Mark as loaded
       }
     };
 
-    // Only load if we don't have initial sessions
-    if (initialSessions.length === 0) {
-      loadSessions();
-    } else {
-      // CRITICAL: Check if currentSessionId is set before syncing initial sessions
-      if (currentSessionId) {
-        if (process.env.NODE_ENV === 'development') {
-          console.log('[ChatHistoryClient] 🚫 BLOCKED initial sync - user selected session:', currentSessionId);
-        }
-        return;
-      }
-
-      // Sync initial sessions to store
-      const sessionsToSync = initialSessions.map((s) => ({
-        id: s.id,
-        chatType: s.chatType,
-        title: s.title || undefined,
-        messages: s.lastMessage ? [{
-          id: s.lastMessage.id,
-          role: s.lastMessage.role,
-          content: s.lastMessage.content,
-          timestamp: new Date(s.lastMessage.timestamp),
-        }] : [],
-        updatedAt: new Date(s.updatedAt),
-      }));
-      
-      // CRITICAL: Don't use replaceForChatType - preserve local sessions
-      syncFromDatabase(sessionsToSync);
-      
-      // Double-check before setting
-      const finalCheckState = useChatStore.getState();
-      if (!finalCheckState.currentSessionId) {
-        const matchingSession = initialSessions.find((s) => s.chatType === chatType);
-        if (matchingSession) {
-          setCurrentSession(matchingSession.id);
-        }
-      }
-    }
-  }, [chatType, isAuthenticated, currentSessionId, syncFromDatabase, setCurrentSession]); // Added currentSessionId to deps
+    // Always try to refresh from server in background to get latest updates
+    // But don't block UI if we have store data
+    loadSessions();
+    
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Empty deps - run ONCE on mount only
 
   // Only render after mount to avoid hydration mismatch
   useEffect(() => {
@@ -372,9 +366,17 @@ export function ChatHistoryClient({ chatType, initialSessions = [], onSessionSel
     // Store sessions take precedence (they have latest updates)
     const sessionMap = new Map<string, SessionData>();
     
-    // Add server sessions (these should all have messages since they're from DB)
+    // Add server sessions (filter out "New Chat" titles and empty sessions)
     sessions.forEach((s) => {
-      sessionMap.set(s.id, s);
+      // Filter out sessions with "New Chat" titles or no messages
+      const title = s.title?.trim();
+      if (title && 
+          title !== 'New Chat' && 
+          !title.startsWith('Chat ') && 
+          !title.match(/^Chat \d+\/\d+\/\d+$/) &&
+          s.messageCount > 0) {
+        sessionMap.set(s.id, s);
+      }
     });
     
     // Update with store sessions (which may have newer data)
@@ -386,6 +388,15 @@ export function ChatHistoryClient({ chatType, initialSessions = [], onSessionSel
       // Only include sessions with messages OR the current active session
       if (!hasMessages && !isCurrentSession) {
         return; // Skip empty sessions that aren't active
+      }
+      
+      // Filter out sessions with "New Chat" titles (unless it's the current session)
+      const title = s.title?.trim();
+      if (!isCurrentSession && title && 
+          (title === 'New Chat' || 
+           title.startsWith('Chat ') || 
+           title.match(/^Chat \d+\/\d+\/\d+$/))) {
+        return; // Skip sessions with default titles
       }
       
       if (existing) {
@@ -425,9 +436,13 @@ export function ChatHistoryClient({ chatType, initialSessions = [], onSessionSel
       }
     });
     
-    return Array.from(sessionMap.values()).sort(
-      (a, b) => b.updatedAt.getTime() - a.updatedAt.getTime()
-    );
+    return Array.from(sessionMap.values()).sort((a, b) => {
+      // Primary sort: updatedAt (newest first)
+      const timeDiff = b.updatedAt.getTime() - a.updatedAt.getTime();
+      if (timeDiff !== 0) return timeDiff;
+      // Secondary sort: id (stable, deterministic)
+      return b.id.localeCompare(a.id);
+    });
   }, [sessions, chatType]);
 
   const handleNewChat = () => {
@@ -874,6 +889,17 @@ export function ChatHistoryClient({ chatType, initialSessions = [], onSessionSel
     }
   };
 
+  // Group sessions by date
+  const groupedSessions = useMemo(() => {
+    const groups: Record<string, SessionData[]> = {};
+    displaySessions.forEach(session => {
+      const group = getDateGroup(new Date(session.updatedAt));
+      if (!groups[group]) groups[group] = [];
+      groups[group].push(session);
+    });
+    return groups;
+  }, [displaySessions]);
+
   // Show auth prompt if not authenticated
   if (!isAuthenticated && !isAuthPending && isMounted) {
     return (
@@ -911,100 +937,62 @@ export function ChatHistoryClient({ chatType, initialSessions = [], onSessionSel
     );
   }
 
+  const groupOrder = ['Today', 'Yesterday', 'Previous 7 Days', 'Older'];
+
   return (
-    <div className="h-full flex flex-col bg-muted/10">
-      {/* Header */}
-      <div className="px-4 py-4 border-b border-border/40 bg-background/80 backdrop-blur-md sticky top-0 z-10">
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex-1 min-w-0">
-            <h3 className="text-sm font-semibold text-foreground leading-none tracking-tight">History</h3>
-            <p className="text-xs text-muted-foreground mt-1 truncate font-medium">
-              {chatType === 'context-aware' ? 'Recipe Assistant' : 'Meal Tracker'}
-            </p>
-          </div>
-          <div className="flex items-center gap-1.5 shrink-0">
-            {sessions.length > 0 && (
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-9 w-9 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors touch-manipulation"
-                    aria-label="Clear empty conversations"
-                    disabled={!isAuthenticated || isClearingAll}
-                    title="Clear empty conversations"
-                  >
-                    {isClearingAll ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Trash className="h-4 w-4" />
-                    )}
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent className="w-[90vw] max-w-md">
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Clear empty conversations?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      This will delete all conversations without messages. This action cannot be undone.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter className="flex-col sm:flex-row gap-2">
-                    <AlertDialogCancel className="w-full sm:w-auto">Cancel</AlertDialogCancel>
-                    <AlertDialogAction
-                      onClick={() => handleClearAllConversations({ emptyOnly: true, noTitleOnly: true })}
-                      className="w-full sm:w-auto bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                    >
-                      Clear All
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            )}
-            <Button
-              variant="default"
-              size="icon"
-              onClick={handleNewChat}
-              className="h-9 w-9 rounded-lg shadow-sm hover:shadow transition-all bg-primary text-primary-foreground hover:bg-primary/90 touch-manipulation"
-              aria-label="New chat"
-              disabled={!isAuthenticated}
-              title="New chat"
-            >
-              <Plus className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
+    <div className="h-full flex flex-col bg-background">
+      {/* New Chat Button - Full width, prominent (ChatGPT style) */}
+      <div className="p-3 border-b border-border/30">
+        <Button
+          onClick={handleNewChat}
+          variant="outline"
+          className="w-full justify-start gap-3 h-10 px-3 text-sm font-medium border-border/50 hover:bg-muted/50"
+          disabled={!isAuthenticated}
+        >
+          <Plus className="h-4 w-4" />
+          New chat
+        </Button>
       </div>
 
       {/* Scrollable content */}
       <ScrollArea className="flex-1">
-        <div className="p-3 space-y-2">
+        <div className="py-3 space-y-4">
           {(isLoading || isAuthPending) ? (
             <div className="flex flex-col items-center justify-center py-12 gap-3 text-muted-foreground/50">
-              <Loader2 className="h-6 w-6 animate-spin" />
-              <p className="text-xs font-medium">Loading history...</p>
+              <Loader2 className="h-5 w-5 animate-spin" />
+              <p className="text-xs">Loading...</p>
             </div>
           ) : displaySessions.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
-              <div className="w-12 h-12 rounded-2xl bg-muted/50 flex items-center justify-center mb-4">
-                <History className="h-6 w-6 text-muted-foreground/50" />
+              <div className="w-10 h-10 rounded-xl bg-muted/50 flex items-center justify-center mb-3">
+                <History className="h-5 w-5 text-muted-foreground/40" />
               </div>
-              <h4 className="text-sm font-medium text-foreground mb-1">No history yet</h4>
-              <p className="text-xs text-muted-foreground max-w-[200px] leading-relaxed">
-                Start a new conversation to see it appear here.
-              </p>
+              <p className="text-sm text-muted-foreground">No conversations yet</p>
             </div>
           ) : (
-            <div className="space-y-2">
-              {displaySessions.map((session) => (
-                <SessionItem
-                  key={session.id}
-                  session={session}
-                  isActive={currentSessionId === session.id}
-                  isDeleting={deletingSessionId === session.id}
-                  onSelect={handleSessionSelect}
-                  onDelete={handleDeleteSession}
-                />
-              ))}
+            <div className="space-y-4 px-2">
+              {groupOrder.map(group => {
+                const groupSessions = groupedSessions[group];
+                if (!groupSessions || groupSessions.length === 0) return null;
+
+                return (
+                  <div key={group}>
+                    <h4 className="px-3 py-1.5 text-xs font-semibold text-muted-foreground/60 uppercase tracking-wide">{group}</h4>
+                    <div className="space-y-0.5">
+                      {groupSessions.map((session) => (
+                        <SessionItem
+                          key={session.id}
+                          session={session}
+                          isActive={currentSessionId === session.id}
+                          isDeleting={deletingSessionId === session.id}
+                          onSelect={handleSessionSelect}
+                          onDelete={handleDeleteSession}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>

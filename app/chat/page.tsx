@@ -11,6 +11,9 @@ export const metadata: Metadata = {
   description: 'Chat with your AI kitchen assistant for personalized meal planning, recipes, and cooking tips.',
 };
 
+// Force dynamic rendering since we use headers() for auth
+export const dynamic = 'force-dynamic';
+
 export default async function ChatPage() {
   // Fetch user preferences for context
   let preferences: UserPreference[] = [];

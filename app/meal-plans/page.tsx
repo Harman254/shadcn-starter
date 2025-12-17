@@ -82,6 +82,7 @@ export const metadata: Metadata = {
     yahoo: 'your-yahoo-verification-code',
   },
 }
+export const dynamic = 'force-dynamic'; // Ensure fresh data on every page load
 
 const MealPlans = async () => {
   const session = await auth.api.getSession({ headers: await headers() })
@@ -127,7 +128,7 @@ const MealPlans = async () => {
             Create your first meal plan and discover how easy healthy eating can be.
           </p>
           <Link
-            href="/meal-plans/new"
+            href="/chat"
             className="inline-flex items-center gap-3 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white px-8 py-4 rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-105 w-full"
           >
             <Plus className="w-5 h-5" />
@@ -187,7 +188,7 @@ const MealPlans = async () => {
               </div>
               
               <Link
-                href="/meal-plans/new"
+                href="/chat"
                 className="inline-flex items-center gap-2 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white px-4 py-2 rounded-lg font-medium transition-all duration-200 shadow-lg hover:shadow-xl w-full sm:w-auto justify-center"
               >
                 <Plus className="w-4 h-4" />

@@ -22,6 +22,34 @@ type Props = {
 
 const MealPlanStatusCard = ({ hasMealPlan, mealPlan, meals }: Props) => {
   const router = useRouter();
+
+  // Calculate Expiration Status
+  const { status, daysRemaining, progressPercent, daysPassed } = React.useMemo(() => {
+    if (!mealPlan) return { status: 'inactive', daysRemaining: 0, progressPercent: 0, daysPassed: 0 };
+
+    const startDate = new Date(mealPlan.createdAt);
+    const now = new Date();
+    
+    // Calculate difference in days (ms per day = 1000 * 60 * 60 * 24)
+    const diffTime = Math.abs(now.getTime() - startDate.getTime());
+    // Ensure daysPassed is at least 1 (Day 1)
+    const daysPassed = Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24))); 
+    
+    const daysRemaining = mealPlan.duration - daysPassed;
+    const progressPercent = Math.min(100, (daysPassed / mealPlan.duration) * 100);
+
+    let status: 'active' | 'expiring' | 'expired' = 'active';
+    
+    // Only expire if we are PAST the duration (e.g. Day 8 of 7)
+    if (daysPassed > mealPlan.duration) {
+      status = 'expired';
+    } else if (daysRemaining < 2) {
+      // Warn if less than 2 days remaining (e.g. Day 6 or 7 of 7)
+      status = 'expiring';
+    }
+
+    return { status, daysRemaining, progressPercent, daysPassed };
+  }, [mealPlan]);
   
   return (
     <motion.div 
@@ -55,21 +83,51 @@ const MealPlanStatusCard = ({ hasMealPlan, mealPlan, meals }: Props) => {
 
       {hasMealPlan && mealPlan ? (
         <div className="relative z-10 p-8 sm:p-12">
-          {/* Status Badge */}
+          {/* Status Badge & Notification */}
           <motion.div 
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.2, duration: 0.5 }}
-            className="flex justify-center mb-8"
+            className="flex flex-col items-center mb-8 gap-4"
           >
-            <div className="inline-flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-emerald-500/20 to-teal-500/20 backdrop-blur-sm rounded-full border border-emerald-400/30">
+            {/* Status Badge */}
+            <div className={`inline-flex items-center gap-3 px-6 py-3 backdrop-blur-sm rounded-full border ${
+              status === 'expired' 
+                ? 'bg-red-500/20 border-red-400/30' 
+                : status === 'expiring'
+                ? 'bg-amber-500/20 border-amber-400/30'
+                : 'bg-gradient-to-r from-emerald-500/20 to-teal-500/20 border-emerald-400/30'
+            }`}>
               <div className="relative">
-                <div className="w-3 h-3 bg-emerald-400 rounded-full animate-pulse" />
-                <div className="absolute inset-0 w-3 h-3 bg-emerald-400 rounded-full animate-ping" />
+                <div className={`w-3 h-3 rounded-full animate-pulse ${
+                  status === 'expired' ? 'bg-red-400' : status === 'expiring' ? 'bg-amber-400' : 'bg-emerald-400'
+                }`} />
+                {status === 'active' && <div className="absolute inset-0 w-3 h-3 bg-emerald-400 rounded-full animate-ping" />}
               </div>
-              <Rocket className="w-4 h-4 text-emerald-400 animate-pulse" />
-              <span className="text-sm font-bold text-emerald-300 tracking-wide">ACTIVE MEAL PLAN</span>
+              <Rocket className={`w-4 h-4 animate-pulse ${
+                 status === 'expired' ? 'text-red-400' : status === 'expiring' ? 'text-amber-400' : 'text-emerald-400'
+              }`} />
+              <span className={`text-sm font-bold tracking-wide ${
+                 status === 'expired' ? 'text-red-300' : status === 'expiring' ? 'text-amber-300' : 'text-emerald-300'
+              }`}>
+                {status === 'expired' ? 'PLAN EXPIRED' : status === 'expiring' ? 'EXPIRING SOON' : 'ACTIVE MEAL PLAN'}
+              </span>
             </div>
+
+            {/* Expiring/Expired Alert Banner */}
+            {status !== 'active' && (
+               <motion.div 
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className={`px-4 py-2 rounded-lg text-sm font-medium ${
+                  status === 'expired' ? 'bg-red-500/10 text-red-200 border border-red-500/20' : 'bg-amber-500/10 text-amber-200 border border-amber-500/20'
+                }`}
+               >
+                 {status === 'expired' 
+                   ? "This plan has ended. Time to create a new one!" 
+                   : `Heads up! Only ${daysRemaining} day${daysRemaining !== 1 ? 's' : ''} left.`}
+               </motion.div>
+            )}
           </motion.div>
 
           {/* Main Header */}
@@ -89,7 +147,9 @@ const MealPlanStatusCard = ({ hasMealPlan, mealPlan, meals }: Props) => {
               </span>
             </h1>
             <p className="text-slate-300 text-xl max-w-2xl mx-auto leading-relaxed">
-              Perfectly crafted meal plan designed to fuel your success
+              {status === 'expired' 
+                ? "Your previous plan was a success! Ready for the next chapter?" 
+                : `Day ${Math.min(daysPassed, mealPlan.duration)} of ${mealPlan.duration} • Keep up the great work!`}
             </p>
           </motion.div>
 
@@ -113,8 +173,17 @@ const MealPlanStatusCard = ({ hasMealPlan, mealPlan, meals }: Props) => {
                   </div>
                   <Target className="w-5 h-5 text-emerald-400 opacity-60" />
                 </div>
-                <div className="text-4xl font-black text-white mb-2">{mealPlan.duration}</div>
-                <div className="text-slate-400 font-semibold">Days Planned</div>
+                <div className="text-7xl font-black text-white mb-4 tracking-tighter">
+                  {status === 'expired' ? 0 : daysRemaining}
+                </div>
+                <div className="text-slate-400 font-semibold">Days Remaining</div>
+                {/* Progress Bar */}
+                <div className="w-full h-1.5 bg-white/10 rounded-full mt-3 overflow-hidden">
+                  <div 
+                    className={`h-full rounded-full ${status === 'expired' ? 'bg-red-500' : 'bg-emerald-400'}`}
+                    style={{ width: `${status === 'expired' ? 100 : progressPercent}%` }} 
+                  />
+                </div>
               </div>
             </motion.div>
 
@@ -131,7 +200,7 @@ const MealPlanStatusCard = ({ hasMealPlan, mealPlan, meals }: Props) => {
                   </div>
                   <ChefHat className="w-5 h-5 text-purple-400 opacity-60" />
                 </div>
-                <div className="text-4xl font-black text-white mb-2">{mealPlan.mealsPerDay}</div>
+                <div className="text-7xl font-black text-white mb-4 tracking-tighter">{mealPlan.mealsPerDay}</div>
                 <div className="text-slate-400 font-semibold">Meals Daily</div>
               </div>
             </motion.div>
@@ -149,7 +218,7 @@ const MealPlanStatusCard = ({ hasMealPlan, mealPlan, meals }: Props) => {
                   </div>
                   <Clock className="w-5 h-5 text-cyan-400 opacity-60" />
                 </div>
-                <div className="text-4xl font-black text-white mb-2">{mealPlan.duration * mealPlan.mealsPerDay}</div>
+                <div className="text-7xl font-black text-white mb-4 tracking-tighter">{mealPlan.duration * mealPlan.mealsPerDay}</div>
                 <div className="text-slate-400 font-semibold">Total Meals</div>
               </div>
             </motion.div>
@@ -178,7 +247,51 @@ const MealPlanStatusCard = ({ hasMealPlan, mealPlan, meals }: Props) => {
             <motion.button 
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              onClick={() => router.push(`/grocery-list/${mealPlan.id}`)}
+              onClick={async () => {
+                // Get user location if available
+                const LOCATION_KEY = 'mealwise_user_location'
+                let cached: { lat: number; lon: number } | null = null
+                try {
+                  const raw = localStorage.getItem(LOCATION_KEY)
+                  if (raw) {
+                    const parsed = JSON.parse(raw)
+                    if (
+                      typeof parsed.lat === 'number' &&
+                      typeof parsed.lon === 'number' &&
+                      Math.abs(parsed.lat) <= 90 &&
+                      Math.abs(parsed.lon) <= 180
+                    ) {
+                      cached = parsed
+                    }
+                  }
+                } catch (e) {
+                  // Ignore parse errors
+                }
+
+                if (cached) {
+                  router.push(`/grocery-list/${mealPlan.id}?lat=${cached.lat}&lon=${cached.lon}`)
+                  return
+                }
+
+                // No cached location, prompt user
+                if (navigator.geolocation) {
+                  navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                      const { latitude, longitude } = position.coords
+                      try {
+                        localStorage.setItem(LOCATION_KEY, JSON.stringify({ lat: latitude, lon: longitude }))
+                      } catch (e) {}
+                      router.push(`/grocery-list/${mealPlan.id}?lat=${latitude}&lon=${longitude}`)
+                    },
+                    () => {
+                      router.push(`/grocery-list/${mealPlan.id}`)
+                    },
+                    { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+                  )
+                } else {
+                  router.push(`/grocery-list/${mealPlan.id}`)
+                }
+              }}
               className="group relative px-8 py-4 border-2 border-purple-400/50 text-purple-300 hover:text-white hover:border-purple-400 rounded-2xl font-bold transition-all duration-300 backdrop-blur-sm hover:bg-purple-500/20 shadow-lg hover:shadow-purple-500/30"
             >
               <div className="flex items-center justify-center gap-3">
@@ -223,7 +336,7 @@ const MealPlanStatusCard = ({ hasMealPlan, mealPlan, meals }: Props) => {
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            onClick={() => router.push('/meal-plans/new')}
+            onClick={() => router.push('/chat')}
             className="group relative px-10 py-5 bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 hover:from-emerald-500 hover:via-teal-500 hover:to-cyan-500 text-white rounded-2xl font-bold shadow-2xl hover:shadow-emerald-500/50 transition-all duration-500 overflow-hidden"
           >
             <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />

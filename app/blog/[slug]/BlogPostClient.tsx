@@ -2,6 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { BlogPost } from '@/lib/blog';
 import { Clock, User, Calendar, Share2, Bookmark, ArrowUp, Twitter, Linkedin, Facebook } from 'lucide-react';
+import Image from 'next/image';
+import { CldImage } from 'next-cloudinary';
 
 interface BlogPostClientProps {
   post: BlogPost;
@@ -82,13 +84,25 @@ export default function BlogPostClient({ post, contentHtml }: BlogPostClientProp
       </div>
 
       {/* Hero Section */}
-      <div className="relative">
+      <div className="relative h-[70vh]">
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent z-10" />
-        <img 
-          src={post.image} 
-          alt={post.title} 
-          className="w-full h-[70vh] object-cover"
-        />
+        {post.image.includes('cloudinary.com') ? (
+          <CldImage
+            src={post.image}
+            alt={post.title}
+            fill
+            className="object-cover"
+            priority
+          />
+        ) : (
+          <Image
+            src={post.image}
+            alt={post.title}
+            fill
+            className="object-cover"
+            priority
+          />
+        )}
         {/* Hero Content */}
         <div className="absolute inset-0 z-20 flex items-end">
           <div className="max-w-4xl mx-auto px-6 pb-16 w-full">

@@ -8,6 +8,21 @@ import Footer from '@/components/footer';
 import { AuthModalProvider } from '@/components/AuthModalProvider';
 import PushEngageScript from '@/components/PushEngageScript';
 import { InstallPrompt } from '@/components/pwa/install-prompt';
+import { Geist, Geist_Mono } from 'next/font/google';
+
+// Geist Sans - Primary font for body text and UI
+const geistSans = Geist({
+  variable: '--font-geist-sans',
+  subsets: ['latin'],
+  display: 'swap',
+});
+
+// Geist Mono - For code blocks and monospace text
+const geistMono = Geist_Mono({
+  variable: '--font-geist-mono',
+  subsets: ['latin'],
+  display: 'swap',
+});
 
 interface RootLayoutProps {
   children: React.ReactNode;
@@ -16,13 +31,6 @@ interface RootLayoutProps {
 export const metadata = {
   title: 'MealWise - AI Meal Planning',
   description: 'Plan your meals, create grocery lists, and manage your diet with ease using AI.',
-  manifest: '/manifest.json',
-  themeColor: '#6366f1',
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: 'default',
-    title: 'MealWise',
-  },
   icons: {
     icon: '/favicon.ico',
     apple: '/apple-touch-icon.png',
@@ -30,6 +38,7 @@ export const metadata = {
 }
 
 export const viewport = {
+  themeColor: '#6366f1',
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
@@ -37,17 +46,11 @@ export const viewport = {
   viewportFit: 'cover',
 }
 
-export default async function  RootLayout({ children }: RootLayoutProps) {
+export default async function RootLayout({ children }: RootLayoutProps) {
   return (
-    <html suppressHydrationWarning lang="en">
-      <head>
-        <link rel="manifest" href="/manifest.json" />
-        <meta name="theme-color" content="#6366f1" />
-        <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-        <meta name="apple-mobile-web-app-title" content="MealWise" />
-      </head>
-      <body suppressHydrationWarning>
+    <html suppressHydrationWarning lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
+
+      <body suppressHydrationWarning className="font-sans antialiased">
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <AuthModalProvider>
             {/* Single container for the entire application */}
@@ -66,3 +69,4 @@ export default async function  RootLayout({ children }: RootLayoutProps) {
     </html>
   );
 }
+

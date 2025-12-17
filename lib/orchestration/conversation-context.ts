@@ -168,6 +168,53 @@ export class ConversationContextManager {
             console.warn('[ConversationContext] Warning: Failed to cleanup expired contexts (DB might be unreachable):', error instanceof Error ? error.message : error);
         }
     }
+    /**
+     * Recover context from conversation history (e.g. UI_METADATA)
+     * This is a fallback if DB persistence fails or for anonymous users
+     */
+    recoverContextFromHistory(history: Array<{ role: string; content: string }>): Partial<ConversationEntity> {
+        const context: Partial<ConversationEntity> = {};
+
+        // Iterate backwards to find the last UI_METADATA
+        for (let i = history.length - 1; i >= 0; i--) {
+            const msg = history[i];
+            if (msg.role === 'assistant') {
+                const match = msg.content.match(/<!-- UI_DATA_START:([^:]+):UI_DATA_END -->/);
+                if (match && match[1]) {
+                    try {
+                        const decoded = Buffer.from(match[1], 'base64').toString('utf-8');
+                        const uiData = JSON.parse(decoded);
+
+                        // Reconstruct lastToolResult structure
+                        const lastToolResult: Record<string, any> = {};
+
+                        if (uiData.mealPlan) {
+                            lastToolResult.generateMealPlan = { data: { mealPlan: uiData.mealPlan } };
+                            // Also set mealPlanId if available
+                            if (uiData.mealPlan.id) context.mealPlanId = uiData.mealPlan.id;
+                        }
+                        if (uiData.mealRecipe) {
+                            lastToolResult.generateMealRecipe = { data: { recipe: uiData.mealRecipe } };
+                        }
+                        if (uiData.groceryList) {
+                            lastToolResult.generateGroceryList = { data: { groceryList: uiData.groceryList } };
+                            if (uiData.groceryList.id) context.groceryListId = uiData.groceryList.id;
+                        }
+
+                        if (Object.keys(lastToolResult).length > 0) {
+                            context.lastToolResult = lastToolResult;
+                            console.log('[ConversationContext] ♻️ Recovered context from history:', Object.keys(lastToolResult));
+                            return context; // Found the most recent context
+                        }
+                    } catch (e) {
+                        console.error('[ConversationContext] Failed to parse recovered UI data:', e);
+                    }
+                }
+            }
+        }
+
+        return context;
+    }
 }
 
 // Singleton instance

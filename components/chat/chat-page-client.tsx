@@ -1,9 +1,17 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Menu, Wand2 } from 'lucide-react';
+import { Menu, Wand2, Plus, History, MessageSquare } from 'lucide-react';
+import { Pacifico } from 'next/font/google';
 import dynamic from 'next/dynamic';
-import { Skeleton } from '@/components/ui/skeleton';
+
+
+
+const pacifico = Pacifico({
+  subsets: ["latin"],
+  weight: ["400"],
+  variable: "--font-pacifico",
+})
 
 // Lazy load heavy components
 const ChatPanel = dynamic(() => import('@/components/chat/chat-panel').then(mod => mod.ChatPanel), {
@@ -18,23 +26,17 @@ const ChatPanel = dynamic(() => import('@/components/chat/chat-panel').then(mod 
   ssr: false // Chat relies heavily on client state
 });
 
+// ChatHistoryClient handles its own loading state, so no need for skeleton here
 const ChatHistoryClient = dynamic(() => import('@/components/chat/chat-history-client').then(mod => mod.ChatHistoryClient), {
-  loading: () => (
-    <div className="p-4 space-y-4">
-      {[1, 2, 3, 4, 5].map((i) => (
-        <Skeleton key={i} className="h-16 w-full rounded-xl bg-muted/50" />
-      ))}
-    </div>
-  ),
   ssr: false
 });
-import { Tabs, TabsContent } from '@/components/ui/tabs';
-import { Card } from '@/components/ui/card';
-import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
+
+import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { UserPreference } from '@/types';
-import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { useChatStore } from '@/store/chat-store';
+
 
 interface ChatPageClientProps {
   preferences?: UserPreference[];
@@ -42,86 +44,80 @@ interface ChatPageClientProps {
 }
 
 export function ChatPageClient({ preferences = [], preferencesSummary = '' }: ChatPageClientProps) {
-  const [activeTab, setActiveTab] = useState('meal-log');
   const [historyOpen, setHistoryOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const createSession = useChatStore((state) => state.createSession);
 
   // Prevent hydration mismatch
   useEffect(() => {
     setMounted(true);
   }, []);
 
+
+
+  if (!mounted) return null;
+
   return (
     <div className="flex h-[100dvh] w-full bg-background overflow-hidden">
-      {/* Left Sidebar - Chat History (Desktop) */}
-      <div className={cn(
-        "hidden lg:flex w-[300px] xl:w-[350px] border-r border-border/50 bg-muted/10",
-        "flex-col h-full"
-      )}>
-        <ChatHistoryClient 
-          chatType={activeTab === 'meal-log' ? 'context-aware' : 'context-aware'} 
-        />
+      {/* Sidebar (Desktop) */}
+      <div className="hidden md:flex w-[260px] flex-col border-r border-border/40 bg-muted/5 h-full">
+        <div className="flex-1 overflow-hidden">
+          <ChatHistoryClient chatType="context-aware" />
+        </div>
+        <div className="p-4 border-t border-border/40">
+           <div className="flex items-center gap-3 px-2 py-2 rounded-lg bg-primary/5 text-sm font-medium text-primary">
+              <div className="p-1.5 bg-primary/10 rounded-md">
+                <Wand2 className="h-4 w-4" />
+              </div>
+              <span
+                              className={cn(
+                                "bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 via-black/90 to-rose-500 dark:from-indigo-300 dark:via-white/90 dark:to-rose-300 ",
+                                pacifico.className,
+                              )}
+                            >Mealwise
+                              </span>
+           </div>
+        </div>
       </div>
 
-      {/* Main Chat Area */}
+      {/* Main Content */}
       <div className="flex-1 flex flex-col h-full min-w-0 bg-background relative">
-        {/* Header */}
-        <div className={cn(
-          "sticky top-0 z-20",
-          "px-4 py-3 border-b border-border/50",
-          "bg-background/80 backdrop-blur-md",
-          "flex items-center justify-between",
-          "safe-area-top"
-        )}>
-          <div className="w-full max-w-3xl mx-auto flex items-center justify-between">
-            <div className="flex items-center gap-3">
-            {/* Mobile Menu Button */}
-            <Sheet open={historyOpen} onOpenChange={setHistoryOpen}>
-              <SheetTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="lg:hidden shrink-0 h-10 w-10"
-                  aria-label="Open chat history"
-                >
-                  <Menu className="h-5 w-5" />
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="left" className="w-[300px] p-0">
-                <SheetHeader className="sr-only">
-                  <SheetTitle>Chat History</SheetTitle>
-                </SheetHeader>
+        {/* Mobile Header */}
+        <div className="md:hidden flex items-center justify-between px-4 py-3 border-b border-border/40 bg-background/80 backdrop-blur-md sticky top-0 z-20">
+          <Sheet open={historyOpen} onOpenChange={setHistoryOpen}>
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="icon" className="-ml-2">
+                <Menu className="h-5 w-5" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="w-[320px] sm:w-[320px] p-0 flex flex-col">
+              <SheetHeader className="p-4 border-b border-border/40 text-left">
+                <SheetTitle className="flex items-center gap-2">
+                  
+                  <span
+                    className={cn(
+                      "bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 via-black/90 to-rose-500 dark:from-indigo-300 dark:via-white/90 dark:to-rose-300 ",
+                      pacifico.className,
+                    )}
+                  >
+                    Mealwise
+                  </span>
+                </SheetTitle>
+              </SheetHeader>
+
+              <div className="flex-1 overflow-hidden">
                 <ChatHistoryClient 
-                  chatType={activeTab === 'meal-log' ? 'context-aware' : 'context-aware'}
+                  chatType="context-aware"
                   onSessionSelect={() => setHistoryOpen(false)}
                 />
-              </SheetContent>
-            </Sheet>
-
-            <div className="flex items-center gap-2">
-              <div className="p-1.5 bg-primary/10 rounded-lg">
-                <Wand2 className="h-4 w-4 text-primary" />
               </div>
-              <h1 className="font-semibold text-lg hidden sm:block">Mealwise Chat</h1>
-            </div>
-            </div>
-          </div>
+            </SheetContent>
+          </Sheet>
         </div>
 
-        {/* Chat Content */}
-        <div className="flex-1 min-h-0 relative">
-          <Tabs 
-            value={activeTab} 
-            onValueChange={setActiveTab} 
-            className="h-full flex flex-col"
-          >
-            <TabsContent 
-              value="meal-log" 
-              className="flex-1 m-0 h-full"
-            >
-              <ChatPanel chatType="context-aware" preferencesSummary={preferencesSummary} />
-            </TabsContent>
-          </Tabs>
+        {/* Chat Area */}
+        <div className="flex-1 relative min-h-0">
+           <ChatPanel chatType="context-aware" preferencesSummary={preferencesSummary} />
         </div>
       </div>
     </div>

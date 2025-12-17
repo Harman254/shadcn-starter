@@ -12,16 +12,29 @@ import { validateMealPlanInput, type SaveMealPlanInput } from '@/lib/validators/
 import { MealPlanValidationError, MealPlanSaveError, isMealPlanError } from '@/lib/errors/meal-plan-errors';
 import type { MealPlan } from '@/types';
 
+/**
+ * Validates if a string is a proper URL
+ */
+function isValidUrl(urlString: string | undefined | null): boolean {
+  if (!urlString) return false;
+  try {
+    const url = new URL(urlString);
+    return url.protocol === 'http:' || url.protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
 export type SaveMealPlanResult =
   | {
-      success: true;
-      mealPlan: MealPlan;
-    }
+    success: true;
+    mealPlan: MealPlan;
+  }
   | {
-      success: false;
-      error: string;
-      code: string;
-    };
+    success: false;
+    error: string;
+    code: string;
+  };
 
 /**
  * Helper function to estimate calories based on ingredients
@@ -60,6 +73,45 @@ export async function saveMealPlanService(
       };
     }
 
+    // Check for existing meal plan with same metadata to prevent duplicates
+    const existingMealPlan = await prisma.mealPlan.findFirst({
+      where: {
+        userId,
+        title: input.title.trim(),
+        duration: input.duration,
+        mealsPerDay: input.mealsPerDay,
+      },
+      include: {
+        days: {
+          include: {
+            meals: {
+              orderBy: {
+                type: 'asc',
+              },
+            },
+          },
+          orderBy: {
+            date: 'asc',
+          },
+        },
+      },
+    });
+
+    if (existingMealPlan) {
+      console.log('[saveMealPlanService] Found existing meal plan, returning it instead of creating new one');
+      return {
+        success: true,
+        mealPlan: existingMealPlan,
+      };
+    }
+
+    // Extract cover image from first meal's imageUrl
+    // Validate URL before using it
+    const rawCoverImageUrl = input.coverImageUrl || 
+      (input.days?.[0]?.meals?.[0]?.imageUrl) || 
+      null;
+    const coverImageUrl = rawCoverImageUrl && isValidUrl(rawCoverImageUrl) ? rawCoverImageUrl : null;
+
     // Use transaction for atomicity - all or nothing
     const savedMealPlan = await prisma.$transaction(async (tx) => {
       // Create the main MealPlan record
@@ -69,6 +121,7 @@ export async function saveMealPlanService(
           userId: userId,
           duration: input.duration,
           mealsPerDay: input.mealsPerDay,
+          coverImageUrl: coverImageUrl?.trim() || null,
           createdAt: new Date(input.createdAt),
         },
       });
@@ -91,16 +144,19 @@ export async function saveMealPlanService(
         // Create Meal records for this day
         for (let mealIndex = 0; mealIndex < day.meals.length; mealIndex++) {
           const meal = day.meals[mealIndex];
-          const mealType = getMealType(mealIndex, input.mealsPerDay);
+          // Use AI-provided mealType if available, otherwise derive from index
+          const mealType = meal.mealType || getMealType(mealIndex, input.mealsPerDay);
 
           await tx.meal.create({
             data: {
               name: meal.name.trim(),
               type: mealType,
               description: meal.description.trim(),
-              calories: calculateCalories(meal.ingredients),
+              // Use AI-provided calories if available, otherwise fallback to heuristic
+              calories: meal.calories || calculateCalories(meal.ingredients),
               ingredients: meal.ingredients.map(ing => ing.trim()).filter(ing => ing.length > 0),
-              imageUrl: meal.imageUrl?.trim() || null,
+              // Validate imageUrl before saving
+              imageUrl: (meal.imageUrl?.trim() && isValidUrl(meal.imageUrl.trim())) ? meal.imageUrl.trim() : null,
               dayMealId: dayMeal.id,
               instructions: meal.instructions.trim(),
             },
@@ -184,7 +240,7 @@ export async function saveMealPlanService(
     // Handle Prisma errors
     if (error && typeof error === 'object' && 'code' in error) {
       const prismaError = error as { code: string; message?: string };
-      
+
       if (prismaError.code === 'P2002') {
         return {
           success: false,
@@ -192,7 +248,7 @@ export async function saveMealPlanService(
           code: 'DUPLICATE_ERROR',
         };
       }
-      
+
       if (prismaError.code === 'P2025') {
         return {
           success: false,
@@ -204,7 +260,7 @@ export async function saveMealPlanService(
 
     // Log unexpected errors
     console.error('[saveMealPlanService] Unexpected error:', error);
-    
+
     return {
       success: false,
       error: error instanceof Error ? error.message : 'An unknown error occurred while saving the meal plan',

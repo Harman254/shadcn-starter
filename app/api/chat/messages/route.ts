@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
     maxRequests: 20,
     windowMs: 60 * 1000, // 1 minute
   });
-  
+
   if (rateLimitResponse) {
     return rateLimitResponse;
   }
@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
         { status: 503 }
       );
     }
-    
+
     // Require authentication
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
 
     let chatSession;
     let existingMessages;
-    
+
     try {
       // Verify the session belongs to the user, or create it if it doesn't exist
       chatSession = await prisma.chatSession.findFirst({
@@ -63,38 +63,21 @@ export async function POST(request: NextRequest) {
       });
 
       if (!chatSession) {
-        // Session doesn't exist yet - this can happen for new chats
-        // Create a temporary session with a placeholder title
-        // The title will be updated later when the AI generates it
-        try {
-          chatSession = await prisma.chatSession.create({
-            data: {
-              id: sessionId,
-              userId,
-              chatType: 'context-aware', // Default, will be updated if needed
-              title: 'New Chat', // Placeholder title
-            },
-          });
-          
-          if (process.env.NODE_ENV === 'development') {
-            console.log(`[POST /api/chat/messages] Created new session: ${sessionId}`);
-          }
-        } catch (createError: any) {
-          // If creation fails (e.g., duplicate key), try to find it again
-          if (createError?.code === 'P2002') {
-            chatSession = await prisma.chatSession.findFirst({
-              where: { id: sessionId, userId },
-            });
-          }
-          
-          if (!chatSession) {
-            console.error('[POST /api/chat/messages] Failed to create session:', createError);
-            return NextResponse.json(
-              { error: 'Failed to create session' },
-              { status: 500 }
-            );
-          }
+        // Session doesn't exist yet - don't create it here
+        // Sessions should only be created when a title is ready (via /api/chat/sessions POST)
+        // This prevents empty "New Chat" sessions from appearing in history
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`[POST /api/chat/messages] Session ${sessionId} does not exist yet. Messages will be saved once session is created with a title.`);
         }
+        
+        // Return success but indicate session doesn't exist
+        // Messages will be saved once the session is created with a proper title
+        return NextResponse.json({ 
+          success: true, 
+          saved: 0,
+          sessionExists: false,
+          message: 'Session will be created when title is ready'
+        });
       }
 
       // Get existing message IDs to avoid duplicates
@@ -110,8 +93,8 @@ export async function POST(request: NextRequest) {
         { status: 503 }
       );
     }
-    
-    const existingIds = new Set(existingMessages.map((m) => m.id));
+
+    const existingIds = new Set(existingMessages.map((m: { id: string }) => m.id));
 
     // Validate message count limit to prevent abuse
     if (messages.length > 100) {
@@ -129,42 +112,42 @@ export async function POST(request: NextRequest) {
           console.warn('Invalid message structure:', msg);
           return false;
         }
-        
+
         // Validate role
         if (!['user', 'assistant'].includes(msg.role)) {
           console.warn('Invalid message role:', msg.role);
           return false;
         }
-        
+
         // Validate content length (prevent extremely long messages)
         if (typeof msg.content !== 'string' || msg.content.length > 50000) {
           console.warn('Message content too long:', msg.content.length);
           return false;
         }
-        
+
         // Validate content is not empty after trim
         if (!msg.content.trim()) {
           return false;
         }
-        
+
         return !existingIds.has(msg.id);
       })
       .map((msg: any) => {
         // Handle timestamp - can be Date, ISO string, or undefined
         let timestamp: Date;
         if (msg.timestamp) {
-          timestamp = msg.timestamp instanceof Date 
-            ? msg.timestamp 
+          timestamp = msg.timestamp instanceof Date
+            ? msg.timestamp
             : new Date(msg.timestamp);
         } else {
           timestamp = new Date();
         }
-        
+
         // Truncate content if too long (safety measure)
-        const content = msg.content.length > 50000 
-          ? msg.content.substring(0, 50000) 
+        const content = msg.content.length > 50000
+          ? msg.content.substring(0, 50000)
           : msg.content;
-        
+
         return {
           id: msg.id,
           sessionId,
@@ -223,7 +206,7 @@ export async function GET(request: NextRequest) {
     maxRequests: 15,
     windowMs: 60 * 1000, // 1 minute
   });
-  
+
   if (rateLimitResponse) {
     return rateLimitResponse;
   }
@@ -237,7 +220,7 @@ export async function GET(request: NextRequest) {
       // Return empty array instead of error - allows frontend to work offline
       return NextResponse.json({ messages: [], total: 0, hasMore: false });
     }
-    
+
     // Require authentication
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -257,7 +240,7 @@ export async function GET(request: NextRequest) {
     let chatSession;
     let totalCount;
     let allMessages;
-    
+
     try {
       // Verify the session belongs to the user
       chatSession = await prisma.chatSession.findFirst({
@@ -279,7 +262,7 @@ export async function GET(request: NextRequest) {
       // Limit message retrieval to prevent large payloads
       // For very long conversations, consider pagination
       const messageLimit = 1000; // Max 1000 messages per request
-      
+
       // Get messages with limit (most recent first, then reverse for chronological order)
       allMessages = await prisma.chatMessage.findMany({
         where: { sessionId },
@@ -296,14 +279,14 @@ export async function GET(request: NextRequest) {
     // Reverse to get chronological order (oldest first)
     const messages = allMessages
       .reverse()
-      .map((m) => ({
-      id: m.id,
-      role: m.role as 'user' | 'assistant',
-      content: m.content,
-      timestamp: m.timestamp,
-    }));
+      .map((m: { id: string; role: string; content: string; timestamp: Date }) => ({
+        id: m.id,
+        role: m.role as 'user' | 'assistant',
+        content: m.content,
+        timestamp: m.timestamp,
+      }));
 
-    return NextResponse.json({ 
+    return NextResponse.json({
       messages,
       total: totalCount,
       hasMore: totalCount > 1000,
@@ -323,14 +306,14 @@ export async function DELETE(request: NextRequest) {
     maxRequests: 10,
     windowMs: 60 * 1000, // 1 minute
   });
-  
+
   if (rateLimitResponse) {
     return rateLimitResponse;
   }
-  
+
   try {
     const session = await auth.api.getSession({ headers: await headers() });
-    
+
     // Require authentication
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

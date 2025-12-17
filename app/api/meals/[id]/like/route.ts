@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { setMealLiked, getMealLikeStatus } from '@/data/index';
 import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
-import { revalidatePath, revalidateTag } from 'next/cache';
+import { revalidatePath } from 'next/cache';
 
 export async function PUT(
   request: NextRequest,
@@ -32,9 +32,8 @@ export async function PUT(
 
     const updatedMeal = await setMealLiked(mealId, isLiked, session.user.id);
 
-    // Revalidate the recipes page and cache tags
+    // Revalidate the recipes page
     revalidatePath('/recipes');
-    revalidateTag('favorites');
 
     return NextResponse.json({
       success: true,
@@ -79,4 +78,4 @@ export async function GET(
       { status: 500 }
     );
   }
-} 
+}

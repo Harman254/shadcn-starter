@@ -49,7 +49,7 @@ export default function CTA() {
 
           {/* CTA Button */}
           <div className="flex flex-col sm:flex-row gap-4 mt-8">
-            <Link href="/meal-plans/new">
+            <Link href="/chat">
               <Button 
                 size="lg" 
                 className="relative bg-cyan-400 hover:bg-cyan-300 text-zinc-950 font-black px-12 py-6 rounded-2xl transition-all duration-300 hover:scale-105 shadow-lg border-2 border-cyan-400 text-xl tracking-wider"

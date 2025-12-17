@@ -19,6 +19,7 @@ export function useChatSync(sessionId: string | null, chatType: 'context-aware' 
     setCurrentSession,
     syncFromDatabase,
     clearSession,
+    markAsSaved,
   } = useChatStore();
   const { toast } = useToast();
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -44,9 +45,14 @@ export function useChatSync(sessionId: string | null, chatType: 'context-aware' 
             if (process.env.NODE_ENV === 'development') {
               if (exists) {
                 logger.debug('[useChatSync] Session exists in database:', sessionId);
+                // Mark as synced if it exists in DB
+                markAsSaved(sessionId);
               } else {
                 logger.debug('[useChatSync] Session not in database yet (waiting for title):', sessionId);
               }
+            } else if (exists) {
+              // Also mark as saved in production if it exists
+              markAsSaved(sessionId);
             }
 
             // Do NOT create session here - it must have an AI-generated title first
@@ -63,7 +69,7 @@ export function useChatSync(sessionId: string | null, chatType: 'context-aware' 
       initSession();
       isInitializedRef.current = true;
     }
-  }, [sessionId, chatType]);
+  }, [sessionId, chatType, markAsSaved]);
 
   // Load messages from database when session changes
   // Use a ref to track if we've loaded for this session to prevent overwriting new messages
@@ -221,6 +227,9 @@ export function useChatSync(sessionId: string | null, chatType: 'context-aware' 
                   }
                 }, 300); // Increased delay to 300ms to avoid race conditions with handleSessionSelect
               }
+
+              // Mark as synced since we successfully loaded from DB
+              markAsSaved(sessionId);
             }
           }
           // If messages is empty (not authenticated or no messages), keep local messages
@@ -235,7 +244,7 @@ export function useChatSync(sessionId: string | null, chatType: 'context-aware' 
     };
 
     loadMessages();
-  }, [sessionId, addMessages, getCurrentSession]); // Removed clearSession from deps to avoid unnecessary re-runs
+  }, [sessionId, addMessages, getCurrentSession, markAsSaved]); // Removed clearSession from deps to avoid unnecessary re-runs
 
   // Save messages to database with debouncing
   // This ensures messages are saved efficiently while preventing excessive API calls
@@ -326,6 +335,12 @@ export function useChatSync(sessionId: string | null, chatType: 'context-aware' 
           throw new Error(result.error || `Failed to save messages: ${response.status}`);
         }
 
+        // Check if session exists - if not, messages will be saved when session is created with title
+        if (result.sessionExists === false) {
+          logger.debug(`[useChatSync] ⏳ Session doesn't exist yet. Messages will be saved when session is created with title.`);
+          return; // Don't mark as saved, will retry when session is created
+        }
+
         // Check response - API returns success with saved count
         if (result.saved === 0) {
           // All messages already existed in database (no new ones to save)
@@ -334,6 +349,10 @@ export function useChatSync(sessionId: string | null, chatType: 'context-aware' 
           // Successfully saved new messages to database
           logger.debug(`[useChatSync] ✅ Saved ${result.saved} new messages to database (${messagesToSave.length} total in store)`);
         }
+
+        // Mark session as synced since we successfully communicated with DB
+        markAsSaved(sessionId);
+
       } catch (error) {
         // Only log real errors, not network issues or unauthenticated states
         if (error instanceof Error &&

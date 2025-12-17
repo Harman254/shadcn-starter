@@ -141,6 +141,21 @@ export const ChatMessagesVirtual = memo(function ChatMessagesVirtual({
     }
   }, [messages.length]);
 
+  // Scroll to bottom on initial load (when messages are first rendered)
+  const hasInitialScrolledRef = useRef(false);
+  useEffect(() => {
+    if (!parentRef.current || hasInitialScrolledRef.current) return;
+    if (messages.length > 0) {
+      hasInitialScrolledRef.current = true;
+      // Small delay to ensure DOM is fully rendered
+      requestAnimationFrame(() => {
+        if (parentRef.current) {
+          parentRef.current.scrollTop = parentRef.current.scrollHeight;
+        }
+      });
+    }
+  }, [messages.length]);
+
   if (messages.length === 0 && !isLoading) {
     return (
       <div 

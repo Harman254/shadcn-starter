@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getUserFavorites, addToFavorites, removeFromFavorites } from '@/data/index';
 import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
-import { revalidatePath, revalidateTag } from 'next/cache';
+import { revalidatePath } from 'next/cache';
 
 export async function GET(request: NextRequest) {
   try {
@@ -68,9 +68,8 @@ export async function POST(request: NextRequest) {
       result = await removeFromFavorites(mealId, session.user.id);
     }
 
-    // Revalidate the recipes page and cache tags
+    // Revalidate the recipes page
     revalidatePath('/recipes');
-    revalidateTag('favorites');
 
     return NextResponse.json({
       success: true,
@@ -84,4 +83,4 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-} 
+}

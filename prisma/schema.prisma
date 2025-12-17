@@ -88,6 +88,8 @@ model User {
   currencySymbol   String? // Stored user's currency symbol
 
   analytics        UserAnalytics?
+  pantryItems      PantryItem[]
+
 
   @@unique([email])
   @@map("user")
@@ -262,4 +264,44 @@ model GroceryList {
 
   @@index([userId, createdAt(sort: Desc)])
   @@map("grocery_list")
+}
+
+model Recipe {
+  id           String   @id @default(cuid())
+  userId       String
+  name         String
+  description  String   @default("")
+  prepTime     String   @default("")
+  cookTime     String   @default("")
+  servings     Int      @default(1)
+  difficulty   String   @default("Medium")
+  ingredients  Json     // Array of strings
+  instructions Json     // Array of strings
+  tags         String[] @default([])
+  calories     Int      @default(0)
+  protein      Int      @default(0)
+  carbs        Int      @default(0)
+  fat          Int      @default(0)
+  imageUrl     String   @default("")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("recipes")
+}
+
+model PantryItem {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String
+  category  String   @default("Uncategorized")
+  quantity  String   @default("1")
+  unit      String?
+  expiry    DateTime?
+  addedAt   DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("pantry_items")
 }

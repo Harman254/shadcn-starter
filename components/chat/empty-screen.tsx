@@ -27,18 +27,18 @@ interface Suggestion {
 
 const defaultSuggestions: Suggestion[] = [
   {
-    heading: 'Quick Meal Plan',
-    message: 'Generate a quick 1-day meal plan',
+    heading: 'Week Meal Plan',
+    message: 'Create a healthy 7-day meal plan for weight loss with 3 meals per day',
     iconName: 'ChefHat',
   },
   {
-    heading: 'Kenyan Dishes',
-    message: 'Show me some Kenyan dishes',
-    iconName: 'BookOpen',
+    heading: 'Budget Meals',
+    message: 'Show me budget-friendly dinner ideas under $5 per serving',
+    iconName: 'Pizza',
   },
   {
-    heading: '15-Minute Meals',
-    message: 'Show me 15-minute meal ideas',
+    heading: 'High Protein',
+    message: 'Generate high-protein meal ideas for muscle building',
     iconName: 'UtensilsCrossed',
   },
 ];

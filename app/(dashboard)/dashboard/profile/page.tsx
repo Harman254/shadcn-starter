@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { useProfileStore } from "@/store/profile-store"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -41,6 +42,7 @@ import {
 } from "lucide-react"
 
 export default function ProfilePage() {
+  const { getProfile, setProfile } = useProfileStore()
   const [user, setUser] = useState<any>(null)
   const [subscription, setSubscription] = useState<any>(null)
   const [loading, setLoading] = useState(true)
@@ -59,6 +61,16 @@ export default function ProfilePage() {
 
   useEffect(() => {
     async function fetchUser() {
+      // Check cache first
+      const cached = getProfile()
+      if (cached) {
+        setUser(cached.user)
+        setSubscription(cached.subscription)
+        setMealStatsData(cached.mealStats)
+        setLoading(false)
+        return
+      }
+
       setLoading(true)
       setError(null)
       try {
@@ -70,17 +82,32 @@ export default function ProfilePage() {
         
         // Fetch meal planning stats
         const statsRes = await fetch("/api/getmealplans")
+        let mealStats = {
+          totalPlans: 0,
+          totalMeals: 0,
+          averageRating: 4.8,
+          streakDays: 12,
+          caloriesGoal: 2000,
+          currentCalories: 1850,
+          nutritionScore: 92,
+          favoriteRecipes: 8,
+        }
+        
         if (statsRes.ok) {
           const response = await statsRes.json()
-          // Handle different response formats
           const mealPlans = Array.isArray(response) ? response : response.mealPlans || response.data || []
           
-          setMealStatsData(prev => ({
-            ...prev,
+          mealStats = {
+            ...mealStats,
             totalPlans: mealPlans.length || 0,
             totalMeals: Array.isArray(mealPlans) ? mealPlans.reduce((acc: number, plan: any) => acc + (plan.days?.length || 0) * (plan.mealsPerDay || 3), 0) : 0,
-          }))
+          }
         }
+        
+        setMealStatsData(mealStats)
+        
+        // Cache the result
+        setProfile(data.user, data.user?.Subscription || null, mealStats)
       } catch (err: any) {
         setError(err.message || "Unknown error")
       }
@@ -88,7 +115,7 @@ export default function ProfilePage() {
     }
 
     fetchUser()
-  }, [])
+  }, [getProfile, setProfile])
 
   if (loading) {
     return (
@@ -169,41 +196,41 @@ export default function ProfilePage() {
   ]
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-950 via-gray-900 to-teal-950">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
       <div className="container mx-auto px-4 py-8 max-w-7xl">
         {/* Hero Section */}
-        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-emerald-700 via-teal-800 to-cyan-800 p-8 mb-8 text-white dark:text-white">
-          <div className="absolute inset-0 bg-black/30 dark:bg-black/50"></div>
+        <div className="relative overflow-hidden rounded-2xl bg-card/80 backdrop-blur-sm border border-border/50 shadow-lg p-8 mb-8">
+          <div className="absolute inset-0 bg-gradient-to-r from-primary/20 via-primary/10 to-accent/20"></div>
           <div className="relative z-10 flex flex-col md:flex-row items-center gap-6">
-            <Avatar className="h-24 w-24 ring-4 ring-white/30 shadow-2xl">
+            <Avatar className="h-24 w-24 ring-4 ring-primary/30 shadow-2xl">
               <AvatarImage src={user.image || "/placeholder.svg"} alt={user.name} />
-              <AvatarFallback className="text-2xl font-bold bg-white/20 text-white backdrop-blur-sm">
+              <AvatarFallback className="text-2xl font-bold bg-primary/20 text-primary backdrop-blur-sm">
                 {user.name
                   ?.split(" ")
                   .map((n: string) => n[0])
                   .join("") || "U"}
               </AvatarFallback>
             </Avatar>
-            <div className="flex-1 text-center md:text-left">
-              <h1 className="text-4xl font-bold mb-2">{user.name}</h1>
-              <p className="text-white/90 text-lg mb-3">{user.email}</p>
+            <div className="flex-1 text-center md:text-left relative z-10">
+              <h1 className="text-4xl font-bold mb-2 text-foreground">{user.name}</h1>
+              <p className="text-muted-foreground text-lg mb-3">{user.email}</p>
               <div className="flex flex-wrap items-center justify-center md:justify-start gap-3">
-                <Badge className="bg-white/20 text-white border-white/30 backdrop-blur-sm">
+                <Badge className="bg-primary/10 text-primary border-primary/30 backdrop-blur-sm">
                   {subscription?.plan || "Free Plan"}
                 </Badge>
-                <span className="text-white/80 text-sm">
+                <span className="text-muted-foreground text-sm">
                   Meal planning since {new Date(user.createdAt).toLocaleDateString()}
                 </span>
               </div>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-4 relative z-10">
               <div className="text-center">
-                <div className="text-3xl font-bold">{mealStatsData.nutritionScore}%</div>
-                <div className="text-sm text-white/80">Nutrition Score</div>
+                <div className="text-3xl font-bold text-foreground">{mealStatsData.nutritionScore}%</div>
+                <div className="text-sm text-muted-foreground">Nutrition Score</div>
               </div>
               <div className="text-center">
-                <div className="text-3xl font-bold">{mealStatsData.streakDays}</div>
-                <div className="text-sm text-white/80">Day Streak</div>
+                <div className="text-3xl font-bold text-foreground">{mealStatsData.streakDays}</div>
+                <div className="text-sm text-muted-foreground">Day Streak</div>
               </div>
             </div>
           </div>
@@ -214,7 +241,7 @@ export default function ProfilePage() {
           {mealStats.map((stat, index) => (
             <Card
               key={index}
-              className="relative overflow-hidden border-0 shadow-lg hover:shadow-xl transition-all duration-300 bg-white/80 dark:bg-slate-900/80 hover:scale-105 cursor-pointer"
+              className="relative overflow-hidden border border-border/50 shadow-lg hover:shadow-xl transition-all duration-300 bg-card/80 backdrop-blur-sm hover:scale-105 cursor-pointer"
             >
               <div className={`absolute inset-0 bg-gradient-to-br ${stat.color} opacity-10`}></div>
               <CardContent className="p-6 text-center relative z-10">
@@ -233,7 +260,7 @@ export default function ProfilePage() {
           {/* Left Column - Main Content */}
           <div className="lg:col-span-2 space-y-6">
             {/* Nutrition Goals */}
-            <Card className="border-0 shadow-lg bg-white/90 dark:bg-slate-900/90">
+            <Card className="border border-border/50 shadow-lg bg-card/80 backdrop-blur-sm">
               <CardHeader className="pb-4">
                                   <CardTitle className="flex items-center gap-2 text-xl">
                     <Target className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
@@ -269,7 +296,7 @@ export default function ProfilePage() {
             </Card>
 
             {/* Recent Achievements */}
-            <Card className="border-0 shadow-lg bg-white/90 dark:bg-slate-900/90">
+            <Card className="border border-border/50 shadow-lg bg-card/80 backdrop-blur-sm">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-xl">
                   <Award className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
@@ -295,7 +322,7 @@ export default function ProfilePage() {
             </Card>
 
             {/* Personal Information */}
-            <Card className="border-0 shadow-lg bg-white/90 dark:bg-slate-900/90">
+            <Card className="border border-border/50 shadow-lg bg-card/80 backdrop-blur-sm">
               <CardHeader className="pb-4">
                 <CardTitle className="flex items-center gap-2 text-xl">
                   <User className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
@@ -405,7 +432,7 @@ export default function ProfilePage() {
           <div className="space-y-6">
             {/* Subscription */}
             {subscription && (
-              <Card className="border-0 shadow-lg bg-white/90 dark:bg-slate-900/90">
+              <Card className="border border-border/50 shadow-lg bg-card/80 backdrop-blur-sm">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-xl">
                     <CreditCard className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
@@ -462,7 +489,7 @@ export default function ProfilePage() {
             )}
 
             {/* Quick Actions */}
-            <Card className="border-0 shadow-lg bg-white/90 dark:bg-slate-900/90">
+            <Card className="border border-border/50 shadow-lg bg-card/80 backdrop-blur-sm">
               <CardHeader>
                 <CardTitle className="text-lg dark:text-white">Quick Actions</CardTitle>
               </CardHeader>
@@ -491,7 +518,7 @@ export default function ProfilePage() {
             </Card>
 
             {/* Weekly Progress */}
-            <Card className="border-0 shadow-lg bg-white/90 dark:bg-slate-900/90">
+            <Card className="border border-border/50 shadow-lg bg-card/80 backdrop-blur-sm">
               <CardHeader>
                 <CardTitle className="text-lg dark:text-white">This Week&apos;s Progress</CardTitle>
               </CardHeader>

@@ -75,18 +75,35 @@ export async function GET(request: NextRequest) {
     }
 
     // Transform to match our ChatSession type
-    const sessions = chatSessions.map((s) => ({
-      id: s.id,
-      chatType: s.chatType as 'context-aware' | 'tool-selection',
-      title: s.title || undefined,
-      messages: s.messages.map((m) => ({
-        id: m.id,
-        role: m.role as 'user' | 'assistant',
-        content: m.content,
-        timestamp: m.timestamp,
-      })),
-      updatedAt: s.updatedAt,
-    }));
+    // Filter out sessions with "New Chat" titles or no messages
+    const sessions = chatSessions
+      .filter((s) => {
+        // Exclude sessions with "New Chat" title or default titles
+        const title = s.title?.trim();
+        if (!title || 
+            title === 'New Chat' || 
+            title.startsWith('Chat ') || 
+            title.match(/^Chat \d+\/\d+\/\d+$/)) {
+          return false;
+        }
+        // Exclude sessions with no messages
+        if (s.messages.length === 0) {
+          return false;
+        }
+        return true;
+      })
+      .map((s) => ({
+        id: s.id,
+        chatType: s.chatType as 'context-aware' | 'tool-selection',
+        title: s.title || undefined,
+        messages: s.messages.map((m) => ({
+          id: m.id,
+          role: m.role as 'user' | 'assistant',
+          content: m.content,
+          timestamp: m.timestamp,
+        })),
+        updatedAt: s.updatedAt,
+      }));
 
     return NextResponse.json({ 
       sessions,
