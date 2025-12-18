@@ -11,7 +11,7 @@ export async function POST(req: Request) {
         const { context } = await req.json();
 
         const result = await generateObject({
-            model: google('gemini-2.0-flash'),
+            model: google('gemini-3-flash'),
             schema: z.object({
                 suggestions: z.array(z.object({
                     heading: z.string().describe('Short, catchy title (2-3 words)'),

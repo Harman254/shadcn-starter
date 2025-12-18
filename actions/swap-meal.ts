@@ -71,7 +71,7 @@ export async function swapAndUpdateMeal(input: SwapAndUpdateMealProps) {
   try {
     // Generate new meal using AI SDK
     const result = await generateObject({
-      model: google('gemini-2.0-flash'),
+      model: google('gemini-3-flash'),
       temperature: 0.7,
       schema: mealSchema,
       prompt: `Generate a NEW ${input.type} meal to replace "${input.currentMealName}".
