@@ -1,14 +1,14 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { Calendar, UtensilsCrossed, Star, ChevronDown, ShoppingCart, Wand2, ChefHat, Check, Save, Loader2, Flame, Clock, Apple, Zap, TrendingUp, Timer, Users } from "lucide-react"
+import { Calendar, UtensilsCrossed, ChevronDown, ShoppingCart, Wand2, ChefHat, Check, Save, Loader2, Flame, Clock, TrendingUp, Timer, Users, Download } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { ExternalLink, Clock, Flame, Users, Bookmark, Check, Loader2, ShoppingCart, TrendingUp, Timer, ChefHat } from "lucide-react"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { cn } from "@/lib/utils"
 
 // Cloudinary images for random selection
 const MEAL_IMAGES = [
@@ -49,18 +49,38 @@ interface MealPlanDisplayProps {
   onActionClick?: (action: string) => void
 }
 
-const mealTypeColors: Record<string, string> = {
-  breakfast: "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300",
-  lunch: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300",
-  dinner: "bg-violet-100 text-violet-800 dark:bg-violet-900/30 dark:text-violet-300",
-  snack: "bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-300",
-};
-
 export function MealPlanDisplay({ mealPlan, onActionClick }: MealPlanDisplayProps) {
   const [saving, setSaving] = useState(false)
   const [savedId, setSavedId] = useState<string | null>(null)
-  const { toast } = useToast()
+  const [expandedDay, setExpandedDay] = useState<number | null>(null)
+  const [exporting, setExporting] = useState(false)
+  const [exportFormats, setExportFormats] = useState<string[]>(['pdf'])
   const router = useRouter()
+
+  // Fetch user's export formats on mount
+  useEffect(() => {
+    const fetchExportFormats = async () => {
+      try {
+        const response = await fetch('/api/usage/features')
+        if (response.ok) {
+          const data = await response.json()
+          // API now returns { limits, featureUsage, plan }
+          setExportFormats(data.limits?.exportFormats || ['pdf'])
+        }
+      } catch (e) {
+        // Silently fail, default to PDF only
+        console.error('[MealPlanDisplay] Failed to fetch export formats:', e)
+      }
+    }
+    fetchExportFormats()
+  }, [])
+
+  // Calculate total meals
+  const totalMeals = useMemo(() => {
+    return mealPlan.days?.reduce((total: number, day: any) => {
+      return total + (day.meals?.length || 0)
+    }, 0) || 0
+  }, [mealPlan.days])
 
   // Generate random images for each meal on mount (stable across re-renders)
   const mealImages = useMemo(() => {
@@ -111,6 +131,44 @@ export function MealPlanDisplay({ mealPlan, onActionClick }: MealPlanDisplayProp
     }
   }
 
+  const handleExport = async (format: 'pdf' | 'csv' | 'json') => {
+    if (!savedId) {
+      toast.error("Please save the meal plan first", {
+        description: "You need to save the meal plan before exporting."
+      })
+      return
+    }
+
+    try {
+      setExporting(true)
+      const response = await fetch(`/api/meal-plans/${savedId}/export?format=${format}`)
+      
+      if (response.ok) {
+        const blob = await response.blob()
+        const url = window.URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `meal-plan-${savedId}-${new Date().toISOString().split('T')[0]}.${format}`
+        document.body.appendChild(a)
+        a.click()
+        window.URL.revokeObjectURL(url)
+        document.body.removeChild(a)
+        toast.success(`Exported as ${format.toUpperCase()}`, {
+          description: "Your meal plan has been downloaded."
+        })
+      } else {
+        const error = await response.json()
+        toast.error("Export failed", {
+          description: error.error || "Please try again."
+        })
+      }
+    } catch (e) {
+      toast.error("Error", { description: "Failed to export meal plan." })
+    } finally {
+      setExporting(false)
+    }
+  }
+
   // Flatten meals from days for the grid view, or show day sections?
   // User design implies a flat list or at least a grid. 
   // Let's iterate days and show a section for each day if >1 day, or just the meals if 1 day.
@@ -132,11 +190,39 @@ export function MealPlanDisplay({ mealPlan, onActionClick }: MealPlanDisplayProp
             <span className="flex items-center gap-1"><UtensilsCrossed className="w-3 h-3" /> {totalMeals} Meals</span>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20">
             <Wand2 className="w-3 h-3 mr-1" />
             AI Generated
           </Badge>
+          {savedId && exportFormats.length > 1 && (
+            <div className="flex items-center gap-1">
+              {exportFormats.includes('csv') && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => handleExport('csv')}
+                  disabled={exporting}
+                  className="gap-1.5"
+                >
+                  {exporting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Download className="w-3 h-3" />}
+                  CSV
+                </Button>
+              )}
+              {exportFormats.includes('json') && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => handleExport('json')}
+                  disabled={exporting}
+                  className="gap-1.5"
+                >
+                  {exporting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Download className="w-3 h-3" />}
+                  JSON
+                </Button>
+              )}
+            </div>
+          )}
           <Button 
             size="sm" 
             onClick={handleSave} 

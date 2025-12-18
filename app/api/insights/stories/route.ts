@@ -63,7 +63,7 @@ export async function GET(request: NextRequest) {
 
     // Generate personalized meal stories using AI
     const result = await generateObject({
-      model: google('gemini-3-flash'),
+      model: google('gemini-2.0-flash'),
       temperature: 0.8,
       schema: z.object({
         stories: z.array(

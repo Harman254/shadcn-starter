@@ -1,7 +1,7 @@
 "use client"
 
 import { motion } from "framer-motion"
-import { Leaf, Sun, Snowflake, Cloud, Flower2, DollarSign, MapPin, ChefHat } from "lucide-react"
+import { Leaf, Sun, Snowflake, Cloud, Flower2, DollarSign, MapPin, ChefHat, Calendar, ShoppingCart } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 
@@ -177,6 +177,38 @@ export function SeasonalDisplay({ data, onActionClick }: SeasonalDisplayProps) {
             <p className="text-white/70 text-sm">💡 {data.shoppingTip}</p>
           </motion.div>
         </div>
+
+        {/* Action Buttons */}
+        {onActionClick && (
+          <div className="relative px-6 sm:px-8 pb-6">
+            <div className="h-px w-full bg-gradient-to-r from-transparent via-white/20 to-transparent mb-6" />
+            
+            <div className="grid grid-cols-2 gap-3">
+              <Button
+                size="lg"
+                className="h-14 rounded-2xl font-semibold text-base gap-3 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white shadow-lg shadow-emerald-500/25"
+                onClick={() => {
+                  const seasonalItems = data.seasonalItems.map(item => item.name).join(', ');
+                  onActionClick(`Create a meal plan using these seasonal ingredients: ${seasonalItems}`);
+                }}
+              >
+                <Calendar className="h-5 w-5" /> Create Plan
+              </Button>
+              
+              <Button
+                size="lg"
+                variant="outline"
+                className="h-14 rounded-2xl font-semibold text-base gap-3 bg-white/5 border-white/10 text-white hover:bg-white/10"
+                onClick={() => {
+                  const seasonalItems = data.seasonalItems.map(item => item.name).join(', ');
+                  onActionClick(`Generate a grocery list for these seasonal items: ${seasonalItems}`);
+                }}
+              >
+                <ShoppingCart className="h-5 w-5" /> Shopping List
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
     </motion.div>
   )

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { Clock, Users, ChefHat, Flame, Play, Check, ArrowLeft, ArrowRight, Save, ShoppingCart, Calendar, Loader2, Wand2, Timer, Gauge, Pause, RotateCcw, BookOpen, ExternalLink, Utensils } from "lucide-react"
+import { Clock, Users, ChefHat, Flame, Play, Check, ArrowLeft, ArrowRight, Save, ShoppingCart, Calendar, Loader2, Wand2, Timer, Gauge, Pause, RotateCcw, BookOpen, ExternalLink, Utensils, Download } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { useToast } from "@/hooks/use-toast"
@@ -19,7 +19,27 @@ export function RecipeDisplay({ recipe, onActionClick }: RecipeDisplayProps) {
   const [saving, setSaving] = useState(false)
   const [savedId, setSavedId] = useState<string | null>(null)
   const [checkingSave, setCheckingSave] = useState(true)
+  const [exporting, setExporting] = useState(false)
+  const [exportFormats, setExportFormats] = useState<string[]>(['pdf'])
   const { toast } = useToast()
+
+  // Fetch user's export formats on mount
+  useEffect(() => {
+    const fetchExportFormats = async () => {
+      try {
+        const response = await fetch('/api/usage/features')
+        if (response.ok) {
+          const data = await response.json()
+          // API now returns { limits, featureUsage, plan }
+          setExportFormats(data.limits?.exportFormats || ['pdf'])
+        }
+      } catch (e) {
+        // Silently fail, default to PDF only
+        console.error('[RecipeDisplay] Failed to fetch export formats:', e)
+      }
+    }
+    fetchExportFormats()
+  }, [])
 
   // Check if recipe is already saved on mount
   useEffect(() => {
@@ -68,6 +88,49 @@ export function RecipeDisplay({ recipe, onActionClick }: RecipeDisplayProps) {
       toast({ title: "Error", description: "Failed to save recipe.", variant: "destructive" })
     } finally {
       setSaving(false)
+    }
+  }
+
+  const handleExport = async (format: 'pdf' | 'csv' | 'json') => {
+    if (!savedId) {
+      toast({ 
+        title: "Please save the recipe first", 
+        description: "You need to save the recipe before exporting.",
+        variant: "destructive"
+      })
+      return
+    }
+
+    try {
+      setExporting(true)
+      const response = await fetch(`/api/recipes/${savedId}/export?format=${format}`)
+      
+      if (response.ok) {
+        const blob = await response.blob()
+        const url = window.URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `recipe-${savedId}-${new Date().toISOString().split('T')[0]}.${format}`
+        document.body.appendChild(a)
+        a.click()
+        window.URL.revokeObjectURL(url)
+        document.body.removeChild(a)
+        toast({ 
+          title: `Exported as ${format.toUpperCase()}`, 
+          description: "Your recipe has been downloaded."
+        })
+      } else {
+        const error = await response.json()
+        toast({ 
+          title: "Export failed", 
+          description: error.error || "Please try again.",
+          variant: "destructive"
+        })
+      }
+    } catch (e) {
+      toast({ title: "Error", description: "Failed to export recipe.", variant: "destructive" })
+    } finally {
+      setExporting(false)
     }
   }
 
@@ -396,12 +459,62 @@ export function RecipeDisplay({ recipe, onActionClick }: RecipeDisplayProps) {
                 size="lg"
                 variant="outline"
                 className="h-12 rounded-xl font-semibold gap-2 bg-white/5 border-white/10 text-white hover:bg-white/10"
-                onClick={() => onActionClick(`Add ${recipe.name} to my meal plan`)}
+                onClick={() => onActionClick(`Create a meal plan that includes ${recipe.name} as one of the meals`)}
               >
                 <Calendar className="h-4 w-4" /> Add to Plan
               </Button>
             )}
           </div>
+          
+          {savedId && exportFormats.length > 1 && (
+            <div className="flex items-center gap-2 mt-3">
+              {exportFormats.includes('csv') && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => handleExport('csv')}
+                  disabled={exporting}
+                  className="h-10 rounded-xl font-medium gap-2 bg-white/5 border-white/10 text-white hover:bg-white/10"
+                >
+                  {exporting ? <Loader2 className="h-3 w-3 animate-spin" /> : <Download className="h-3 w-3" />}
+                  CSV
+                </Button>
+              )}
+              {exportFormats.includes('json') && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => handleExport('json')}
+                  disabled={exporting}
+                  className="h-10 rounded-xl font-medium gap-2 bg-white/5 border-white/10 text-white hover:bg-white/10"
+                >
+                  {exporting ? <Loader2 className="h-3 w-3 animate-spin" /> : <Download className="h-3 w-3" />}
+                  JSON
+                </Button>
+              )}
+            </div>
+          )}
+          
+          {onActionClick && (
+            <div className="grid grid-cols-2 gap-3 mt-3">
+              <Button 
+                size="lg"
+                variant="outline"
+                className="h-12 rounded-xl font-semibold gap-2 bg-white/5 border-white/10 text-white hover:bg-white/10"
+                onClick={() => onActionClick(`Generate a grocery list for ${recipe.name}`)}
+              >
+                <ShoppingCart className="h-4 w-4" /> Grocery List
+              </Button>
+              <Button 
+                size="lg"
+                variant="outline"
+                className="h-12 rounded-xl font-semibold gap-2 bg-white/5 border-white/10 text-white hover:bg-white/10"
+                onClick={() => onActionClick(`Analyze the nutrition of ${recipe.name}`)}
+              >
+                <Flame className="h-4 w-4" /> Nutrition
+              </Button>
+            </div>
+          )}
         </div>
       </div>
     </motion.div>

@@ -30,7 +30,7 @@ export class ReasoningEngine {
             const toolNames = Object.keys(availableTools);
 
             const { object, usage } = await generateObject({
-                model: google('gemini-3-flash'),
+                model: google('gemini-2.0-flash'),
                 schema: z.object({
                     reasoning: z.string().describe('Explanation of why these steps are chosen'),
                     steps: z.array(z.object({

@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { motion } from "framer-motion"
-import { Package, ChefHat, Clock, Star, ShoppingCart, Plus, Check } from "lucide-react"
+import { Package, ChefHat, Clock, Star, ShoppingCart, Plus, Check, Calendar } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
@@ -218,6 +218,38 @@ export function InventoryPlanDisplay({ data, availableIngredients, onActionClick
             <p className="text-white/70 text-sm">💡 {data.tip}</p>
           </motion.div>
         </div>
+
+        {/* Action Buttons */}
+        {onActionClick && (
+          <div className="relative px-6 sm:px-8 pb-6">
+            <div className="h-px w-full bg-gradient-to-r from-transparent via-white/20 to-transparent mb-6" />
+            
+            <div className="grid grid-cols-2 gap-3">
+              <Button
+                size="lg"
+                className="h-14 rounded-2xl font-semibold text-base gap-3 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white shadow-lg shadow-cyan-500/25"
+                onClick={() => {
+                  const mealNames = data.possibleMeals.map(m => m.name).join(', ');
+                  onActionClick(`Create a meal plan with these meals: ${mealNames}`);
+                }}
+              >
+                <Calendar className="h-5 w-5" /> Create Plan
+              </Button>
+              
+              <Button
+                size="lg"
+                variant="outline"
+                className="h-14 rounded-2xl font-semibold text-base gap-3 bg-white/5 border-white/10 text-white hover:bg-white/10"
+                onClick={() => {
+                  const ingredients = availableIngredients?.join(', ') || data.possibleMeals.flatMap(m => [...m.ingredientsUsed, ...m.additionalNeeded]).join(', ');
+                  onActionClick(`Generate a grocery list for these ingredients: ${ingredients}`);
+                }}
+              >
+                <ShoppingCart className="h-5 w-5" /> Grocery List
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
     </motion.div>
   )

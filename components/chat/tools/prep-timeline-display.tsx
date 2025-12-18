@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { Clock, ChefHat, Play, Pause, RotateCcw, Box, Lightbulb, CheckCircle2 } from "lucide-react"
+import { Clock, ChefHat, Play, Pause, RotateCcw, Box, Lightbulb, CheckCircle2, Calendar, ShoppingCart } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
@@ -29,9 +29,10 @@ interface PrepTimelineDisplayProps {
     proTips: string[]
   }
   recipes?: string[]
+  onActionClick?: (action: string) => void
 }
 
-export function PrepTimelineDisplay({ data, recipes }: PrepTimelineDisplayProps) {
+export function PrepTimelineDisplay({ data, recipes, onActionClick }: PrepTimelineDisplayProps) {
   const [currentStep, setCurrentStep] = useState(-1)
   const [isRunning, setIsRunning] = useState(false)
   const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set())
@@ -250,6 +251,33 @@ export function PrepTimelineDisplay({ data, recipes }: PrepTimelineDisplayProps)
             ))}
           </div>
         </div>
+
+        {/* Action Buttons */}
+        {onActionClick && (
+          <div className="relative px-6 sm:px-8 pb-6">
+            <div className="h-px w-full bg-gradient-to-r from-transparent via-white/20 to-transparent mb-6" />
+            
+            <div className="grid grid-cols-2 gap-3">
+              <Button
+                size="lg"
+                variant="outline"
+                className="h-12 rounded-xl font-semibold gap-2 bg-white/5 border-white/10 text-white hover:bg-white/10"
+                onClick={() => onActionClick("Show me the meal plan for this prep timeline")}
+              >
+                <Calendar className="h-4 w-4" /> View Plan
+              </Button>
+              
+              <Button
+                size="lg"
+                variant="outline"
+                className="h-12 rounded-xl font-semibold gap-2 bg-white/5 border-white/10 text-white hover:bg-white/10"
+                onClick={() => onActionClick("Generate a grocery list for this prep timeline")}
+              >
+                <ShoppingCart className="h-4 w-4" /> Grocery List
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
     </motion.div>
   )
