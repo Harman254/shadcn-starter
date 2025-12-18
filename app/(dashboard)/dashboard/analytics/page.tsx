@@ -6,10 +6,9 @@ import { fetchAnalyticsData } from './analytics-data';
 import { Suspense } from 'react';
 import { Loader2 } from 'lucide-react';
 import { hasAdvancedAnalytics } from '@/lib/utils/feature-gates';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import Link from 'next/link';
 import { AnalyticsClient } from './analytics-client';
+import { UpgradeButton } from './upgrade-button';
 
 function LoadingFallback() {
   return (
@@ -61,11 +60,7 @@ async function AnalyticsContent() {
                 <li>Export capabilities (CSV, JSON)</li>
               </ul>
             </div>
-            <Button asChild className="w-full" size="lg">
-              <Link href="/dashboard/account?upgrade=analytics">
-                Upgrade to Pro
-              </Link>
-            </Button>
+            <UpgradeButton />
           </CardContent>
         </Card>
       </div>

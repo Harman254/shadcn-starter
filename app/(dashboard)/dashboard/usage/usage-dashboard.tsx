@@ -17,8 +17,8 @@ import {
   CheckCircle2,
   ArrowUpRight,
 } from 'lucide-react';
-import Link from 'next/link';
 import { useProFeatures } from '@/hooks/use-pro-features';
+import { UpgradeButton } from './upgrade-button';
 
 interface UsageStats {
   totalCalls: number;
@@ -345,12 +345,7 @@ export function UsageDashboard({ userId }: UsageDashboardProps) {
                   Grocery list optimization
                 </li>
               </ul>
-              <Button asChild className="w-full" size="lg">
-                <Link href="/dashboard/account?upgrade=usage">
-                  <Crown className="h-4 w-4 mr-2" />
-                  Upgrade to Pro
-                </Link>
-              </Button>
+              <UpgradeButton />
             </CardContent>
           </Card>
         )}
