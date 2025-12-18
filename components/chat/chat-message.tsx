@@ -848,13 +848,67 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
               transition={{ duration: 0.3 }}
               className="w-full"
             >
-              <GroceryListDisplay 
-                groceryList={uiData.groceryList} 
-                mealPlanId={uiData.mealPlan?.id}
-                onActionClick={onActionClick} 
-              />
-            </motion.div>
-          )}
+              <div className={cn(
+                "relative overflow-hidden w-full",
+                "bg-gradient-to-br from-card via-card to-secondary/5 dark:from-card dark:via-card dark:to-secondary/10",
+                "border-y border-border/50 sm:border-x sm:border-border/50 sm:rounded-2xl",
+                "shadow-lg shadow-secondary/5",
+                "backdrop-blur-sm"
+              )}>
+                {/* Header with Total Cost */}
+                <div className="px-4 sm:px-5 md:px-6 py-4 border-b border-border/50 bg-muted/30 backdrop-blur-sm flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <ShoppingCart className="h-5 w-5 text-primary" />
+                    <span className="font-semibold text-foreground">Shopping List</span>
+                  </div>
+                  {groceryList.totalEstimatedCost && (
+                    <div className="flex items-center gap-2 bg-background/80 px-3 py-1.5 rounded-full border border-border/50 shadow-sm">
+                      <span className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Est. Total</span>
+                      <span className="font-bold text-primary">{groceryList.totalEstimatedCost}</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Grocery List Items */}
+                <div className="p-4 sm:p-5 md:p-6 space-y-6">
+                  {/* Group by Category */}
+                  {(Object.entries(
+                    groceryList.items.reduce((acc: any, item: any) => {
+                      const cat = item.category || 'General';
+                      if (!acc[cat]) acc[cat] = [];
+                      acc[cat].push(item);
+                      return acc;
+                    }, {})
+                  ) as [string, any[]][]).map(([category, items], catIdx: number) => (
+                    <div key={catIdx} className="space-y-3">
+                      <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider pl-1 flex items-center gap-2">
+                        <span className="w-1.5 h-1.5 rounded-full bg-primary/40" />
+                        {category}
+                      </h4>
+                      <div className="grid gap-2 sm:grid-cols-2">
+                        {items.map((item: any, itemIdx: number) => (
+                          <div 
+                            key={itemIdx}
+                            className="flex items-center justify-between p-3 rounded-xl bg-muted/30 border border-border/40 hover:border-primary/30 hover:bg-muted/50 transition-all duration-200 group"
+                          >
+                            <div className="flex items-center gap-3 min-w-0">
+                              <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-background border border-border/50 text-xs font-bold text-foreground shadow-sm group-hover:scale-105 transition-transform">
+                                {item.quantity.replace(/[^0-9.]/g, '') || '1'}
+                              </div>
+                              <div className="min-w-0">
+                                <div className="font-medium text-sm text-foreground truncate">{item.item}</div>
+                                <div className="text-xs text-muted-foreground truncate">{item.suggestedLocation}</div>
+                              </div>
+                            </div>
+                            <div className="font-semibold text-sm text-primary whitespace-nowrap pl-2">
+                              {item.estimatedPrice}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
 
           {/* Optimize Grocery List Display */}
           {uiData?.optimization && (
@@ -913,7 +967,7 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
               transition={{ duration: 0.3 }}
               className="w-full max-w-2xl mx-auto"
             >
-              <NutritionDisplay nutrition={uiData.nutrition} />
+              <NutritionDisplay nutrition={uiData.nutrition} onActionClick={onActionClick} />
             </motion.div>
           )}
 
@@ -973,7 +1027,7 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
               transition={{ duration: 0.3 }}
               className="w-full max-w-2xl mx-auto"
             >
-              <SeasonalDisplay data={uiData.seasonal} />
+              <SeasonalDisplay data={uiData.seasonal} onActionClick={onActionClick} />
             </motion.div>
           )}
 
@@ -1012,7 +1066,7 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
               transition={{ duration: 0.3 }}
               className="w-full max-w-2xl mx-auto"
             >
-              <FoodDataDisplay data={uiData.foodData} />
+              <FoodDataDisplay data={uiData.foodData} onActionClick={onActionClick} />
             </motion.div>
           )}
 

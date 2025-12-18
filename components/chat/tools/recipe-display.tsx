@@ -1,11 +1,12 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { Clock, Users, ChefHat, Flame, Play, Check, ArrowLeft, ArrowRight, Save, ShoppingCart, Calendar, Loader2, Wand2, Timer, Gauge, Pause, RotateCcw, BookOpen } from "lucide-react"
+import { Clock, Users, ChefHat, Flame, Play, Check, ArrowLeft, ArrowRight, Save, ShoppingCart, Calendar, Loader2, Wand2, Timer, Gauge, Pause, RotateCcw, BookOpen, ExternalLink, Utensils } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { useToast } from "@/hooks/use-toast"
+import { CldImage } from 'next-cloudinary'
 
 interface RecipeDisplayProps {
   recipe: any
@@ -17,7 +18,35 @@ export function RecipeDisplay({ recipe, onActionClick }: RecipeDisplayProps) {
   const [currentStep, setCurrentStep] = useState(0)
   const [saving, setSaving] = useState(false)
   const [savedId, setSavedId] = useState<string | null>(null)
+  const [checkingSave, setCheckingSave] = useState(true)
   const { toast } = useToast()
+
+  // Check if recipe is already saved on mount
+  useEffect(() => {
+    const checkSaved = async () => {
+      if (!recipe.name) {
+        setCheckingSave(false)
+        return
+      }
+      try {
+        const response = await fetch('/api/recipes/save')
+        if (response.ok) {
+          const { recipes } = await response.json()
+          const existing = recipes?.find((r: any) => 
+            r.name.toLowerCase().trim() === recipe.name.toLowerCase().trim()
+          )
+          if (existing) {
+            setSavedId(existing.id)
+          }
+        }
+      } catch (e) {
+        // Silently fail - user can still save
+      } finally {
+        setCheckingSave(false)
+      }
+    }
+    checkSaved()
+  }, [recipe.name])
 
   const handleSave = async () => {
     if (savedId) return
@@ -185,12 +214,48 @@ export function RecipeDisplay({ recipe, onActionClick }: RecipeDisplayProps) {
         <div className="relative h-72 sm:h-80 w-full overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/50 to-transparent z-10" />
           <div className="absolute inset-0 bg-gradient-to-r from-orange-500/20 to-red-500/20 mix-blend-overlay z-10" />
-          <img 
-            src={recipe.imageUrl} 
-            alt={recipe.name}
-            className="w-full h-full object-cover"
-          />
+          {recipe.imageUrl && recipe.imageUrl.includes('cloudinary.com') ? (
+            <CldImage
+              src={recipe.imageUrl}
+              alt={recipe.name}
+              width={800}
+              height={600}
+              className="w-full h-full object-cover"
+              loading="lazy"
+            />
+          ) : (
+            <img 
+              src={recipe.imageUrl || 'https://res.cloudinary.com/dcidanigq/image/upload/v1742112004/cld-sample-4.jpg'} 
+              alt={recipe.name}
+              className="w-full h-full object-cover"
+              loading="lazy"
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = 'https://res.cloudinary.com/dcidanigq/image/upload/v1742112004/cld-sample-4.jpg';
+              }}
+            />
+          )}
           
+          {/* Source Link */}
+          {recipe.sourceUrl && (
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="absolute top-4 left-4 z-20"
+            >
+               <a
+                href={recipe.sourceUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/20 backdrop-blur-md border border-white/10 text-white text-xs font-medium hover:bg-black/40 transition-colors"
+              >
+                <ExternalLink className="h-3.5 w-3.5 text-white/80" />
+                <span className="truncate max-w-[150px]">{new URL(recipe.sourceUrl).hostname.replace('www.', '')}</span>
+              </a>
+            </motion.div>
+          )}
+
           {/* Badge */}
           <motion.div
             initial={{ opacity: 0, y: -20 }}

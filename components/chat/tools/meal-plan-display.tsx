@@ -4,8 +4,8 @@ import { useState, useMemo } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Calendar, UtensilsCrossed, Star, ChevronDown, ShoppingCart, Wand2, ChefHat, Check, Save, Loader2, Flame, Clock, Apple, Zap, TrendingUp, Timer, Users } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { cn } from "@/lib/utils"
-import { useToast } from "@/hooks/use-toast"
+import { ExternalLink, Clock, Flame, Users, Bookmark, Check, Loader2, ShoppingCart, TrendingUp, Timer, ChefHat } from "lucide-react"
+import { toast } from "sonner"
 import { useRouter } from "next/navigation"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -44,12 +44,19 @@ const getMealTypeColor = (index: number, name: string): string => {
 };
 
 interface MealPlanDisplayProps {
+  // Accepts the tool output structure which contains days
   mealPlan: any
   onActionClick?: (action: string) => void
 }
 
+const mealTypeColors: Record<string, string> = {
+  breakfast: "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300",
+  lunch: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300",
+  dinner: "bg-violet-100 text-violet-800 dark:bg-violet-900/30 dark:text-violet-300",
+  snack: "bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-300",
+};
+
 export function MealPlanDisplay({ mealPlan, onActionClick }: MealPlanDisplayProps) {
-  const [expandedDay, setExpandedDay] = useState<number | null>(1)
   const [saving, setSaving] = useState(false)
   const [savedId, setSavedId] = useState<string | null>(null)
   const { toast } = useToast()
@@ -78,24 +85,36 @@ export function MealPlanDisplay({ mealPlan, onActionClick }: MealPlanDisplayProp
       const response = await fetch('/api/savemealplan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...mealPlan, createdAt: new Date().toISOString() }),
+        body: JSON.stringify({ 
+          ...mealPlan, 
+          duration: Math.round(Number(mealPlan.duration)) || mealPlan.days?.length || 1,
+          mealsPerDay: Math.round(Number(mealPlan.mealsPerDay)) || (mealPlan.days?.[0]?.meals?.length) || 3,
+          createdAt: new Date().toISOString() 
+        }),
       })
       const result = await response.json()
       if (response.ok && result.success) {
         setSavedId(result.mealPlan.id)
-        toast({ title: "Success!", description: "Meal plan saved to your collection." })
+        toast.success("Meal plan saved!", {
+          description: `"${mealPlan.title}" has been added to your saved plans.`,
+        })
         router.refresh()
       } else {
-        toast({ title: "Failed to save", description: result.error || "Please try again.", variant: "destructive" })
+        toast.error("Failed to save", {
+          description: result.error || "Please try again."
+        })
       }
     } catch (e) {
-      toast({ title: "Error", description: "An unexpected error occurred.", variant: "destructive" })
+      toast.error("Error", { description: "An unexpected error occurred." })
     } finally {
       setSaving(false)
     }
   }
 
-  const totalMeals = mealPlan.days.reduce((sum: any, day: any) => sum + day.meals.length, 0)
+  // Flatten meals from days for the grid view, or show day sections?
+  // User design implies a flat list or at least a grid. 
+  // Let's iterate days and show a section for each day if >1 day, or just the meals if 1 day.
+  const isMultiDay = mealPlan.duration > 1;
 
   return (
     <motion.div

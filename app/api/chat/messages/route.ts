@@ -63,38 +63,21 @@ export async function POST(request: NextRequest) {
       });
 
       if (!chatSession) {
-        // Session doesn't exist yet - this can happen for new chats
-        // Create a temporary session with a placeholder title
-        // The title will be updated later when the AI generates it
-        try {
-          chatSession = await prisma.chatSession.create({
-            data: {
-              id: sessionId,
-              userId,
-              chatType: 'context-aware', // Default, will be updated if needed
-              title: 'New Chat', // Placeholder title
-            },
-          });
-
-          if (process.env.NODE_ENV === 'development') {
-            console.log(`[POST /api/chat/messages] Created new session: ${sessionId}`);
-          }
-        } catch (createError: any) {
-          // If creation fails (e.g., duplicate key), try to find it again
-          if (createError?.code === 'P2002') {
-            chatSession = await prisma.chatSession.findFirst({
-              where: { id: sessionId, userId },
-            });
-          }
-
-          if (!chatSession) {
-            console.error('[POST /api/chat/messages] Failed to create session:', createError);
-            return NextResponse.json(
-              { error: 'Failed to create session' },
-              { status: 500 }
-            );
-          }
+        // Session doesn't exist yet - don't create it here
+        // Sessions should only be created when a title is ready (via /api/chat/sessions POST)
+        // This prevents empty "New Chat" sessions from appearing in history
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`[POST /api/chat/messages] Session ${sessionId} does not exist yet. Messages will be saved once session is created with a title.`);
         }
+        
+        // Return success but indicate session doesn't exist
+        // Messages will be saved once the session is created with a proper title
+        return NextResponse.json({ 
+          success: true, 
+          saved: 0,
+          sessionExists: false,
+          message: 'Session will be created when title is ready'
+        });
       }
 
       // Get existing message IDs to avoid duplicates

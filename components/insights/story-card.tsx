@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useCallback } from 'react'
 import Image from 'next/image'
 import { Bookmark, Clock, Flame, ChefHat, Loader2, Zap } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -41,17 +41,24 @@ export function StoryCard({
     Hard: 'bg-red-500/20 text-red-400',
   }
 
-  // Use the generated URL or fallback
-  const displayImageUrl = enableAIImage ? imageUrl : item.imageUrl
+  // Use the generated URL or fallback - always show something
+  const displayImageUrl = enableAIImage ? (imageUrl || item.imageUrl) : item.imageUrl
+
+  const handleClick = useCallback((e: React.MouseEvent) => {
+    if (onClick) {
+      e.preventDefault()
+      onClick()
+    }
+  }, [onClick])
 
   return (
     <article
-      onClick={onClick}
+      onClick={handleClick}
       className={cn(
         'group relative bg-card rounded-2xl overflow-hidden border border-border/50',
         'hover:border-primary/30 transition-all duration-500',
         'hover:shadow-2xl hover:shadow-primary/10',
-        'cursor-pointer transform hover:-translate-y-1',
+        onClick ? 'cursor-pointer transform hover:-translate-y-1' : '',
         'backdrop-blur-sm'
       )}
     >
@@ -60,7 +67,7 @@ export function StoryCard({
         {/* Gradient overlay */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent z-10" />
         
-        {/* Image or placeholder */}
+        {/* Image - always show fallback if available, then upgrade to generated */}
         {displayImageUrl && !imageError ? (
           <>
             {/* For base64 data URLs or regular URLs */}
@@ -95,10 +102,10 @@ export function StoryCard({
           </>
         ) : (
           <div className="absolute inset-0 bg-gradient-to-br from-primary/30 via-secondary to-accent flex items-center justify-center">
-            {(isGenerating || (!imageLoaded && !imageError)) && (
+            {isGenerating && !imageLoaded && (
               <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
             )}
-            {imageError && (
+            {imageError && !isGenerating && (
               <ChefHat className="w-12 h-12 text-muted-foreground/50" />
             )}
           </div>

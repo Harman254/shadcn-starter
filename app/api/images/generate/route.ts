@@ -37,42 +37,58 @@ export async function POST(request: NextRequest) {
         }
 
         try {
-            // Generate image using Imagen 3
-            const response = await genai.models.generateImages({
-                model: 'imagen-3.0-generate-002',
-                prompt: prompt,
-                config: {
-                    numberOfImages: 1,
-                    aspectRatio: '16:9',
-                    outputMimeType: 'image/png',
-                },
-            })
-
-            if (response.generatedImages && response.generatedImages.length > 0) {
-                const imageData = response.generatedImages[0]
-
-                // For now, return as base64 data URL
-                // In production, upload to Cloudinary and return the URL
-                const base64Image = imageData.image?.imageBytes
-                if (base64Image) {
-                    const dataUrl = `data:image/png;base64,${base64Image}`
-
-                    // Cache the result
-                    imageCache.set(cacheKey, dataUrl)
-
-                    return NextResponse.json({
-                        imageUrl: dataUrl,
-                        generated: true
+            // Generate image using Gemini 2.5 Flash Image (Nano Banana)
+            // Try multiple model names as the exact identifier may vary
+            const modelNames = [
+                process.env.IMAGE_GEN_MODEL, // User-defined model
+                'gemini-2.5-flash-image',    // Gemini 2.5 Flash Image (Nano Banana)
+                'gemini-2.5-flash-generate', // Alternative naming
+                'imagen-3.0-generate-002',   // Imagen 3 fallback
+            ].filter(Boolean) as string[]
+            
+            let lastError: Error | null = null
+            
+            for (const modelName of modelNames) {
+                try {
+                    console.log(`[Image Gen] Attempting model: ${modelName}`)
+                    
+                    const response = await genai.models.generateImages({
+                        model: modelName,
+                        prompt: prompt,
+                        config: {
+                            numberOfImages: 1,
+                            aspectRatio: '16:9',
+                            outputMimeType: 'image/png',
+                        },
                     })
+                    
+                    if (response.generatedImages && response.generatedImages.length > 0) {
+                        const imageData = response.generatedImages[0]
+                        const base64Image = imageData.image?.imageBytes
+                        
+                        if (base64Image) {
+                            const dataUrl = `data:image/png;base64,${base64Image}`
+                            imageCache.set(cacheKey, dataUrl)
+                            
+                            console.log(`[Image Gen] Success with model: ${modelName}`)
+                            
+                            return NextResponse.json({
+                                imageUrl: dataUrl,
+                                generated: true,
+                                model: modelName
+                            })
+                        }
+                    }
+                } catch (modelError: unknown) {
+                    lastError = modelError instanceof Error ? modelError : new Error(String(modelError))
+                    console.warn(`[Image Gen] Model ${modelName} failed:`, lastError.message)
+                    // Continue to next model
                 }
             }
+            
+            // All models failed
+            throw lastError || new Error('All image generation models failed')
 
-            // Fallback if generation fails
-            return NextResponse.json({
-                imageUrl: fallbackUrl || '/feed-images/salmon-bowl.png',
-                fallback: true,
-                reason: 'No image generated'
-            })
 
         } catch (genError: unknown) {
             console.error('[Image Gen] Generation error:', genError)

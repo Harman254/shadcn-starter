@@ -3,6 +3,19 @@ import { headers } from "next/headers";
 import { auth } from '@/lib/auth';
 import prisma from '@/lib/prisma';
 
+/**
+ * Validates if a string is a proper URL
+ */
+function isValidUrl(urlString: string | undefined | null): boolean {
+    if (!urlString) return false;
+    try {
+        const url = new URL(urlString);
+        return url.protocol === 'http:' || url.protocol === 'https:';
+    } catch {
+        return false;
+    }
+}
+
 export const maxDuration = 60;
 export const dynamic = 'force-dynamic';
 
@@ -44,6 +57,9 @@ export async function POST(request: Request) {
         }
 
         // Save recipe to database
+        // Validate imageUrl before saving
+        const validatedImageUrl = (imageUrl && isValidUrl(imageUrl)) ? imageUrl : '';
+        
         const savedRecipe = await prisma.recipe.create({
             data: {
                 userId: session.user.id,
@@ -60,9 +76,13 @@ export async function POST(request: Request) {
                 protein: nutrition?.protein || 0,
                 carbs: nutrition?.carbs || 0,
                 fat: nutrition?.fat || 0,
-                imageUrl: imageUrl || '',
+                imageUrl: validatedImageUrl,
             }
         });
+
+        // Revalidate the recipes page to show the new recipe immediately
+        const { revalidatePath } = await import('next/cache');
+        revalidatePath('/recipes');
 
         return NextResponse.json({
             success: true,

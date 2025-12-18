@@ -167,28 +167,55 @@ export function ChatPanel({
       
       addMessage(finalSessionId, assistantMsg);
       
-      // Save to DB (both user and assistant messages are now in store)
-      // We need to fetch the latest state to get the user message too
+      // Get current messages (both user and assistant messages are now in store)
       const currentMessages = useChatStore.getState().sessions[finalSessionId]?.messages || [];
-      saveToDatabase(currentMessages);
-
-      // Generate Title if needed
+      
+      // Generate Title if needed and create session BEFORE saving messages
+      // This ensures sessions are only saved when they have a proper title
       if (currentMessages.length === 2 && !titleGeneratedRef.current) {
         titleGeneratedRef.current = finalSessionId;
         try {
           const title = await generateSessionTitle(currentMessages);
           if (title && title !== 'New Chat') {
-            updateSessionTitle(finalSessionId, title);
-            fetchWithRetry(`/api/chat/sessions/${finalSessionId}`, {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ title }),
+            // Create the session with the generated title
+            const createResponse = await fetchWithRetry('/api/chat/sessions', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ 
+                sessionId: finalSessionId,
+                chatType,
+                title 
+              }),
             });
+
+            if (createResponse.ok) {
+              // Update local store
+              updateSessionTitle(finalSessionId, title);
+              
+              // Now save the messages since the session exists
+              saveToDatabase(currentMessages);
+            } else {
+              const errorText = await createResponse.text();
+              console.error('Failed to create session with title:', errorText);
+              // Don't save messages if session creation failed
+            }
+          } else {
+            // Title generation returned "New Chat" or empty - don't create session
+            // Messages won't be saved, preventing empty sessions in history
+            if (process.env.NODE_ENV === 'development') {
+              console.log('[ChatPanel] Title generation returned invalid title, skipping session creation');
+            }
           }
         } catch (e) {
-          console.error('Title generation failed', e);
+          console.error('Title generation or session creation failed', e);
+          // Don't save messages if session creation failed
         }
+      } else if (currentMessages.length > 2) {
+        // Session should already exist if we have more than 2 messages
+        // Save messages normally
+        saveToDatabase(currentMessages);
       }
+      // If we have less than 2 messages, don't save yet (wait for title generation)
     },
     onError: (error) => {
       isUserSubmittingRef.current = false;

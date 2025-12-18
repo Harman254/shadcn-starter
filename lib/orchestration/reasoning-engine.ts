@@ -76,6 +76,24 @@ export class ReasoningEngine {
             - Example: "Chapati" -> Call 'generateMealRecipe' with args '{"name": "Chapati"}'.
           * **Search/List**: If the user asks for ideas or a list (e.g. "Find me pasta recipes", "Breakfast ideas"), call 'searchRecipes'.
             - Example: "Pasta recipes" -> Call 'searchRecipes' with args '{"query": "pasta recipes", "count": 3}'.
+        - **Ingredient-Based Meal Suggestions**:
+          * If the user asks for meal suggestions based on ingredients they have (e.g. "Suggest meals I can cook with these ingredients: X, Y, Z", "What can I make with...", "I have X, Y, Z..."), call 'planFromInventory'.
+          * Extract the ingredient list from the message. Ingredients may be listed after a colon (":") or in the message text.
+          * Parse ingredients as an array of strings, splitting by commas and trimming whitespace.
+          * Example: "Suggest meals I can cook with these ingredients: Salt, Pepper, Onions" -> Call 'planFromInventory' with args '{"ingredients": ["Salt", "Pepper", "Onions"]}'.
+          * Example: "What can I make with chicken, rice, and vegetables?" -> Call 'planFromInventory' with args '{"ingredients": ["chicken", "rice", "vegetables"]}'.
+          * If meal type is mentioned (breakfast, lunch, dinner, snack), include it in 'mealType'. Otherwise, use 'any'.
+        - **Prep Schedule/Timeline Requests**:
+          * If the user asks for a prep schedule, prep timeline, or meal prep plan (e.g. "Create a prep schedule", "Prep timeline", "Meal prep plan", "Create a prep schedule for this meal plan"), call 'generatePrepTimeline'.
+          * CRITICAL: Extract recipe names from the message. Look for text after "Recipes to prep:" or "recipes:" or "for this meal plan with recipes:".
+          * Parse recipes by splitting on commas and trimming whitespace. Each recipe name should be a separate string in the array.
+          * Recipe names may contain commas, hyphens, and other special characters - preserve them exactly as written.
+          * Example: "Create a prep schedule for this meal plan. Recipes to prep: Chicken Curry, Rice, Salad" -> Call 'generatePrepTimeline' with args '{"recipes": ["Chicken Curry", "Rice", "Salad"], "prepStyle": "batch"}'.
+          * Example: "Create a prep schedule for this meal plan. Recipes to prep: Swahili-Inspired Peanut Butter Banana Curry, Italian Scrambled Eggs with Pesto and Parmesan" -> Call 'generatePrepTimeline' with args '{"recipes": ["Swahili-Inspired Peanut Butter Banana Curry", "Italian Scrambled Eggs with Pesto and Parmesan"], "prepStyle": "batch"}'.
+          * If the message contains "Recipes to prep:" or "recipes:" followed by a list, ALWAYS extract those recipes. Do not skip this step.
+          * If recipes are mentioned in the message, ALWAYS extract them. If not, check context for the last meal plan and extract meal names from it.
+          * If no recipes are provided and no meal plan is in context, return an error or ask the user for recipes.
+          * NEVER call generatePrepTimeline with an empty recipes array.
         - **General Chat / Info**: ONLY if the user asks a general question unrelated to generating content (e.g. "Hi", "How are you?"), return an EMPTY array.
           * CRITICAL: Do NOT return empty for food items. "Chapati" is NOT general chat, it is a recipe request.
         - ALWAYS provide tool arguments as a valid JSON string.

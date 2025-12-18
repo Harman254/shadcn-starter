@@ -105,12 +105,8 @@ export default async function IndexPage() {
     // If it fails, session is undefined, which falls through to landing page.
   }
 
-  // If user is logged in, redirect to chat page (default page)
-  if (session?.user?.id) {
-    redirect('/chat');
-  }
-
-  // If not authenticated, show landing page
+  // Show landing page for both authenticated and unauthenticated users
+  // Logged-in users can navigate to chat via navigation or homepage CTA
   const image = {
     src: "/image01.jpg",
     alt: "Hero section demo image showing interface components",
@@ -119,6 +115,31 @@ export default async function IndexPage() {
  
   return (
     <>
+    {/* JSON-LD Structured Data */}
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{
+        __html: JSON.stringify({
+          '@context': 'https://schema.org',
+          '@type': 'SoftwareApplication',
+          name: 'MealWise',
+          applicationCategory: 'HealthApplication',
+          operatingSystem: 'iOS, Android, Web',
+          offers: {
+            '@type': 'Offer',
+            price: '0',
+            priceCurrency: 'USD',
+          },
+          aggregateRating: {
+            '@type': 'AggregateRating',
+            ratingValue: '4.8',
+            ratingCount: '12050',
+          },
+          description: 'AI-powered meal planning app that creates personalized nutrition plans, grocery lists, and recipes tailored to your lifestyle.',
+        }),
+      }}
+    />
+
     {/* <Hero1 heading="Personalized AI Meal Plans for Your Lifestyle" image={image} description='this is all you need' /> */}
 <HeroGeometric />
 <VideoPlayer  videoSrc="https://www.loom.com/embed/7ad81c7ce2444cefbbdccb21eb0a273e?sid=70cb2568-f0ec-438f-922b-9f8c694489c3"

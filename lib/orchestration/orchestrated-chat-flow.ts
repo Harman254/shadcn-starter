@@ -330,13 +330,14 @@ export class OrchestratedChatFlow {
       CREATIVE RESPONSE GUIDELINES:
       ${hasResults ? `
       - The UI is ALREADY showing the full data (meal plan cards, grocery lists, etc.)
-      - Write a SHORT, creative acknowledgment (1-2 sentences MAX)
+      - Write a creative, engaging response (a paragraph or more is fine - be thorough and helpful)
       - DO NOT describe what's in the data - the user can SEE it
       - BE CREATIVE! Vary your responses each time:
         * Use different greetings (Awesome! / Voilà! / Ta-da! / Here you go! / Done!)
         * Add relevant emojis sparingly (🎉 🍳 🥗 ✨)
         * Occasionally add a fun food fact or tip
         * Sometimes ask a follow-up question ("Want me to adjust anything?")
+        * Provide helpful context, tips, or suggestions related to what was generated
       - If there are ERRORS, be honest but helpful ("Hmm, couldn't get prices, but here's your plan!")
       - Match the user's energy - if they're excited, be excited back!
       ` : `

@@ -26,6 +26,7 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
+import { Button } from "@/components/ui/button"
 
 interface FoodDataDisplayProps {
   data: {
@@ -81,9 +82,10 @@ interface FoodDataDisplayProps {
     }
     sources?: Array<{ name: string; url?: string }>
   }
+  onActionClick?: (action: string) => void
 }
 
-export function FoodDataDisplay({ data }: FoodDataDisplayProps) {
+export function FoodDataDisplay({ data, onActionClick }: FoodDataDisplayProps) {
   const queryTypeLabels: Record<string, { label: string; icon: React.ReactNode; color: string }> = {
     nutrition: { label: "Nutrition Facts", icon: <Apple className="h-4 w-4" />, color: "bg-green-500/10 text-green-600 border-green-500/20" },
     price: { label: "Price Check", icon: <DollarSign className="h-4 w-4" />, color: "bg-amber-500/10 text-amber-600 border-amber-500/20" },
@@ -414,6 +416,18 @@ export function FoodDataDisplay({ data }: FoodDataDisplayProps) {
             </div>
           )}
         </CardContent>
+        {onActionClick && (data.foodItem || data.query) && (
+          <div className="p-4 pt-0 flex justify-end gap-2">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="gap-2"
+              onClick={() => onActionClick(`Recipes using ${data.foodItem || data.query}`)}
+            >
+              <Drumstick className="h-4 w-4" /> Find Recipes
+            </Button>
+          </div>
+        )}
       </Card>
     </motion.div>
   )

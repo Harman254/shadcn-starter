@@ -1,6 +1,7 @@
 'use client'
 
-import React, { useState, useMemo, useCallback } from 'react'
+import React, { useState, useMemo, useCallback, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { RefreshCw, Bookmark } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { CategoryTabs } from './category-tabs'
@@ -8,6 +9,7 @@ import { StoryCard } from './story-card'
 import { useBookmarks } from '@/hooks/use-bookmarks'
 import { FEED_ITEMS, type FeedCategory, type FeedItem } from '@/lib/data/feed-data'
 import { Button } from '@/components/ui/button'
+import { useInsightsStore } from '@/store/insights-store'
 
 interface DiscoverFeedProps {
   className?: string
@@ -24,22 +26,80 @@ const CATEGORY_ITEMS: Record<FeedCategory, FeedItem[]> = {
 }
 
 export function DiscoverFeed({ className }: DiscoverFeedProps) {
+  const router = useRouter()
   const [activeCategory, setActiveCategory] = useState<FeedCategory>('for-you')
   const [showBookmarksOnly, setShowBookmarksOnly] = useState(false)
   const [refreshKey, setRefreshKey] = useState(0)
+  const [aiStories, setAiStories] = useState<FeedItem[]>([])
+  const [isLoadingStories, setIsLoadingStories] = useState(false)
   const { isBookmarked, toggleBookmark, bookmarks, isLoaded } = useBookmarks()
+  const { getAiStories, setAiStories: setCachedAiStories, clearAiStories } = useInsightsStore()
 
-  // Stable feed items - no random sorting, no useEffect
+  // Fetch AI-generated stories
+  useEffect(() => {
+    const fetchAiStories = async () => {
+      if (activeCategory !== 'for-you' || showBookmarksOnly) {
+        setAiStories([])
+        return
+      }
+
+      // Check Zustand cache first
+      const cached = getAiStories(activeCategory)
+      if (cached) {
+        setAiStories(cached)
+        return
+      }
+
+      try {
+        setIsLoadingStories(true)
+        const response = await fetch(`/api/insights/stories?t=${Date.now()}`)
+        if (response.ok) {
+          const data = await response.json()
+          const stories = data.stories || []
+          setAiStories(stories)
+          
+          // Cache in Zustand (automatically persisted to localStorage)
+          setCachedAiStories(stories, activeCategory)
+        }
+      } catch (error) {
+        console.error('[DiscoverFeed] Error fetching AI stories:', error)
+      } finally {
+        setIsLoadingStories(false)
+      }
+    }
+
+    fetchAiStories()
+  }, [activeCategory, showBookmarksOnly, refreshKey, getAiStories, setCachedAiStories])
+
+  // Combine static feed items with AI stories
   const feedItems = useMemo(() => {
     if (showBookmarksOnly) {
-      return FEED_ITEMS.filter(item => bookmarks.includes(item.id))
+      const allItems = [...FEED_ITEMS, ...aiStories]
+      return allItems.filter(item => bookmarks.includes(item.id))
     }
+    
+    if (activeCategory === 'for-you') {
+      // Combine AI stories with static items for "For You" category
+      return [...aiStories, ...CATEGORY_ITEMS[activeCategory]].slice(0, 12)
+    }
+    
     return CATEGORY_ITEMS[activeCategory] || []
-  }, [activeCategory, showBookmarksOnly, bookmarks])
+  }, [activeCategory, showBookmarksOnly, bookmarks, aiStories])
+
+  const handleStoryClick = useCallback((item: FeedItem) => {
+    // Make all stories clickable - navigate to insights detail page
+    // Both AI-generated and static stories can be viewed
+    const title = encodeURIComponent(item.title || 'Meal Insight')
+    const description = encodeURIComponent(item.description || '')
+    const imageUrl = encodeURIComponent(item.imageUrl || '')
+    router.push(`/meal-plans/insights/${item.id}?title=${title}&description=${description}&imageUrl=${imageUrl}`)
+  }, [router])
 
   const handleRefresh = useCallback(() => {
+    // Clear cache and refresh
+    clearAiStories()
     setRefreshKey(k => k + 1)
-  }, [])
+  }, [clearAiStories])
 
   const handleCategoryChange = useCallback((category: FeedCategory) => {
     setActiveCategory(category)
@@ -112,6 +172,7 @@ export function DiscoverFeed({ className }: DiscoverFeedProps) {
                 item={item}
                 isBookmarked={isBookmarked(item.id)}
                 onBookmarkToggle={handleBookmarkToggle}
+                onClick={() => handleStoryClick(item)}
                 priority={index < 2}
                 enableAIImage={true}
               />
