@@ -4,6 +4,8 @@ import { headers } from 'next/headers';
 import { getUserFeatureLimits } from '@/lib/utils/feature-gates';
 import prisma from '@/lib/prisma';
 
+export const dynamic = 'force-dynamic';
+
 function convertRecipeToCSV(recipe: any): string {
   const rows: string[] = [];
   
