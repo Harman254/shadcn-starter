@@ -85,7 +85,7 @@ export class OrchestratedChatFlow {
       // We use generateText here instead of streamText
       const { generateText } = await import('ai');
       const { text } = await generateText({
-        model: google('gemini-3-flash'),
+        model: google('gemini-2.0-flash'),
         system: this.buildSystemPrompt(input, context, false),
         prompt: this.buildSynthesisPrompt(input.message, toolResults),
       });
@@ -222,7 +222,7 @@ export class OrchestratedChatFlow {
           clearInterval(keepAliveInterval);
 
           const result = streamText({
-            model: google('gemini-3-flash'),
+            model: google('gemini-2.0-flash'),
             system: this.buildSystemPrompt(input, context, false),
             prompt: this.buildSynthesisPrompt(input.message, toolResults),
           });

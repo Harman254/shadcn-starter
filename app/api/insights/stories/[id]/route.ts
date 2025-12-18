@@ -57,7 +57,7 @@ export async function GET(
 
     // Generate detailed content for the story
     const result = await generateText({
-      model: google('gemini-3-flash'),
+      model: google('gemini-2.0-flash'),
       temperature: 0.7,
       prompt: `Write a detailed, engaging article about this meal insight:
 

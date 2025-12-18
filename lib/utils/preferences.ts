@@ -71,7 +71,7 @@ export async function summarizePreferencesForChat(
 
     // Use AI SDK generateText for summarization
     const result = await generateText({
-      model: google('gemini-3-flash'),
+      model: google('gemini-2.0-flash'),
       temperature: 0.3,
       maxTokens: 100,
       prompt: `Summarize these user preferences in ONE short sentence (max 20 words) for a meal planning AI context:

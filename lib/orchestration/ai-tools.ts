@@ -143,7 +143,7 @@ export const generateMealPlan = tool({
             const { z } = await import('zod');
 
             const result = await generateObject({
-                model: google('gemini-3-flash'),
+                model: google('gemini-2.0-flash'),
                 temperature: 0.7, // Higher temperature for variety
                 schema: z.object({
                     title: z.string().describe('A catchy title for this meal plan'),
@@ -389,7 +389,7 @@ export const analyzeNutrition = tool({
             const { z } = await import('zod');
 
             const result = await generateObject({
-                model: google('gemini-3-flash', {
+                model: google('gemini-2.0-flash', {
                     useSearchGrounding: true,
                 }),
                 temperature: 0.2,
@@ -571,7 +571,7 @@ export const getGroceryPricing = tool({
             const { z } = await import('zod');
 
             const result = await generateObject({
-                model: google('gemini-3-flash', {
+                model: google('gemini-2.0-flash', {
                     useSearchGrounding: true,
                 }),
                 temperature: 0.2,
@@ -799,7 +799,7 @@ export const generateGroceryList = tool({
             const { z } = await import('zod');
 
             const result = await generateObject({
-                model: google('gemini-3-flash', {
+                model: google('gemini-2.0-flash', {
                     useSearchGrounding: true, // Enable search for real local stores
                 }),
                 temperature: 0.2,
@@ -938,7 +938,7 @@ export const modifyMealPlan = tool({
             const { z } = await import('zod');
 
             const result = await generateObject({
-                model: google('gemini-3-flash'),
+                model: google('gemini-2.0-flash'),
                 temperature: 0.9, // HIGHER temperature for more variation
                 schema: z.object({
                     title: z.string().describe('A catchy title for this meal plan'),
@@ -1061,7 +1061,7 @@ export const optimizeGroceryList = tool({
             const { z } = await import('zod');
 
             const result = await generateObject({
-                model: google('gemini-3-flash'),
+                model: google('gemini-2.0-flash'),
                 temperature: 0.2,
                 schema: z.object({
                     optimizedItems: z.array(z.object({
@@ -1151,7 +1151,7 @@ export const swapMeal = tool({
             const { z } = await import('zod');
 
             const result = await generateObject({
-                model: google('gemini-3-flash'),
+                model: google('gemini-2.0-flash'),
                 temperature: 0.8, // High temperature for variety
                 schema: z.object({
                     name: z.string(),
@@ -1234,7 +1234,7 @@ export const searchRecipes = tool({
             const { z } = await import('zod');
 
             const result = await generateObject({
-                model: google('gemini-3-flash', {
+                model: google('gemini-2.0-flash', {
                     useSearchGrounding: true,
                 }),
                 temperature: 0.7,
@@ -1340,7 +1340,7 @@ export const searchFoodData = tool({
             const { z } = await import('zod');
 
             const result = await generateObject({
-                model: google('gemini-3-flash', {
+                model: google('gemini-2.0-flash', {
                     useSearchGrounding: true, // ⭐ THE KEY - REAL WEB SEARCH
                 }),
                 temperature: 0.1, // Low temperature for factual accuracy
@@ -1529,7 +1529,7 @@ export const generateMealRecipe = tool({
             const { z } = await import('zod');
 
             const result = await generateObject({
-                model: google('gemini-3-flash', {
+                model: google('gemini-2.0-flash', {
                     useSearchGrounding: true, // Enable search for accurate recipe data
                 }),
                 temperature: 0.4,
@@ -1636,7 +1636,7 @@ export const suggestIngredientSubstitutions = tool({
             const { z } = await import('zod');
 
             const result = await generateObject({
-                model: google('gemini-3-flash', {
+                model: google('gemini-2.0-flash', {
                     useSearchGrounding: true,
                 }),
                 temperature: 0.3,
@@ -1737,7 +1737,7 @@ export const getSeasonalIngredients = tool({
             const { z } = await import('zod');
 
             const result = await generateObject({
-                model: google('gemini-3-flash', {
+                model: google('gemini-2.0-flash', {
                     useSearchGrounding: true,
                 }),
                 temperature: 0.4,
@@ -1823,7 +1823,7 @@ export const planFromInventory = tool({
             const { z } = await import('zod');
 
             const result = await generateObject({
-                model: google('gemini-3-flash', {
+                model: google('gemini-2.0-flash', {
                     useSearchGrounding: true,
                 }),
                 temperature: 0.6,
@@ -1925,7 +1925,7 @@ export const generatePrepTimeline = tool({
             const { z } = await import('zod');
 
             const result = await generateObject({
-                model: google('gemini-3-flash'),
+                model: google('gemini-2.0-flash'),
                 temperature: 0.3,
                 schema: z.object({
                     prepDate: z.string(),
@@ -2020,7 +2020,7 @@ export const analyzePantryImage = tool({
             const { z } = await import('zod');
 
             const result = await generateObject({
-                model: google('gemini-3-flash'), // Supports vision
+                model: google('gemini-2.0-flash'), // Supports vision
                 schema: z.object({
                     items: z.array(z.object({
                         name: z.string(),
