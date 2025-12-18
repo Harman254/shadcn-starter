@@ -32,6 +32,7 @@ import { SeasonalDisplay } from "./tools/seasonal-display"
 import { InventoryPlanDisplay } from "./tools/inventory-plan-display"
 import { PrepTimelineDisplay } from "./tools/prep-timeline-display"
 import { FoodDataDisplay } from "./tools/food-data-display"
+import { PantryAnalysisDisplay } from "./tools/pantry-analysis-display"
 
 interface ChatMessageProps {
   message?: Message
@@ -302,17 +303,19 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
   const [copied, setCopied] = useState(false)
   const [formattedTime, setFormattedTime] = useState('')
   const [isMounted, setIsMounted] = useState(false)
-  const [savingMealPlan, setSavingMealPlan] = useState(false)
-  const [savedMealPlanId, setSavedMealPlanId] = useState<string | null>(null)
-  const [savingGroceryList, setSavingGroceryList] = useState(false)
-  const [savedGroceryListId, setSavedGroceryListId] = useState<string | null>(null)
-  const [savingRecipe, setSavingRecipe] = useState(false)
-  const [savedRecipeId, setSavedRecipeId] = useState<string | null>(null)
+  
   const { toast } = useToast()
   const { theme, systemTheme } = useTheme()
   const router = useRouter()
   const currentTheme = theme === 'system' ? systemTheme : theme
   const isDark = currentTheme === 'dark'
+
+  // Extract embedded image URL from context
+  const imageContextUrl = useMemo(() => {
+    if (!message?.content) return null;
+    const match = message.content.match(/\[IMAGE_CONTEXT\]:\s*(https?:\/\/[^\s]+)/);
+    return match ? match[1] : null;
+  }, [message?.content]);
 
   // Clean message content by removing UI data markers
   const cleanContent = useMemo(() => {
@@ -320,6 +323,7 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
     return message.content
       .replace(/<!-- UI_DATA_START:[\s\S]*?:UI_DATA_END -->/g, '')
       .replace(/\[UI_METADATA:[^\]]+\]/g, '')
+      .replace(/\[IMAGE_CONTEXT\]:\s*https?:\/\/[^\s]+/g, '') // Also hide image URLs if they were appended for context
       .trim();
   }, [message?.content]);
 
@@ -345,7 +349,7 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
         try {
           const decoded = Buffer.from(match[1], 'base64').toString('utf-8');
           const parsed = JSON.parse(decoded);
-          console.log('[ChatMessage] Extracted embedded UI data:', parsed);
+          // console.log('[ChatMessage] Extracted embedded UI data:', parsed);
           return parsed;
         } catch (e) {
           console.error('[ChatMessage] Failed to parse embedded UI data:', e);
@@ -370,7 +374,6 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
              return { mealRecipe: tool.result.recipe };
           }
           if (tool.toolName === 'analyzeNutrition' && tool.result?.success) {
-             // Construct nutrition object to match UI expectation
              return { 
                nutrition: {
                  total: tool.result.totalNutrition,
@@ -394,11 +397,39 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
           if (tool.toolName === 'swapMeal' && tool.result?.success) {
              return { mealPlan: tool.result.mealPlan };
           }
+          // New Pro Tools
+          if (tool.toolName === 'analyzePantryImage' && tool.result?.success) {
+             // Correctly structure the Pantry Data 
+             return { 
+               pantryAnalysis: {
+                 items: tool.result.items,
+                 summary: tool.result.summary,
+                 // We need to pass the image URL for the display card. 
+                 // Since we don't strictly have it in the result, we check args (if available) or fallback to context URL
+                 imageUrl: (tool.args as any)?.imageUrl || imageContextUrl || "https://res.cloudinary.com/dcidanigq/image/upload/v1742111994/samples/food/fish-vegetables.jpg"
+               }
+             };
+          }
+          if (tool.toolName === 'generatePrepTimeline' && tool.result?.success) {
+             return { prepTimeline: tool.result };
+          }
+          if (tool.toolName === 'planFromInventory' && tool.result?.success) {
+             return { inventoryPlan: tool.result };
+          }
+          if (tool.toolName === 'getSeasonalIngredients' && tool.result?.success) {
+             return { seasonal: tool.result };
+          }
+          if (tool.toolName === 'searchFoodData' && tool.result?.success) {
+             return { foodData: tool.result };
+          }
+          if (tool.toolName === 'suggestIngredientSubstitutions' && tool.result?.success) {
+             return { substitutions: tool.result };
+          }
         }
       }
     }
     return null;
-  }, [message]);
+  }, [message, imageContextUrl]);
 
   // Determine active tool status
   const activeTool = useMemo(() => {
@@ -411,6 +442,10 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
       if (active.toolName === 'getGroceryPricing') return 'Checking prices...';
       if (active.toolName === 'getMealSuggestions') return 'Finding suggestions...';
       if (active.toolName === 'searchRecipes') return 'Searching recipes...';
+      if (active.toolName === 'analyzePantryImage') return 'Scanning image...';
+      if (active.toolName === 'generatePrepTimeline') return 'Planning schedule...';
+      if (active.toolName === 'planFromInventory') return 'Checking inventory...';
+      if (active.toolName === 'searchFoodData') return 'Searching food database...';
     }
     return null;
   }, [message]);
@@ -476,10 +511,8 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
         messageText = status === 'running' ? 'Generating grocery list...' : 'Grocery list generated';
       } else if (tool.toolName === 'analyzeNutrition') {
         messageText = status === 'running' ? 'Analyzing nutrition...' : 'Nutrition analyzed';
-      } else if (tool.toolName === 'getGroceryPricing') {
-        messageText = status === 'running' ? 'Checking prices...' : 'Prices checked';
-      } else if (tool.toolName === 'getMealSuggestions') {
-        messageText = status === 'running' ? 'Finding suggestions...' : 'Suggestions found';
+      } else if (tool.toolName === 'analyzePantryImage') {
+        messageText = status === 'running' ? 'Analyzing image...' : 'Pantry analyzed';
       }
 
       tools.set(tool.toolCallId, {
@@ -705,6 +738,16 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
                   "shadow-md shadow-primary/10",
                   "text-[15px] sm:text-base leading-relaxed tracking-wide",
                 )}>
+                  {/* Image attachment for User */}
+                  {imageContextUrl && (
+                    <div className="mb-2 -mx-2 -mt-2 overflow-hidden rounded-lg">
+                       <img 
+                         src={imageContextUrl} 
+                         alt="Uploaded context" 
+                         className="w-full h-auto max-h-[200px] object-cover hover:scale-105 transition-transform duration-500"
+                       />
+                    </div>
+                  )}
                   <p className="whitespace-pre-wrap break-words font-medium">
                     {cleanContent}
                   </p>
@@ -776,7 +819,7 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
       </article>
 
       {/* Tool call results (meal plan/grocery list) - Full width immersive display - BREAKS OUT OF CONTAINER */}
-      {isAssistant && (uiData?.mealPlan || uiData?.groceryList || uiData?.mealSuggestions || uiData?.mealRecipe || uiData?.nutrition || uiData?.prices || uiData?.recipeResults || uiData?.substitutions || uiData?.seasonal || uiData?.inventoryPlan || uiData?.prepTimeline || uiData?.foodData) && (
+      {isAssistant && (uiData?.mealPlan || uiData?.groceryList || uiData?.mealSuggestions || uiData?.mealRecipe || uiData?.nutrition || uiData?.prices || uiData?.recipeResults || uiData?.substitutions || uiData?.seasonal || uiData?.inventoryPlan || uiData?.prepTimeline || uiData?.foodData || uiData?.pantryAnalysis) && (
         <div className={cn(
           "w-full max-w-3xl mx-auto", // Constrain to same width
           "px-0 sm:px-0", // Remove padding for immersive feel
@@ -1024,6 +1067,21 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
               className="w-full max-w-2xl mx-auto"
             >
               <FoodDataDisplay data={uiData.foodData} onActionClick={onActionClick} />
+            </motion.div>
+          )}
+
+          {/* Pantry Analysis Display */}
+          {uiData?.pantryAnalysis && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+              className="w-full max-w-2xl mx-auto"
+            >
+              <PantryAnalysisDisplay 
+                data={uiData.pantryAnalysis} 
+                onActionClick={onActionClick} 
+              />
             </motion.div>
           )}
         </div>

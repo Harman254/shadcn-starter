@@ -1,31 +1,47 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { Card, CardContent } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
+import { useState, useMemo } from "react"
+import { motion, AnimatePresence } from "framer-motion"
+import { Calendar, UtensilsCrossed, Star, ChevronDown, ShoppingCart, Wand2, ChefHat, Check, Save, Loader2, Flame, Clock, Apple, Zap, TrendingUp, Timer, Users } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ExternalLink, Clock, Flame, Users, Bookmark, Check, Loader2, ShoppingCart, TrendingUp, Timer, ChefHat } from "lucide-react"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
-import { CldImage } from 'next-cloudinary'
+import { Card, CardContent } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
 
-interface Meal {
-  id: string;
-  name: string;
-  image: string;
-  calories: number;
-  prepTime: string;
-  servings: number;
-  mealType: "breakfast" | "lunch" | "dinner" | "snack";
-  description?: string;
-  ingredients?: string[];
-}
+// Cloudinary images for random selection
+const MEAL_IMAGES = [
+  "https://res.cloudinary.com/dcidanigq/image/upload/v1742112002/samples/breakfast.jpg", // Breakfast
+  "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&q=80", // Lunch
+  "https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=800&q=80", // Dinner
+  "https://images.unsplash.com/photo-1543339308-43e59d6b73a6?w=800&q=80", // Snack
+  "https://images.unsplash.com/photo-1499028344343-cd173ffc68a9?w=800&q=80", // Burger
+  "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=800&q=80", // Salad
+  "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=800&q=80", // Pizza
+  "https://images.unsplash.com/photo-1604908176997-125f25cc6f3d?w=800&q=80", // Chicken
+]
 
-interface Citation {
-  title: string;
-  url: string;
-  source: string;
-}
+// Meal type colors from reference
+const mealTypeColors: Record<string, string> = {
+  breakfast: "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300",
+  lunch: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300",
+  dinner: "bg-violet-100 text-violet-800 dark:bg-violet-900/30 dark:text-violet-300",
+  snack: "bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-300",
+};
+
+// Helper to normalize meal type for color mapping
+const getMealTypeColor = (index: number, name: string): string => {
+  const lowerName = name.toLowerCase();
+  if (lowerName.includes('breakfast')) return mealTypeColors.breakfast;
+  if (lowerName.includes('lunch')) return mealTypeColors.lunch;
+  if (lowerName.includes('dinner') || lowerName.includes('supper')) return mealTypeColors.dinner;
+  if (lowerName.includes('snack')) return mealTypeColors.snack;
+  
+  // Fallback by index
+  const types = ['breakfast', 'lunch', 'dinner', 'snack'];
+  return mealTypeColors[types[index % 4]];
+};
 
 interface MealPlanDisplayProps {
   // Accepts the tool output structure which contains days
@@ -43,37 +59,24 @@ const mealTypeColors: Record<string, string> = {
 export function MealPlanDisplay({ mealPlan, onActionClick }: MealPlanDisplayProps) {
   const [saving, setSaving] = useState(false)
   const [savedId, setSavedId] = useState<string | null>(null)
-  const [checkingSave, setCheckingSave] = useState(true)
+  const { toast } = useToast()
   const router = useRouter()
 
-  // Check if meal plan is already saved on mount
-  useEffect(() => {
-    const checkSaved = async () => {
-      if (!mealPlan.title) {
-        setCheckingSave(false)
-        return
-      }
-      try {
-        const response = await fetch('/api/getmealplans')
-        if (response.ok) {
-          const data = await response.json()
-          // Handle different response formats
-          const mealPlans = Array.isArray(data) ? data : data.mealPlans || data.data || []
-          const existing = mealPlans.find((mp: any) => 
-            mp.title?.toLowerCase().trim() === mealPlan.title.toLowerCase().trim()
-          )
-          if (existing) {
-            setSavedId(existing.id)
-          }
-        }
-      } catch (e) {
-        // Silently fail - user can still save
-      } finally {
-        setCheckingSave(false)
-      }
-    }
-    checkSaved()
-  }, [mealPlan.title])
+  // Generate random images for each meal on mount (stable across re-renders)
+  const mealImages = useMemo(() => {
+    const images: Record<string, string> = {}
+    mealPlan.days.forEach((day: any, dIndex: number) => {
+      day.meals.forEach((_: any, mIndex: number) => {
+        const key = `${dIndex}-${mIndex}`
+        images[key] = MEAL_IMAGES[Math.floor(Math.random() * MEAL_IMAGES.length)]
+      })
+    })
+    return images
+  }, [mealPlan])
+
+  const toggleDay = (day: number) => {
+    setExpandedDay(expandedDay === day ? null : day)
+  }
 
   const handleSave = async () => {
     if (savedId) return
@@ -113,172 +116,174 @@ export function MealPlanDisplay({ mealPlan, onActionClick }: MealPlanDisplayProp
   // Let's iterate days and show a section for each day if >1 day, or just the meals if 1 day.
   const isMultiDay = mealPlan.duration > 1;
 
-  // Mock citations if none provided (as the tool currently doesn't output citations)
-  const citations: Citation[] = [
-    { title: "Healthy Eating Plate", url: "https://www.hsph.harvard.edu/nutritionsource/healthy-eating-plate/", source: "Harvard Health" },
-    { title: "Dietary Guidelines", url: "https://www.dietaryguidelines.gov/", source: "USDA" },
-  ];
-
   return (
-    <div className="w-full max-w-2xl space-y-4 font-sans">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="w-full max-w-2xl space-y-6"
+    >
+      {/* Header Section */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-card border border-border/50 rounded-xl p-4 shadow-sm">
         <div>
-          <h3 className="text-lg font-semibold text-foreground">{mealPlan.title}</h3>
-          <p className="text-sm text-muted-foreground">
-            {mealPlan.mealsPerDay} meals per day • {mealPlan.days.reduce((acc: number, d: any) => acc + d.meals.length, 0)} total meals
-          </p>
+          <h3 className="text-xl font-bold text-foreground">{mealPlan.title}</h3>
+          <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
+            <span className="flex items-center gap-1"><Calendar className="w-3 h-3" /> {mealPlan.duration} Days</span>
+            <span>•</span>
+            <span className="flex items-center gap-1"><UtensilsCrossed className="w-3 h-3" /> {totalMeals} Meals</span>
+          </div>
         </div>
         <div className="flex items-center gap-2">
-          <Badge variant="secondary" className="bg-primary/10 text-primary">
-            Generated
+          <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20">
+            <Wand2 className="w-3 h-3 mr-1" />
+            AI Generated
           </Badge>
           <Button 
             size="sm" 
             onClick={handleSave} 
-            className="gap-1.5"
             disabled={saving || !!savedId}
+            className={cn(
+              "gap-1.5 transition-all",
+              savedId ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200 border-emerald-200" : ""
+            )}
+            variant={savedId ? "outline" : "default"}
           >
-            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : savedId ? <Check className="w-4 h-4" /> : <Bookmark className="w-4 h-4" />}
+            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : 
+             savedId ? <Check className="w-4 h-4" /> : 
+             <Save className="w-4 h-4" />}
             {savedId ? "Saved" : "Save Plan"}
           </Button>
         </div>
       </div>
 
-      {/* Content */}
-      <div className="space-y-6">
-        {mealPlan.days.map((day: any, dayIndex: number) => (
-          <div key={dayIndex} className="space-y-3">
-             {isMultiDay && (
-                <h4 className="font-semibold text-muted-foreground text-sm uppercase tracking-wider ml-1">
-                  Day {day.day}
-                </h4>
-             )}
-             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {day.meals.map((meal: any, mealIndex: number) => (
-                <Card 
-                  key={`${dayIndex}-${mealIndex}`} 
-                  className="overflow-hidden border-border/50 hover:border-primary/30 transition-colors cursor-pointer group"
-                  onClick={() => onActionClick?.(`Show me the full recipe for ${meal.name}`)}
-                >
-                  <div className="relative h-32 overflow-hidden">
-                    {meal.imageUrl && meal.imageUrl.includes('cloudinary.com') ? (
-                      <CldImage
-                        src={meal.imageUrl}
-                        alt={meal.name}
-                        width={400}
-                        height={256}
-                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                        loading="lazy"
-                      />
-                    ) : (
-                      <img
-                        src={meal.imageUrl || meal.image || "https://res.cloudinary.com/dcidanigq/image/upload/v1742112004/cld-sample-4.jpg"}
-                        alt={meal.name}
-                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                        loading="lazy"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src = 'https://res.cloudinary.com/dcidanigq/image/upload/v1742112004/cld-sample-4.jpg';
-                        }}
-                      />
-                    )}
-                    <Badge 
-                      className={`absolute top-2 left-2 text-xs border-0 ${mealTypeColors[meal.mealType] || "bg-primary/20 text-primary"}`}
-                    >
-                      {meal.mealType}
-                    </Badge>
+      {/* Days List */}
+      <div className="space-y-4">
+        {mealPlan.days.map((day: any, dayIndex: number) => {
+          const isExpanded = expandedDay === day.day
+          return (
+            <div key={dayIndex} className="bg-transparent">
+              <button
+                onClick={() => toggleDay(day.day)}
+                className="w-full flex items-center justify-between py-2 px-1 mb-2 hover:bg-muted/50 rounded-lg transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <div className={cn(
+                    "flex items-center justify-center w-8 h-8 rounded-lg font-bold text-sm transition-colors",
+                    isExpanded ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+                  )}>
+                    {day.day}
                   </div>
-                  <CardContent className="p-3">
-                    <h4 className="font-medium text-foreground text-sm line-clamp-1 mb-2 group-hover:text-primary transition-colors">
-                      {meal.name}
-                    </h4>
-                    <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                      {meal.calories && (
-                        <span className="flex items-center gap-1">
-                          <Flame className="w-3 h-3 text-orange-500" />
-                          {meal.calories} cal
-                        </span>
-                      )}
-                      {(meal.prepTime || meal.cookTime) && (
-                        <span className="flex items-center gap-1">
-                          <Clock className="w-3 h-3" />
-                          {meal.prepTime || meal.cookTime}
-                        </span>
-                      )}
-                      {meal.servings && (
-                        <span className="flex items-center gap-1">
-                          <Users className="w-3 h-3" />
-                          {meal.servings}
-                        </span>
-                      )}
+                  <h4 className="font-semibold text-foreground">Day {day.day}</h4>
+                </div>
+                <ChevronDown className={cn("w-4 h-4 text-muted-foreground transition-transform", isExpanded && "rotate-180")} />
+              </button>
+
+              <AnimatePresence>
+                {isExpanded && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="overflow-hidden"
+                  >
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pb-2">
+                      {day.meals.map((meal: any, mealIndex: number) => {
+                        const mealId = `${dayIndex}-${mealIndex}`
+                        const colorClass = getMealTypeColor(mealIndex, meal.name)
+                        
+                        return (
+                          <Card 
+                            key={mealIndex} 
+                            className="overflow-hidden border-border/50 hover:border-primary/30 transition-all hover:shadow-md cursor-pointer group"
+                            onClick={() => onActionClick?.(`Generate the full recipe for ${meal.name}`)}
+                          >
+                            <div className="relative h-32 overflow-hidden">
+                              <img
+                                src={mealImages[mealId] || MEAL_IMAGES[0]}
+                                alt={meal.name}
+                                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                              />
+                              <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors" />
+                              <Badge 
+                                className={cn("absolute top-2 left-2 border-0 shadow-sm", colorClass)}
+                              >
+                                {['Breakfast', 'Lunch', 'Dinner', 'Snack'][mealIndex % 4]}
+                              </Badge>
+                            </div>
+                            <CardContent className="p-3">
+                              <h4 className="font-medium text-foreground text-sm line-clamp-1 mb-2 group-hover:text-primary transition-colors">
+                                {meal.name}
+                              </h4>
+                              <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                                {meal.calories && (
+                                  <span className="flex items-center gap-1">
+                                    <Flame className="w-3 h-3 text-orange-500" />
+                                    {meal.calories}
+                                  </span>
+                                )}
+                                {meal.cookTime && (
+                                  <span className="flex items-center gap-1">
+                                    <Clock className="w-3 h-3" />
+                                    {meal.cookTime}
+                                  </span>
+                                )}
+                                {meal.servings && (
+                                  <span className="flex items-center gap-1">
+                                    <Users className="w-3 h-3" />
+                                    {meal.servings}
+                                  </span>
+                                )}
+                              </div>
+                              {meal.description && (
+                                <p className="text-xs text-muted-foreground/80 mt-2 line-clamp-2">
+                                  {meal.description}
+                                </p>
+                              )}
+                            </CardContent>
+                          </Card>
+                        )
+                      })}
                     </div>
-                  </CardContent>
-                </Card>
-              ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
-          </div>
-        ))}
+          )
+        })}
       </div>
 
-      {/* Action Buttons Row */}
+      {/* Footer Actions */}
       {onActionClick && (
-         <div className="flex flex-wrap gap-2 pt-2">
-            <Button variant="outline" size="sm" onClick={() => onActionClick("Generate a grocery list for this plan")}>
-              <ShoppingCart className="w-3.5 h-3.5 mr-1.5" /> Grocery List
-            </Button>
-            <Button variant="ghost" size="sm" onClick={() => onActionClick("Analyze the nutrition")}>
-              <TrendingUp className="w-3.5 h-3.5 mr-1.5" /> Nutrition
-            </Button>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={() => {
-                // Extract all meal names from the meal plan
-                const mealNames = mealPlan.days.flatMap((day: any) => 
-                  day.meals.map((meal: any) => meal.name)
-                ).filter(Boolean); // Remove any empty names
-                
-                if (mealNames.length === 0) {
-                  onActionClick("Create a prep schedule for this meal plan");
-                  return;
-                }
-                
-                // Format recipes list clearly for AI parsing
-                const recipesList = mealNames.join(', ');
-                onActionClick(`Create a prep schedule for this meal plan. Recipes to prep: ${recipesList}`);
-              }}
-            >
-              <Timer className="w-3.5 h-3.5 mr-1.5" /> Prep Schedule
-            </Button>
-             {savedId && (
-              <Button variant="ghost" size="sm" onClick={() => router.push(`/meal-plans/${savedId}/explore`)}>
-                <ChefHat className="w-3.5 h-3.5 mr-1.5" /> View Full Plan
-              </Button>
-             )}
-         </div>
-      )}
-
-      {/* Citations */}
-      <div className="pt-3 border-t border-border/50">
-        <p className="text-xs font-medium text-muted-foreground mb-2">Sources</p>
-        <div className="flex flex-wrap gap-2">
-          {citations.map((citation, index) => (
-            <a
-              key={index}
-              href={citation.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-            >
-              <span className="w-4 h-4 rounded-full bg-primary/20 text-primary flex items-center justify-center text-[10px] font-medium">
-                {index + 1}
-              </span>
-              <span className="max-w-[120px] truncate">{citation.source}</span>
-              <ExternalLink className="w-3 h-3 opacity-50" />
-            </a>
-          ))}
+        <div className="flex flex-wrap gap-2 pt-4 border-t border-border/50">
+          <Button 
+            variant="outline" 
+            size="sm"
+            className="flex-1 gap-2 border-dashed border-border hover:border-primary/50"
+            onClick={() => onActionClick("Generate a grocery list for this plan")}
+          >
+            <ShoppingCart className="w-4 h-4" />
+            Shopping List
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="sm"
+            className="flex-1 gap-2"
+            onClick={() => onActionClick("Analyze the nutrition of this meal plan")}
+          >
+            <TrendingUp className="w-4 h-4" />
+            Nutrition
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="sm"
+            className="flex-1 gap-2"
+            onClick={() => onActionClick("Create a meal prep timeline for this plan")}
+          >
+            <Timer className="w-4 h-4" />
+            Timeline
+          </Button>
         </div>
-      </div>
-    </div>
-  );
+      )}
+    </motion.div>
+  )
 }
