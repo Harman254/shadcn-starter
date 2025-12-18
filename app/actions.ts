@@ -54,7 +54,7 @@ Be concise, helpful, and personalized.`;
 
     // Generate response using AI SDK
     const result = await generateText({
-      model: google('gemini-2.0-flash'),
+      model: google('gemini-3-flash'),
       temperature: 0.7,
       maxTokens: 1000,
       system: systemPrompt,
@@ -109,7 +109,7 @@ export async function generateSessionTitle(
     }));
 
     const result = await generateObject({
-      model: google('gemini-2.0-flash'),
+      model: google('gemini-3-flash'),
       temperature: 0.3,
       schema: z.object({
         title: z.string().describe('A short, descriptive title for this chat (3-6 words)'),
