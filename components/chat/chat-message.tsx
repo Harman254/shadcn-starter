@@ -818,10 +818,10 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
                     <ShoppingCart className="h-5 w-5 text-primary" />
                     <span className="font-semibold text-foreground">Shopping List</span>
                   </div>
-                  {groceryList.totalEstimatedCost && (
+                  {uiData.groceryList.totalEstimatedCost && (
                     <div className="flex items-center gap-2 bg-background/80 px-3 py-1.5 rounded-full border border-border/50 shadow-sm">
                       <span className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Est. Total</span>
-                      <span className="font-bold text-primary">{groceryList.totalEstimatedCost}</span>
+                      <span className="font-bold text-primary">{uiData.groceryList.totalEstimatedCost}</span>
                     </div>
                   )}
                 </div>
@@ -830,7 +830,7 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
                 <div className="p-4 sm:p-5 md:p-6 space-y-6">
                   {/* Group by Category */}
                   {(Object.entries(
-                    groceryList.items.reduce((acc: any, item: any) => {
+                    uiData.groceryList.items.reduce((acc: any, item: any) => {
                       const cat = item.category || 'General';
                       if (!acc[cat]) acc[cat] = [];
                       acc[cat].push(item);
@@ -866,6 +866,9 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
                     </div>
                   ))}
                 </div>
+              </div>
+            </motion.div>
+          )}
 
           {/* Optimize Grocery List Display */}
           {uiData?.optimization && (
