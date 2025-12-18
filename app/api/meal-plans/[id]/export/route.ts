@@ -17,13 +17,13 @@ function convertMealPlanToCSV(mealPlan: any): string {
   rows.push('Day,Meal Type,Meal Name,Description,Ingredients,Instructions,Calories,Prep Time,Servings');
   
   // Meals
-  mealPlan.days?.forEach((day: any) => {
+  mealPlan.days?.forEach((day: any, dayIndex: number) => {
     day.meals?.forEach((meal: any) => {
       const ingredients = Array.isArray(meal.ingredients) 
         ? meal.ingredients.join('; ') 
         : meal.ingredients || '';
       rows.push([
-        day.day || '',
+        day.day || (dayIndex + 1).toString(), // Use day.day if exists, otherwise use index + 1
         meal.mealType || '',
         meal.name || '',
         meal.description || '',
@@ -104,8 +104,8 @@ export async function GET(
       title: mealPlan.title,
       duration: mealPlan.duration,
       mealsPerDay: mealPlan.mealsPerDay,
-      days: mealPlan.days.map(day => ({
-        day: day.day,
+      days: mealPlan.days.map((day, index) => ({
+        day: index + 1, // Calculate day number from index (DayMeal doesn't have a 'day' field)
         date: day.date.toISOString(),
         meals: day.meals.map(meal => ({
           name: meal.name,
