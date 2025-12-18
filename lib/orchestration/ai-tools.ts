@@ -1677,271 +1677,28 @@ Return valid JSON.`,
                 throw new Error('Failed to generate substitution suggestions');
             }
 
-export enum ErrorCode {
-    INTERNAL_ERROR = 'INTERNAL_ERROR',
-    GENERATION_FAILED = 'GENERATION_FAILED',
-    UNAUTHORIZED = 'UNAUTHORIZED',
-    VALIDATION_FAILED = 'VALIDATION_FAILED'
-}
-
-export function successResponse(data: any, message?: string): ToolResult {
-    return { success: true, result: data, message };
-}
-
-export function errorResponse(message: string, code: string, isSystemError = false): ToolResult {
-    return { success: false, error: message, isSystemError };
-}
-
-// ============================================================================
-// 1. User Preferences
-// ============================================================================
-
-export const fetchUserPreferences = tool({
-    description: 'Fetch the user\'s dietary preferences, allergies, and goals.',
-    parameters: z.object({}),
-    execute: async (): Promise<ToolResult> => {
-        try {
-            console.log('[fetchUserPreferences] 👤 Fetching user preferences...');
-            const { auth } = await import('@/lib/auth');
-            const { headers } = await import('next/headers');
-
-            const session = await auth.api.getSession({ headers: await headers() });
-
-            if (!session?.user?.id) {
-                return successResponse({
-                    dietary: [],
-                    allergies: [],
-                    goals: []
-                }, 'User is not logged in, using default empty preferences.');
-            }
-
-            // Get current month for seasonality
-            const currentMonth = new Date().toLocaleString('en-US', { month: 'long' });
-
-            const { generateObject } = await import('ai');
-            const { google } = await import('@ai-sdk/google');
-            const { z } = await import('zod');
-
-            const result = await generateObject({
-                model: google('gemini-2.0-flash', {
-                    useSearchGrounding: true,
-                }),
-                temperature: 0.4,
-                schema: z.object({
-                    season: z.string().describe('Current season name'),
-                    location: z.string(),
-                    seasonalItems: z.array(z.object({
-                        name: z.string(),
-                        category: z.string(),
-                        peakMonths: z.string(),
-                        priceAdvantage: z.string().describe('e.g., "30% cheaper than off-season"'),
-                        localTip: z.string().optional().describe('Where to find locally or local name'),
-                    })),
-                    recipeSuggestions: z.array(z.object({
-                        name: z.string(),
-                        featuredIngredient: z.string(),
-                        description: z.string(),
-                    })).optional(),
-                    shoppingTip: z.string(),
-                }),
-                prompt: `You are a local produce expert.
-
-## LOCATION & TIME
-- **City:** ${location.city}
-- **Country:** ${location.country}
-- **Hemisphere:** ${location.hemisphere}
-- **Current Month:** ${currentMonth}
-
-## TASK
-Find what ${category === 'all' ? 'produce, fruits, vegetables, and herbs are' : category + ' are'} currently IN SEASON in ${location.city}, ${location.country}.
-
-## INSTRUCTIONS
-1. **USE SEARCH:** Find ACCURATE seasonal produce for this specific location and time of year.
-2. **Include 8-12 seasonal items** that are at peak freshness RIGHT NOW.
-3. **Price advantage:** Note typical savings compared to off-season.
-4. **Local names:** Include local market names if different (e.g., "sukuma wiki" for kale in Kenya).
-${includeRecipes ? '5. **Recipe suggestions:** Include 3 simple recipes using these seasonal items.' : ''}
-
-Return valid JSON.`,
-            });
-
-            return successResponse(onboardingData || {}, "Fetched user preferences.");
+            return successResponse(
+                result.object,
+                `✅ Found ${result.object.substitutions.length} substitution options for ${ingredient}. Best match: ${result.object.bestMatch}`
+            );
         } catch (error) {
-            console.error('[fetchUserPreferences] Error:', error);
-            return errorResponse("Failed to fetch preferences.", ErrorCode.INTERNAL_ERROR);
+            console.error('[suggestIngredientSubstitutions] Error:', error);
+            return errorResponse(
+                error instanceof Error ? error.message : 'Failed to generate substitution suggestions',
+                ErrorCode.GENERATION_FAILED,
+                true
+            );
         }
     },
 });
 
 // ============================================================================
-// 2. Meal Planning
+// Note: ErrorCode is imported from @/lib/types/tool-result
+// Note: successResponse and errorResponse are imported from @/lib/types/tool-result
+// Note: generateMealRecipe, modifyMealPlan, swapMeal, searchRecipes, 
+// searchFoodData, and suggestIngredientSubstitutions are already defined above.
+// These duplicate stub definitions have been removed.
 // ============================================================================
-
-export const generateMealPlan = tool({
-    description: 'Generate a meal plan based on user preferences. ALWAYS check preferences first.',
-    parameters: z.object({
-        duration: z.number().min(1).max(7).describe('Duration in days'),
-        mealsPerDay: z.number().min(1).max(5).describe('Meals per day'),
-        preferences: z.object({
-            dietary: z.array(z.string()).optional(),
-            allergies: z.array(z.string()).optional(),
-            goals: z.array(z.string()).optional(),
-        }).optional().describe('User preferences to respect')
-    }),
-    execute: async ({ duration, mealsPerDay, preferences }: { duration: number, mealsPerDay: number, preferences?: any }): Promise<ToolResult> => {
-        try {
-            console.log(`[generateMealPlan] 🍳 Generating ${duration}-day plan...`);
-            const { generateObject } = await import('ai');
-            const { google } = await import('@ai-sdk/google');
-
-            const result = await generateObject({
-                model: google('gemini-2.0-flash', {
-                    useSearchGrounding: true,
-                }),
-                temperature: 0.6,
-                schema: z.object({
-                    possibleMeals: z.array(z.object({
-                        name: z.string(),
-                        description: z.string(),
-                        ingredients: z.array(z.string()),
-                        instructions: z.string(),
-                        calories: z.number(),
-                        protein: z.number(),
-                        carbs: z.number(),
-                        fat: z.number(),
-                    }))
-                }))
-            });
-
-            const result = await generateObject({
-                model: google('gemini-2.0-flash'),
-                schema: mealPlanSchema,
-                prompt: `Generate a ${duration}-day meal plan with ${mealsPerDay} meals per day.
-                         Preferences: ${JSON.stringify(preferences || {})}
-                         Ensure nutritional balance and variety.`
-            });
-
-            return successResponse({ mealPlan: result.object }, "Here is your meal plan!");
-        } catch (error) {
-            console.error('[generateMealPlan] Error:', error);
-            return errorResponse("Failed to generate meal plan.", ErrorCode.GENERATION_FAILED, true);
-        }
-    },
-});
-
-// ============================================================================
-// Other Tools
-// ============================================================================
-
-export const analyzeNutrition = tool({
-    description: 'Analyze the nutritional content of a meal plan or specific food items.',
-    parameters: z.object({
-        mealPlanId: z.string().optional(),
-        items: z.array(z.string()).optional()
-    }),
-    execute: async ({ mealPlanId, items }) => {
-        // Mock
-        return successResponse({
-            nutrition: {
-                total: { calories: 2000, protein: 150, carbs: 200, fat: 70 },
-                dailyAverage: { calories: 2000, protein: 150, carbs: 200, fat: 70 },
-                insights: ['Balanced'],
-                healthScore: 85,
-                summary: "Good plan."
-            }
-        }, "Nutrition analysis complete.");
-    }
-});
-
-export const getGroceryPricing = tool({
-    description: 'Get estimated pricing for grocery items.',
-    parameters: z.object({ items: z.array(z.string()) }),
-    execute: async ({ items }) => {
-        return successResponse({ prices: items.map(i => ({ item: i, price: '5.00', store: 'Store' })), total: 50 }, "Prices found.");
-    }
-});
-
-            const result = await generateObject({
-                model: google('gemini-2.0-flash'),
-                temperature: 0.3,
-                schema: z.object({
-                    prepDate: z.string(),
-                    totalActiveTime: z.number().describe('Total hands-on time in minutes'),
-                    totalPassiveTime: z.number().describe('Total waiting/cooking time in minutes'),
-                    timeline: z.array(z.object({
-                        time: z.string().describe('Time marker (e.g., "0:00", "0:15")'),
-                        duration: z.number().describe('Duration in minutes'),
-                        action: z.string().describe('What to do'),
-                        recipe: z.string().describe('Which recipe this is for'),
-                        type: z.enum(['active', 'passive']),
-                        parallelTask: z.string().optional().describe('What else can be done during this step'),
-                    })),
-                    storageInstructions: z.array(z.object({
-                        item: z.string(),
-                        method: z.string(),
-                        duration: z.string(),
-                        reheatingTip: z.string(),
-                    })),
-                    equipmentNeeded: z.array(z.string()),
-                    proTips: z.array(z.string()),
-                }),
-                prompt: `You are a meal prep efficiency expert.
-
-export const optimizeGroceryList = tool({
-    description: 'Optimize a grocery list.',
-    parameters: z.object({ listId: z.string() }),
-    execute: async ({ listId }) => {
-        return successResponse({ optimization: { savings: '$5', stores: ['Aldi'] } }, "Optimized.");
-    }
-});
-
-export const generateMealRecipe = tool({
-    description: 'Generate a recipe for a meal.',
-    parameters: z.object({ mealName: z.string(), preferences: z.any().optional() }),
-    execute: async ({ mealName }) => {
-        return successResponse({ recipe: { name: mealName, ingredients: [], instructions: [] } }, "Recipe generated.");
-    }
-});
-
-export const modifyMealPlan = tool({
-    description: 'Modify a meal plan.',
-    parameters: z.object({ mealPlanId: z.string(), modifications: z.string() }),
-    execute: async ({ modifications }) => {
-        return successResponse({ mealPlan: { title: 'Modified', days: [] } }, "Modified.");
-    }
-});
-
-export const swapMeal = tool({
-    description: 'Swap a meal.',
-    parameters: z.object({ mealPlanId: z.string(), day: z.number(), mealName: z.string() }),
-    execute: async () => {
-        return successResponse({ mealPlan: { title: 'Swapped', days: [] } }, "Swapped.");
-    }
-});
-
-export const searchRecipes = tool({
-    description: 'Search recipes.',
-    parameters: z.object({ query: z.string() }),
-    execute: async ({ query }) => {
-        return successResponse({ recipes: [], query }, "Found recipes.");
-    }
-});
-
-export const searchFoodData = tool({
-    description: 'Search food data.',
-    parameters: z.object({ query: z.string() }),
-    execute: async ({ query }) => {
-        return successResponse({ foodData: { name: query, calories: 100 } }, "Found data.");
-    }
-});
-
-export const suggestIngredientSubstitutions = tool({
-    description: 'Suggest substitutions.',
-    parameters: z.object({ ingredient: z.string() }),
-    execute: async ({ ingredient }) => {
-        return successResponse({ substitutions: [] }, "Found substitutions.");
-    }
-});
 
 export const getSeasonalIngredients = tool({
     description: 'Get seasonal ingredients.',

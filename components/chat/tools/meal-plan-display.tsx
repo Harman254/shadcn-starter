@@ -2,13 +2,13 @@
 
 import { useState, useMemo } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { Calendar, UtensilsCrossed, Star, ChevronDown, ShoppingCart, Wand2, ChefHat, Check, Save, Loader2, Flame, Clock, Apple, Zap, TrendingUp, Timer, Users } from "lucide-react"
+import { Calendar, UtensilsCrossed, ChevronDown, ShoppingCart, Wand2, ChefHat, Check, Save, Loader2, Flame, Clock, TrendingUp, Timer, Users } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { ExternalLink, Clock, Flame, Users, Bookmark, Check, Loader2, ShoppingCart, TrendingUp, Timer, ChefHat } from "lucide-react"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { cn } from "@/lib/utils"
 
 // Cloudinary images for random selection
 const MEAL_IMAGES = [
@@ -49,18 +49,18 @@ interface MealPlanDisplayProps {
   onActionClick?: (action: string) => void
 }
 
-const mealTypeColors: Record<string, string> = {
-  breakfast: "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300",
-  lunch: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300",
-  dinner: "bg-violet-100 text-violet-800 dark:bg-violet-900/30 dark:text-violet-300",
-  snack: "bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-300",
-};
-
 export function MealPlanDisplay({ mealPlan, onActionClick }: MealPlanDisplayProps) {
   const [saving, setSaving] = useState(false)
   const [savedId, setSavedId] = useState<string | null>(null)
-  const { toast } = useToast()
+  const [expandedDay, setExpandedDay] = useState<number | null>(null)
   const router = useRouter()
+
+  // Calculate total meals
+  const totalMeals = useMemo(() => {
+    return mealPlan.days?.reduce((total: number, day: any) => {
+      return total + (day.meals?.length || 0)
+    }, 0) || 0
+  }, [mealPlan.days])
 
   // Generate random images for each meal on mount (stable across re-renders)
   const mealImages = useMemo(() => {
