@@ -43,7 +43,7 @@ function convertMealPlanToJSON(mealPlan: any): string {
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await auth.api.getSession({
@@ -57,7 +57,7 @@ export async function GET(
       );
     }
 
-    const mealPlanId = params.id;
+    const { id: mealPlanId } = await params;
     const searchParams = request.nextUrl.searchParams;
     const format = (searchParams.get('format') || 'pdf') as 'pdf' | 'csv' | 'json';
 

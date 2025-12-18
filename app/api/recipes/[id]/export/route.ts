@@ -41,7 +41,7 @@ function convertRecipeToJSON(recipe: any): string {
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await auth.api.getSession({
@@ -55,7 +55,7 @@ export async function GET(
       );
     }
 
-    const recipeId = params.id;
+    const { id: recipeId } = await params;
     const searchParams = request.nextUrl.searchParams;
     const format = (searchParams.get('format') || 'pdf') as 'pdf' | 'csv' | 'json';
 
@@ -104,10 +104,10 @@ export async function GET(
       ingredients: meal.ingredients,
       instructions: meal.instructions,
       calories: meal.calories,
-      prepTime: meal.prepTime,
-      servings: meal.servings,
-      mealType: meal.mealType,
-      imageUrl: meal.imageUrl,
+      prepTime: '', // Meal model doesn't have prepTime
+      servings: 1, // Meal model doesn't have servings, default to 1
+      mealType: meal.type, // Meal model uses 'type' not 'mealType'
+      imageUrl: meal.imageUrl || '',
     };
 
     let content: string;
