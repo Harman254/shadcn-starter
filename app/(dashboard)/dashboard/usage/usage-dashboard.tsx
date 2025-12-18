@@ -67,7 +67,8 @@ export function UsageDashboard({ userId }: UsageDashboardProps) {
 
         if (usageRes.ok) {
           const usageData = await usageRes.json();
-          setFeatureUsage(usageData);
+          // API now returns { limits, featureUsage, plan }
+          setFeatureUsage(usageData.featureUsage || []);
         }
       } catch (error) {
         console.error('Failed to fetch usage:', error);

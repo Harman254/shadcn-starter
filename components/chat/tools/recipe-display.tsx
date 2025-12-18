@@ -30,10 +30,12 @@ export function RecipeDisplay({ recipe, onActionClick }: RecipeDisplayProps) {
         const response = await fetch('/api/usage/features')
         if (response.ok) {
           const data = await response.json()
+          // API now returns { limits, featureUsage, plan }
           setExportFormats(data.limits?.exportFormats || ['pdf'])
         }
       } catch (e) {
         // Silently fail, default to PDF only
+        console.error('[RecipeDisplay] Failed to fetch export formats:', e)
       }
     }
     fetchExportFormats()

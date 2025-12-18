@@ -23,50 +23,53 @@ export async function GET(request: NextRequest) {
     const plan = await getUserPlan(session.user.id);
     const limits = await getUserFeatureLimits(session.user.id);
 
-    // Only show limits for free users
-    if (plan !== 'free') {
-      return NextResponse.json([]);
-    }
-
     const featureUsage = [];
 
-    // Check meal plan usage
-    if (limits.mealPlansPerWeek !== Infinity) {
-      const usage = await getToolUsageCount(session.user.id, 'generateMealPlan', 'week');
-      featureUsage.push({
-        toolName: 'generateMealPlan',
-        currentUsage: usage,
-        limit: limits.mealPlansPerWeek,
-        remaining: Math.max(0, limits.mealPlansPerWeek - usage),
-        period: 'week',
-      });
+    // Only show usage limits for free users (Pro users have unlimited)
+    if (plan === 'free') {
+      // Check meal plan usage
+      if (limits.mealPlansPerWeek !== Infinity) {
+        const usage = await getToolUsageCount(session.user.id, 'generateMealPlan', 'week');
+        featureUsage.push({
+          toolName: 'generateMealPlan',
+          currentUsage: usage,
+          limit: limits.mealPlansPerWeek,
+          remaining: Math.max(0, limits.mealPlansPerWeek - usage),
+          period: 'week',
+        });
+      }
+
+      // Check pantry analysis usage
+      if (limits.pantryAnalysesPerMonth !== Infinity) {
+        const usage = await getToolUsageCount(session.user.id, 'analyzePantryImage', 'month');
+        featureUsage.push({
+          toolName: 'analyzePantryImage',
+          currentUsage: usage,
+          limit: limits.pantryAnalysesPerMonth,
+          remaining: Math.max(0, limits.pantryAnalysesPerMonth - usage),
+          period: 'month',
+        });
+      }
+
+      // Check recipe generation usage
+      if (limits.recipeGenerationsPerWeek !== Infinity) {
+        const usage = await getToolUsageCount(session.user.id, 'generateMealRecipe', 'week');
+        featureUsage.push({
+          toolName: 'generateMealRecipe',
+          currentUsage: usage,
+          limit: limits.recipeGenerationsPerWeek,
+          remaining: Math.max(0, limits.recipeGenerationsPerWeek - usage),
+          period: 'week',
+        });
+      }
     }
 
-    // Check pantry analysis usage
-    if (limits.pantryAnalysesPerMonth !== Infinity) {
-      const usage = await getToolUsageCount(session.user.id, 'analyzePantryImage', 'month');
-      featureUsage.push({
-        toolName: 'analyzePantryImage',
-        currentUsage: usage,
-        limit: limits.pantryAnalysesPerMonth,
-        remaining: Math.max(0, limits.pantryAnalysesPerMonth - usage),
-        period: 'month',
-      });
-    }
-
-    // Check recipe generation usage
-    if (limits.recipeGenerationsPerWeek !== Infinity) {
-      const usage = await getToolUsageCount(session.user.id, 'generateMealRecipe', 'week');
-      featureUsage.push({
-        toolName: 'generateMealRecipe',
-        currentUsage: usage,
-        limit: limits.recipeGenerationsPerWeek,
-        remaining: Math.max(0, limits.recipeGenerationsPerWeek - usage),
-        period: 'week',
-      });
-    }
-
-    return NextResponse.json(featureUsage);
+    // Return both limits and featureUsage for all users
+    return NextResponse.json({
+      limits,
+      featureUsage,
+      plan,
+    });
   } catch (error) {
     console.error('[Usage Features API] Error:', error);
     return NextResponse.json(
