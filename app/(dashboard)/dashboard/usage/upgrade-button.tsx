@@ -4,8 +4,21 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Crown } from 'lucide-react';
 import { authClient } from '@/lib/auth-client';
+import { cn } from '@/lib/utils';
+import type { ButtonProps } from '@/components/ui/button';
 
-export function UpgradeButton() {
+interface UpgradeButtonProps extends Omit<ButtonProps, 'onClick' | 'disabled'> {
+  showIcon?: boolean;
+  label?: string;
+}
+
+export function UpgradeButton({ 
+  className, 
+  size = 'lg', 
+  showIcon = true,
+  label = 'Upgrade to Pro',
+  ...props 
+}: UpgradeButtonProps) {
   const [isPending, setIsPending] = useState(false);
 
   const handleUpgrade = async () => {
@@ -26,11 +39,12 @@ export function UpgradeButton() {
     <Button 
       onClick={handleUpgrade}
       disabled={isPending}
-      className="w-full" 
-      size="lg"
+      className={cn('gap-2', className)} 
+      size={size}
+      {...props}
     >
-      <Crown className="h-4 w-4 mr-2" />
-      {isPending ? 'Processing...' : 'Upgrade to Pro'}
+      {showIcon && <Crown className="h-4 w-4" />}
+      {isPending ? 'Processing...' : label}
     </Button>
   );
 }
