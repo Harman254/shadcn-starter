@@ -2,6 +2,8 @@ import { tool } from 'ai';
 import { z } from 'zod';
 import prisma from '@/lib/prisma';
 import { ToolResult, ErrorCode, successResponse, errorResponse } from '@/lib/types/tool-result';
+import { trackToolUsage, extractTokensFromResponse } from '@/lib/utils/tool-usage-tracker';
+import { canGenerateMealPlan, canAnalyzePantryImage, canGenerateRecipe } from '@/lib/utils/feature-gates';
 
 // Helper to validate URLs
 function isValidUrl(urlString: string | undefined): boolean {
@@ -123,6 +125,28 @@ export const generateMealPlan = tool({
                 return errorResponse('You must be logged in to generate a meal plan.', ErrorCode.UNAUTHORIZED);
             }
 
+            // 1a. Check feature access (Free vs Pro limits)
+            const accessCheck = await canGenerateMealPlan(session.user.id);
+            if (!accessCheck.allowed) {
+                // Friendly, non-intrusive error message
+                return errorResponse(
+                    `You've used all ${accessCheck.limit} meal plans this week. ${accessCheck.remaining === 0 ? 'Upgrade to Pro for unlimited meal plans, or wait until next week.' : `You have ${accessCheck.remaining} remaining.`}`,
+                    ErrorCode.RATE_LIMIT_EXCEEDED,
+                    false
+                );
+            }
+
+            // 1b. Check duration limit based on plan
+            const { getUserFeatureLimits } = await import('@/lib/utils/feature-gates');
+            const limits = await getUserFeatureLimits(session.user.id);
+            if (duration > limits.maxMealPlanDuration) {
+                return errorResponse(
+                    `Meal plan duration exceeds your plan limit of ${limits.maxMealPlanDuration} days. ${limits.maxMealPlanDuration === 7 ? 'Upgrade to Pro for up to 30 days.' : 'Please reduce the duration.'}`,
+                    ErrorCode.VALIDATION_ERROR,
+                    false
+                );
+            }
+
             // Fetch full preferences for context if not passed explicitly
             let userPrefsContext = preferences || '';
             if (!userPrefsContext) {
@@ -135,30 +159,83 @@ export const generateMealPlan = tool({
                 }
             }
 
-            // 2. Generate Meal Plan using AI SDK
+            // 2. Generate Meal Plan using AI SDK with Smart Caching
             const { generateObject } = await import('ai');
             const { google } = await import('@ai-sdk/google');
             const { z } = await import('zod');
+            const { getCachedOrFetch } = await import('./smart-cache-strategies');
 
-            const result = await generateObject({
-                model: google('gemini-2.0-flash'),
-                temperature: 0.7, // Higher temperature for variety
-                schema: z.object({
-                    title: z.string().describe('A catchy title for this meal plan'),
-                    days: z.array(z.object({
-                        day: z.number(),
-                        meals: z.array(z.object({
-                            name: z.string(),
-                            description: z.string(),
-                            ingredients: z.array(z.string()),
-                            instructions: z.string(),
-                            calories: z.number().describe('Estimated calories for this meal'),
-                            prepTime: z.string().describe('Prep time like "15 min" or "30 min"'),
-                            servings: z.number().min(1).max(8).describe('Number of servings'),
+            const modelName = 'gemini-2.0-flash';
+            
+            // Use smart caching for meal plan generation (only if no chat messages - chat messages make it unique)
+            let result;
+            if (!chatMessages || chatMessages.length === 0) {
+                const cacheResult = await getCachedOrFetch(
+                    'generateMealPlan',
+                    { duration, mealsPerDay, preferences: userPrefsContext },
+                    async () => {
+                        const genResult = await generateObject({
+                            model: google(modelName),
+                            temperature: 0.7,
+                            schema: z.object({
+                                title: z.string().describe('A catchy title for this meal plan'),
+                                days: z.array(z.object({
+                                    day: z.number(),
+                                    meals: z.array(z.object({
+                                        name: z.string(),
+                                        description: z.string(),
+                                        ingredients: z.array(z.string()),
+                                        instructions: z.string(),
+                                        calories: z.number().describe('Estimated calories for this meal'),
+                                        prepTime: z.string().describe('Prep time like "15 min" or "30 min"'),
+                                        servings: z.number().min(1).max(8).describe('Number of servings'),
+                                    }))
+                                }))
+                            }),
+                            prompt: `Generate a personalized meal plan for ${duration} days with ${mealsPerDay} meals per day.
+
+## Saved User Preferences
+${userPrefsContext || 'No saved preferences. Use balanced diet.'}
+
+## Requirements
+1. **Variety:** Ensure meals are diverse and not repetitive.
+2. **Completeness:** For each meal, provide a name, brief description, full ingredient list, and simple instructions.
+3. **Nutrition:** Estimate realistic calories for each meal (300-800 for most meals).
+4. **Timing:** Provide realistic prep times (5-45 min).
+5. **Servings:** Suggest 1-4 servings per meal.
+6. **Structure:** Generate exactly ${duration} days with ${mealsPerDay} meals each.
+7. **Title:** Create a catchy, descriptive title for the plan.
+
+Return a valid JSON object.`,
+                        });
+                        return { object: genResult.object, usage: genResult.usage };
+                    }
+                );
+                result = cacheResult.data;
+                if (cacheResult.cached) {
+                    console.log(`[generateMealPlan] ✅ Cache hit! ${cacheResult.stale ? '(stale, refreshing in background)' : ''}`);
+                }
+            } else {
+                // With chat messages, skip cache (too unique)
+                result = await generateObject({
+                    model: google(modelName),
+                    temperature: 0.7,
+                    schema: z.object({
+                        title: z.string().describe('A catchy title for this meal plan'),
+                        days: z.array(z.object({
+                            day: z.number(),
+                            meals: z.array(z.object({
+                                name: z.string(),
+                                description: z.string(),
+                                ingredients: z.array(z.string()),
+                                instructions: z.string(),
+                                calories: z.number().describe('Estimated calories for this meal'),
+                                prepTime: z.string().describe('Prep time like "15 min" or "30 min"'),
+                                servings: z.number().min(1).max(8).describe('Number of servings'),
+                            }))
                         }))
-                    }))
-                }),
-                prompt: `Generate a personalized meal plan for ${duration} days with ${mealsPerDay} meals per day.
+                    }),
+                    prompt: `Generate a personalized meal plan for ${duration} days with ${mealsPerDay} meals per day.
 
 CRITICAL: PRIORITIZE THE USER'S RECENT REQUESTS IN CHAT MESSAGES ABOVE ALL ELSE.
 
@@ -169,17 +246,19 @@ ${chatMessages?.map(m => `${m.role.toUpperCase()}: ${m.content}`).join('\n') || 
 ${userPrefsContext || 'No saved preferences. Use balanced diet.'}
 
 ## Requirements
-1. **Specific Requests:** If user asked for specific foods (e.g. "ugali", "keto", "pasta"), YOU MUST INCLUDE THEM.
-2. **Variety:** Ensure meals are diverse and not repetitive.
-3. **Completeness:** For each meal, provide a name, brief description, full ingredient list, and simple instructions.
-4. **Nutrition:** Estimate realistic calories for each meal (300-800 for most meals).
-5. **Timing:** Provide realistic prep times (5-45 min).
-6. **Servings:** Suggest 1-4 servings per meal.
-7. **Structure:** Generate exactly ${duration} days with ${mealsPerDay} meals each.
-8. **Title:** Create a catchy, descriptive title for the plan (e.g. "Mediterranean 3-Day Reset", "High-Protein Keto Week").
+1. **Specific Requests:** If user asked for specific foods or recipes (e.g. "ugali", "keto", "pasta", "Creamy Tomato Pasta"), YOU MUST INCLUDE THEM in the meal plan. If they requested a specific recipe to be included, add it as one of the meals.
+2. **Recipe Inclusion:** If the user message mentions "include [recipe name]" or "meal plan that includes [recipe name]", that specific recipe MUST be one of the meals in the plan. Use the exact recipe name and include its ingredients and instructions.
+3. **Variety:** Ensure meals are diverse and not repetitive (unless user specifically requested the same meal multiple times).
+4. **Completeness:** For each meal, provide a name, brief description, full ingredient list, and simple instructions.
+5. **Nutrition:** Estimate realistic calories for each meal (300-800 for most meals).
+6. **Timing:** Provide realistic prep times (5-45 min).
+7. **Servings:** Suggest 1-4 servings per meal.
+8. **Structure:** Generate exactly ${duration} days with ${mealsPerDay} meals each.
+9. **Title:** Create a catchy, descriptive title for the plan (e.g. "Mediterranean 3-Day Reset", "High-Protein Keto Week").
 
 Return a valid JSON object.`,
-            });
+                });
+            }
 
             if (!result.object) {
                 throw new Error('Failed to generate meal plan data');
@@ -197,6 +276,16 @@ Return a valid JSON object.`,
                     };
                 })
             }));
+
+            // 3a. Check max recipes per meal plan limit
+            const totalRecipes = enrichedDays.reduce((sum, day) => sum + day.meals.length, 0);
+            if (totalRecipes > limits.maxRecipesPerMealPlan) {
+                return errorResponse(
+                    `This meal plan would have ${totalRecipes} recipes, which exceeds your plan limit of ${limits.maxRecipesPerMealPlan} recipes per meal plan. ${limits.maxRecipesPerMealPlan === 20 ? 'Upgrade to Pro for unlimited recipes per meal plan.' : 'Please reduce the number of meals or days.'}`,
+                    ErrorCode.VALIDATION_ERROR,
+                    false
+                );
+            }
 
             const mealPlanData = {
                 title: result.object.title,
@@ -219,7 +308,27 @@ Return a valid JSON object.`,
 
             const uiMetadataEncoded = Buffer.from(JSON.stringify(uiMetadata)).toString('base64');
 
-            // 5. Return Success Response
+            // 5. Track usage (non-blocking)
+            try {
+                const tokens = extractTokensFromResponse(result);
+                await trackToolUsage({
+                    userId: session.user.id,
+                    toolName: 'generateMealPlan',
+                    inputTokens: tokens.inputTokens,
+                    outputTokens: tokens.outputTokens,
+                    model: modelName,
+                    metadata: {
+                        duration,
+                        mealsPerDay,
+                        totalMeals: mealPlanData.days.reduce((sum, day) => sum + day.meals.length, 0),
+                    },
+                });
+            } catch (trackingError) {
+                console.error('[generateMealPlan] Usage tracking failed:', trackingError);
+                // Don't fail the request if tracking fails
+            }
+
+            // 6. Return Success Response
             const totalMeals = mealPlanData.days.reduce((sum, day) => sum + day.meals.length, 0);
 
             return successResponse(
@@ -918,6 +1027,17 @@ export const modifyMealPlan = tool({
                 return errorResponse('You must be logged in to generate a meal plan.', ErrorCode.UNAUTHORIZED);
             }
 
+            // Check duration limits based on user plan
+            const { getUserFeatureLimits } = await import('@/lib/utils/feature-gates');
+            const limits = await getUserFeatureLimits(session.user.id);
+            if (duration > limits.maxMealPlanDuration) {
+                return errorResponse(
+                    `Meal plan duration exceeds your plan limit of ${limits.maxMealPlanDuration} days. ${limits.maxMealPlanDuration === 7 ? 'Upgrade to Pro for up to 30 days.' : 'Please reduce the duration.'}`,
+                    ErrorCode.VALIDATION_ERROR,
+                    false
+                );
+            }
+
             // Fetch full preferences for context if not passed explicitly
             let userPrefsContext = preferences || '';
             if (!userPrefsContext) {
@@ -1000,7 +1120,22 @@ Return a valid JSON object.`,
 
             const uiMetadataEncoded = Buffer.from(JSON.stringify(uiMetadata)).toString('base64');
 
-            // 4. Return Success Response
+            // 4. Track usage (non-blocking)
+            try {
+                const { trackToolUsage, extractTokensFromResponse } = await import('@/lib/utils/tool-usage-tracker');
+                const tokens = extractTokensFromResponse(result);
+                await trackToolUsage({
+                    userId: session.user.id,
+                    toolName: 'modifyMealPlan',
+                    inputTokens: tokens.inputTokens,
+                    outputTokens: tokens.outputTokens,
+                    metadata: { feature: 'meal_plan_generation' },
+                });
+            } catch (error) {
+                console.error('[modifyMealPlan] Failed to track usage:', error);
+            }
+
+            // 5. Return Success Response
             const totalMeals = mealPlanData.days.reduce((sum, day) => sum + day.meals.length, 0);
 
             return successResponse(
@@ -1037,7 +1172,24 @@ export const optimizeGroceryList = tool({
         try {
             console.log('[optimizeGroceryList] 🛒 Optimizing list...', { listId, storeIds });
 
-            // 1. Resolve Items
+            // 1. Get User Session & Check Feature Access
+            const { auth } = await import('@/lib/auth');
+            const { headers } = await import('next/headers');
+            const session = await auth.api.getSession({ headers: await headers() });
+
+            if (session?.user?.id) {
+                const { canOptimizeGroceryList } = await import('@/lib/utils/feature-gates');
+                const accessCheck = await canOptimizeGroceryList(session.user.id);
+                if (!accessCheck.allowed) {
+                    return errorResponse(
+                        accessCheck.reason || 'Grocery list optimization is a Pro feature. Upgrade to unlock this feature.',
+                        ErrorCode.RATE_LIMIT_EXCEEDED,
+                        false
+                    );
+                }
+            }
+
+            // 2. Resolve Items
             let itemsToOptimize = items || [];
             if (!itemsToOptimize.length && listId) {
                 // In a real app, fetch from DB. For now, check context or error.
@@ -1086,6 +1238,23 @@ Items: ${JSON.stringify(itemsToOptimize)}
             const optimizationResult = result.object;
             const uiMetadata = { optimization: optimizationResult };
             const uiMetadataEncoded = Buffer.from(JSON.stringify(uiMetadata)).toString('base64');
+
+            // Track usage (non-blocking)
+            if (session?.user?.id) {
+                try {
+                    const { trackToolUsage, extractTokensFromResponse } = await import('@/lib/utils/tool-usage-tracker');
+                    const tokens = extractTokensFromResponse(result);
+                    await trackToolUsage({
+                        userId: session.user.id,
+                        toolName: 'optimizeGroceryList',
+                        inputTokens: tokens.inputTokens,
+                        outputTokens: tokens.outputTokens,
+                        metadata: { feature: 'grocery_optimization' },
+                    });
+                } catch (error) {
+                    console.error('[optimizeGroceryList] Failed to track usage:', error);
+                }
+            }
 
             return successResponse(
                 { optimization: optimizationResult },
@@ -1510,6 +1679,18 @@ export const generateMealRecipe = tool({
             const { headers } = await import('next/headers');
             const session = await auth.api.getSession({ headers: await headers() });
 
+            // 1a. Check feature access (Free vs Pro limits)
+            if (session?.user?.id) {
+                const accessCheck = await canGenerateRecipe(session.user.id);
+                if (!accessCheck.allowed) {
+                    return errorResponse(
+                        `You've used all ${accessCheck.limit} recipe generations this week. ${accessCheck.remaining === 0 ? 'Upgrade to Pro for unlimited recipes, or wait until next week.' : `You have ${accessCheck.remaining} remaining.`}`,
+                        ErrorCode.RATE_LIMIT_EXCEEDED,
+                        false
+                    );
+                }
+            }
+
             let userPrefsContext = '';
             if (session?.user?.id) {
                 const prisma = (await import('@/lib/prisma')).default;
@@ -1526,8 +1707,9 @@ export const generateMealRecipe = tool({
             const { google } = await import('@ai-sdk/google');
             const { z } = await import('zod');
 
+            const modelName = 'gemini-2.0-flash';
             const result = await generateObject({
-                model: google('gemini-2.0-flash', {
+                model: google(modelName, {
                     useSearchGrounding: true, // Enable search for accurate recipe data
                 }),
                 temperature: 0.4,
@@ -1598,6 +1780,27 @@ Return valid JSON.`,
                 mealRecipe: recipe,
             };
             const uiMetadataEncoded = Buffer.from(JSON.stringify(uiMetadata)).toString('base64');
+
+            // Track usage (non-blocking)
+            if (session?.user?.id) {
+                try {
+                    const tokens = extractTokensFromResponse(result);
+                    await trackToolUsage({
+                        userId: session.user.id,
+                        toolName: 'generateMealRecipe',
+                        inputTokens: tokens.inputTokens,
+                        outputTokens: tokens.outputTokens,
+                        model: modelName,
+                        metadata: {
+                            recipeName: name,
+                            servings: recipe.servings,
+                            difficulty: recipe.difficulty,
+                        },
+                    });
+                } catch (trackingError) {
+                    console.error('[generateMealRecipe] Usage tracking failed:', trackingError);
+                }
+            }
 
             return successResponse(
                 {
@@ -1709,11 +1912,116 @@ export const getSeasonalIngredients = tool({
 });
 
 export const planFromInventory = tool({
-    description: 'Plan from inventory.',
-    parameters: z.object({ inventoryItems: z.array(z.string()) }),
-    execute: async ({ inventoryItems }) => {
-        return successResponse({ inventoryPlan: { meals: [], usedItems: inventoryItems } }, "Plan created.");
-    }
+    description: 'Generate meal suggestions based on available ingredients. Use this when the user wants meal ideas from what they have in their pantry or fridge.',
+    parameters: z.object({
+        ingredients: z.array(z.string()).describe('List of available ingredients'),
+        mealType: z.enum(['breakfast', 'lunch', 'dinner', 'snack', 'any']).optional().default('any').describe('Type of meal to suggest'),
+        count: z.number().min(1).max(10).optional().default(5).describe('Number of meal suggestions to generate'),
+        preferences: z.string().optional().describe('Dietary preferences or restrictions'),
+    }),
+    execute: async ({ ingredients, mealType = 'any', count = 5, preferences }): Promise<ToolResult> => {
+        try {
+            console.log(`[planFromInventory] 🍳 Planning meals from ${ingredients.length} ingredients (${mealType})`);
+
+            // Get user preferences if available
+            let userPrefsContext = preferences || '';
+            if (!userPrefsContext) {
+                try {
+                    const { auth } = await import('@/lib/auth');
+                    const { headers } = await import('next/headers');
+                    const session = await auth.api.getSession({ headers: await headers() });
+                    
+                    if (session?.user?.id) {
+                        const prisma = (await import('@/lib/prisma')).default;
+                        const onboarding = await prisma.onboardingData.findUnique({
+                            where: { userId: session.user.id }
+                        });
+                        if (onboarding) {
+                            userPrefsContext = `Dietary: ${onboarding.dietaryPreference}, Goal: ${onboarding.goal}, Cuisines: ${onboarding.cuisinePreferences.join(', ')}`;
+                        }
+                    }
+                } catch (e) {
+                    // Ignore auth errors, continue without preferences
+                }
+            }
+
+            const { generateObject } = await import('ai');
+            const { google } = await import('@ai-sdk/google');
+            const { z } = await import('zod');
+
+            const result = await generateObject({
+                model: google('gemini-2.0-flash', {
+                    useSearchGrounding: true,
+                }),
+                temperature: 0.7,
+                schema: z.object({
+                    meals: z.array(z.object({
+                        name: z.string().describe('Name of the meal'),
+                        description: z.string().describe('Brief description'),
+                        ingredients: z.array(z.string()).describe('All ingredients needed (including what user has + what they need to buy)'),
+                        usedIngredients: z.array(z.string()).describe('Which of the user\'s ingredients are used in this meal'),
+                        missingIngredients: z.array(z.string()).describe('Ingredients needed that the user doesn\'t have'),
+                        prepTime: z.string().describe('Estimated prep time (e.g., "15 min", "30 min")'),
+                        difficulty: z.enum(['easy', 'medium', 'hard']).describe('Difficulty level'),
+                        calories: z.number().optional().describe('Estimated calories per serving'),
+                        servings: z.number().min(1).max(8).describe('Number of servings'),
+                    })),
+                    summary: z.string().describe('Brief summary of the meal suggestions'),
+                }),
+                prompt: `Generate ${count} creative meal suggestions using these available ingredients: ${ingredients.join(', ')}.
+
+${mealType !== 'any' ? `Focus on ${mealType} meals.` : 'Include variety across breakfast, lunch, and dinner.'}
+
+${userPrefsContext ? `User Preferences: ${userPrefsContext}` : ''}
+
+## REQUIREMENTS:
+1. **Use Available Ingredients**: Prioritize meals that use as many of the provided ingredients as possible.
+2. **Realistic Recipes**: Suggest actual, cookable meals - not just ingredient lists.
+3. **Missing Ingredients**: Clearly list what additional ingredients are needed (be specific with quantities).
+4. **Variety**: Ensure diverse meal types and cuisines.
+5. **Practicality**: Focus on meals that are practical to make with the available ingredients.
+6. **Nutrition**: Include calorie estimates where possible.
+7. **Difficulty**: Assess realistic difficulty levels.
+
+Return valid JSON with ${count} meal suggestions.`,
+            });
+
+            if (!result.object) {
+                throw new Error('Failed to generate meal suggestions');
+            }
+
+            const inventoryPlan = {
+                meals: result.object.meals,
+                usedItems: ingredients,
+                summary: result.object.summary,
+            };
+
+            // Create UI metadata for potential meal plan generation
+            const uiMetadata = {
+                inventoryPlan: inventoryPlan,
+                actions: [
+                    {
+                        label: 'Create Meal Plan',
+                        action: 'generate_meal_plan',
+                        data: { ingredients: ingredients }
+                    }
+                ]
+            };
+            const uiMetadataEncoded = Buffer.from(JSON.stringify(uiMetadata)).toString('base64');
+
+            return successResponse(
+                inventoryPlan,
+                `✅ I found ${result.object.meals.length} meal ideas using your ingredients! ${result.object.summary} [UI_METADATA:${uiMetadataEncoded}]`
+            );
+        } catch (error) {
+            console.error('[planFromInventory] Error:', error);
+            return errorResponse(
+                error instanceof Error ? error.message : 'Failed to generate meal suggestions',
+                ErrorCode.GENERATION_FAILED,
+                true
+            );
+        }
+    },
 });
 
 export const generatePrepTimeline = tool({
@@ -1737,6 +2045,22 @@ export const analyzePantryImage = tool({
     execute: async ({ imageUrl }: { imageUrl: string }): Promise<ToolResult> => {
         try {
             console.log(`[analyzePantryImage] 📸 Analyzing image: ${imageUrl}`);
+
+            // 1. Get User Session & Check Feature Access
+            const { auth } = await import('@/lib/auth');
+            const { headers } = await import('next/headers');
+            const session = await auth.api.getSession({ headers: await headers() });
+
+            if (session?.user?.id) {
+                const accessCheck = await canAnalyzePantryImage(session.user.id);
+                if (!accessCheck.allowed) {
+                    return errorResponse(
+                        `You've used all ${accessCheck.limit} pantry analyses this month. ${accessCheck.remaining === 0 ? 'Upgrade to Pro for unlimited analyses, or wait until next month.' : `You have ${accessCheck.remaining} remaining.`}`,
+                        ErrorCode.RATE_LIMIT_EXCEEDED,
+                        false
+                    );
+                }
+            }
 
             const { generateObject } = await import('ai');
             const { google } = await import('@ai-sdk/google');
@@ -1772,8 +2096,9 @@ export const analyzePantryImage = tool({
             }
 
             // 2. Call AI with explicit structure
+            const modelName = 'gemini-2.0-flash';
             const result = await generateObject({
-                model: google('gemini-2.0-flash'), // Supports vision
+                model: google(modelName), // Supports vision
                 schema: z.object({
                     items: z.array(z.object({
                         name: z.string(),
@@ -1787,7 +2112,18 @@ export const analyzePantryImage = tool({
                     {
                         role: 'user',
                         content: [
-                            { type: 'text', text: 'Analyze this image and identify all food ingredients visible. Estimate quantities and expiry where possible.' },
+                            { type: 'text', text: `Analyze this image of a fridge or pantry and identify ALL food ingredients visible. 
+
+CRITICAL INSTRUCTIONS:
+1. **Identify EVERYTHING**: Look carefully at all shelves, drawers, and containers. Don't miss items in the background.
+2. **Be Specific**: Use exact names (e.g., "Red Bell Pepper" not just "pepper", "Whole Milk" not just "milk").
+3. **Estimate Quantities**: Provide realistic quantities (e.g., "6 bananas", "1 bottle", "2 bell peppers").
+4. **Categorize Correctly**: Assign each item to the right category (produce, dairy, protein, grains, spices, other).
+5. **Expiry Estimates**: If items look fresh/new, estimate expiry (e.g., "1 week", "3 days", "2 weeks"). If uncertain, omit this field.
+6. **Packaged Items**: Identify brand names and specific products when visible (e.g., "Coca-Cola", "Heinz Ketchup").
+7. **Partial Visibility**: If you can see part of an item, make your best guess but note uncertainty in the name if needed.
+
+Return a comprehensive list of ALL visible food items.` },
                             imagePart
                         ]
                     }
@@ -1798,7 +2134,10 @@ export const analyzePantryImage = tool({
 
             const { items, summary } = result.object;
 
-            // Create UI metadata for potential "Add to Pantry" button
+            // Extract ingredient names for meal suggestions
+            const ingredientNames = items.map(item => item.name);
+
+            // Create UI metadata for "Add to Pantry" and "Get Meal Suggestions" buttons
             const uiMetadata = {
                 pantryAnalysis: {
                     items: items,
@@ -1809,10 +2148,35 @@ export const analyzePantryImage = tool({
                         label: 'Add to Pantry',
                         action: 'update_pantry',
                         data: { items: items }
+                    },
+                    {
+                        label: 'Get Meal Suggestions',
+                        action: 'plan_from_inventory',
+                        data: { ingredients: ingredientNames }
                     }
                 ]
             };
             const uiMetadataEncoded = Buffer.from(JSON.stringify(uiMetadata)).toString('base64');
+
+            // Track usage (non-blocking)
+            if (session?.user?.id) {
+                try {
+                    const tokens = extractTokensFromResponse(result);
+                    await trackToolUsage({
+                        userId: session.user.id,
+                        toolName: 'analyzePantryImage',
+                        inputTokens: tokens.inputTokens,
+                        outputTokens: tokens.outputTokens,
+                        model: modelName,
+                        metadata: {
+                            itemsCount: items.length,
+                            imageUrl: imageUrl,
+                        },
+                    });
+                } catch (trackingError) {
+                    console.error('[analyzePantryImage] Usage tracking failed:', trackingError);
+                }
+            }
 
             return successResponse(
                 { items, summary },

@@ -1,7 +1,8 @@
 "use client"
 
 import { motion } from "framer-motion"
-import { ArrowLeftRight, Check, Leaf, Flame, Scale, Info } from "lucide-react"
+import { ArrowLeftRight, Check, Leaf, Flame, Scale, Info, ChefHat } from "lucide-react"
+import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
 interface SubstitutionDisplayProps {
@@ -23,9 +24,10 @@ interface SubstitutionDisplayProps {
     bestMatch: string
     tip: string
   }
+  onActionClick?: (action: string) => void
 }
 
-export function SubstitutionDisplay({ data }: SubstitutionDisplayProps) {
+export function SubstitutionDisplay({ data, onActionClick }: SubstitutionDisplayProps) {
   const difficultyColors = {
     easy: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
     moderate: 'bg-amber-500/20 text-amber-400 border-amber-500/30',
@@ -155,6 +157,21 @@ export function SubstitutionDisplay({ data }: SubstitutionDisplayProps) {
             <p className="text-white/70 text-sm">{data.tip}</p>
           </motion.div>
         </div>
+
+        {/* Action Button */}
+        {onActionClick && (
+          <div className="relative px-6 sm:px-8 pb-6">
+            <div className="h-px w-full bg-gradient-to-r from-transparent via-white/20 to-transparent mb-6" />
+            
+            <Button
+              size="lg"
+              className="w-full h-14 rounded-2xl font-semibold text-base gap-3 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white shadow-lg shadow-indigo-500/25"
+              onClick={() => onActionClick(`Find recipes that use ${data.bestMatch} instead of ${data.originalIngredient}`)}
+            >
+              <ChefHat className="h-5 w-5" /> Find Recipes with {data.bestMatch}
+            </Button>
+          </div>
+        )}
       </div>
     </motion.div>
   )

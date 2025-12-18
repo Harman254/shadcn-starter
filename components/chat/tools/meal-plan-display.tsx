@@ -1,8 +1,8 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { Calendar, UtensilsCrossed, ChevronDown, ShoppingCart, Wand2, ChefHat, Check, Save, Loader2, Flame, Clock, TrendingUp, Timer, Users } from "lucide-react"
+import { Calendar, UtensilsCrossed, ChevronDown, ShoppingCart, Wand2, ChefHat, Check, Save, Loader2, Flame, Clock, TrendingUp, Timer, Users, Download } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
@@ -53,7 +53,25 @@ export function MealPlanDisplay({ mealPlan, onActionClick }: MealPlanDisplayProp
   const [saving, setSaving] = useState(false)
   const [savedId, setSavedId] = useState<string | null>(null)
   const [expandedDay, setExpandedDay] = useState<number | null>(null)
+  const [exporting, setExporting] = useState(false)
+  const [exportFormats, setExportFormats] = useState<string[]>(['pdf'])
   const router = useRouter()
+
+  // Fetch user's export formats on mount
+  useEffect(() => {
+    const fetchExportFormats = async () => {
+      try {
+        const response = await fetch('/api/usage/features')
+        if (response.ok) {
+          const data = await response.json()
+          setExportFormats(data.limits?.exportFormats || ['pdf'])
+        }
+      } catch (e) {
+        // Silently fail, default to PDF only
+      }
+    }
+    fetchExportFormats()
+  }, [])
 
   // Calculate total meals
   const totalMeals = useMemo(() => {
@@ -111,6 +129,44 @@ export function MealPlanDisplay({ mealPlan, onActionClick }: MealPlanDisplayProp
     }
   }
 
+  const handleExport = async (format: 'pdf' | 'csv' | 'json') => {
+    if (!savedId) {
+      toast.error("Please save the meal plan first", {
+        description: "You need to save the meal plan before exporting."
+      })
+      return
+    }
+
+    try {
+      setExporting(true)
+      const response = await fetch(`/api/meal-plans/${savedId}/export?format=${format}`)
+      
+      if (response.ok) {
+        const blob = await response.blob()
+        const url = window.URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `meal-plan-${savedId}-${new Date().toISOString().split('T')[0]}.${format}`
+        document.body.appendChild(a)
+        a.click()
+        window.URL.revokeObjectURL(url)
+        document.body.removeChild(a)
+        toast.success(`Exported as ${format.toUpperCase()}`, {
+          description: "Your meal plan has been downloaded."
+        })
+      } else {
+        const error = await response.json()
+        toast.error("Export failed", {
+          description: error.error || "Please try again."
+        })
+      }
+    } catch (e) {
+      toast.error("Error", { description: "Failed to export meal plan." })
+    } finally {
+      setExporting(false)
+    }
+  }
+
   // Flatten meals from days for the grid view, or show day sections?
   // User design implies a flat list or at least a grid. 
   // Let's iterate days and show a section for each day if >1 day, or just the meals if 1 day.
@@ -132,11 +188,39 @@ export function MealPlanDisplay({ mealPlan, onActionClick }: MealPlanDisplayProp
             <span className="flex items-center gap-1"><UtensilsCrossed className="w-3 h-3" /> {totalMeals} Meals</span>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20">
             <Wand2 className="w-3 h-3 mr-1" />
             AI Generated
           </Badge>
+          {savedId && exportFormats.length > 1 && (
+            <div className="flex items-center gap-1">
+              {exportFormats.includes('csv') && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => handleExport('csv')}
+                  disabled={exporting}
+                  className="gap-1.5"
+                >
+                  {exporting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Download className="w-3 h-3" />}
+                  CSV
+                </Button>
+              )}
+              {exportFormats.includes('json') && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => handleExport('json')}
+                  disabled={exporting}
+                  className="gap-1.5"
+                >
+                  {exporting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Download className="w-3 h-3" />}
+                  JSON
+                </Button>
+              )}
+            </div>
+          )}
           <Button 
             size="sm" 
             onClick={handleSave} 

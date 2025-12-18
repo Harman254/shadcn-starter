@@ -417,15 +417,37 @@ export function FoodDataDisplay({ data, onActionClick }: FoodDataDisplayProps) {
           )}
         </CardContent>
         {onActionClick && (data.foodItem || data.query) && (
-          <div className="p-4 pt-0 flex justify-end gap-2">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="gap-2"
-              onClick={() => onActionClick(`Recipes using ${data.foodItem || data.query}`)}
-            >
-              <Drumstick className="h-4 w-4" /> Find Recipes
-            </Button>
+          <div className="p-4 pt-0 space-y-2">
+            <div className="flex flex-wrap gap-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="gap-2"
+                onClick={() => onActionClick(`Recipes using ${data.foodItem || data.query}`)}
+              >
+                <Drumstick className="h-4 w-4" /> Find Recipes
+              </Button>
+              {data.pricing && (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="gap-2"
+                  onClick={() => onActionClick(`Generate a grocery list for ${data.foodItem || data.query}`)}
+                >
+                  <ShoppingBag className="h-4 w-4" /> Add to List
+                </Button>
+              )}
+              {data.substitutions && data.substitutions.length > 0 && (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="gap-2"
+                  onClick={() => onActionClick(`Show me substitutes for ${data.foodItem || data.query}`)}
+                >
+                  <Repeat className="h-4 w-4" /> Substitutes
+                </Button>
+              )}
+            </div>
           </div>
         )}
       </Card>

@@ -6,7 +6,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url = env("DATABASE_URL") // uses connection pooling
+  url      = env("DATABASE_URL") // uses connection pooling
 }
 
 model OnboardingData {
@@ -16,24 +16,20 @@ model OnboardingData {
   goal               String
   householdSize      Int
   cuisinePreferences String[]
-  preferencesSummary String?  // Cached AI-generated summary of preferences
-  preferencesHash    String?  // Hash of preferences to detect changes
+  preferencesSummary String? // Cached AI-generated summary of preferences
+  preferencesHash    String? // Hash of preferences to detect changes
 }
-
-
-
 
 model MealPlan {
-  id          String      @id @default(cuid())
-  title       String
-  userId      String      // Clerk user ID
-  duration    Int
-  mealsPerDay Int
-  days        DayMeal[]   // One-to-many: each meal plan has many days
-  createdAt   DateTime    @default(now())
-  coverImageUrl String?   // Cover image for the meal plan
+  id            String    @id @default(cuid())
+  title         String
+  userId        String // Clerk user ID
+  duration      Int
+  mealsPerDay   Int
+  days          DayMeal[] // One-to-many: each meal plan has many days
+  createdAt     DateTime  @default(now())
+  coverImageUrl String? // Cover image for the meal plan
 }
-
 
 model DayMeal {
   id         String   @id @default(cuid())
@@ -44,24 +40,24 @@ model DayMeal {
 }
 
 model Meal {
-  id         String   @id @default(cuid())
-  name       String
-  type       String
-  isLiked   Boolean   @default(false)
-  imageUrl String?
-  description String
-  ingredients String[]
-  instructions String @default("")
-  calories   Int
-  dayMeal    DayMeal @relation(fields: [dayMealId], references: [id])
-  dayMealId  String
-  favorites  FavoriteRecipe[] // Relation to favorite recipes
+  id           String           @id @default(cuid())
+  name         String
+  type         String
+  isLiked      Boolean          @default(false)
+  imageUrl     String?
+  description  String
+  ingredients  String[]
+  instructions String           @default("")
+  calories     Int
+  dayMeal      DayMeal          @relation(fields: [dayMealId], references: [id])
+  dayMealId    String
+  favorites    FavoriteRecipe[] // Relation to favorite recipes
 }
 
 model FavoriteRecipe {
   id        String   @id @default(cuid())
-  userId    String   // Clerk user ID
-  mealId    String   // Reference to the meal
+  userId    String // Clerk user ID
+  mealId    String // Reference to the meal
   meal      Meal     @relation(fields: [mealId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
 
@@ -69,27 +65,26 @@ model FavoriteRecipe {
 }
 
 model User {
-  id               String    @id @default(cuid())
+  id               String        @id @default(cuid())
   name             String
   email            String
-  emailVerified    Boolean   @default(false)
+  emailVerified    Boolean       @default(false)
   image            String?
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
-  Subscription      subscription?
-  twoFactorEnabled Boolean   @default(false)
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  Subscription     subscription?
+  twoFactorEnabled Boolean       @default(false)
   Session          Session[]
   Account          Account[]
-  
+
   // New fields for user location
-  country          String? // Stored user's country
-  city             String? // Stored user's city
-  currencyCode     String? // Stored user's currency code
-  currencySymbol   String? // Stored user's currency symbol
+  country        String? // Stored user's country
+  city           String? // Stored user's city
+  currencyCode   String? // Stored user's currency code
+  currencySymbol String? // Stored user's currency symbol
 
-  analytics        UserAnalytics?
-  pantryItems      PantryItem[]
-
+  analytics   UserAnalytics?
+  pantryItems PantryItem[]
 
   @@unique([email])
   @@map("user")
@@ -110,21 +105,20 @@ model Session {
 }
 
 model Account {
-  id           String    @id @default(cuid())
-  accountId    String
-  providerId   String
-  userId       String
-  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  accessToken  String?
-  refreshToken String?
-  idToken      String?
-  expiresAt    DateTime?
-  password     String?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-  isOnboardingComplete Boolean @default(false)
-  isPro Boolean @default(false)
-
+  id                   String    @id @default(cuid())
+  accountId            String
+  providerId           String
+  userId               String
+  user                 User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken          String?
+  refreshToken         String?
+  idToken              String?
+  expiresAt            DateTime?
+  password             String?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+  isOnboardingComplete Boolean   @default(false)
+  isPro                Boolean   @default(false)
 
   accessTokenExpiresAt  DateTime?
   refreshTokenExpiresAt DateTime?
@@ -144,19 +138,17 @@ model Verification {
   @@map("verification")
 }
 
-
-
 model subscription {
-  id                String   @id @default(uuid())
-  userID            String   @unique
-  CustomerID        String   @unique
-  plan              String   @default("free") // "free", "pro", "enterprise"
-  status            String   @default("active") // "active", "canceled", "past_due", "incomplete", "trialing"
-  currentPeriodEnd  DateTime @default(dbgenerated("NOW() + INTERVAL '1 year'"))
-  features          String[] @default([]) // Array of feature IDs
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-  user              User     @relation(fields: [userID], references: [id], onDelete: Cascade)
+  id               String   @id @default(uuid())
+  userID           String   @unique
+  CustomerID       String   @unique
+  plan             String   @default("free") // "free", "pro", "enterprise"
+  status           String   @default("active") // "active", "canceled", "past_due", "incomplete", "trialing"
+  currentPeriodEnd DateTime @default(dbgenerated("NOW() + INTERVAL '1 year'"))
+  features         String[] @default([]) // Array of feature IDs
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  user             User     @relation(fields: [userID], references: [id], onDelete: Cascade)
 }
 
 model mealPlanGeneration {
@@ -171,12 +163,12 @@ model mealPlanGeneration {
 }
 
 model MealSwapCount {
-  id          String   @id @default(cuid())
-  userId      String
-  weekStart   DateTime
-  swapCount   Int      @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id @default(cuid())
+  userId    String
+  weekStart DateTime
+  swapCount Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([userId, weekStart])
 }
@@ -192,30 +184,30 @@ model ContactSubmission {
 }
 
 model UserAnalytics {
-  id                String   @id @default(uuid())
-  userId            String   @unique
-  totalMealsCooked  Int      @default(0)
-  totalRecipesTried Int      @default(0)
-  averageCookTime   Int      @default(0)
-  favoriteRecipes   Int      @default(0)
-  weeklyMealPlanCompletion Int @default(0)
-  caloriesThisWeek  Int      @default(0)
-  targetCalories    Int      @default(0)
+  id                       String @id @default(uuid())
+  userId                   String @unique
+  totalMealsCooked         Int    @default(0)
+  totalRecipesTried        Int    @default(0)
+  averageCookTime          Int    @default(0)
+  favoriteRecipes          Int    @default(0)
+  weeklyMealPlanCompletion Int    @default(0)
+  caloriesThisWeek         Int    @default(0)
+  targetCalories           Int    @default(0)
   // Add more fields as needed for nutrition, trends, etc.
 
-  user              User     @relation(fields: [userId], references: [id])
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model ChatSession {
-  id          String       @id @default(cuid())
-  userId      String       // User who owns this chat session
-  chatType    String       // 'context-aware' | 'tool-selection'
-  title       String?      // Optional title for the session
-  messages    ChatMessage[] // One-to-many: each session has many messages
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  id        String        @id @default(cuid())
+  userId    String // User who owns this chat session
+  chatType  String // 'context-aware' | 'tool-selection'
+  title     String? // Optional title for the session
+  messages  ChatMessage[] // One-to-many: each session has many messages
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
 
   @@index([userId])
   @@index([userId, updatedAt]) // Composite index for user's session list queries
@@ -224,13 +216,13 @@ model ChatSession {
 }
 
 model ChatMessage {
-  id          String      @id @default(cuid())
-  sessionId   String      // Reference to the chat session
-  session     ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  role        String      // 'user' | 'assistant'
-  content     String      // Message content
-  timestamp   DateTime    @default(now())
-  createdAt   DateTime    @default(now())
+  id        String      @id @default(cuid())
+  sessionId String // Reference to the chat session
+  session   ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  role      String // 'user' | 'assistant'
+  content   String // Message content
+  timestamp DateTime    @default(now())
+  createdAt DateTime    @default(now())
 
   @@index([sessionId, timestamp]) // Composite index for message loading queries
   @@map("chat_message")
@@ -242,7 +234,7 @@ model ConversationContext {
   sessionId     String
   mealPlanId    String?
   groceryListId String?
-  metadata      Json?    // Flexible JSON for additional context
+  metadata      Json? // Flexible JSON for additional context
   expiresAt     DateTime
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
@@ -253,14 +245,14 @@ model ConversationContext {
 }
 
 model GroceryList {
-  id          String   @id @default(cuid())
-  userId      String
-  mealPlanId  String?  // Optional link to meal plan
-  items       Json     // Array of { item, quantity, price, category }
-  totalCost   Float
-  currency    String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id         String   @id @default(cuid())
+  userId     String
+  mealPlanId String? // Optional link to meal plan
+  items      Json // Array of { item, quantity, price, category }
+  totalCost  Float
+  currency   String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   @@index([userId, createdAt(sort: Desc)])
   @@map("grocery_list")
@@ -275,8 +267,8 @@ model Recipe {
   cookTime     String   @default("")
   servings     Int      @default(1)
   difficulty   String   @default("Medium")
-  ingredients  Json     // Array of strings
-  instructions Json     // Array of strings
+  ingredients  Json // Array of strings
+  instructions Json // Array of strings
   tags         String[] @default([])
   calories     Int      @default(0)
   protein      Int      @default(0)
@@ -291,17 +283,34 @@ model Recipe {
 }
 
 model PantryItem {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   userId    String
   name      String
-  category  String   @default("Uncategorized")
-  quantity  String   @default("1")
+  category  String    @default("Uncategorized")
+  quantity  String    @default("1")
   unit      String?
   expiry    DateTime?
-  addedAt   DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  addedAt   DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@map("pantry_items")
+}
+
+model ToolUsage {
+  id            String   @id @default(cuid())
+  userId        String
+  toolName      String // 'generateMealPlan', 'analyzePantryImage', 'searchRecipes', etc.
+  inputTokens   Int      @default(0)
+  outputTokens  Int      @default(0)
+  totalTokens   Int      @default(0) // inputTokens + outputTokens
+  estimatedCost Float    @default(0) // Estimated cost in USD
+  metadata      Json? // Additional context (model used, duration, etc.)
+  timestamp     DateTime @default(now())
+
+  @@index([userId, timestamp])
+  @@index([toolName, timestamp])
+  @@index([userId, toolName, timestamp])
+  @@map("tool_usage")
 }

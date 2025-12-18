@@ -37,7 +37,7 @@ export default function MealwisePage() {
             </h2>
             <p className="text-lg text-gray-600 mb-8 leading-relaxed dark:text-zinc-400">
               Tell us your goals, diet, and preferences. Our AI (Google Gemini 2.5 Pro) creates a full week&apos;s meal plan
-              with stunning images and personalized recommendations.
+              with stunning images and personalized recommendations. <Link href="/chat" className="text-green-600 hover:text-green-700 dark:text-green-400 underline">Try it now</Link>.
             </p>
             <div className="flex flex-wrap gap-3">
               <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-zinc-700 dark:text-green-300">
@@ -111,7 +111,7 @@ export default function MealwisePage() {
               </h2>
               <p className="text-lg text-gray-600 mb-8 leading-relaxed dark:text-zinc-400">
                 Automatically generate shopping lists based on your meal plan and local pricing. Save time and money
-                with store-specific suggestions.
+                with store-specific suggestions. <Link href="/chat" className="text-green-600 hover:text-green-700 dark:text-green-400 underline">Generate your first list</Link>.
               </p>
               <div className="flex flex-wrap gap-3">
                 <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-zinc-700 dark:text-green-300">
@@ -172,7 +172,7 @@ export default function MealwisePage() {
             </Badge>
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6 dark:text-zinc-100">Build Your Favorites Over Time</h2>
             <p className="text-lg text-gray-600 mb-8 leading-relaxed dark:text-zinc-400">
-              Like meals you love. Save them to your dashboard. The more you use Mealwise, the better your plans get.
+              Like meals you love. Save them to your dashboard. The more you use Mealwise, the better your plans get. <Link href="/recipes" className="text-green-600 hover:text-green-700 dark:text-green-400 underline">View your favorites</Link>.
             </p>
             <div className="flex flex-wrap gap-3">
               <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-zinc-700 dark:text-green-300">
@@ -202,9 +202,11 @@ export default function MealwisePage() {
                       </Button>
                     </div>
                     <p className="text-sm text-gray-600 dark:text-zinc-400 mb-2">25 min • 450 cal</p>
-                    <Button size="sm" className="bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-800">
-                      Save to Dashboard
-                    </Button>
+                    <Link href="/chat">
+                      <Button size="sm" className="bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-800">
+                        Try in Chat
+                      </Button>
+                    </Link>
                   </div>
                 </div>
               </CardContent>
@@ -227,9 +229,11 @@ export default function MealwisePage() {
                       </Button>
                     </div>
                     <p className="text-sm text-gray-600 dark:text-zinc-400 mb-2">15 min • 380 cal</p>
-                    <Button size="sm" variant="outline">
-                      Save to Dashboard
-                    </Button>
+                    <Link href="/chat">
+                      <Button size="sm" variant="outline">
+                        Try in Chat
+                      </Button>
+                    </Link>
                   </div>
                 </div>
               </CardContent>
@@ -250,7 +254,7 @@ export default function MealwisePage() {
               <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6 dark:text-zinc-100">Track Your Eating Habits</h2>
               <p className="text-lg text-gray-600 mb-8 leading-relaxed dark:text-zinc-400">
                 See what meals you eat most, what&apos;s working, and where you&apos;re improving. Built-in analytics help you
-                stay consistent and accountable.
+                stay consistent and accountable. <Link href="/dashboard/analytics" className="text-green-600 hover:text-green-700 dark:text-green-400 underline">View your analytics</Link> (Pro feature).
               </p>
               <div className="flex flex-wrap gap-3">
                 <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-zinc-700 dark:text-green-300">
@@ -323,7 +327,7 @@ export default function MealwisePage() {
               <CardContent>
                 <p className="text-gray-600 dark:text-zinc-400">
                   Our grocery pricing is updated daily from major retailers in your area. While prices can vary
-                  slightly, we maintain 90%+ accuracy to help you budget effectively for your meal plans.
+                  slightly, we maintain 90%+ accuracy to help you budget effectively for your meal plans. <Link href="/chat" className="text-green-600 hover:text-green-700 dark:text-green-400 underline">Try generating a grocery list</Link> to see pricing in action.
                 </p>
               </CardContent>
             </Card>
@@ -335,7 +339,7 @@ export default function MealwisePage() {
               <CardContent>
                 <p className="text-gray-600 dark:text-zinc-400">
                   You can swap out meals, adjust portions, modify ingredients, and update your dietary preferences at
-                  any time. Pro users get unlimited swaps and customizations.
+                  any time. Pro users get unlimited swaps and customizations. <Link href="/dashboard/preferences" className="text-green-600 hover:text-green-700 dark:text-green-400 underline">Update your preferences</Link> or <Link href="/chat" className="text-green-600 hover:text-green-700 dark:text-green-400 underline">chat with AI</Link> to customize your plans.
                 </p>
               </CardContent>
             </Card>

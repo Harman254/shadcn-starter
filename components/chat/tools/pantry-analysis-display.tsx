@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
-import { Plus, Check, Search, Calendar, Package } from "lucide-react"
+import { Plus, Check, Search, Calendar, Package, ChefHat } from "lucide-react"
 import { useState } from "react"
 import { motion } from "framer-motion"
 import { useToast } from "@/hooks/use-toast"
@@ -40,8 +40,6 @@ export function PantryAnalysisDisplay({ data, onActionClick }: PantryAnalysisDis
 
     setLoading(true)
     try {
-      // In a real implementation, this would call an API or trigger a tool.
-      // Since we rely on the chat agent loop, we'll send a message back.
       if (onActionClick) {
         onActionClick(`Add these ${items.length} items to my pantry tracking`)
       }
@@ -55,6 +53,13 @@ export function PantryAnalysisDisplay({ data, onActionClick }: PantryAnalysisDis
       console.error("Failed to add items", error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleGetMealSuggestions = () => {
+    if (onActionClick) {
+      const ingredientList = items.map(item => item.name).join(', ')
+      onActionClick(`Suggest meals I can cook with these ingredients: ${ingredientList}`)
     }
   }
 
@@ -133,10 +138,11 @@ export function PantryAnalysisDisplay({ data, onActionClick }: PantryAnalysisDis
 
         <div className="flex gap-2">
           <Button 
-            className="w-full font-medium shadow-sm active:scale-95 transition-all" 
+            className="flex-1 font-medium shadow-sm active:scale-95 transition-all" 
             size="lg"
             onClick={handleAddToPantry}
             disabled={added || loading}
+            variant={added ? "outline" : "default"}
           >
             {added ? (
               <>
@@ -147,6 +153,14 @@ export function PantryAnalysisDisplay({ data, onActionClick }: PantryAnalysisDis
                 <Plus className="mr-2 h-4 w-4" /> Add All Items
               </>
             )}
+          </Button>
+          <Button 
+            className="flex-1 font-medium shadow-sm active:scale-95 transition-all" 
+            size="lg"
+            onClick={handleGetMealSuggestions}
+            variant="outline"
+          >
+            <ChefHat className="mr-2 h-4 w-4" /> Get Meal Ideas
           </Button>
         </div>
       </CardContent>
