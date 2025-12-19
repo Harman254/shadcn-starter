@@ -64,12 +64,29 @@ export function MealPlanDisplay({ mealPlan, onActionClick }: MealPlanDisplayProp
         const response = await fetch('/api/usage/features')
         if (response.ok) {
           const data = await response.json()
-          // API now returns { limits, featureUsage, plan }
-          setExportFormats(data.limits?.exportFormats || ['pdf'])
+          // API returns { limits, featureUsage, plan }
+          // Ensure we have the correct structure
+          if (data && typeof data === 'object' && 'limits' in data) {
+            const exportFormats = data.limits?.exportFormats
+            if (Array.isArray(exportFormats) && exportFormats.length > 0) {
+              setExportFormats(exportFormats)
+            } else {
+              // Fallback to PDF if exportFormats is missing or invalid
+              setExportFormats(['pdf'])
+            }
+          } else {
+            // If response structure is unexpected, default to PDF
+            console.warn('[MealPlanDisplay] Unexpected API response structure:', data)
+            setExportFormats(['pdf'])
+          }
+        } else {
+          console.error('[MealPlanDisplay] API response not OK:', response.status)
+          setExportFormats(['pdf'])
         }
       } catch (e) {
         // Silently fail, default to PDF only
         console.error('[MealPlanDisplay] Failed to fetch export formats:', e)
+        setExportFormats(['pdf'])
       }
     }
     fetchExportFormats()
