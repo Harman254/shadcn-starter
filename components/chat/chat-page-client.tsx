@@ -53,12 +53,20 @@ export function ChatPageClient({ preferences = [], preferencesSummary = '' }: Ch
     setMounted(true);
   }, []);
 
-
-
-  if (!mounted) return null;
+  // Show loading state during hydration instead of returning null
+  if (!mounted) {
+    return (
+      <div className="flex h-[100dvh] w-full bg-background items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="h-8 w-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+          <p className="text-sm text-muted-foreground">Loading chat...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="flex h-[100dvh] w-full bg-background overflow-hidden">
+    <div className="flex h-[100dvh] w-full bg-background overflow-hidden" suppressHydrationWarning>
       {/* Sidebar (Desktop) */}
       <div className="hidden md:flex w-[260px] flex-col border-r border-border/40 bg-muted/5 h-full">
         <div className="flex-1 overflow-hidden">

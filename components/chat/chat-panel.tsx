@@ -55,37 +55,59 @@ export function ChatPanel({
   const isUserSubmittingRef = useRef(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const hasInitialScrolledRef = useRef(false);
+  const [finalSessionId, setFinalSessionId] = useState<string | null>(null);
+  const sessionInitializedRef = useRef(false);
   
-  // Synchronously initialize lock from localStorage to prevent creating new session on refresh
-  // This is safe because ChatPanel is loaded with ssr: false
-  if (!lockInitializedRef.current && typeof window !== 'undefined') {
-    lockInitializedRef.current = true;
-    try {
-      const stored = localStorage.getItem('chat-storage');
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        const storedSessionId = parsed?.state?.currentSessionId;
-        if (storedSessionId) {
+  // Initialize session ID - must be done in useEffect to avoid state update during render
+  useEffect(() => {
+    // Only run once
+    if (sessionInitializedRef.current) return;
+    sessionInitializedRef.current = true;
+
+    // Initialize lock from localStorage to prevent creating new session on refresh
+    if (!lockInitializedRef.current && typeof window !== 'undefined') {
+      lockInitializedRef.current = true;
+      try {
+        const stored = localStorage.getItem('chat-storage');
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          const storedSessionId = parsed?.state?.currentSessionId;
+          if (storedSessionId) {
             lockedSessionRef.current = storedSessionId;
+          }
         }
-      }
-    } catch (e) { /* Ignore */ }
-  }
-  
-  // Session Logic
-  const finalSessionId = useMemo(() => {
+      } catch (e) { /* Ignore */ }
+    }
+
+    // Determine session ID
     if (currentSessionId) {
       if (lockedSessionRef.current !== currentSessionId) {
         lockedSessionRef.current = currentSessionId;
         titleGeneratedRef.current = null;
       }
-      return currentSessionId;
+      setFinalSessionId(currentSessionId);
+    } else if (lockedSessionRef.current) {
+      setFinalSessionId(lockedSessionRef.current);
+    } else {
+      // Create new session only after mount
+      const newSessionId = createSession(chatType);
+      titleGeneratedRef.current = null;
+      setFinalSessionId(newSessionId);
     }
-    if (lockedSessionRef.current) return lockedSessionRef.current;
-    const newSessionId = createSession(chatType);
-    titleGeneratedRef.current = null;
-    return newSessionId;
   }, [currentSessionId, createSession, chatType]);
+
+  // Update session ID when currentSessionId changes (after initial mount)
+  useEffect(() => {
+    if (!sessionInitializedRef.current) return; // Wait for initial mount
+    
+    if (currentSessionId && currentSessionId !== finalSessionId) {
+      if (lockedSessionRef.current !== currentSessionId) {
+        lockedSessionRef.current = currentSessionId;
+        titleGeneratedRef.current = null;
+      }
+      setFinalSessionId(currentSessionId);
+    }
+  }, [currentSessionId, finalSessionId]);
 
   // Get initial messages from store
   const storeMessages = useChatStore((state) => {
@@ -112,10 +134,10 @@ export function ChatPanel({
   // Vercel AI SDK useChat
   const { messages, input, handleInputChange, handleSubmit, isLoading, setMessages, append, reload, data } = useChat({
     api: '/api/chat',
-    id: finalSessionId,
+    id: finalSessionId || undefined, // Convert null to undefined for useChat
     initialMessages: storeMessages,
     body: {
-      sessionId: finalSessionId,
+      sessionId: finalSessionId || undefined, // Convert null to undefined
       chatType,
       preferencesSummary,
     },
@@ -255,6 +277,15 @@ setMessages(storeMessages);
         return;
      }
 
+     // Wait for session to be initialized
+     if (!finalSessionId) {
+        toast({
+          title: 'Initializing...',
+          description: 'Please wait a moment and try again.',
+        });
+        return;
+     }
+
      if (!navigator.onLine) {
         queueMessage(value.trim());
         handleInputChange({ target: { value: '' } } as React.ChangeEvent<HTMLInputElement>);
@@ -317,6 +348,7 @@ setMessages(storeMessages);
       exit={{ opacity: 0 }}
       transition={{ duration: 0.5 }}
       className="flex flex-col h-full w-full relative"
+      suppressHydrationWarning
     >
       <div ref={scrollContainerRef} className="flex-1 overflow-y-auto overflow-x-hidden min-h-0">
         <div className="max-w-3xl mx-auto w-full pb-32 sm:pb-40 px-4">
@@ -324,6 +356,13 @@ setMessages(storeMessages);
             <EmptyScreen onExampleClick={(val) => {
                if (!isAuthenticated) {
                   openAuthModal('sign-in');
+                  return;
+               }
+               if (!finalSessionId) {
+                  toast({
+                    title: 'Initializing...',
+                    description: 'Please wait a moment and try again.',
+                  });
                   return;
                }
                const messageId = crypto.randomUUID();
