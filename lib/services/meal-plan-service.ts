@@ -62,6 +62,16 @@ export async function saveMealPlanService(
   input: SaveMealPlanInput,
   userId: string
 ): Promise<SaveMealPlanResult> {
+  // Comprehensive input validation before processing (using imported validator)
+  const validation = validateMealPlanInput(input);
+  if (!validation.valid) {
+    console.error('[saveMealPlanService] Input validation failed:', validation.errors);
+    return {
+      success: false,
+      error: validation.errors.join('; '),
+      code: 'VALIDATION_ERROR',
+    };
+  }
   try {
     // Validate input
     const validation = validateMealPlanInput(input);

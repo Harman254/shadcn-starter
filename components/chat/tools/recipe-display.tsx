@@ -8,12 +8,15 @@ import { cn } from "@/lib/utils"
 import { useToast } from "@/hooks/use-toast"
 import { CldImage } from 'next-cloudinary'
 
+import { ToolErrorDisplay } from './tool-error-display'
+
 interface RecipeDisplayProps {
   recipe: any
   onActionClick?: (action: string) => void
+  error?: string | { message?: string; error?: string; code?: string; metadata?: any }
 }
 
-export function RecipeDisplay({ recipe, onActionClick }: RecipeDisplayProps) {
+export function RecipeDisplay({ recipe, onActionClick, error }: RecipeDisplayProps) {
   const [cookMode, setCookMode] = useState(false)
   const [currentStep, setCurrentStep] = useState(0)
   const [saving, setSaving] = useState(false)
@@ -67,12 +70,12 @@ export function RecipeDisplay({ recipe, onActionClick }: RecipeDisplayProps) {
   // Check if recipe is already saved on mount
   useEffect(() => {
     const checkSaved = async () => {
-      if (!recipe.name) {
+      if (!recipe?.name) {
         setCheckingSave(false)
         return
       }
       try {
-        const response = await fetch('/api/recipes/save')
+        const response = await fetch('/api/recipes')
         if (response.ok) {
           const { recipes } = await response.json()
           const existing = recipes?.find((r: any) => 
@@ -84,12 +87,13 @@ export function RecipeDisplay({ recipe, onActionClick }: RecipeDisplayProps) {
         }
       } catch (e) {
         // Silently fail - user can still save
+        console.error('[RecipeDisplay] Failed to check if saved:', e)
       } finally {
         setCheckingSave(false)
       }
     }
     checkSaved()
-  }, [recipe.name])
+  }, [recipe?.name])
 
   const handleSave = async () => {
     if (savedId) return
@@ -279,6 +283,28 @@ export function RecipeDisplay({ recipe, onActionClick }: RecipeDisplayProps) {
   }
 
   // Regular View
+  // Handle error state
+  if (error) {
+    return (
+      <ToolErrorDisplay
+        error={error}
+        toolName="Recipe Generation"
+        onRetry={onActionClick ? () => onActionClick("Generate the recipe again") : undefined}
+      />
+    );
+  }
+
+  // Validate recipe structure
+  if (!recipe || !recipe.name) {
+    return (
+      <ToolErrorDisplay
+        error="The recipe data is incomplete or invalid. Please try generating a new recipe."
+        toolName="Recipe Display"
+        onRetry={onActionClick ? () => onActionClick("Generate a new recipe") : undefined}
+      />
+    );
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20, scale: 0.98 }}
@@ -472,10 +498,29 @@ export function RecipeDisplay({ recipe, onActionClick }: RecipeDisplayProps) {
                 savedId && "bg-emerald-500/20 text-emerald-400 border-emerald-500/30"
               )}
               onClick={handleSave}
-              disabled={saving || !!savedId}
+              disabled={saving || !!savedId || checkingSave}
             >
-              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : savedId ? <Check className="h-4 w-4" /> : <Save className="h-4 w-4" />}
-              {savedId ? "Saved" : "Save"}
+              {checkingSave ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Checking...
+                </>
+              ) : saving ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Saving...
+                </>
+              ) : savedId ? (
+                <>
+                  <Check className="h-4 w-4" />
+                  Saved
+                </>
+              ) : (
+                <>
+                  <Save className="h-4 w-4" />
+                  Save
+                </>
+              )}
             </Button>
             {onActionClick && (
               <Button 

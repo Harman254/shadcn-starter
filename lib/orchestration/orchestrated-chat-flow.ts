@@ -88,11 +88,12 @@ export class OrchestratedChatFlow {
       };
 
       // 2. Execute
-      const toolResults = await this.toolExecutor.executePlan(plan,
-        input.conversationHistory,
-        undefined,
-        undefined,
-        undefined,
+      const toolResults = await this.toolExecutor.executePlan(
+        plan,
+        undefined, // onStepStart
+        undefined, // onToolStart
+        undefined, // onToolFinish
+        input.conversationHistory, // chatMessages
         enhancedContext // Pass enhanced context with messages for tool execution
       );
 

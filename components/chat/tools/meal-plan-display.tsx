@@ -10,6 +10,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 import { getAllMealImages } from '@/lib/constants/meal-images'
+import { ToolErrorDisplay } from './tool-error-display'
 
 const MEAL_IMAGES = getAllMealImages();
 
@@ -38,11 +39,13 @@ interface MealPlanDisplayProps {
   // Accepts the tool output structure which contains days
   mealPlan: any
   onActionClick?: (action: string) => void
+  error?: string | { message?: string; error?: string; code?: string; metadata?: any }
 }
 
-export function MealPlanDisplay({ mealPlan, onActionClick }: MealPlanDisplayProps) {
+export function MealPlanDisplay({ mealPlan, onActionClick, error }: MealPlanDisplayProps) {
   const [saving, setSaving] = useState(false)
   const [savedId, setSavedId] = useState<string | null>(null)
+  const [checkingSave, setCheckingSave] = useState(true)
   const [expandedDay, setExpandedDay] = useState<number | null>(null)
   const [exporting, setExporting] = useState(false)
   const [exportFormats, setExportFormats] = useState<string[]>(['pdf'])
@@ -53,6 +56,35 @@ export function MealPlanDisplay({ mealPlan, onActionClick }: MealPlanDisplayProp
   useEffect(() => {
     setMounted(true)
   }, [])
+
+  // Check if meal plan is already saved on mount
+  useEffect(() => {
+    const checkSaved = async () => {
+      if (!mealPlan?.title) {
+        setCheckingSave(false)
+        return
+      }
+      try {
+        const response = await fetch('/api/meal-plans')
+        if (response.ok) {
+          const data = await response.json()
+          const mealPlans = data.mealPlans || data.mealPlan ? [data.mealPlan] : []
+          const existing = mealPlans.find((mp: any) => 
+            mp && mp.title && mp.title.toLowerCase().trim() === mealPlan.title.toLowerCase().trim()
+          )
+          if (existing) {
+            setSavedId(existing.id)
+          }
+        }
+      } catch (e) {
+        // Silently fail - user can still save
+        console.error('[MealPlanDisplay] Failed to check if saved:', e)
+      } finally {
+        setCheckingSave(false)
+      }
+    }
+    checkSaved()
+  }, [mealPlan?.title])
 
   // Fetch user's export formats on mount
   useEffect(() => {
@@ -185,6 +217,28 @@ export function MealPlanDisplay({ mealPlan, onActionClick }: MealPlanDisplayProp
     }
   }
 
+  // Handle error state
+  if (error) {
+    return (
+      <ToolErrorDisplay
+        error={error}
+        toolName="Meal Plan Generation"
+        onRetry={onActionClick ? () => onActionClick("Generate a meal plan again") : undefined}
+      />
+    );
+  }
+
+  // Validate mealPlan structure
+  if (!mealPlan || !mealPlan.days || !Array.isArray(mealPlan.days) || mealPlan.days.length === 0) {
+    return (
+      <ToolErrorDisplay
+        error="The meal plan data is incomplete or invalid. Please try generating a new meal plan."
+        toolName="Meal Plan Display"
+        onRetry={onActionClick ? () => onActionClick("Generate a new meal plan") : undefined}
+      />
+    );
+  }
+
   // Flatten meals from days for the grid view, or show day sections?
   // User design implies a flat list or at least a grid. 
   // Let's iterate days and show a section for each day if >1 day, or just the meals if 1 day.
@@ -242,17 +296,34 @@ export function MealPlanDisplay({ mealPlan, onActionClick }: MealPlanDisplayProp
           <Button 
             size="sm" 
             onClick={handleSave} 
-            disabled={saving || !!savedId}
+            disabled={saving || !!savedId || checkingSave}
             className={cn(
               "gap-1.5 transition-all",
               savedId ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200 border-emerald-200" : ""
             )}
             variant={savedId ? "outline" : "default"}
           >
-            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : 
-             savedId ? <Check className="w-4 h-4" /> : 
-             <Save className="w-4 h-4" />}
-            {savedId ? "Saved" : "Save Plan"}
+            {checkingSave ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Checking...
+              </>
+            ) : saving ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Saving...
+              </>
+            ) : savedId ? (
+              <>
+                <Check className="w-4 h-4" />
+                Saved
+              </>
+            ) : (
+              <>
+                <Save className="w-4 h-4" />
+                Save Plan
+              </>
+            )}
           </Button>
         </div>
       </div>

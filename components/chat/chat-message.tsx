@@ -24,6 +24,7 @@ import { MealPlanDisplay } from "./tools/meal-plan-display"
 import { GroceryListDisplay } from "./tools/grocery-list-display"
 import { NutritionDisplay } from "./tools/nutrition-display"
 import { RecipeDisplay } from "./tools/recipe-display"
+import { ChatErrorBoundary } from "./chat-error-boundary"
 import { PricingDisplay } from "./tools/pricing-display"
 import { MealSuggestions } from "./tools/meal-suggestions"
 import { OptimizeGroceryListDisplay } from "./tools/optimize-grocery-list-display"
@@ -534,15 +535,55 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
         messageText = 'Running...';
       }
 
-      // Customize message based on tool name
+      // Customize message based on tool name with time estimates
+      const toolTimeEstimates: Record<string, { min: number; max: number; unit: string }> = {
+        generateMealPlan: { min: 10, max: 30, unit: 'seconds' },
+        generateGroceryList: { min: 5, max: 15, unit: 'seconds' },
+        analyzeNutrition: { min: 3, max: 10, unit: 'seconds' },
+        analyzePantryImage: { min: 5, max: 20, unit: 'seconds' },
+        generateMealRecipe: { min: 5, max: 15, unit: 'seconds' },
+        optimizeGroceryList: { min: 8, max: 20, unit: 'seconds' },
+        modifyMealPlan: { min: 10, max: 25, unit: 'seconds' },
+        planFromInventory: { min: 8, max: 20, unit: 'seconds' },
+      };
+
       if (tool.toolName === 'generateMealPlan') {
-        messageText = status === 'running' ? 'Creating meal plan...' : 'Meal plan created';
+        messageText = status === 'running' 
+          ? 'Creating your personalized meal plan... (10-30s)' 
+          : 'Meal plan created';
       } else if (tool.toolName === 'generateGroceryList') {
-        messageText = status === 'running' ? 'Generating grocery list...' : 'Grocery list generated';
+        messageText = status === 'running' 
+          ? 'Generating grocery list... (5-15s)' 
+          : 'Grocery list generated';
       } else if (tool.toolName === 'analyzeNutrition') {
-        messageText = status === 'running' ? 'Analyzing nutrition...' : 'Nutrition analyzed';
+        messageText = status === 'running' 
+          ? 'Analyzing nutrition data... (3-10s)' 
+          : 'Nutrition analyzed';
       } else if (tool.toolName === 'analyzePantryImage') {
-        messageText = status === 'running' ? 'Analyzing image...' : 'Pantry analyzed';
+        messageText = status === 'running' 
+          ? 'Analyzing pantry image... (5-20s)' 
+          : 'Pantry analyzed';
+      } else if (tool.toolName === 'generateMealRecipe') {
+        messageText = status === 'running' 
+          ? 'Generating recipe... (5-15s)' 
+          : 'Recipe generated';
+      } else if (tool.toolName === 'optimizeGroceryList') {
+        messageText = status === 'running' 
+          ? 'Optimizing grocery list... (8-20s)' 
+          : 'Grocery list optimized';
+      } else if (tool.toolName === 'modifyMealPlan') {
+        messageText = status === 'running' 
+          ? 'Modifying meal plan... (10-25s)' 
+          : 'Meal plan modified';
+      } else if (tool.toolName === 'planFromInventory') {
+        messageText = status === 'running' 
+          ? 'Planning meals from inventory... (8-20s)' 
+          : 'Meal plan created';
+      } else {
+        const estimate = toolTimeEstimates[tool.toolName];
+        if (estimate && status === 'running') {
+          messageText = `Processing ${tool.toolName}... (${estimate.min}-${estimate.max}${estimate.unit})`;
+        }
       }
 
       tools.set(tool.toolCallId, {
@@ -875,10 +916,21 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
               transition={{ duration: 0.3 }}
               className="w-full"
             >
-              <MealPlanDisplay 
-                mealPlan={uiData.mealPlan} 
-                onActionClick={onActionClick} 
-              />
+              <ChatErrorBoundary
+                fallback={
+                  <div className="p-4 border border-destructive/50 rounded-lg bg-destructive/5">
+                    <p className="text-sm text-destructive">
+                      Failed to display meal plan. Please try generating a new one.
+                    </p>
+                  </div>
+                }
+              >
+                <MealPlanDisplay 
+                  mealPlan={uiData.mealPlan} 
+                  onActionClick={onActionClick}
+                  error={uiData.mealPlanError}
+                />
+              </ChatErrorBoundary>
             </motion.div>
           )}
           
@@ -998,10 +1050,21 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
               transition={{ duration: 0.3 }}
               className="w-full max-w-2xl mx-auto"
             >
-              <RecipeDisplay 
-                recipe={uiData.mealRecipe} 
-                onActionClick={onActionClick} 
-              />
+              <ChatErrorBoundary
+                fallback={
+                  <div className="p-4 border border-destructive/50 rounded-lg bg-destructive/5">
+                    <p className="text-sm text-destructive">
+                      Failed to display recipe. Please try generating a new one.
+                    </p>
+                  </div>
+                }
+              >
+                <RecipeDisplay 
+                  recipe={uiData.mealRecipe} 
+                  onActionClick={onActionClick}
+                  error={uiData.recipeError}
+                />
+              </ChatErrorBoundary>
             </motion.div>
           )}
           {/* Nutrition Analysis Display */}
@@ -1012,7 +1075,17 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
               transition={{ duration: 0.3 }}
               className="w-full max-w-2xl mx-auto"
             >
-              <NutritionDisplay nutrition={uiData.nutrition} onActionClick={onActionClick} />
+              <ChatErrorBoundary
+                fallback={
+                  <div className="p-4 border border-destructive/50 rounded-lg bg-destructive/5">
+                    <p className="text-sm text-destructive">
+                      Failed to display nutrition analysis. Please try again.
+                    </p>
+                  </div>
+                }
+              >
+                <NutritionDisplay nutrition={uiData.nutrition} onActionClick={onActionClick} />
+              </ChatErrorBoundary>
             </motion.div>
           )}
 

@@ -50,7 +50,13 @@ export const fetchUserPreferences = tool({
             );
         } catch (error) {
             console.error('[fetchUserPreferences] Error:', error);
-            return errorResponse('Failed to fetch preferences.', ErrorCode.INTERNAL_ERROR);
+            return errorResponse(
+                'Failed to fetch user preferences from database.',
+                ErrorCode.INTERNAL_ERROR,
+                true,
+                "I couldn't load your saved preferences right now. Don't worry - I'll use default settings and you can still create meal plans. Your preferences will be loaded automatically when available.",
+                ['Try refreshing the page', 'Your meal plans will still work without saved preferences']
+            );
         }
     },
 });
@@ -594,7 +600,14 @@ Return valid JSON.`,
             );
         } catch (error) {
             console.error('[analyzeNutrition] Error:', error);
-            return errorResponse('Failed to analyze nutrition.', ErrorCode.INTERNAL_ERROR, true);
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            return errorResponse(
+                `Nutrition analysis failed: ${errorMessage}`,
+                ErrorCode.INTERNAL_ERROR,
+                true,
+                "I had trouble analyzing the nutrition information. This might be due to missing ingredient data or a temporary issue. I'll retry automatically, or you can try again.",
+                ['Make sure your meal plan or recipe has complete ingredient lists', 'Try again in a moment', 'Check that all ingredients are spelled correctly']
+            );
         }
     }
 });
@@ -749,7 +762,13 @@ Return valid JSON.`,
 
         } catch (error) {
             console.error('[getGroceryPricing] Error:', error);
-            return errorResponse("Failed to estimate grocery prices.", ErrorCode.GENERATION_FAILED, true);
+            return errorResponse(
+                "Failed to estimate grocery prices from search results.",
+                ErrorCode.GENERATION_FAILED,
+                true,
+                "I couldn't fetch current grocery prices right now. This might be due to a temporary connection issue. I'll retry automatically, or you can try again in a moment.",
+                ['Prices are estimates and may vary by location', 'Try again in a few moments', 'Check your internet connection']
+            );
         }
     },
 });
@@ -1017,7 +1036,14 @@ Return JSON only.`,
 
         } catch (error) {
             console.error('[generateGroceryList] Error:', error);
-            return errorResponse("I had trouble generating the grocery list. Please try again in a moment.", ErrorCode.GENERATION_FAILED, true);
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            return errorResponse(
+                `Grocery list generation failed: ${errorMessage}`,
+                ErrorCode.GENERATION_FAILED,
+                true,
+                "I had trouble creating your grocery list. This might be because I couldn't find the meal plan or there was a temporary issue. I'll retry automatically, or you can try generating the list again.",
+                ['Make sure you have a saved meal plan', 'Try generating the meal plan again first', 'Check that all meals have ingredients listed']
+            );
         }
     },
 });
@@ -1292,7 +1318,13 @@ Items: ${JSON.stringify(itemsToOptimize)}
 
         } catch (error) {
             console.error('[optimizeGroceryList] Error:', error);
-            return errorResponse('Failed to optimize grocery list.', ErrorCode.INTERNAL_ERROR);
+            return errorResponse(
+                'Failed to optimize grocery list with pricing data.',
+                ErrorCode.INTERNAL_ERROR,
+                true,
+                "I couldn't optimize your grocery list right now. This might be because I couldn't access current pricing data. You can still use your original grocery list, or try optimizing again in a moment.",
+                ['Your original grocery list is still available', 'Try again in a few moments', 'Check your internet connection']
+            );
         }
     },
 });
@@ -1408,7 +1440,14 @@ Return valid JSON.`,
 
         } catch (error) {
             console.error('[swapMeal] Error:', error);
-            return errorResponse("Failed to swap meal.", ErrorCode.GENERATION_FAILED, true);
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            return errorResponse(
+                `Meal swap failed: ${errorMessage}`,
+                ErrorCode.GENERATION_FAILED,
+                true,
+                "I had trouble finding a replacement meal. This might be because I couldn't match your preferences or there was a temporary issue. I'll retry automatically, or you can try specifying a different meal to swap.",
+                ['Try specifying the exact meal name you want to replace', 'Make sure your meal plan is saved', 'Try again in a moment']
+            );
         }
     },
 });
@@ -1843,7 +1882,14 @@ Return valid JSON.`,
 
         } catch (error) {
             console.error('[generateMealRecipe] Error:', error);
-            return errorResponse("Failed to generate recipe.", ErrorCode.GENERATION_FAILED, true);
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            return errorResponse(
+                `Recipe generation failed: ${errorMessage}`,
+                ErrorCode.GENERATION_FAILED,
+                true,
+                "I had trouble generating that recipe. This might be because the dish name wasn't clear or there was a temporary issue. I'll retry automatically, or you can try rephrasing the recipe name.",
+                ['Try being more specific with the recipe name (e.g., "Classic Italian Pasta" instead of "Pasta")', 'Check your internet connection', 'Try again in a moment']
+            );
         }
     },
 });
@@ -2286,7 +2332,14 @@ export const updatePantry = tool({
             );
             return successResponse({ count: items.length }, `Added ${items.length} items.`);
         } catch (e) {
-            return errorResponse("Failed to update.", ErrorCode.INTERNAL_ERROR);
+            const errorMessage = e instanceof Error ? e.message : String(e);
+            return errorResponse(
+                `Pantry update failed: ${errorMessage}`,
+                ErrorCode.INTERNAL_ERROR,
+                true,
+                "I couldn't add those items to your pantry right now. This might be due to a database issue or invalid item data. I'll retry automatically, or you can try adding the items again.",
+                ['Make sure item names are valid', 'Check that quantities are properly formatted', 'Try again in a moment']
+            );
         }
     }
 });
@@ -2310,7 +2363,14 @@ export const saveMealPlan = tool({
             if (!result.success) return errorResponse(result.error || 'Failed', ErrorCode.INTERNAL_ERROR);
             return successResponse({ savedId: result.mealPlan?.id }, "Saved.");
         } catch (e) {
-            return errorResponse("Failed to save.", ErrorCode.INTERNAL_ERROR);
+            const errorMessage = e instanceof Error ? e.message : String(e);
+            return errorResponse(
+                `Save operation failed: ${errorMessage}`,
+                ErrorCode.INTERNAL_ERROR,
+                false,
+                "I couldn't save your meal plan right now. This might be due to invalid data or a database issue. Please check that all meals have names and ingredients, then try saving again.",
+                ['Make sure all meals have names and ingredients', 'Check your internet connection', 'Try refreshing the page and saving again']
+            );
         }
     }
 });
