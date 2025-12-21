@@ -42,12 +42,17 @@ export const proPlanExpirationWarning = inngest.createFunction(
     const results = await step.run("send-warnings", async () => {
       return Promise.allSettled(
         expiringSubscriptions.map(async (subscription) => {
+          // Ensure currentPeriodEnd is treated as a Date object
+          const expirationDate = new Date(subscription.currentPeriodEnd);
           const daysRemaining = Math.ceil(
-            (subscription.currentPeriodEnd.getTime() - Date.now()) /
+            (expirationDate.getTime() - Date.now()) /
               (1000 * 60 * 60 * 24)
           );
 
-          // Check if already notified recently (within 3 days)
+          // TODO: Check if already notified recently (within 3 days)
+          // This requires NotificationLog model in Prisma schema
+          // Uncomment once NotificationLog model is added:
+          /*
           const recentNotification = await prisma.notificationLog.findFirst({
             where: {
               userId: subscription.userID,
@@ -65,6 +70,7 @@ export const proPlanExpirationWarning = inngest.createFunction(
               reason: "recently_notified",
             };
           }
+          */
 
           await sendNotification({
             userId: subscription.userID,
@@ -74,7 +80,7 @@ export const proPlanExpirationWarning = inngest.createFunction(
               userName: subscription.user.name,
               daysRemaining,
               plan: subscription.plan,
-              expirationDate: subscription.currentPeriodEnd,
+              expirationDate: expirationDate,
             },
           });
 

@@ -130,18 +130,29 @@ async function createInAppNotification(
 
 /**
  * Log notification for analytics
+ * TODO: Uncomment once NotificationLog model is added to Prisma schema
  */
 async function logNotification(
   userId: string,
   type: string,
   channel: string
 ): Promise<void> {
-  await prisma.notificationLog.create({
-    data: {
-      userId,
-      type,
-      channel,
-    },
-  });
+  // TODO: Uncomment once NotificationLog model exists
+  /*
+  try {
+    await prisma.notificationLog.create({
+      data: {
+        userId,
+        type,
+        channel,
+      },
+    });
+  } catch (error) {
+    // NotificationLog model doesn't exist yet - log to console for now
+    console.log(`[Notification] ${type} sent via ${channel} to user ${userId}`);
+  }
+  */
+  // Temporary: Just log to console until NotificationLog model is added
+  console.log(`[Notification] ${type} sent via ${channel} to user ${userId}`);
 }
 
