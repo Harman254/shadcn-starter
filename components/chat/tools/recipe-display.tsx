@@ -21,7 +21,13 @@ export function RecipeDisplay({ recipe, onActionClick }: RecipeDisplayProps) {
   const [checkingSave, setCheckingSave] = useState(true)
   const [exporting, setExporting] = useState(false)
   const [exportFormats, setExportFormats] = useState<string[]>(['pdf'])
+  const [mounted, setMounted] = useState(false)
   const { toast } = useToast()
+
+  // Prevent hydration mismatch
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   // Fetch user's export formats on mount
   useEffect(() => {
@@ -483,7 +489,7 @@ export function RecipeDisplay({ recipe, onActionClick }: RecipeDisplayProps) {
             )}
           </div>
           
-          {savedId && exportFormats.length > 1 && (
+          {savedId && mounted && exportFormats.length > 1 && (
             <div className="flex items-center gap-2 mt-3">
               {exportFormats.includes('csv') && (
                 <Button
@@ -518,7 +524,7 @@ export function RecipeDisplay({ recipe, onActionClick }: RecipeDisplayProps) {
                 size="lg"
                 variant="outline"
                 className="h-12 rounded-xl font-semibold gap-2 bg-white/5 border-white/10 text-white hover:bg-white/10"
-                onClick={() => onActionClick(`Generate a grocery list for ${recipe.name}`)}
+                onClick={() => onActionClick(`Generate a grocery list for the recipe "${recipe.name}"`)}
               >
                 <ShoppingCart className="h-4 w-4" /> Grocery List
               </Button>
@@ -526,7 +532,7 @@ export function RecipeDisplay({ recipe, onActionClick }: RecipeDisplayProps) {
                 size="lg"
                 variant="outline"
                 className="h-12 rounded-xl font-semibold gap-2 bg-white/5 border-white/10 text-white hover:bg-white/10"
-                onClick={() => onActionClick(`Analyze the nutrition of ${recipe.name}`)}
+                onClick={() => onActionClick(`Analyze nutrition for the recipe "${recipe.name}"`)}
               >
                 <Flame className="h-4 w-4" /> Nutrition
               </Button>

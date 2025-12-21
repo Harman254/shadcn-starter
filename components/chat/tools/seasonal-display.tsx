@@ -189,7 +189,7 @@ export function SeasonalDisplay({ data, onActionClick }: SeasonalDisplayProps) {
                 className="h-14 rounded-2xl font-semibold text-base gap-3 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white shadow-lg shadow-emerald-500/25"
                 onClick={() => {
                   const seasonalItems = data.seasonalItems.map(item => item.name).join(', ');
-                  onActionClick(`Create a meal plan using these seasonal ingredients: ${seasonalItems}`);
+                  onActionClick(`Generate a meal plan using these seasonal ingredients: ${seasonalItems}`);
                 }}
               >
                 <Calendar className="h-5 w-5" /> Create Plan
@@ -201,7 +201,7 @@ export function SeasonalDisplay({ data, onActionClick }: SeasonalDisplayProps) {
                 className="h-14 rounded-2xl font-semibold text-base gap-3 bg-white/5 border-white/10 text-white hover:bg-white/10"
                 onClick={() => {
                   const seasonalItems = data.seasonalItems.map(item => item.name).join(', ');
-                  onActionClick(`Generate a grocery list for these seasonal items: ${seasonalItems}`);
+                  onActionClick(`Generate a grocery list for these seasonal ingredients: ${seasonalItems}`);
                 }}
               >
                 <ShoppingCart className="h-5 w-5" /> Shopping List

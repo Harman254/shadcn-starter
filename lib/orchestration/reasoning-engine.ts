@@ -67,15 +67,26 @@ export class ReasoningEngine {
         CRITICAL:
         - If the user asks for a meal plan, call 'generateMealPlan'.
         - If the user asks for a grocery list, call 'generateGroceryList'.
-          * If for a meal plan, pass '{"source": "mealplan", "fromContext": "true"}' unless a specific ID is known.
-          * If for a recipe, pass '{"source": "recipe"}'.
-        - If the user asks for nutrition, call 'analyzeNutrition'. Do NOT invent a mealPlanId. Leave args empty to use context.
+          * If user says "for this meal plan", "for this plan", "for the meal plan", pass '{"source": "mealplan", "fromContext": "true"}' to use the current meal plan context.
+          * If user says "for [recipe name]" or "for the recipe", pass '{"source": "recipe", "recipeName": "[recipe name]"}'.
+          * If no context is specified, leave args empty to use context from conversation.
+        - If the user asks for nutrition analysis, call 'analyzeNutrition'.
+          * If user says "for this meal plan", "for this plan", "Analyze nutrition for this meal plan", leave args empty to use current meal plan context.
+          * If user says "for [recipe name]" or "Analyze nutrition for the recipe", pass '{"recipeName": "[recipe name]"}'.
+          * Do NOT invent a mealPlanId. Leave args empty to use context.
         - If the user asks for pricing, call 'getGroceryPricing'. Do NOT invent a mealPlanId. Leave args empty to use context.
+        - If the user asks to optimize a grocery list (e.g., "Optimize this grocery list", "Optimize this grocery list for better prices"), call 'optimizeGroceryList'. Leave args empty to use current grocery list context.
         - **Recipe Requests**:
           * **Single Dish**: If the user asks for a specific dish (e.g. "Chapati", "Sushi", "How to make X"), call 'generateMealRecipe'.
             - Example: "Chapati" -> Call 'generateMealRecipe' with args '{"name": "Chapati"}'.
           * **Search/List**: If the user asks for ideas or a list (e.g. "Find me pasta recipes", "Breakfast ideas"), call 'searchRecipes'.
             - Example: "Pasta recipes" -> Call 'searchRecipes' with args '{"query": "pasta recipes", "count": 3}'.
+        - **Pantry Management**:
+          * If the user wants to add items to their pantry (e.g. "Add these items to my pantry", "Add to pantry", "Add these X items to my pantry tracking"), call 'updatePantry'.
+          * Extract items from the message. Items may be formatted as "Item Name (quantity)" or just listed.
+          * Parse items into an array of objects with: name (required), category (optional), quantity (optional), expiryEstimate (optional).
+          * Example: "Add these items to my pantry: Chicken (1 cup), Rice (2 cups), Broccoli (1 head)" -> Call 'updatePantry' with args '{"items": [{"name": "Chicken", "quantity": "1 cup"}, {"name": "Rice", "quantity": "2 cups"}, {"name": "Broccoli", "quantity": "1 head"}]}'.
+          * If items are from a pantry analysis, use the exact item data from the analysis.
         - **Ingredient-Based Meal Suggestions**:
           * If the user asks for meal suggestions based on ingredients they have (e.g. "Suggest meals I can cook with these ingredients: X, Y, Z", "What can I make with...", "I have X, Y, Z..."), call 'planFromInventory'.
           * Extract the ingredient list from the message. Ingredients may be listed after a colon (":") or in the message text.

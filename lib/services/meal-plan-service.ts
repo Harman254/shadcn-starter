@@ -113,6 +113,7 @@ export async function saveMealPlanService(
     const coverImageUrl = rawCoverImageUrl && isValidUrl(rawCoverImageUrl) ? rawCoverImageUrl : null;
 
     // Use transaction for atomicity - all or nothing
+    // Increase timeout to 30 seconds for large meal plans
     const savedMealPlan = await prisma.$transaction(async (tx) => {
       // Create the main MealPlan record
       const mealPlan = await tx.mealPlan.create({
@@ -144,51 +145,83 @@ export async function saveMealPlanService(
         // Create Meal records for this day
         for (let mealIndex = 0; mealIndex < day.meals.length; mealIndex++) {
           const meal = day.meals[mealIndex];
+          
+          // Validate required fields
+          if (!meal || !meal.name) {
+            console.error(`[saveMealPlanService] Invalid meal at day ${day.day}, index ${mealIndex}:`, meal);
+            throw new MealPlanSaveError(`Invalid meal data: missing name`);
+          }
+
           // Use AI-provided mealType if available, otherwise derive from index
           const mealType = meal.mealType || getMealType(mealIndex, input.mealsPerDay);
 
+          // Ensure all required fields are present and valid
+          const mealName = String(meal.name || '').trim();
+          const mealDescription = String(meal.description || '').trim();
+          const mealInstructions = String(meal.instructions || '').trim();
+          const mealIngredients = Array.isArray(meal.ingredients) 
+            ? meal.ingredients.map((ing: any) => String(ing || '').trim()).filter((ing: string) => ing.length > 0)
+            : [];
+          const mealCalories = typeof meal.calories === 'number' && meal.calories > 0 
+            ? meal.calories 
+            : calculateCalories(mealIngredients);
+          const mealImageUrl = (meal.imageUrl && typeof meal.imageUrl === 'string' && isValidUrl(meal.imageUrl.trim())) 
+            ? meal.imageUrl.trim() 
+            : null;
+
+          if (!mealName) {
+            throw new MealPlanSaveError(`Invalid meal: name is required`);
+          }
+
+          if (mealIngredients.length === 0) {
+            console.warn(`[saveMealPlanService] Meal "${mealName}" has no ingredients`);
+          }
+
           await tx.meal.create({
             data: {
-              name: meal.name.trim(),
+              name: mealName,
               type: mealType,
-              description: meal.description.trim(),
-              // Use AI-provided calories if available, otherwise fallback to heuristic
-              calories: meal.calories || calculateCalories(meal.ingredients),
-              ingredients: meal.ingredients.map(ing => ing.trim()).filter(ing => ing.length > 0),
-              // Validate imageUrl before saving
-              imageUrl: (meal.imageUrl?.trim() && isValidUrl(meal.imageUrl.trim())) ? meal.imageUrl.trim() : null,
+              description: mealDescription,
+              calories: mealCalories,
+              ingredients: mealIngredients,
+              imageUrl: mealImageUrl,
               dayMealId: dayMeal.id,
-              instructions: meal.instructions.trim(),
+              instructions: mealInstructions,
             },
           });
         }
       }
 
-      // Fetch the complete meal plan with all relations
-      const completeMealPlan = await tx.mealPlan.findUnique({
-        where: { id: mealPlan.id },
-        include: {
-          days: {
-            include: {
-              meals: {
-                orderBy: {
-                  type: 'asc', // Order meals by type (breakfast, lunch, dinner, snack)
-                },
+      // Return just the mealPlan ID - we'll fetch the complete plan outside the transaction
+      return mealPlan;
+    }, {
+      maxWait: 30000, // Maximum time to wait for a transaction slot (30 seconds)
+      timeout: 30000, // Maximum time the transaction can run (30 seconds)
+    });
+
+    // Fetch the complete meal plan with all relations OUTSIDE the transaction
+    // This reduces transaction time and prevents timeout errors
+    const completeMealPlan = await prisma.mealPlan.findUnique({
+      where: { id: savedMealPlan.id },
+      include: {
+        days: {
+          include: {
+            meals: {
+              orderBy: {
+                type: 'asc', // Order meals by type (breakfast, lunch, dinner, snack)
               },
             },
-            orderBy: {
-              date: 'asc', // Order days by date
-            },
+          },
+          orderBy: {
+            date: 'asc', // Order days by date
           },
         },
-      });
-
-      if (!completeMealPlan) {
-        throw new MealPlanSaveError('Failed to retrieve saved meal plan');
-      }
-
-      return completeMealPlan;
+      },
     });
+
+    if (!completeMealPlan) {
+      throw new MealPlanSaveError('Failed to retrieve saved meal plan');
+    }
 
     // Increment meal plan generation count (outside transaction)
     // This is non-critical, so we don't fail the save if it fails

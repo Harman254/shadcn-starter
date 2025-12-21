@@ -28,7 +28,7 @@ interface Suggestion {
 const defaultSuggestions: Suggestion[] = [
   {
     heading: 'Week Meal Plan',
-    message: 'Create a healthy 7-day meal plan for weight loss with 3 meals per day',
+    message: 'Create a healthy 5-day meal plan for weight loss with 3 meals per day',
     iconName: 'ChefHat',
   },
   {

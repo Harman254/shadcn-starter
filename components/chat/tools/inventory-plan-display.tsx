@@ -230,7 +230,7 @@ export function InventoryPlanDisplay({ data, availableIngredients, onActionClick
                 className="h-14 rounded-2xl font-semibold text-base gap-3 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white shadow-lg shadow-cyan-500/25"
                 onClick={() => {
                   const mealNames = data.possibleMeals.map(m => m.name).join(', ');
-                  onActionClick(`Create a meal plan with these meals: ${mealNames}`);
+                  onActionClick(`Generate a meal plan with these meals: ${mealNames}`);
                 }}
               >
                 <Calendar className="h-5 w-5" /> Create Plan

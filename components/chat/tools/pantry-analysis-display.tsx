@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
-import { Plus, Check, Search, Calendar, Package, ChefHat } from "lucide-react"
+import { Plus, Check, Search, Calendar, Package, ChefHat, Loader2 } from "lucide-react"
 import { useState } from "react"
 import { motion } from "framer-motion"
 import { useToast } from "@/hooks/use-toast"
@@ -36,21 +36,39 @@ export function PantryAnalysisDisplay({ data, onActionClick }: PantryAnalysisDis
   const { toast } = useToast()
 
   const handleAddToPantry = async () => {
-    if (added) return
+    if (added || loading) return
 
     setLoading(true)
     try {
+      // Use onActionClick to trigger the chat flow which will call updatePantry tool
       if (onActionClick) {
-        onActionClick(`Add these ${items.length} items to my pantry tracking`)
+        // Format the message to trigger updatePantry tool
+        // Include item details in a format the AI can parse
+        const itemList = items.map(i => {
+          const parts = [i.name]
+          if (i.quantity) parts.push(`(${i.quantity})`)
+          if (i.category) parts.push(`[${i.category}]`)
+          return parts.join(' ')
+        }).join(', ')
+        
+        // Clear message that will trigger updatePantry tool
+        onActionClick(`Add these ${items.length} items to my pantry: ${itemList}`)
+        
+        // Show immediate feedback
+        setAdded(true)
+        toast({
+          title: "Adding items to pantry",
+          description: `Adding ${items.length} items to your pantry tracking...`,
+        })
       }
-      
-      setAdded(true)
-      toast({
-        title: "Items added to queue",
-        description: "Your pantry is being updated.",
-      })
     } catch (error) {
       console.error("Failed to add items", error)
+      toast({
+        title: "Failed to add items",
+        description: error instanceof Error ? error.message : "Please try again.",
+        variant: "destructive",
+      })
+      setAdded(false)
     } finally {
       setLoading(false)
     }
@@ -59,6 +77,7 @@ export function PantryAnalysisDisplay({ data, onActionClick }: PantryAnalysisDis
   const handleGetMealSuggestions = () => {
     if (onActionClick) {
       const ingredientList = items.map(item => item.name).join(', ')
+      // Use planFromInventory tool for better meal suggestions
       onActionClick(`Suggest meals I can cook with these ingredients: ${ingredientList}`)
     }
   }
@@ -97,9 +116,20 @@ export function PantryAnalysisDisplay({ data, onActionClick }: PantryAnalysisDis
       </CardHeader>
       
       <CardContent>
-        <ScrollArea className="h-[280px] pr-4">
-          <div className="space-y-3">
-            {items.map((item, index) => (
+        {items.length === 0 ? (
+          <div className="py-8 text-center">
+            <Package className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
+            <p className="text-muted-foreground font-medium">
+              No food items detected in this image.
+            </p>
+            <p className="text-sm text-muted-foreground/70 mt-2">
+              Please upload an image of your pantry, fridge, or ingredients.
+            </p>
+          </div>
+        ) : (
+          <ScrollArea className="h-[280px] pr-4">
+            <div className="space-y-3">
+              {items.map((item, index) => (
               <motion.div 
                 key={index}
                 initial={{ opacity: 0, x: -20 }}
@@ -130,21 +160,26 @@ export function PantryAnalysisDisplay({ data, onActionClick }: PantryAnalysisDis
                   {item.category}
                 </Badge>
               </motion.div>
-            ))}
-          </div>
-        </ScrollArea>
+              ))}
+            </div>
+          </ScrollArea>
+        )}
 
-        <Separator className="my-4" />
+        {items.length > 0 && <Separator className="my-4" />}
 
         <div className="flex gap-2">
           <Button 
             className="flex-1 font-medium shadow-sm active:scale-95 transition-all" 
             size="lg"
             onClick={handleAddToPantry}
-            disabled={added || loading}
+            disabled={added || loading || items.length === 0}
             variant={added ? "outline" : "default"}
           >
-            {added ? (
+            {loading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Adding...
+              </>
+            ) : added ? (
               <>
                 <Check className="mr-2 h-4 w-4" /> Added to Pantry
               </>
@@ -158,6 +193,7 @@ export function PantryAnalysisDisplay({ data, onActionClick }: PantryAnalysisDis
             className="flex-1 font-medium shadow-sm active:scale-95 transition-all" 
             size="lg"
             onClick={handleGetMealSuggestions}
+            disabled={items.length === 0}
             variant="outline"
           >
             <ChefHat className="mr-2 h-4 w-4" /> Get Meal Ideas

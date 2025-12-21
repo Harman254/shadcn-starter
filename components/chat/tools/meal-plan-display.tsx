@@ -9,18 +9,9 @@ import { useRouter } from "next/navigation"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
+import { getAllMealImages } from '@/lib/constants/meal-images'
 
-// Cloudinary images for random selection
-const MEAL_IMAGES = [
-  "https://res.cloudinary.com/dcidanigq/image/upload/v1742112002/samples/breakfast.jpg", // Breakfast
-  "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&q=80", // Lunch
-  "https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=800&q=80", // Dinner
-  "https://images.unsplash.com/photo-1543339308-43e59d6b73a6?w=800&q=80", // Snack
-  "https://images.unsplash.com/photo-1499028344343-cd173ffc68a9?w=800&q=80", // Burger
-  "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=800&q=80", // Salad
-  "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=800&q=80", // Pizza
-  "https://images.unsplash.com/photo-1604908176997-125f25cc6f3d?w=800&q=80", // Chicken
-]
+const MEAL_IMAGES = getAllMealImages();
 
 // Meal type colors from reference
 const mealTypeColors: Record<string, string> = {
@@ -55,7 +46,13 @@ export function MealPlanDisplay({ mealPlan, onActionClick }: MealPlanDisplayProp
   const [expandedDay, setExpandedDay] = useState<number | null>(null)
   const [exporting, setExporting] = useState(false)
   const [exportFormats, setExportFormats] = useState<string[]>(['pdf'])
+  const [mounted, setMounted] = useState(false)
   const router = useRouter()
+
+  // Prevent hydration mismatch
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   // Fetch user's export formats on mount
   useEffect(() => {
@@ -99,13 +96,15 @@ export function MealPlanDisplay({ mealPlan, onActionClick }: MealPlanDisplayProp
     }, 0) || 0
   }, [mealPlan.days])
 
-  // Generate random images for each meal on mount (stable across re-renders)
+  // Generate fallback images for meals that don't have imageUrl (stable across re-renders)
+  // Note: We prefer meal.imageUrl from the AI-generated meal plan, but provide fallbacks
   const mealImages = useMemo(() => {
     const images: Record<string, string> = {}
     mealPlan.days.forEach((day: any, dIndex: number) => {
-      day.meals.forEach((_: any, mIndex: number) => {
+      day.meals.forEach((meal: any, mIndex: number) => {
         const key = `${dIndex}-${mIndex}`
-        images[key] = MEAL_IMAGES[Math.floor(Math.random() * MEAL_IMAGES.length)]
+        // Use meal.imageUrl if available (from AI generation), otherwise generate a fallback
+        images[key] = meal.imageUrl || MEAL_IMAGES[Math.floor(Math.random() * MEAL_IMAGES.length)]
       })
     })
     return images
@@ -212,7 +211,7 @@ export function MealPlanDisplay({ mealPlan, onActionClick }: MealPlanDisplayProp
             <Wand2 className="w-3 h-3 mr-1" />
             AI Generated
           </Badge>
-          {savedId && exportFormats.length > 1 && (
+          {savedId && mounted && exportFormats.length > 1 && (
             <div className="flex items-center gap-1">
               {exportFormats.includes('csv') && (
                 <Button
@@ -302,7 +301,7 @@ export function MealPlanDisplay({ mealPlan, onActionClick }: MealPlanDisplayProp
                           >
                             <div className="relative h-32 overflow-hidden">
                               <img
-                                src={mealImages[mealId] || MEAL_IMAGES[0]}
+                                src={meal.imageUrl || mealImages[mealId] || MEAL_IMAGES[0]}
                                 alt={meal.name}
                                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                               />
@@ -362,7 +361,7 @@ export function MealPlanDisplay({ mealPlan, onActionClick }: MealPlanDisplayProp
             variant="outline" 
             size="sm"
             className="flex-1 gap-2 border-dashed border-border hover:border-primary/50"
-            onClick={() => onActionClick("Generate a grocery list for this plan")}
+            onClick={() => onActionClick("Generate a grocery list for this meal plan")}
           >
             <ShoppingCart className="w-4 h-4" />
             Shopping List
@@ -371,7 +370,7 @@ export function MealPlanDisplay({ mealPlan, onActionClick }: MealPlanDisplayProp
             variant="ghost" 
             size="sm"
             className="flex-1 gap-2"
-            onClick={() => onActionClick("Analyze the nutrition of this meal plan")}
+            onClick={() => onActionClick("Analyze nutrition for this meal plan")}
           >
             <TrendingUp className="w-4 h-4" />
             Nutrition
@@ -380,7 +379,7 @@ export function MealPlanDisplay({ mealPlan, onActionClick }: MealPlanDisplayProp
             variant="ghost" 
             size="sm"
             className="flex-1 gap-2"
-            onClick={() => onActionClick("Create a meal prep timeline for this plan")}
+            onClick={() => onActionClick("Create a prep timeline for this meal plan")}
           >
             <Timer className="w-4 h-4" />
             Timeline

@@ -170,7 +170,7 @@ export function OptimizeGroceryListDisplay({ optimization, onActionClick }: Opti
             <Button
               size="lg"
               className="w-full h-14 rounded-2xl font-semibold text-base gap-3 bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-black shadow-lg shadow-amber-500/25"
-              onClick={() => onActionClick("Update my grocery list with these optimized items")}
+              onClick={() => onActionClick("Apply these grocery list optimizations and update my list")}
             >
               <RefreshCw className="h-5 w-5" /> Apply Optimizations
             </Button>

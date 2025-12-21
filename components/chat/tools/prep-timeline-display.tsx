@@ -262,7 +262,7 @@ export function PrepTimelineDisplay({ data, recipes, onActionClick }: PrepTimeli
                 size="lg"
                 variant="outline"
                 className="h-12 rounded-xl font-semibold gap-2 bg-white/5 border-white/10 text-white hover:bg-white/10"
-                onClick={() => onActionClick("Show me the meal plan for this prep timeline")}
+                onClick={() => onActionClick("Show me the meal plan associated with this prep timeline")}
               >
                 <Calendar className="h-4 w-4" /> View Plan
               </Button>
@@ -271,7 +271,7 @@ export function PrepTimelineDisplay({ data, recipes, onActionClick }: PrepTimeli
                 size="lg"
                 variant="outline"
                 className="h-12 rounded-xl font-semibold gap-2 bg-white/5 border-white/10 text-white hover:bg-white/10"
-                onClick={() => onActionClick("Generate a grocery list for this prep timeline")}
+                onClick={() => onActionClick("Generate a grocery list for the meals in this prep timeline")}
               >
                 <ShoppingCart className="h-4 w-4" /> Grocery List
               </Button>

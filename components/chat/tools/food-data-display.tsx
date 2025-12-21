@@ -423,7 +423,7 @@ export function FoodDataDisplay({ data, onActionClick }: FoodDataDisplayProps) {
                 variant="outline" 
                 size="sm" 
                 className="gap-2"
-                onClick={() => onActionClick(`Recipes using ${data.foodItem || data.query}`)}
+                onClick={() => onActionClick(`Find recipes that use ${data.foodItem || data.query}`)}
               >
                 <Drumstick className="h-4 w-4" /> Find Recipes
               </Button>
@@ -442,7 +442,7 @@ export function FoodDataDisplay({ data, onActionClick }: FoodDataDisplayProps) {
                   variant="outline" 
                   size="sm" 
                   className="gap-2"
-                  onClick={() => onActionClick(`Show me substitutes for ${data.foodItem || data.query}`)}
+                  onClick={() => onActionClick(`Show me ingredient substitutes for ${data.foodItem || data.query}`)}
                 >
                   <Repeat className="h-4 w-4" /> Substitutes
                 </Button>
