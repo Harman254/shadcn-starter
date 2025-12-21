@@ -44,7 +44,7 @@ export function ChatPanel({
   const setCurrentSession = useChatStore((state) => state.setCurrentSession);
   const updateSessionTitle = useChatStore((state) => state.updateSessionTitle);
   
-  // Auth
+  // Auth - hooks must be called unconditionally
   const { data: session } = useSession();
   const isAuthenticated = !!session?.user;
   const { open: openAuthModal } = useAuthModal();
@@ -70,13 +70,26 @@ export function ChatPanel({
       try {
         const stored = localStorage.getItem('chat-storage');
         if (stored) {
-          const parsed = JSON.parse(stored);
-          const storedSessionId = parsed?.state?.currentSessionId;
-          if (storedSessionId) {
-            lockedSessionRef.current = storedSessionId;
+          try {
+            const parsed = JSON.parse(stored);
+            const storedSessionId = parsed?.state?.currentSessionId;
+            if (storedSessionId && typeof storedSessionId === 'string') {
+              lockedSessionRef.current = storedSessionId;
+            }
+          } catch (parseError) {
+            // Invalid JSON in localStorage - ignore and continue
+            if (process.env.NODE_ENV === 'development') {
+              console.warn('[ChatPanel] Failed to parse localStorage chat-storage');
+            }
           }
         }
-      } catch (e) { /* Ignore */ }
+      } catch (e) {
+        // localStorage might be disabled (private browsing, etc.)
+        // Continue without localStorage - session will be created fresh
+        if (process.env.NODE_ENV === 'development') {
+          console.warn('[ChatPanel] localStorage access failed (normal in private browsing)');
+        }
+      }
     }
 
     // Determine session ID
@@ -109,21 +122,21 @@ export function ChatPanel({
     }
   }, [currentSessionId, finalSessionId]);
 
-  // Get initial messages from store
+  // Get initial messages from store - use selector hook for reactivity
   const storeMessages = useChatStore((state) => {
     if (!finalSessionId) return EMPTY_MESSAGES;
     return state.sessions[finalSessionId]?.messages || EMPTY_MESSAGES;
   });
 
-  // Sync with database
+  // Sync with database - only when session is ready
   const { saveToDatabase, clearFromDatabase } = useChatSync(
-    isAuthenticated ? finalSessionId : null, 
+    isAuthenticated && finalSessionId ? finalSessionId : null, 
     chatType
   );
 
-  // Offline chat
+  // Offline chat - only when session is ready
   const { queueMessage } = useOfflineChat({
-    sessionId: finalSessionId,
+    sessionId: finalSessionId || null, // Convert undefined to null
     chatType,
     onMessageQueued: (messageId) => {
       toast({ title: 'Message queued', description: 'Will send when online.' });
@@ -131,13 +144,14 @@ export function ChatPanel({
     onMessageSynced: (messageId) => logger.log('Synced:', messageId),
   });
 
-  // Vercel AI SDK useChat
+  // Vercel AI SDK useChat - CRITICAL: Initialize with safe defaults
+  // Always provide body object to prevent useChat from crashing
   const { messages, input, handleInputChange, handleSubmit, isLoading, setMessages, append, reload, data } = useChat({
     api: '/api/chat',
     id: finalSessionId || undefined, // Convert null to undefined for useChat
     initialMessages: storeMessages,
     body: {
-      sessionId: finalSessionId || undefined, // Convert null to undefined
+      sessionId: finalSessionId || undefined, // API will handle undefined gracefully
       chatType,
       preferencesSummary,
     },
@@ -261,12 +275,21 @@ export function ChatPanel({
   });
 
   // Sync store messages to useChat when session changes
-   // CRITICAL: Don't sync during streaming or we'll overwrite the streaming message!
-useEffect(() => {
-if (!isLoading && !isUserSubmittingRef.current) {
-setMessages(storeMessages);
-}
-}, [finalSessionId, storeMessages, isLoading, setMessages]);
+  // CRITICAL: Don't sync during streaming or we'll overwrite the streaming message!
+  // Also don't sync if finalSessionId is not ready yet
+  useEffect(() => {
+    if (!finalSessionId) return; // Wait for session to be initialized
+    if (!isLoading && !isUserSubmittingRef.current) {
+      try {
+        setMessages(storeMessages);
+      } catch (error) {
+        // Silently handle errors - useChat might not be ready yet
+        if (process.env.NODE_ENV === 'development') {
+          console.warn('[ChatPanel] Failed to sync messages:', error);
+        }
+      }
+    }
+  }, [finalSessionId, storeMessages, isLoading, setMessages]);
 
 
   // We need to override the default submit handler to use append() so we can control the ID
@@ -340,6 +363,19 @@ setMessages(storeMessages);
     setMessages([]); // Clear useChat state
     toast({ title: 'Chat cleared' });
   }, [finalSessionId, clearSession, clearFromDatabase, toast, setMessages]);
+
+  // Show loading state while session is being initialized
+  // All hooks must be called, but we can conditionally render content
+  if (!finalSessionId) {
+    return (
+      <div className="flex flex-col h-full w-full items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="h-8 w-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+          <p className="text-sm text-muted-foreground">Initializing chat...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <motion.div 

@@ -36,6 +36,7 @@ import { Button } from '@/components/ui/button';
 import { UserPreference } from '@/types';
 import { cn } from '@/lib/utils';
 import { useChatStore } from '@/store/chat-store';
+import { ChatErrorBoundary } from './chat-error-boundary';
 
 
 interface ChatPageClientProps {
@@ -125,7 +126,9 @@ export function ChatPageClient({ preferences = [], preferencesSummary = '' }: Ch
 
         {/* Chat Area */}
         <div className="flex-1 relative min-h-0">
-           <ChatPanel chatType="context-aware" preferencesSummary={preferencesSummary} />
+          <ChatErrorBoundary>
+            <ChatPanel chatType="context-aware" preferencesSummary={preferencesSummary} />
+          </ChatErrorBoundary>
         </div>
       </div>
     </div>

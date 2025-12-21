@@ -75,16 +75,28 @@ export function EmptyScreen({ onExampleClick, requireAuth = false }: EmptyScreen
     try {
       const response = await fetch('/api/suggestions', {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify({ context: '' }),
       });
+      
       if (response.ok) {
         const data = await response.json();
-        if (data.suggestions && Array.isArray(data.suggestions)) {
+        if (data.suggestions && Array.isArray(data.suggestions) && data.suggestions.length > 0) {
           setSuggestions(data.suggestions);
+        }
+      } else {
+        // API endpoint might not exist - use defaults silently
+        if (process.env.NODE_ENV === 'development') {
+          console.warn('[EmptyScreen] Suggestions API returned:', response.status);
         }
       }
     } catch (error) {
-      console.error('Failed to fetch suggestions:', error);
+      // Silently handle errors - use default suggestions
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('[EmptyScreen] Failed to fetch suggestions:', error);
+      }
     } finally {
       setIsLoading(false);
     }
