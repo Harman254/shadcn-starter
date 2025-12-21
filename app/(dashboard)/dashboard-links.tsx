@@ -31,6 +31,12 @@ const dashboardLinks = [
     href: "/meal-plans",
     icon: Utensils,
   },
+  // {
+  //   id: 20,
+  //   name: "Fitness",
+  //   href: "/fitness",
+  //   icon: Utensils,
+  // },
   {
     id: 3,
     name: "Analytics",
@@ -41,6 +47,12 @@ const dashboardLinks = [
     id: 4,
     name: "Preferences",
     href: "/dashboard/preferences",
+    icon: Sliders,
+  },
+  {
+    id: 21,
+    name: "Usage",
+    href: "/dashboard/usage",
     icon: Sliders,
   },
   {
