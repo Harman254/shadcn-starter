@@ -340,7 +340,7 @@ export function NutritionDisplay({ nutrition, onActionClick }: NutritionDisplayP
               <Button
                 size="lg"
                 className="flex-1 rounded-2xl font-semibold gap-2 bg-gradient-to-r from-blue-500 to-violet-500 hover:from-blue-600 hover:to-violet-600 text-white shadow-lg shadow-blue-500/25"
-                onClick={() => onActionClick("Generate a meal plan with these nutritional targets")}
+                onClick={() => onActionClick("Generate a meal plan that meets these nutritional targets")}
               >
                 <Calendar className="h-4 w-4" /> Use as Target
               </Button>
@@ -349,7 +349,7 @@ export function NutritionDisplay({ nutrition, onActionClick }: NutritionDisplayP
                 size="lg"
                 variant="outline"
                 className="flex-1 rounded-2xl font-semibold gap-2 bg-white/5 border-white/10 text-white hover:bg-white/10"
-                onClick={() => onActionClick("Explain this nutrition data in simple terms")}
+                onClick={() => onActionClick("Explain this nutrition analysis in simple terms")}
               >
                 <MessageSquare className="h-4 w-4" /> Explain
               </Button>

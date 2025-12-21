@@ -53,20 +53,39 @@ export const MealItem = ({ meal, onViewRecipe, onSwapMeal }: MealItemProps) => {
             {meal.imageUrl ? (
               <div className="relative mb-6 group/image">
                 <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent rounded-xl z-10" />
-                <CldImage
-                  width={400}
-                  height={256}
-                  src={meal.imageUrl}
-                  alt={meal.name}
-                  className="
-                    w-full h-56 object-cover rounded-xl 
-                    border-2 border-white/20 dark:border-white/10
-                    shadow-2xl shadow-black/10 dark:shadow-black/30
-                    group-hover/image:scale-105 
-                    transition-all duration-500 ease-out
-                    ring-1 ring-black/5 dark:ring-white/5
-                  "
-                />
+                {meal.imageUrl.includes('cloudinary.com') ? (
+                  <CldImage
+                    width={400}
+                    height={256}
+                    src={meal.imageUrl}
+                    alt={meal.name}
+                    className="
+                      w-full h-56 object-cover rounded-xl 
+                      border-2 border-white/20 dark:border-white/10
+                      shadow-2xl shadow-black/10 dark:shadow-black/30
+                      group-hover/image:scale-105 
+                      transition-all duration-500 ease-out
+                      ring-1 ring-black/5 dark:ring-white/5
+                    "
+                  />
+                ) : (
+                  <img
+                    src={meal.imageUrl}
+                    alt={meal.name}
+                    className="
+                      w-full h-56 object-cover rounded-xl 
+                      border-2 border-white/20 dark:border-white/10
+                      shadow-2xl shadow-black/10 dark:shadow-black/30
+                      group-hover/image:scale-105 
+                      transition-all duration-500 ease-out
+                      ring-1 ring-black/5 dark:ring-white/5
+                    "
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.style.display = 'none';
+                    }}
+                  />
+                )}
                 
                 {/* Image overlay effects */}
                 <div className="absolute inset-0 rounded-xl bg-gradient-to-t from-black/0 via-transparent to-white/10 dark:to-white/5 opacity-0 group-hover/image:opacity-100 transition-opacity duration-300" />

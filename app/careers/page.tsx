@@ -1,6 +1,9 @@
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+
+// Force dynamic rendering since Navbar uses headers() for session
+export const dynamic = 'force-dynamic';
 import {
   Users,
   Utensils,

@@ -9,18 +9,10 @@ import { useRouter } from "next/navigation"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
+import { getAllMealImages } from '@/lib/constants/meal-images'
+import { ToolErrorDisplay } from './tool-error-display'
 
-// Cloudinary images for random selection
-const MEAL_IMAGES = [
-  "https://res.cloudinary.com/dcidanigq/image/upload/v1742112002/samples/breakfast.jpg", // Breakfast
-  "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&q=80", // Lunch
-  "https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=800&q=80", // Dinner
-  "https://images.unsplash.com/photo-1543339308-43e59d6b73a6?w=800&q=80", // Snack
-  "https://images.unsplash.com/photo-1499028344343-cd173ffc68a9?w=800&q=80", // Burger
-  "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=800&q=80", // Salad
-  "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=800&q=80", // Pizza
-  "https://images.unsplash.com/photo-1604908176997-125f25cc6f3d?w=800&q=80", // Chicken
-]
+const MEAL_IMAGES = getAllMealImages();
 
 // Meal type colors from reference
 const mealTypeColors: Record<string, string> = {
@@ -47,15 +39,52 @@ interface MealPlanDisplayProps {
   // Accepts the tool output structure which contains days
   mealPlan: any
   onActionClick?: (action: string) => void
+  error?: string | { message?: string; error?: string; code?: string; metadata?: any }
 }
 
-export function MealPlanDisplay({ mealPlan, onActionClick }: MealPlanDisplayProps) {
+export function MealPlanDisplay({ mealPlan, onActionClick, error }: MealPlanDisplayProps) {
   const [saving, setSaving] = useState(false)
   const [savedId, setSavedId] = useState<string | null>(null)
+  const [checkingSave, setCheckingSave] = useState(true)
   const [expandedDay, setExpandedDay] = useState<number | null>(null)
   const [exporting, setExporting] = useState(false)
   const [exportFormats, setExportFormats] = useState<string[]>(['pdf'])
+  const [mounted, setMounted] = useState(false)
   const router = useRouter()
+
+  // Prevent hydration mismatch
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  // Check if meal plan is already saved on mount
+  useEffect(() => {
+    const checkSaved = async () => {
+      if (!mealPlan?.title) {
+        setCheckingSave(false)
+        return
+      }
+      try {
+        const response = await fetch('/api/meal-plans')
+        if (response.ok) {
+          const data = await response.json()
+          const mealPlans = data.mealPlans || data.mealPlan ? [data.mealPlan] : []
+          const existing = mealPlans.find((mp: any) => 
+            mp && mp.title && mp.title.toLowerCase().trim() === mealPlan.title.toLowerCase().trim()
+          )
+          if (existing) {
+            setSavedId(existing.id)
+          }
+        }
+      } catch (e) {
+        // Silently fail - user can still save
+        console.error('[MealPlanDisplay] Failed to check if saved:', e)
+      } finally {
+        setCheckingSave(false)
+      }
+    }
+    checkSaved()
+  }, [mealPlan?.title])
 
   // Fetch user's export formats on mount
   useEffect(() => {
@@ -64,12 +93,29 @@ export function MealPlanDisplay({ mealPlan, onActionClick }: MealPlanDisplayProp
         const response = await fetch('/api/usage/features')
         if (response.ok) {
           const data = await response.json()
-          // API now returns { limits, featureUsage, plan }
-          setExportFormats(data.limits?.exportFormats || ['pdf'])
+          // API returns { limits, featureUsage, plan }
+          // Ensure we have the correct structure
+          if (data && typeof data === 'object' && 'limits' in data) {
+            const exportFormats = data.limits?.exportFormats
+            if (Array.isArray(exportFormats) && exportFormats.length > 0) {
+              setExportFormats(exportFormats)
+            } else {
+              // Fallback to PDF if exportFormats is missing or invalid
+              setExportFormats(['pdf'])
+            }
+          } else {
+            // If response structure is unexpected, default to PDF
+            console.warn('[MealPlanDisplay] Unexpected API response structure:', data)
+            setExportFormats(['pdf'])
+          }
+        } else {
+          console.error('[MealPlanDisplay] API response not OK:', response.status)
+          setExportFormats(['pdf'])
         }
       } catch (e) {
         // Silently fail, default to PDF only
         console.error('[MealPlanDisplay] Failed to fetch export formats:', e)
+        setExportFormats(['pdf'])
       }
     }
     fetchExportFormats()
@@ -82,13 +128,15 @@ export function MealPlanDisplay({ mealPlan, onActionClick }: MealPlanDisplayProp
     }, 0) || 0
   }, [mealPlan.days])
 
-  // Generate random images for each meal on mount (stable across re-renders)
+  // Generate fallback images for meals that don't have imageUrl (stable across re-renders)
+  // Note: We prefer meal.imageUrl from the AI-generated meal plan, but provide fallbacks
   const mealImages = useMemo(() => {
     const images: Record<string, string> = {}
     mealPlan.days.forEach((day: any, dIndex: number) => {
-      day.meals.forEach((_: any, mIndex: number) => {
+      day.meals.forEach((meal: any, mIndex: number) => {
         const key = `${dIndex}-${mIndex}`
-        images[key] = MEAL_IMAGES[Math.floor(Math.random() * MEAL_IMAGES.length)]
+        // Use meal.imageUrl if available (from AI generation), otherwise generate a fallback
+        images[key] = meal.imageUrl || MEAL_IMAGES[Math.floor(Math.random() * MEAL_IMAGES.length)]
       })
     })
     return images
@@ -169,6 +217,28 @@ export function MealPlanDisplay({ mealPlan, onActionClick }: MealPlanDisplayProp
     }
   }
 
+  // Handle error state
+  if (error) {
+    return (
+      <ToolErrorDisplay
+        error={error}
+        toolName="Meal Plan Generation"
+        onRetry={onActionClick ? () => onActionClick("Generate a meal plan again") : undefined}
+      />
+    );
+  }
+
+  // Validate mealPlan structure
+  if (!mealPlan || !mealPlan.days || !Array.isArray(mealPlan.days) || mealPlan.days.length === 0) {
+    return (
+      <ToolErrorDisplay
+        error="The meal plan data is incomplete or invalid. Please try generating a new meal plan."
+        toolName="Meal Plan Display"
+        onRetry={onActionClick ? () => onActionClick("Generate a new meal plan") : undefined}
+      />
+    );
+  }
+
   // Flatten meals from days for the grid view, or show day sections?
   // User design implies a flat list or at least a grid. 
   // Let's iterate days and show a section for each day if >1 day, or just the meals if 1 day.
@@ -195,7 +265,7 @@ export function MealPlanDisplay({ mealPlan, onActionClick }: MealPlanDisplayProp
             <Wand2 className="w-3 h-3 mr-1" />
             AI Generated
           </Badge>
-          {savedId && exportFormats.length > 1 && (
+          {savedId && mounted && exportFormats.length > 1 && (
             <div className="flex items-center gap-1">
               {exportFormats.includes('csv') && (
                 <Button
@@ -226,17 +296,34 @@ export function MealPlanDisplay({ mealPlan, onActionClick }: MealPlanDisplayProp
           <Button 
             size="sm" 
             onClick={handleSave} 
-            disabled={saving || !!savedId}
+            disabled={saving || !!savedId || checkingSave}
             className={cn(
               "gap-1.5 transition-all",
               savedId ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200 border-emerald-200" : ""
             )}
             variant={savedId ? "outline" : "default"}
           >
-            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : 
-             savedId ? <Check className="w-4 h-4" /> : 
-             <Save className="w-4 h-4" />}
-            {savedId ? "Saved" : "Save Plan"}
+            {checkingSave ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Checking...
+              </>
+            ) : saving ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Saving...
+              </>
+            ) : savedId ? (
+              <>
+                <Check className="w-4 h-4" />
+                Saved
+              </>
+            ) : (
+              <>
+                <Save className="w-4 h-4" />
+                Save Plan
+              </>
+            )}
           </Button>
         </div>
       </div>
@@ -285,7 +372,7 @@ export function MealPlanDisplay({ mealPlan, onActionClick }: MealPlanDisplayProp
                           >
                             <div className="relative h-32 overflow-hidden">
                               <img
-                                src={mealImages[mealId] || MEAL_IMAGES[0]}
+                                src={meal.imageUrl || mealImages[mealId] || MEAL_IMAGES[0]}
                                 alt={meal.name}
                                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                               />
@@ -345,7 +432,7 @@ export function MealPlanDisplay({ mealPlan, onActionClick }: MealPlanDisplayProp
             variant="outline" 
             size="sm"
             className="flex-1 gap-2 border-dashed border-border hover:border-primary/50"
-            onClick={() => onActionClick("Generate a grocery list for this plan")}
+            onClick={() => onActionClick("Generate a grocery list for this meal plan")}
           >
             <ShoppingCart className="w-4 h-4" />
             Shopping List
@@ -354,7 +441,7 @@ export function MealPlanDisplay({ mealPlan, onActionClick }: MealPlanDisplayProp
             variant="ghost" 
             size="sm"
             className="flex-1 gap-2"
-            onClick={() => onActionClick("Analyze the nutrition of this meal plan")}
+            onClick={() => onActionClick("Analyze nutrition for this meal plan")}
           >
             <TrendingUp className="w-4 h-4" />
             Nutrition
@@ -363,7 +450,7 @@ export function MealPlanDisplay({ mealPlan, onActionClick }: MealPlanDisplayProp
             variant="ghost" 
             size="sm"
             className="flex-1 gap-2"
-            onClick={() => onActionClick("Create a meal prep timeline for this plan")}
+            onClick={() => onActionClick("Create a prep timeline for this meal plan")}
           >
             <Timer className="w-4 h-4" />
             Timeline

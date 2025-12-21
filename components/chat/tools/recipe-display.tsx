@@ -8,12 +8,15 @@ import { cn } from "@/lib/utils"
 import { useToast } from "@/hooks/use-toast"
 import { CldImage } from 'next-cloudinary'
 
+import { ToolErrorDisplay } from './tool-error-display'
+
 interface RecipeDisplayProps {
   recipe: any
   onActionClick?: (action: string) => void
+  error?: string | { message?: string; error?: string; code?: string; metadata?: any }
 }
 
-export function RecipeDisplay({ recipe, onActionClick }: RecipeDisplayProps) {
+export function RecipeDisplay({ recipe, onActionClick, error }: RecipeDisplayProps) {
   const [cookMode, setCookMode] = useState(false)
   const [currentStep, setCurrentStep] = useState(0)
   const [saving, setSaving] = useState(false)
@@ -21,7 +24,13 @@ export function RecipeDisplay({ recipe, onActionClick }: RecipeDisplayProps) {
   const [checkingSave, setCheckingSave] = useState(true)
   const [exporting, setExporting] = useState(false)
   const [exportFormats, setExportFormats] = useState<string[]>(['pdf'])
+  const [mounted, setMounted] = useState(false)
   const { toast } = useToast()
+
+  // Prevent hydration mismatch
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   // Fetch user's export formats on mount
   useEffect(() => {
@@ -30,12 +39,29 @@ export function RecipeDisplay({ recipe, onActionClick }: RecipeDisplayProps) {
         const response = await fetch('/api/usage/features')
         if (response.ok) {
           const data = await response.json()
-          // API now returns { limits, featureUsage, plan }
-          setExportFormats(data.limits?.exportFormats || ['pdf'])
+          // API returns { limits, featureUsage, plan }
+          // Ensure we have the correct structure
+          if (data && typeof data === 'object' && 'limits' in data) {
+            const exportFormats = data.limits?.exportFormats
+            if (Array.isArray(exportFormats) && exportFormats.length > 0) {
+              setExportFormats(exportFormats)
+            } else {
+              // Fallback to PDF if exportFormats is missing or invalid
+              setExportFormats(['pdf'])
+            }
+          } else {
+            // If response structure is unexpected, default to PDF
+            console.warn('[RecipeDisplay] Unexpected API response structure:', data)
+            setExportFormats(['pdf'])
+          }
+        } else {
+          console.error('[RecipeDisplay] API response not OK:', response.status)
+          setExportFormats(['pdf'])
         }
       } catch (e) {
         // Silently fail, default to PDF only
         console.error('[RecipeDisplay] Failed to fetch export formats:', e)
+        setExportFormats(['pdf'])
       }
     }
     fetchExportFormats()
@@ -44,12 +70,12 @@ export function RecipeDisplay({ recipe, onActionClick }: RecipeDisplayProps) {
   // Check if recipe is already saved on mount
   useEffect(() => {
     const checkSaved = async () => {
-      if (!recipe.name) {
+      if (!recipe?.name) {
         setCheckingSave(false)
         return
       }
       try {
-        const response = await fetch('/api/recipes/save')
+        const response = await fetch('/api/recipes')
         if (response.ok) {
           const { recipes } = await response.json()
           const existing = recipes?.find((r: any) => 
@@ -61,12 +87,13 @@ export function RecipeDisplay({ recipe, onActionClick }: RecipeDisplayProps) {
         }
       } catch (e) {
         // Silently fail - user can still save
+        console.error('[RecipeDisplay] Failed to check if saved:', e)
       } finally {
         setCheckingSave(false)
       }
     }
     checkSaved()
-  }, [recipe.name])
+  }, [recipe?.name])
 
   const handleSave = async () => {
     if (savedId) return
@@ -256,6 +283,28 @@ export function RecipeDisplay({ recipe, onActionClick }: RecipeDisplayProps) {
   }
 
   // Regular View
+  // Handle error state
+  if (error) {
+    return (
+      <ToolErrorDisplay
+        error={error}
+        toolName="Recipe Generation"
+        onRetry={onActionClick ? () => onActionClick("Generate the recipe again") : undefined}
+      />
+    );
+  }
+
+  // Validate recipe structure
+  if (!recipe || !recipe.name) {
+    return (
+      <ToolErrorDisplay
+        error="The recipe data is incomplete or invalid. Please try generating a new recipe."
+        toolName="Recipe Display"
+        onRetry={onActionClick ? () => onActionClick("Generate a new recipe") : undefined}
+      />
+    );
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20, scale: 0.98 }}
@@ -449,10 +498,29 @@ export function RecipeDisplay({ recipe, onActionClick }: RecipeDisplayProps) {
                 savedId && "bg-emerald-500/20 text-emerald-400 border-emerald-500/30"
               )}
               onClick={handleSave}
-              disabled={saving || !!savedId}
+              disabled={saving || !!savedId || checkingSave}
             >
-              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : savedId ? <Check className="h-4 w-4" /> : <Save className="h-4 w-4" />}
-              {savedId ? "Saved" : "Save"}
+              {checkingSave ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Checking...
+                </>
+              ) : saving ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Saving...
+                </>
+              ) : savedId ? (
+                <>
+                  <Check className="h-4 w-4" />
+                  Saved
+                </>
+              ) : (
+                <>
+                  <Save className="h-4 w-4" />
+                  Save
+                </>
+              )}
             </Button>
             {onActionClick && (
               <Button 
@@ -466,7 +534,7 @@ export function RecipeDisplay({ recipe, onActionClick }: RecipeDisplayProps) {
             )}
           </div>
           
-          {savedId && exportFormats.length > 1 && (
+          {savedId && mounted && exportFormats.length > 1 && (
             <div className="flex items-center gap-2 mt-3">
               {exportFormats.includes('csv') && (
                 <Button
@@ -501,7 +569,7 @@ export function RecipeDisplay({ recipe, onActionClick }: RecipeDisplayProps) {
                 size="lg"
                 variant="outline"
                 className="h-12 rounded-xl font-semibold gap-2 bg-white/5 border-white/10 text-white hover:bg-white/10"
-                onClick={() => onActionClick(`Generate a grocery list for ${recipe.name}`)}
+                onClick={() => onActionClick(`Generate a grocery list for the recipe "${recipe.name}"`)}
               >
                 <ShoppingCart className="h-4 w-4" /> Grocery List
               </Button>
@@ -509,7 +577,7 @@ export function RecipeDisplay({ recipe, onActionClick }: RecipeDisplayProps) {
                 size="lg"
                 variant="outline"
                 className="h-12 rounded-xl font-semibold gap-2 bg-white/5 border-white/10 text-white hover:bg-white/10"
-                onClick={() => onActionClick(`Analyze the nutrition of ${recipe.name}`)}
+                onClick={() => onActionClick(`Analyze nutrition for the recipe "${recipe.name}"`)}
               >
                 <Flame className="h-4 w-4" /> Nutrition
               </Button>

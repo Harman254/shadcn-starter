@@ -24,6 +24,7 @@ import { MealPlanDisplay } from "./tools/meal-plan-display"
 import { GroceryListDisplay } from "./tools/grocery-list-display"
 import { NutritionDisplay } from "./tools/nutrition-display"
 import { RecipeDisplay } from "./tools/recipe-display"
+import { ChatErrorBoundary } from "./chat-error-boundary"
 import { PricingDisplay } from "./tools/pricing-display"
 import { MealSuggestions } from "./tools/meal-suggestions"
 import { OptimizeGroceryListDisplay } from "./tools/optimize-grocery-list-display"
@@ -311,20 +312,50 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
   const isDark = currentTheme === 'dark'
 
   // Extract embedded image URL from context
+  // Check both [IMAGE_CONTEXT]: format and direct image URLs in the message
   const imageContextUrl = useMemo(() => {
     if (!message?.content) return null;
-    const match = message.content.match(/\[IMAGE_CONTEXT\]:\s*(https?:\/\/[^\s]+)/);
-    return match ? match[1] : null;
+    
+    // First, try to find [IMAGE_CONTEXT]: format
+    let match = message.content.match(/\[IMAGE_CONTEXT\]:\s*(https?:\/\/[^\s\n]+)/);
+    if (match) return match[1];
+    
+    // Also check for direct Cloudinary URLs or image URLs in the content
+    // This handles cases where the URL might be in the message without the [IMAGE_CONTEXT]: prefix
+    const imageUrlPattern = /(https?:\/\/[^\s\n]*(?:cloudinary\.com|res\.cloudinary\.com)[^\s\n]*\.(?:jpg|jpeg|png|gif|webp))/i;
+    match = message.content.match(imageUrlPattern);
+    if (match) return match[1];
+    
+    return null;
   }, [message?.content]);
 
-  // Clean message content by removing UI data markers
+  // Clean message content by removing UI data markers, tool invocation code blocks, and image URLs
   const cleanContent = useMemo(() => {
     if (!message?.content) return '';
-    return message.content
+    let cleaned = message.content
       .replace(/<!-- UI_DATA_START:[\s\S]*?:UI_DATA_END -->/g, '')
       .replace(/\[UI_METADATA:[^\]]+\]/g, '')
-      .replace(/\[IMAGE_CONTEXT\]:\s*https?:\/\/[^\s]+/g, '') // Also hide image URLs if they were appended for context
-      .trim();
+      .replace(/\[IMAGE_CONTEXT\]:\s*https?:\/\/[^\s\n]+/g, '') // Hide [IMAGE_CONTEXT]: URLs
+      // Remove tool invocation code blocks (e.g., ```tool_code\nanalyzePantryImage(...)\n```)
+      .replace(/```tool_code[\s\S]*?```/g, '')
+      .replace(/```tool[\s\S]*?```/g, '')
+      // Remove any code blocks that contain tool function calls
+      .replace(/```[\w]*\n\s*(analyzePantryImage|generateMealPlan|generateMealRecipe|generateGroceryList|analyzeNutrition|searchRecipes|planFromInventory|optimizeGroceryList|modifyMealPlan|swapMeal|getGroceryPricing|suggestIngredientSubstitutions|getSeasonalIngredients|searchFoodData|generatePrepTimeline|updatePantry)\([^)]*\)[\s\S]*?```/g, '');
+    
+    // Remove any remaining Cloudinary/image URLs that might be in plain text
+    // This catches URLs that weren't in [IMAGE_CONTEXT]: format
+    cleaned = cleaned.replace(/(https?:\/\/[^\s\n]*(?:cloudinary\.com|res\.cloudinary\.com)[^\s\n]*\.(?:jpg|jpeg|png|gif|webp))/gi, '');
+    
+    // Remove partial Cloudinary URLs (e.g., "udinary.com/..." or "cloudinary.com/...")
+    cleaned = cleaned.replace(/[^\s\n]*(?:cloudinary\.com|res\.cloudinary\.com)[^\s\n]*\.(?:jpg|jpeg|png|gif|webp)/gi, '');
+    
+    // Remove any standalone image URLs (more general pattern)
+    cleaned = cleaned.replace(/https?:\/\/[^\s\n]+\.(jpg|jpeg|png|gif|webp)(\?[^\s\n]*)?/gi, '');
+    
+    // Remove any remaining image file extensions with paths (catches edge cases)
+    cleaned = cleaned.replace(/[^\s\n]*\/[^\s\n]*\.(jpg|jpeg|png|gif|webp)(\?[^\s\n]*)?/gi, '');
+    
+    return cleaned.trim();
   }, [message?.content]);
 
   // Extract UI data from either legacy .ui property, embedded content, or toolInvocations
@@ -504,15 +535,55 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
         messageText = 'Running...';
       }
 
-      // Customize message based on tool name
+      // Customize message based on tool name with time estimates
+      const toolTimeEstimates: Record<string, { min: number; max: number; unit: string }> = {
+        generateMealPlan: { min: 10, max: 30, unit: 'seconds' },
+        generateGroceryList: { min: 5, max: 15, unit: 'seconds' },
+        analyzeNutrition: { min: 3, max: 10, unit: 'seconds' },
+        analyzePantryImage: { min: 5, max: 20, unit: 'seconds' },
+        generateMealRecipe: { min: 5, max: 15, unit: 'seconds' },
+        optimizeGroceryList: { min: 8, max: 20, unit: 'seconds' },
+        modifyMealPlan: { min: 10, max: 25, unit: 'seconds' },
+        planFromInventory: { min: 8, max: 20, unit: 'seconds' },
+      };
+
       if (tool.toolName === 'generateMealPlan') {
-        messageText = status === 'running' ? 'Creating meal plan...' : 'Meal plan created';
+        messageText = status === 'running' 
+          ? 'Creating your personalized meal plan... (10-30s)' 
+          : 'Meal plan created';
       } else if (tool.toolName === 'generateGroceryList') {
-        messageText = status === 'running' ? 'Generating grocery list...' : 'Grocery list generated';
+        messageText = status === 'running' 
+          ? 'Generating grocery list... (5-15s)' 
+          : 'Grocery list generated';
       } else if (tool.toolName === 'analyzeNutrition') {
-        messageText = status === 'running' ? 'Analyzing nutrition...' : 'Nutrition analyzed';
+        messageText = status === 'running' 
+          ? 'Analyzing nutrition data... (3-10s)' 
+          : 'Nutrition analyzed';
       } else if (tool.toolName === 'analyzePantryImage') {
-        messageText = status === 'running' ? 'Analyzing image...' : 'Pantry analyzed';
+        messageText = status === 'running' 
+          ? 'Analyzing pantry image... (5-20s)' 
+          : 'Pantry analyzed';
+      } else if (tool.toolName === 'generateMealRecipe') {
+        messageText = status === 'running' 
+          ? 'Generating recipe... (5-15s)' 
+          : 'Recipe generated';
+      } else if (tool.toolName === 'optimizeGroceryList') {
+        messageText = status === 'running' 
+          ? 'Optimizing grocery list... (8-20s)' 
+          : 'Grocery list optimized';
+      } else if (tool.toolName === 'modifyMealPlan') {
+        messageText = status === 'running' 
+          ? 'Modifying meal plan... (10-25s)' 
+          : 'Meal plan modified';
+      } else if (tool.toolName === 'planFromInventory') {
+        messageText = status === 'running' 
+          ? 'Planning meals from inventory... (8-20s)' 
+          : 'Meal plan created';
+      } else {
+        const estimate = toolTimeEstimates[tool.toolName];
+        if (estimate && status === 'running') {
+          messageText = `Processing ${tool.toolName}... (${estimate.min}-${estimate.max}${estimate.unit})`;
+        }
       }
 
       tools.set(tool.toolCallId, {
@@ -738,19 +809,31 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
                   "shadow-md shadow-primary/10",
                   "text-[15px] sm:text-base leading-relaxed tracking-wide",
                 )}>
-                  {/* Image attachment for User */}
+                  {/* Image attachment for User - Show image prominently if present */}
                   {imageContextUrl && (
-                    <div className="mb-2 -mx-2 -mt-2 overflow-hidden rounded-lg">
+                    <div className="mb-3 -mx-2 -mt-2 overflow-hidden rounded-xl border-2 border-primary/20 shadow-lg bg-gradient-to-br from-muted/50 to-muted/30 backdrop-blur-sm">
                        <img 
                          src={imageContextUrl} 
-                         alt="Uploaded context" 
-                         className="w-full h-auto max-h-[200px] object-cover hover:scale-105 transition-transform duration-500"
+                         alt="Uploaded image" 
+                         className="w-full h-auto max-h-[300px] sm:max-h-[400px] object-cover"
+                         loading="lazy"
+                         onError={(e) => {
+                           // Hide image container if image fails to load
+                           const target = e.target as HTMLImageElement;
+                           const container = target.closest('div');
+                           if (container) {
+                             container.style.display = 'none';
+                           }
+                         }}
                        />
                     </div>
                   )}
-                  <p className="whitespace-pre-wrap break-words font-medium">
-                    {cleanContent}
-                  </p>
+                  {/* Only show text content if there's actual text (not just image URL) */}
+                  {cleanContent && cleanContent.trim().length > 0 && (
+                    <p className="whitespace-pre-wrap break-words font-medium">
+                      {cleanContent}
+                    </p>
+                  )}
                   {/* Timestamp & Status for User */}
                   <div className="flex items-center justify-end gap-1.5 mt-1.5 select-none">
                     {isMounted && message?.timestamp && formattedTime && (
@@ -833,10 +916,21 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
               transition={{ duration: 0.3 }}
               className="w-full"
             >
-              <MealPlanDisplay 
-                mealPlan={uiData.mealPlan} 
-                onActionClick={onActionClick} 
-              />
+              <ChatErrorBoundary
+                fallback={
+                  <div className="p-4 border border-destructive/50 rounded-lg bg-destructive/5">
+                    <p className="text-sm text-destructive">
+                      Failed to display meal plan. Please try generating a new one.
+                    </p>
+                  </div>
+                }
+              >
+                <MealPlanDisplay 
+                  mealPlan={uiData.mealPlan} 
+                  onActionClick={onActionClick}
+                  error={uiData.mealPlanError}
+                />
+              </ChatErrorBoundary>
             </motion.div>
           )}
           
@@ -956,10 +1050,21 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
               transition={{ duration: 0.3 }}
               className="w-full max-w-2xl mx-auto"
             >
-              <RecipeDisplay 
-                recipe={uiData.mealRecipe} 
-                onActionClick={onActionClick} 
-              />
+              <ChatErrorBoundary
+                fallback={
+                  <div className="p-4 border border-destructive/50 rounded-lg bg-destructive/5">
+                    <p className="text-sm text-destructive">
+                      Failed to display recipe. Please try generating a new one.
+                    </p>
+                  </div>
+                }
+              >
+                <RecipeDisplay 
+                  recipe={uiData.mealRecipe} 
+                  onActionClick={onActionClick}
+                  error={uiData.recipeError}
+                />
+              </ChatErrorBoundary>
             </motion.div>
           )}
           {/* Nutrition Analysis Display */}
@@ -970,7 +1075,17 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
               transition={{ duration: 0.3 }}
               className="w-full max-w-2xl mx-auto"
             >
-              <NutritionDisplay nutrition={uiData.nutrition} onActionClick={onActionClick} />
+              <ChatErrorBoundary
+                fallback={
+                  <div className="p-4 border border-destructive/50 rounded-lg bg-destructive/5">
+                    <p className="text-sm text-destructive">
+                      Failed to display nutrition analysis. Please try again.
+                    </p>
+                  </div>
+                }
+              >
+                <NutritionDisplay nutrition={uiData.nutrition} onActionClick={onActionClick} />
+              </ChatErrorBoundary>
             </motion.div>
           )}
 

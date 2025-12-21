@@ -78,8 +78,24 @@ export class OrchestratedChatFlow {
         location: input.locationData
       }, tools);
 
+      // Ensure context includes full lastToolResult structure for tools
+      const enhancedContext = {
+        ...context,
+        // Ensure lastToolResult is properly structured
+        lastToolResult: context?.lastToolResult || {},
+        // Include messages in context for tools that need to search history
+        messages: input.conversationHistory
+      };
+
       // 2. Execute
-      const toolResults = await this.toolExecutor.executePlan(plan);
+      const toolResults = await this.toolExecutor.executePlan(
+        plan,
+        undefined, // onStepStart
+        undefined, // onToolStart
+        undefined, // onToolFinish
+        input.conversationHistory, // chatMessages
+        enhancedContext // Pass enhanced context with messages for tool execution
+      );
 
       // 3. Synthesize
       // We use generateText here instead of streamText
@@ -183,6 +199,15 @@ export class OrchestratedChatFlow {
             { role: 'user' as const, content: input.message }
           ];
 
+          // Ensure context includes full lastToolResult structure for tools
+          const enhancedContext = {
+            ...context,
+            // Ensure lastToolResult is properly structured
+            lastToolResult: context?.lastToolResult || {},
+            // Include messages in context for tools that need to search history
+            messages: fullHistory
+          };
+
           const toolResults = await this.toolExecutor.executePlan(plan,
             (step) => {
               controller.enqueue(formatData({ type: 'status', content: `⚙️ Executing step: ${step.description}` }));
@@ -190,7 +215,7 @@ export class OrchestratedChatFlow {
             undefined,
             undefined,
             fullHistory, // Pass FULL history including current message
-            context // Pass context for tool execution
+            enhancedContext // Pass enhanced context with messages for tool execution
           );
 
           // Extract UI_METADATA from tool results
@@ -338,7 +363,11 @@ export class OrchestratedChatFlow {
         * Occasionally add a fun food fact or tip
         * Sometimes ask a follow-up question ("Want me to adjust anything?")
         * Provide helpful context, tips, or suggestions related to what was generated
-      - If there are ERRORS, be honest but helpful ("Hmm, couldn't get prices, but here's your plan!")
+      - If there are ERRORS or LIMITATIONS, frame them positively and helpfully:
+        * Instead of "Oh no! You hit a limit", say "I'd love to help! Your current plan allows [X]. I can [suggest alternative] or you can upgrade to Pro for [benefit]."
+        * Always offer alternatives or solutions, not just problems.
+        * Make upgrade suggestions helpful and informative, not pushy or intrusive.
+        * Focus on what the user CAN do, not just what they can't.
       - Match the user's energy - if they're excited, be excited back!
       ` : `
       - No tools were executed - this is a general chat.
@@ -389,6 +418,7 @@ AVAILABLE TOOLS:
 - searchFoodData: Search real-world food data (nutrition, prices, availability, substitutions)
 - analyzeNutrition: Analyze nutrition (optional mealPlanId, works from context)
 - analyzePantryImage: Analyze an image of a fridge/pantry for ingredients (Requires imageUrl)
+- updatePantry: Add items to the user's pantry tracking (parameters: items array with name, category, quantity, expiryEstimate)
 - planFromInventory: Plan meals based on available ingredients
 - generatePrepTimeline: Create a meal prep schedule
 
@@ -402,13 +432,35 @@ CRITICAL ORCHESTRATION RULES:
    - ALWAYS start by checking/fetching user preferences if not provided.
    - Then generate the meal plan.
    - AFTER generating the plan, you can offer to generate a grocery list or analyze nutrition.
+   - **Button Actions**: If user says "Generate a grocery list for this meal plan" or "for this plan", use "generateGroceryList" with the current meal plan context.
+   - **Button Actions**: If user says "Analyze nutrition for this meal plan" or "Analyze the nutrition of this meal plan", use "analyzeNutrition" with the current meal plan context.
+   - **Button Actions**: If user says "Create a prep timeline for this meal plan" or "Create a meal prep timeline", use "generatePrepTimeline" with recipes from the current meal plan.
    
 3. **Grocery Flow**:
    - Generate the list first using "generateGroceryList".
    - THEN offer to optimize it using "optimizeGroceryList" (especially if user mentions specific stores or saving money).
+   - **Button Actions**: If user says "Optimize this grocery list" or "Optimize this grocery list for better prices", use "optimizeGroceryList" with the current grocery list context.
+   - **Button Actions**: If user says "Suggest meals I can cook with these ingredients" (from grocery list), use "planFromInventory" with ingredients from the grocery list.
 
 4. **Recipe Flow**:
    - If user asks for a recipe for a specific meal in the plan, use "generateMealRecipe".
+   - **Button Actions**: If user says "Generate a grocery list for [recipe name]" or "Generate a grocery list for the recipe", use "generateGroceryList" with source "recipe" and the recipe name.
+   - **Button Actions**: If user says "Analyze nutrition for [recipe name]" or "Analyze nutrition for the recipe", use "analyzeNutrition" with the recipe context.
+
+5. **Pantry Management**:
+   - If the user wants to add items to their pantry (e.g., "Add these items to my pantry", "Add to pantry", "Save these items"), use "updatePantry".
+   - Extract the items from the message. Items may be listed with names and quantities (e.g., "Chicken (1 cup), Rice (2 cups)").
+   - Parse items into an array with name, category (if mentioned), quantity, and expiryEstimate (if mentioned).
+   - Example: "Add these items to my pantry: Chicken (1 cup), Rice (2 cups), Broccoli (1 head)" -> Call 'updatePantry' with items array.
+
+6. **Ingredient-Based Meal Planning**:
+   - If the user asks for meal suggestions based on ingredients (e.g., "Suggest meals I can cook with these ingredients", "What can I make with..."), use "planFromInventory".
+   - Extract ingredient names from the message and pass as an array.
+
+7. **Context Awareness**:
+   - When user clicks buttons in tool displays, they are requesting actions on the CURRENTLY DISPLAYED content.
+   - Use the context from the conversation (mealPlanId, recipe names, grocery list items) when available.
+   - If user says "this plan", "this meal plan", "this recipe", "this grocery list", refer to the most recent tool result in the conversation.
 
 Remember: ALWAYS use tools for user requests. Be helpful and concise in your responses.`;
   }

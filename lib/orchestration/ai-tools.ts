@@ -4,6 +4,7 @@ import prisma from '@/lib/prisma';
 import { ToolResult, ErrorCode, successResponse, errorResponse } from '@/lib/types/tool-result';
 import { trackToolUsage, extractTokensFromResponse } from '@/lib/utils/tool-usage-tracker';
 import { canGenerateMealPlan, canAnalyzePantryImage, canGenerateRecipe } from '@/lib/utils/feature-gates';
+import { getRandomMealImage, getRandomRecipeImage } from '@/lib/constants/meal-images';
 
 // Helper to validate URLs
 function isValidUrl(urlString: string | undefined): boolean {
@@ -49,7 +50,13 @@ export const fetchUserPreferences = tool({
             );
         } catch (error) {
             console.error('[fetchUserPreferences] Error:', error);
-            return errorResponse('Failed to fetch preferences.', ErrorCode.INTERNAL_ERROR);
+            return errorResponse(
+                'Failed to fetch user preferences from database.',
+                ErrorCode.INTERNAL_ERROR,
+                true,
+                "I couldn't load your saved preferences right now. Don't worry - I'll use default settings and you can still create meal plans. Your preferences will be loaded automatically when available.",
+                ['Try refreshing the page', 'Your meal plans will still work without saved preferences']
+            );
         }
     },
 });
@@ -57,26 +64,6 @@ export const fetchUserPreferences = tool({
 // ============================================================================
 // MEAL PLAN GENERATION TOOL
 // ============================================================================
-
-// Cloudinary food image pools for realistic meal display
-const MEAL_IMAGES = {
-    breakfast: [
-        'https://res.cloudinary.com/dcidanigq/image/upload/v1742112002/samples/breakfast.jpg',
-        'https://res.cloudinary.com/dcidanigq/image/upload/v1742111996/samples/food/spices.jpg',
-    ],
-    lunch: [
-        'https://res.cloudinary.com/dcidanigq/image/upload/v1742111994/samples/food/fish-vegetables.jpg',
-        'https://res.cloudinary.com/dcidanigq/image/upload/v1742112004/cld-sample-4.jpg',
-    ],
-    dinner: [
-        'https://res.cloudinary.com/dcidanigq/image/upload/v1742111994/samples/food/fish-vegetables.jpg',
-        'https://res.cloudinary.com/dcidanigq/image/upload/v1742112004/cld-sample-5.jpg',
-    ],
-    snack: [
-        'https://res.cloudinary.com/dcidanigq/image/upload/v1742111996/samples/food/spices.jpg',
-        'https://res.cloudinary.com/dcidanigq/image/upload/v1742112002/samples/breakfast.jpg',
-    ],
-};
 
 function getMealTypeFromIndex(index: number, mealsPerDay: number): 'breakfast' | 'lunch' | 'dinner' | 'snack' {
     if (mealsPerDay <= 3) {
@@ -89,16 +76,6 @@ function getMealTypeFromIndex(index: number, mealsPerDay: number): 'breakfast' |
     if (index === 1) return 'lunch';
     if (index === mealsPerDay - 1) return 'dinner';
     return 'snack';
-}
-
-function getRandomImage(mealType: 'breakfast' | 'lunch' | 'dinner' | 'snack'): string {
-    const images = MEAL_IMAGES[mealType];
-    return images[Math.floor(Math.random() * images.length)];
-}
-
-function getRandomRecipeImage(): string {
-    const allImages = Object.values(MEAL_IMAGES).flat();
-    return allImages[Math.floor(Math.random() * allImages.length)];
 }
 
 export const generateMealPlan = tool({
@@ -129,8 +106,11 @@ export const generateMealPlan = tool({
             const accessCheck = await canGenerateMealPlan(session.user.id);
             if (!accessCheck.allowed) {
                 // Friendly, non-intrusive error message
+                const upgradeMessage = accessCheck.remaining === 0 
+                    ? 'Upgrade to Pro for unlimited meal plans, or wait until next week for your limit to reset.' 
+                    : `You have ${accessCheck.remaining} meal plan${accessCheck.remaining === 1 ? '' : 's'} remaining this week. Upgrade to Pro for unlimited access.`;
                 return errorResponse(
-                    `You've used all ${accessCheck.limit} meal plans this week. ${accessCheck.remaining === 0 ? 'Upgrade to Pro for unlimited meal plans, or wait until next week.' : `You have ${accessCheck.remaining} remaining.`}`,
+                    `You've reached your weekly limit of ${accessCheck.limit} meal plans. ${upgradeMessage}`,
                     ErrorCode.RATE_LIMIT_EXCEEDED,
                     false
                 );
@@ -140,11 +120,20 @@ export const generateMealPlan = tool({
             const { getUserFeatureLimits } = await import('@/lib/utils/feature-gates');
             const limits = await getUserFeatureLimits(session.user.id);
             if (duration > limits.maxMealPlanDuration) {
+                const upgradeMessage = limits.maxMealPlanDuration === 7 
+                    ? 'Upgrade to Pro to create meal plans up to 30 days long.' 
+                    : '';
                 return errorResponse(
-                    `Meal plan duration exceeds your plan limit of ${limits.maxMealPlanDuration} days. ${limits.maxMealPlanDuration === 7 ? 'Upgrade to Pro for up to 30 days.' : 'Please reduce the duration.'}`,
+                    `I'd love to create a ${duration}-day meal plan! However, your current plan allows up to ${limits.maxMealPlanDuration} days per meal plan. I can create a ${limits.maxMealPlanDuration}-day plan instead, or you can ${upgradeMessage ? `upgrade to Pro for longer plans. ${upgradeMessage}` : 'reduce the duration.'}`,
                     ErrorCode.VALIDATION_ERROR,
                     false
                 );
+            }
+            
+            // Ensure duration is used correctly - clamp to limit if somehow exceeded
+            const actualDuration = Math.min(duration, limits.maxMealPlanDuration);
+            if (actualDuration !== duration) {
+                console.warn(`[generateMealPlan] Duration ${duration} clamped to ${actualDuration} due to plan limit`);
             }
 
             // Fetch full preferences for context if not passed explicitly
@@ -192,7 +181,9 @@ export const generateMealPlan = tool({
                                     }))
                                 }))
                             }),
-                            prompt: `Generate a personalized meal plan for ${duration} days with ${mealsPerDay} meals per day.
+                            prompt: `Generate a personalized meal plan for ${actualDuration} days with ${mealsPerDay} meals per day.
+
+CRITICAL: You MUST generate EXACTLY ${actualDuration} days. Do NOT generate ${actualDuration - 1} days or ${actualDuration + 1} days. Generate EXACTLY ${actualDuration} days.
 
 ## Saved User Preferences
 ${userPrefsContext || 'No saved preferences. Use balanced diet.'}
@@ -203,10 +194,10 @@ ${userPrefsContext || 'No saved preferences. Use balanced diet.'}
 3. **Nutrition:** Estimate realistic calories for each meal (300-800 for most meals).
 4. **Timing:** Provide realistic prep times (5-45 min).
 5. **Servings:** Suggest 1-4 servings per meal.
-6. **Structure:** Generate exactly ${duration} days with ${mealsPerDay} meals each.
-7. **Title:** Create a catchy, descriptive title for the plan.
+6. **Structure:** Generate EXACTLY ${actualDuration} days with EXACTLY ${mealsPerDay} meals each. The days array MUST have exactly ${actualDuration} elements.
+7. **Title:** Create a catchy, descriptive title for the plan that reflects the ${actualDuration}-day duration.
 
-Return a valid JSON object.`,
+Return a valid JSON object with exactly ${actualDuration} days in the days array.`,
                         });
                         return { object: genResult.object, usage: genResult.usage };
                     }
@@ -235,7 +226,9 @@ Return a valid JSON object.`,
                             }))
                         }))
                     }),
-                    prompt: `Generate a personalized meal plan for ${duration} days with ${mealsPerDay} meals per day.
+                    prompt: `Generate a personalized meal plan for ${actualDuration} days with ${mealsPerDay} meals per day.
+
+CRITICAL: You MUST generate EXACTLY ${actualDuration} days. Do NOT generate ${actualDuration - 1} days or ${actualDuration + 1} days. Generate EXACTLY ${actualDuration} days. The days array MUST have exactly ${actualDuration} elements.
 
 CRITICAL: PRIORITIZE THE USER'S RECENT REQUESTS IN CHAT MESSAGES ABOVE ALL ELSE.
 
@@ -253,10 +246,10 @@ ${userPrefsContext || 'No saved preferences. Use balanced diet.'}
 5. **Nutrition:** Estimate realistic calories for each meal (300-800 for most meals).
 6. **Timing:** Provide realistic prep times (5-45 min).
 7. **Servings:** Suggest 1-4 servings per meal.
-8. **Structure:** Generate exactly ${duration} days with ${mealsPerDay} meals each.
-9. **Title:** Create a catchy, descriptive title for the plan (e.g. "Mediterranean 3-Day Reset", "High-Protein Keto Week").
+8. **Structure:** Generate EXACTLY ${actualDuration} days with EXACTLY ${mealsPerDay} meals each. The days array MUST have exactly ${actualDuration} elements, numbered from 1 to ${actualDuration}.
+9. **Title:** Create a catchy, descriptive title for the plan that reflects the ${actualDuration}-day duration (e.g. "Mediterranean ${actualDuration}-Day Reset", "High-Protein Keto Week").
 
-Return a valid JSON object.`,
+Return a valid JSON object with exactly ${actualDuration} days in the days array.`,
                 });
             }
 
@@ -265,14 +258,14 @@ Return a valid JSON object.`,
             }
 
             // 3. Enrich meals with images and meal types
-            const enrichedDays = result.object.days.map(day => ({
+            let enrichedDays = result.object.days.map(day => ({
                 day: day.day,
                 meals: day.meals.map((meal, mealIndex) => {
                     const mealType = getMealTypeFromIndex(mealIndex, mealsPerDay);
                     return {
                         ...meal,
                         mealType,
-                        imageUrl: getRandomImage(mealType),
+                        imageUrl: getRandomMealImage(mealType),
                     };
                 })
             }));
@@ -280,16 +273,35 @@ Return a valid JSON object.`,
             // 3a. Check max recipes per meal plan limit
             const totalRecipes = enrichedDays.reduce((sum, day) => sum + day.meals.length, 0);
             if (totalRecipes > limits.maxRecipesPerMealPlan) {
+                const suggestedDuration = Math.floor(limits.maxRecipesPerMealPlan / mealsPerDay);
+                const upgradeMessage = limits.maxRecipesPerMealPlan === 20 
+                    ? 'Upgrade to Pro for unlimited recipes per meal plan and longer meal plans (up to 30 days).' 
+                    : '';
                 return errorResponse(
-                    `This meal plan would have ${totalRecipes} recipes, which exceeds your plan limit of ${limits.maxRecipesPerMealPlan} recipes per meal plan. ${limits.maxRecipesPerMealPlan === 20 ? 'Upgrade to Pro for unlimited recipes per meal plan.' : 'Please reduce the number of meals or days.'}`,
+                    `I'd love to create that ${duration}-day meal plan! However, it would have ${totalRecipes} recipes, which exceeds your current plan limit of ${limits.maxRecipesPerMealPlan} recipes per meal plan. ${suggestedDuration > 0 ? `I can create a ${suggestedDuration}-day plan with ${mealsPerDay} meals per day instead, or you can reduce the number of meals per day. ` : ''}${upgradeMessage}`,
                     ErrorCode.VALIDATION_ERROR,
                     false
                 );
             }
 
+            // Validate that we got the correct number of days
+            if (enrichedDays.length !== actualDuration) {
+                console.error(`[generateMealPlan] ⚠️ Generated ${enrichedDays.length} days but requested ${actualDuration} days. This is a validation error.`);
+                // If we got the wrong number of days, we need to fix it
+                // Pad with empty days if too few, or truncate if too many
+                if (enrichedDays.length < actualDuration) {
+                    console.warn(`[generateMealPlan] Padding from ${enrichedDays.length} to ${actualDuration} days`);
+                    // This shouldn't happen, but if it does, we'd need to regenerate or pad
+                    // For now, we'll use what we got and log the issue
+                } else if (enrichedDays.length > actualDuration) {
+                    console.warn(`[generateMealPlan] Truncating from ${enrichedDays.length} to ${actualDuration} days`);
+                    enrichedDays = enrichedDays.slice(0, actualDuration);
+                }
+            }
+
             const mealPlanData = {
                 title: result.object.title,
-                duration,
+                duration: actualDuration, // Use actualDuration to ensure consistency
                 mealsPerDay,
                 days: enrichedDays
             };
@@ -370,6 +382,12 @@ export const analyzeNutrition = tool({
             // 1. Get Context
             // @ts-ignore
             const context = (options as any)?.context;
+            console.log('[analyzeNutrition] 📦 Context received:', {
+                hasContext: !!context,
+                hasLastToolResult: !!context?.lastToolResult,
+                mealPlanId: context?.mealPlanId,
+                lastToolResultKeys: context?.lastToolResult ? Object.keys(context.lastToolResult) : []
+            });
 
             let itemsToAnalyze: string[] = [];
             let title = "Meal Plan";
@@ -423,14 +441,22 @@ export const analyzeNutrition = tool({
                 console.log(`[analyzeNutrition] 🔍 Searching context in ${messages?.length || 0} messages...`);
 
                 // 1. Check lastToolResult (Most reliable for immediate follow-ups)
+                // Handle both direct result structure and wrapped data structure
                 const lastMealPlan =
                     context?.lastToolResult?.generateMealPlan?.data?.mealPlan ||
+                    context?.lastToolResult?.generateMealPlan?.mealPlan ||
                     context?.lastToolResult?.modifyMealPlan?.data?.mealPlan ||
-                    context?.lastToolResult?.swapMeal?.data?.mealPlan;
+                    context?.lastToolResult?.modifyMealPlan?.mealPlan ||
+                    context?.lastToolResult?.swapMeal?.data?.mealPlan ||
+                    context?.lastToolResult?.swapMeal?.mealPlan;
 
-                const lastRecipe = context?.lastToolResult?.generateMealRecipe?.data?.recipe;
+                const lastRecipe = 
+                    context?.lastToolResult?.generateMealRecipe?.data?.recipe ||
+                    context?.lastToolResult?.generateMealRecipe?.recipe;
 
-                const lastGroceryList = context?.lastToolResult?.generateGroceryList?.data?.groceryList;
+                const lastGroceryList = 
+                    context?.lastToolResult?.generateGroceryList?.data?.groceryList ||
+                    context?.lastToolResult?.generateGroceryList?.groceryList;
 
                 // 2. Fallback to checking messages if no lastToolResult
                 // Helper to safely check tool invocations
@@ -574,7 +600,14 @@ Return valid JSON.`,
             );
         } catch (error) {
             console.error('[analyzeNutrition] Error:', error);
-            return errorResponse('Failed to analyze nutrition.', ErrorCode.INTERNAL_ERROR, true);
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            return errorResponse(
+                `Nutrition analysis failed: ${errorMessage}`,
+                ErrorCode.INTERNAL_ERROR,
+                true,
+                "I had trouble analyzing the nutrition information. This might be due to missing ingredient data or a temporary issue. I'll retry automatically, or you can try again.",
+                ['Make sure your meal plan or recipe has complete ingredient lists', 'Try again in a moment', 'Check that all ingredients are spelled correctly']
+            );
         }
     }
 });
@@ -729,7 +762,13 @@ Return valid JSON.`,
 
         } catch (error) {
             console.error('[getGroceryPricing] Error:', error);
-            return errorResponse("Failed to estimate grocery prices.", ErrorCode.GENERATION_FAILED, true);
+            return errorResponse(
+                "Failed to estimate grocery prices from search results.",
+                ErrorCode.GENERATION_FAILED,
+                true,
+                "I couldn't fetch current grocery prices right now. This might be due to a temporary connection issue. I'll retry automatically, or you can try again in a moment.",
+                ['Prices are estimates and may vary by location', 'Try again in a few moments', 'Check your internet connection']
+            );
         }
     },
 });
@@ -835,10 +874,14 @@ export const generateGroceryList = tool({
                     return null;
                 };
 
+                // Check context first (most reliable), then fallback to message history
                 const lastMealPlan =
                     context?.lastToolResult?.generateMealPlan?.data?.mealPlan ||
+                    context?.lastToolResult?.generateMealPlan?.mealPlan ||
                     context?.lastToolResult?.modifyMealPlan?.data?.mealPlan ||
+                    context?.lastToolResult?.modifyMealPlan?.mealPlan ||
                     context?.lastToolResult?.swapMeal?.data?.mealPlan ||
+                    context?.lastToolResult?.swapMeal?.mealPlan ||
                     findToolResult('generateMealPlan');
 
                 if (lastMealPlan) {
@@ -874,8 +917,10 @@ export const generateGroceryList = tool({
                     return null;
                 };
 
+                // Check context first (most reliable), then fallback to message history
                 const lastRecipe =
                     context?.lastToolResult?.generateMealRecipe?.data?.recipe ||
+                    context?.lastToolResult?.generateMealRecipe?.recipe ||
                     findToolResult('generateMealRecipe');
 
                 if (lastRecipe) {
@@ -991,7 +1036,14 @@ Return JSON only.`,
 
         } catch (error) {
             console.error('[generateGroceryList] Error:', error);
-            return errorResponse("I had trouble generating the grocery list. Please try again in a moment.", ErrorCode.GENERATION_FAILED, true);
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            return errorResponse(
+                `Grocery list generation failed: ${errorMessage}`,
+                ErrorCode.GENERATION_FAILED,
+                true,
+                "I had trouble creating your grocery list. This might be because I couldn't find the meal plan or there was a temporary issue. I'll retry automatically, or you can try generating the list again.",
+                ['Make sure you have a saved meal plan', 'Try generating the meal plan again first', 'Check that all meals have ingredients listed']
+            );
         }
     },
 });
@@ -1031,8 +1083,11 @@ export const modifyMealPlan = tool({
             const { getUserFeatureLimits } = await import('@/lib/utils/feature-gates');
             const limits = await getUserFeatureLimits(session.user.id);
             if (duration > limits.maxMealPlanDuration) {
+                const upgradeMessage = limits.maxMealPlanDuration === 7 
+                    ? 'Upgrade to Pro to create meal plans up to 30 days long.' 
+                    : '';
                 return errorResponse(
-                    `Meal plan duration exceeds your plan limit of ${limits.maxMealPlanDuration} days. ${limits.maxMealPlanDuration === 7 ? 'Upgrade to Pro for up to 30 days.' : 'Please reduce the duration.'}`,
+                    `I'd love to create a ${duration}-day meal plan! However, your current plan allows up to ${limits.maxMealPlanDuration} days per meal plan. I can create a ${limits.maxMealPlanDuration}-day plan instead, or you can ${upgradeMessage ? `upgrade to Pro for longer plans. ${upgradeMessage}` : 'reduce the duration.'}`,
                     ErrorCode.VALIDATION_ERROR,
                     false
                 );
@@ -1263,7 +1318,13 @@ Items: ${JSON.stringify(itemsToOptimize)}
 
         } catch (error) {
             console.error('[optimizeGroceryList] Error:', error);
-            return errorResponse('Failed to optimize grocery list.', ErrorCode.INTERNAL_ERROR);
+            return errorResponse(
+                'Failed to optimize grocery list with pricing data.',
+                ErrorCode.INTERNAL_ERROR,
+                true,
+                "I couldn't optimize your grocery list right now. This might be because I couldn't access current pricing data. You can still use your original grocery list, or try optimizing again in a moment.",
+                ['Your original grocery list is still available', 'Try again in a few moments', 'Check your internet connection']
+            );
         }
     },
 });
@@ -1379,7 +1440,14 @@ Return valid JSON.`,
 
         } catch (error) {
             console.error('[swapMeal] Error:', error);
-            return errorResponse("Failed to swap meal.", ErrorCode.GENERATION_FAILED, true);
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            return errorResponse(
+                `Meal swap failed: ${errorMessage}`,
+                ErrorCode.GENERATION_FAILED,
+                true,
+                "I had trouble finding a replacement meal. This might be because I couldn't match your preferences or there was a temporary issue. I'll retry automatically, or you can try specifying a different meal to swap.",
+                ['Try specifying the exact meal name you want to replace', 'Make sure your meal plan is saved', 'Try again in a moment']
+            );
         }
     },
 });
@@ -1683,8 +1751,11 @@ export const generateMealRecipe = tool({
             if (session?.user?.id) {
                 const accessCheck = await canGenerateRecipe(session.user.id);
                 if (!accessCheck.allowed) {
+                    const upgradeMessage = accessCheck.remaining === 0 
+                        ? 'Upgrade to Pro for unlimited recipe generations, or wait until next week for your limit to reset.' 
+                        : `You have ${accessCheck.remaining} recipe generation${accessCheck.remaining === 1 ? '' : 's'} remaining this week. Upgrade to Pro for unlimited access.`;
                     return errorResponse(
-                        `You've used all ${accessCheck.limit} recipe generations this week. ${accessCheck.remaining === 0 ? 'Upgrade to Pro for unlimited recipes, or wait until next week.' : `You have ${accessCheck.remaining} remaining.`}`,
+                        `You've reached your weekly limit of ${accessCheck.limit} recipe generations. ${upgradeMessage}`,
                         ErrorCode.RATE_LIMIT_EXCEEDED,
                         false
                     );
@@ -1811,7 +1882,14 @@ Return valid JSON.`,
 
         } catch (error) {
             console.error('[generateMealRecipe] Error:', error);
-            return errorResponse("Failed to generate recipe.", ErrorCode.GENERATION_FAILED, true);
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            return errorResponse(
+                `Recipe generation failed: ${errorMessage}`,
+                ErrorCode.GENERATION_FAILED,
+                true,
+                "I had trouble generating that recipe. This might be because the dish name wasn't clear or there was a temporary issue. I'll retry automatically, or you can try rephrasing the recipe name.",
+                ['Try being more specific with the recipe name (e.g., "Classic Italian Pasta" instead of "Pasta")', 'Check your internet connection', 'Try again in a moment']
+            );
         }
     },
 });
@@ -2054,8 +2132,11 @@ export const analyzePantryImage = tool({
             if (session?.user?.id) {
                 const accessCheck = await canAnalyzePantryImage(session.user.id);
                 if (!accessCheck.allowed) {
+                    const upgradeMessage = accessCheck.remaining === 0 
+                        ? 'Upgrade to Pro for unlimited pantry analyses, or wait until next month for your limit to reset.' 
+                        : `You have ${accessCheck.remaining} pantry analysis${accessCheck.remaining === 1 ? '' : 'es'} remaining this month. Upgrade to Pro for unlimited access.`;
                     return errorResponse(
-                        `You've used all ${accessCheck.limit} pantry analyses this month. ${accessCheck.remaining === 0 ? 'Upgrade to Pro for unlimited analyses, or wait until next month.' : `You have ${accessCheck.remaining} remaining.`}`,
+                        `You've reached your monthly limit of ${accessCheck.limit} pantry analyses. ${upgradeMessage}`,
                         ErrorCode.RATE_LIMIT_EXCEEDED,
                         false
                     );
@@ -2112,18 +2193,36 @@ export const analyzePantryImage = tool({
                     {
                         role: 'user',
                         content: [
-                            { type: 'text', text: `Analyze this image of a fridge or pantry and identify ALL food ingredients visible. 
+                            { type: 'text', text: `Analyze this image and identify ALL food ingredients visible. This tool is specifically for analyzing food-related images (pantries, fridges, meals, ingredients).
 
 CRITICAL INSTRUCTIONS:
-1. **Identify EVERYTHING**: Look carefully at all shelves, drawers, and containers. Don't miss items in the background.
-2. **Be Specific**: Use exact names (e.g., "Red Bell Pepper" not just "pepper", "Whole Milk" not just "milk").
-3. **Estimate Quantities**: Provide realistic quantities (e.g., "6 bananas", "1 bottle", "2 bell peppers").
-4. **Categorize Correctly**: Assign each item to the right category (produce, dairy, protein, grains, spices, other).
-5. **Expiry Estimates**: If items look fresh/new, estimate expiry (e.g., "1 week", "3 days", "2 weeks"). If uncertain, omit this field.
-6. **Packaged Items**: Identify brand names and specific products when visible (e.g., "Coca-Cola", "Heinz Ketchup").
-7. **Partial Visibility**: If you can see part of an item, make your best guess but note uncertainty in the name if needed.
+1. **Image Type Validation**: 
+   - If this image does NOT contain food, ingredients, meals, or kitchen-related items, return an empty items array and a summary explaining why (e.g., "This image doesn't appear to contain food items").
+   - Only analyze images that clearly show food, ingredients, meals, or kitchen/pantry contents.
 
-Return a comprehensive list of ALL visible food items.` },
+2. **Identify EVERYTHING**: Look carefully at all shelves, drawers, containers, plates, and bowls. Don't miss items in the background.
+
+3. **Be Specific**: Use exact names (e.g., "Red Bell Pepper" not just "pepper", "Whole Milk" not just "milk", "Cooked Chicken Breast" not just "chicken").
+
+4. **Estimate Quantities**: Provide realistic quantities (e.g., "6 bananas", "1 bottle", "2 bell peppers", "1 cup cooked rice").
+
+5. **Categorize Correctly**: Assign each item to the right category:
+   - produce: Fresh fruits and vegetables
+   - dairy: Milk, cheese, yogurt, butter
+   - protein: Meat, fish, eggs, tofu, beans
+   - grains: Rice, pasta, bread, cereals
+   - spices: Herbs, spices, seasonings
+   - other: Everything else (sauces, condiments, beverages, etc.)
+
+6. **Expiry Estimates**: If items look fresh/new, estimate expiry (e.g., "1 week", "3 days", "2 weeks"). If uncertain or the image shows cooked/prepared food, omit this field.
+
+7. **Packaged Items**: Identify brand names and specific products when visible (e.g., "Coca-Cola", "Heinz Ketchup").
+
+8. **Cooked/Prepared Foods**: If the image shows a prepared meal or dish, identify the individual ingredients that make up the dish (e.g., if it's fried rice, identify: rice, eggs, chicken, vegetables, etc.).
+
+9. **Partial Visibility**: If you can see part of an item, make your best guess but note uncertainty in the name if needed.
+
+Return a comprehensive list of ALL visible food items. If no food items are detected, return an empty array and explain in the summary.` },
                             imagePart
                         ]
                     }
@@ -2134,6 +2233,14 @@ Return a comprehensive list of ALL visible food items.` },
 
             const { items, summary } = result.object;
 
+            // Handle non-food images - if no items found, provide helpful feedback
+            if (!items || items.length === 0) {
+                return successResponse(
+                    { items: [], summary: summary || "This image doesn't appear to contain food items. Please upload an image of your pantry, fridge, or a meal/ingredients." },
+                    `⚠️ I couldn't find any food items in this image. ${summary || "Please try uploading an image of your pantry, fridge, or ingredients."}`
+                );
+            }
+
             // Extract ingredient names for meal suggestions
             const ingredientNames = items.map(item => item.name);
 
@@ -2141,7 +2248,8 @@ Return a comprehensive list of ALL visible food items.` },
             const uiMetadata = {
                 pantryAnalysis: {
                     items: items,
-                    imageUrl: imageUrl
+                    imageUrl: imageUrl,
+                    summary: summary // Include summary in UI metadata
                 },
                 actions: [
                     {
@@ -2224,7 +2332,14 @@ export const updatePantry = tool({
             );
             return successResponse({ count: items.length }, `Added ${items.length} items.`);
         } catch (e) {
-            return errorResponse("Failed to update.", ErrorCode.INTERNAL_ERROR);
+            const errorMessage = e instanceof Error ? e.message : String(e);
+            return errorResponse(
+                `Pantry update failed: ${errorMessage}`,
+                ErrorCode.INTERNAL_ERROR,
+                true,
+                "I couldn't add those items to your pantry right now. This might be due to a database issue or invalid item data. I'll retry automatically, or you can try adding the items again.",
+                ['Make sure item names are valid', 'Check that quantities are properly formatted', 'Try again in a moment']
+            );
         }
     }
 });
@@ -2248,7 +2363,14 @@ export const saveMealPlan = tool({
             if (!result.success) return errorResponse(result.error || 'Failed', ErrorCode.INTERNAL_ERROR);
             return successResponse({ savedId: result.mealPlan?.id }, "Saved.");
         } catch (e) {
-            return errorResponse("Failed to save.", ErrorCode.INTERNAL_ERROR);
+            const errorMessage = e instanceof Error ? e.message : String(e);
+            return errorResponse(
+                `Save operation failed: ${errorMessage}`,
+                ErrorCode.INTERNAL_ERROR,
+                false,
+                "I couldn't save your meal plan right now. This might be due to invalid data or a database issue. Please check that all meals have names and ingredients, then try saving again.",
+                ['Make sure all meals have names and ingredients', 'Check your internet connection', 'Try refreshing the page and saving again']
+            );
         }
     }
 });

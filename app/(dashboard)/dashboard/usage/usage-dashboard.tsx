@@ -122,12 +122,7 @@ export function UsageDashboard({ userId }: UsageDashboardProps) {
               </p>
             </div>
             {!isPro && (
-              <Button asChild size="lg" className="gap-2">
-                <Link href="/dashboard/account?upgrade=usage">
-                  <Crown className="h-4 w-4" />
-                  Upgrade to Pro
-                </Link>
-              </Button>
+              <UpgradeButton size="lg" className="gap-2" />
             )}
             {isPro && (
               <Badge variant="outline" className="gap-2 px-4 py-2">
@@ -261,12 +256,9 @@ export function UsageDashboard({ userId }: UsageDashboardProps) {
                 );
               })}
               {featureUsage.some((u) => getUsagePercentage(u.currentUsage, u.limit) >= 75) && (
-                <Button asChild className="w-full mt-4" variant="default">
-                  <Link href="/dashboard/account?upgrade=usage">
-                    <Crown className="h-4 w-4 mr-2" />
-                    Upgrade to Pro for Unlimited Access
-                  </Link>
-                </Button>
+                <div className="w-full mt-4">
+                  <UpgradeButton />
+                </div>
               )}
             </CardContent>
           </Card>

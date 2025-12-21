@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
-import { getUserFeatureLimits, getUserPlan } from '@/lib/utils/feature-gates';
+import { getUserFeatureLimits, getUserPlan, FEATURE_LIMITS } from '@/lib/utils/feature-gates';
 import { getToolUsageCount } from '@/lib/utils/tool-usage-tracker';
 
 export async function GET(request: NextRequest) {
@@ -22,6 +22,18 @@ export async function GET(request: NextRequest) {
 
     const plan = await getUserPlan(session.user.id);
     const limits = await getUserFeatureLimits(session.user.id);
+
+    // Ensure limits object has all required properties, especially exportFormats
+    if (!limits || !limits.exportFormats || !Array.isArray(limits.exportFormats)) {
+      console.error('[Usage Features API] Invalid limits structure:', limits);
+      // Fallback to free plan limits if structure is invalid
+      const fallbackLimits = FEATURE_LIMITS.free;
+      return NextResponse.json({
+        limits: fallbackLimits,
+        featureUsage: [],
+        plan: 'free',
+      });
+    }
 
     const featureUsage = [];
 
@@ -65,8 +77,12 @@ export async function GET(request: NextRequest) {
     }
 
     // Return both limits and featureUsage for all users
+    // Ensure limits always has exportFormats array
     return NextResponse.json({
-      limits,
+      limits: {
+        ...limits,
+        exportFormats: Array.isArray(limits.exportFormats) ? limits.exportFormats : ['pdf'],
+      },
       featureUsage,
       plan,
     });

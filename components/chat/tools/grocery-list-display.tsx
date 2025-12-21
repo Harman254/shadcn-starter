@@ -355,7 +355,7 @@ export function GroceryListDisplay({ groceryList, mealPlanId, onActionClick }: G
               size="lg"
               variant="outline"
               className="w-full h-12 rounded-xl font-semibold gap-2 bg-white/5 border-white/10 text-white hover:bg-white/10"
-              onClick={() => onActionClick("Optimize this grocery list for better prices")}
+              onClick={() => onActionClick("Optimize this grocery list for better prices and savings")}
             >
               <Wand2 className="h-4 w-4" /> Optimize Prices
             </Button>

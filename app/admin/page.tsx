@@ -1,5 +1,9 @@
 'use client'
 import React, { useState, useEffect } from 'react'
+
+// Note: This is a client component, but we still need to mark it as dynamic
+// because the Navbar in the root layout uses headers()
+export const dynamic = 'force-dynamic';
 import CloudinaryUpload from '@/components/CloudinaryUpload'
 import AdminContactList from '@/components/AdminContactList'
 import { Button } from '@/components/ui/button'
