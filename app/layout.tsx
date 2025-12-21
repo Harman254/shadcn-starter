@@ -46,6 +46,10 @@ export const viewport = {
   viewportFit: 'cover',
 }
 
+// Force dynamic rendering since Navbar uses headers() for session
+// This allows the Navbar to fetch session data on all pages
+export const dynamic = 'force-dynamic';
+
 export default async function RootLayout({ children }: RootLayoutProps) {
   return (
     <html suppressHydrationWarning lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>

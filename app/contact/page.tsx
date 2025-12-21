@@ -2,6 +2,9 @@ import { ContactForm } from "@/components/contact-form"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Mail, MessageSquare, Clock } from "lucide-react"
 
+// Force dynamic rendering since Navbar uses headers() for session
+export const dynamic = 'force-dynamic';
+
 export default function ContactPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br bg-background/95 py-12 px-4">

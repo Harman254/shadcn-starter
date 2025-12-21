@@ -5,6 +5,9 @@ import { redirect } from 'next/navigation';
 import { Suspense } from 'react';
 import { Loader2 } from 'lucide-react';
 
+// Force dynamic rendering since we use headers() for auth
+export const dynamic = 'force-dynamic';
+
 function LoadingFallback() {
   return (
     <div className="min-h-screen bg-gradient-subtle flex items-center justify-center">

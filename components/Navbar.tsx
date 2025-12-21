@@ -27,9 +27,6 @@ const pacifico = Pacifico({
   variable: "--font-pacifico",
 });
 
-// Force dynamic rendering since we use headers() for auth
-export const dynamic = 'force-dynamic';
-
 const features: Feature[] = [
     {
       title: "Dashboard",
@@ -65,15 +62,33 @@ const features: Feature[] = [
 
 export default async function Navbar() {
   // Fetch session server-side
-  let session;
+  // Handle static generation gracefully - don't throw if headers() is unavailable
+  let session = null;
   try {
+    // Check if we're in a request context (not static generation)
+    // During static generation, headers() will throw, so we catch and continue
+    const headersList = await headers();
     session = await auth.api.getSession({
-      headers: await headers(),
+      headers: headersList,
     });
-  } catch (error) {
-    // Handle errors gracefully - navbar should still render
-    console.error('[Navbar] Error fetching session:', error);
-    session = null;
+  } catch (error: any) {
+    // During static generation, headers() throws DYNAMIC_SERVER_USAGE error
+    // This is expected and we should gracefully handle it silently
+    // Don't log this error as it's expected during build time
+    if (error?.digest === 'DYNAMIC_SERVER_USAGE' || 
+        error?.message?.includes('headers') || 
+        error?.message?.includes('rendered statically')) {
+      // This is expected during static generation - navbar will render without session
+      // Session will be fetched client-side if needed via NavbarAuthButtons
+      // Silently continue - no logging needed
+      session = null;
+    } else {
+      // Only log unexpected errors (not static generation errors)
+      if (process.env.NODE_ENV === 'development') {
+        console.error('[Navbar] Unexpected error fetching session:', error);
+      }
+      session = null;
+    }
   }
 
   const isSignedIn = !!session?.user;
