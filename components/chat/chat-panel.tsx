@@ -315,26 +315,36 @@ export function ChatPanel({
         return;
      }
 
-     const messageId = crypto.randomUUID();
-     const userMsg: Message = {
-        id: messageId,
-        role: 'user',
-        content: value,
-        timestamp: new Date(),
-     };
-     
-     isUserSubmittingRef.current = true;
-     addMessage(finalSessionId, userMsg);
-     
-     // Clear input
-     handleInputChange({ target: { value: '' } } as React.ChangeEvent<HTMLInputElement>);
-     
-     // Append with same ID
-     append({
-        id: messageId,
-        role: 'user',
-        content: value,
-     });
+     try {
+       const messageId = crypto.randomUUID();
+       const userMsg: Message = {
+          id: messageId,
+          role: 'user',
+          content: value,
+          timestamp: new Date(),
+       };
+       
+       isUserSubmittingRef.current = true;
+       addMessage(finalSessionId, userMsg);
+       
+       // Clear input
+       handleInputChange({ target: { value: '' } } as React.ChangeEvent<HTMLInputElement>);
+       
+       // Append with same ID - wrap in try-catch to prevent crashes
+       await append({
+          id: messageId,
+          role: 'user',
+          content: value,
+       });
+     } catch (error) {
+       isUserSubmittingRef.current = false;
+       console.error('[ChatPanel] Failed to submit message:', error);
+       toast({
+         title: 'Message failed',
+         description: error instanceof Error ? error.message : 'There was an issue sending your message. Please try again.',
+         variant: 'destructive',
+       });
+     }
   };
   // Auto-scroll to bottom when chat first loads
   useEffect(() => {

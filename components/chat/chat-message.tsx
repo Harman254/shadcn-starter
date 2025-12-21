@@ -339,8 +339,12 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
       // Remove tool invocation code blocks (e.g., ```tool_code\nanalyzePantryImage(...)\n```)
       .replace(/```tool_code[\s\S]*?```/g, '')
       .replace(/```tool[\s\S]*?```/g, '')
-      // Remove any code blocks that contain tool function calls
-      .replace(/```[\w]*\n\s*(analyzePantryImage|generateMealPlan|generateMealRecipe|generateGroceryList|analyzeNutrition|searchRecipes|planFromInventory|optimizeGroceryList|modifyMealPlan|swapMeal|getGroceryPricing|suggestIngredientSubstitutions|getSeasonalIngredients|searchFoodData|generatePrepTimeline|updatePantry)\([^)]*\)[\s\S]*?```/g, '');
+      // Remove any code blocks that contain tool function calls (more comprehensive pattern)
+      .replace(/```[\w]*\n\s*(analyzePantryImage|generateMealPlan|generateMealRecipe|generateGroceryList|analyzeNutrition|searchRecipes|planFromInventory|optimizeGroceryList|modifyMealPlan|swapMeal|getGroceryPricing|suggestIngredientSubstitutions|getSeasonalIngredients|searchFoodData|generatePrepTimeline|updatePantry)\([^)]*\)[\s\S]*?```/g, '')
+      // Remove tool function calls that appear outside code blocks (standalone)
+      .replace(/(analyzePantryImage|generateMealPlan|generateMealRecipe|generateGroceryList|analyzeNutrition|searchRecipes|planFromInventory|optimizeGroceryList|modifyMealPlan|swapMeal|getGroceryPricing|suggestIngredientSubstitutions|getSeasonalIngredients|searchFoodData|generatePrepTimeline|updatePantry)\s*\([^)]*\)/g, '')
+      // Remove any remaining tool code patterns (e.g., "Tool: analyzePantryImage(...)")
+      .replace(/Tool:\s*(analyzePantryImage|generateMealPlan|generateMealRecipe|generateGroceryList|analyzeNutrition|searchRecipes|planFromInventory|optimizeGroceryList|modifyMealPlan|swapMeal|getGroceryPricing|suggestIngredientSubstitutions|getSeasonalIngredients|searchFoodData|generatePrepTimeline|updatePantry)\s*\([^)]*\)/gi, '');
     
     // Remove any remaining Cloudinary/image URLs that might be in plain text
     // This catches URLs that weren't in [IMAGE_CONTEXT]: format
@@ -1190,17 +1194,19 @@ export const ChatMessage = memo(function ChatMessage({ message, isLoading, onAct
 
           {/* Pantry Analysis Display */}
           {uiData?.pantryAnalysis && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3 }}
-              className="w-full max-w-2xl mx-auto"
-            >
-              <PantryAnalysisDisplay 
-                data={uiData.pantryAnalysis} 
-                onActionClick={onActionClick} 
-              />
-            </motion.div>
+            <ChatErrorBoundary>
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3 }}
+                className="w-full max-w-2xl mx-auto"
+              >
+                <PantryAnalysisDisplay 
+                  data={uiData.pantryAnalysis} 
+                  onActionClick={onActionClick} 
+                />
+              </motion.div>
+            </ChatErrorBoundary>
           )}
         </div>
       )}

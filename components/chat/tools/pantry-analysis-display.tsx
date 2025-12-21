@@ -74,11 +74,28 @@ export function PantryAnalysisDisplay({ data, onActionClick }: PantryAnalysisDis
     }
   }
 
-  const handleGetMealSuggestions = () => {
-    if (onActionClick) {
+  const handleGetMealSuggestions = async () => {
+    if (!onActionClick || items.length === 0) return
+    
+    try {
+      setLoading(true)
       const ingredientList = items.map(item => item.name).join(', ')
       // Use planFromInventory tool for better meal suggestions
       onActionClick(`Suggest meals I can cook with these ingredients: ${ingredientList}`)
+      
+      toast({
+        title: "Getting meal ideas",
+        description: "Finding recipes based on your ingredients...",
+      })
+    } catch (error) {
+      console.error("Failed to get meal suggestions", error)
+      toast({
+        title: "Failed to get meal suggestions",
+        description: error instanceof Error ? error.message : "Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -193,10 +210,18 @@ export function PantryAnalysisDisplay({ data, onActionClick }: PantryAnalysisDis
             className="flex-1 font-medium shadow-sm active:scale-95 transition-all" 
             size="lg"
             onClick={handleGetMealSuggestions}
-            disabled={items.length === 0}
+            disabled={items.length === 0 || loading}
             variant="outline"
           >
-            <ChefHat className="mr-2 h-4 w-4" /> Get Meal Ideas
+            {loading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Finding ideas...
+              </>
+            ) : (
+              <>
+                <ChefHat className="mr-2 h-4 w-4" /> Get Meal Ideas
+              </>
+            )}
           </Button>
         </div>
       </CardContent>
