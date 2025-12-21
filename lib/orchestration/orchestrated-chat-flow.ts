@@ -410,9 +410,9 @@ ${contextInfo}
 
 AVAILABLE TOOLS:
 - fetchUserPreferences: Fetch stored user preferences (dietary, allergies, goals)
-- generateMealPlan: Create a meal plan (parameters: duration, mealsPerDay, preferences)
-- modifyMealPlan: Generate a different meal plan variant
-- swapMeal: Swap a specific meal in the plan
+- generateMealPlan: Create a NEW meal plan (parameters: duration, mealsPerDay, preferences) - Use for initial meal plan requests
+- modifyMealPlan: Generate a completely DIFFERENT meal plan variant - Use when user wants an alternative plan
+- swapMeal: Swap/Replace a specific meal in an EXISTING meal plan - Use when user says "replace X with Y", "swap", "change [meal name]" while a meal plan is displayed
 - generateMealRecipe: Generate detailed recipe for a meal
 - generateGroceryList: Create shopping list (optional mealPlanId, works from context)
 - searchFoodData: Search real-world food data (nutrition, prices, availability, substitutions)
@@ -432,6 +432,11 @@ CRITICAL ORCHESTRATION RULES:
    - ALWAYS start by checking/fetching user preferences if not provided.
    - Then generate the meal plan.
    - AFTER generating the plan, you can offer to generate a grocery list or analyze nutrition.
+   - **CRITICAL - Meal Modifications**: 
+     * If user wants to REPLACE/SWAP/CHANGE a specific meal in an EXISTING plan (e.g., "Replace ugali with rice", "Swap Tuesday dinner", "Change X to Y"), use "swapMeal" tool.
+     * The swapMeal tool can find meals by name automatically - extract the meal name to replace and the replacement description.
+     * Example: "Replace ugali sukumawiki with rice and chapati beef" -> Use swapMeal with mealNameToReplace="ugali sukumawiki" and replacementDescription="rice and chapati beef".
+     * DO NOT use generateMealPlan or modifyMealPlan for single meal swaps - use swapMeal instead.
    - **Button Actions**: If user says "Generate a grocery list for this meal plan" or "for this plan", use "generateGroceryList" with the current meal plan context.
    - **Button Actions**: If user says "Analyze nutrition for this meal plan" or "Analyze the nutrition of this meal plan", use "analyzeNutrition" with the current meal plan context.
    - **Button Actions**: If user says "Create a prep timeline for this meal plan" or "Create a meal prep timeline", use "generatePrepTimeline" with recipes from the current meal plan.

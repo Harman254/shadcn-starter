@@ -65,7 +65,17 @@ export class ReasoningEngine {
            - Example: If context has "7 days" but user asks for "1 day", use "1".
         
         CRITICAL:
-        - If the user asks for a meal plan, call 'generateMealPlan'.
+        - **Meal Plan Requests**:
+          * If the user asks for a NEW meal plan (e.g., "Create a meal plan", "Generate a 7-day plan"), call 'generateMealPlan'.
+          * If the user asks for a DIFFERENT/ALTERNATIVE meal plan variant (e.g., "Give me another option", "Show me a different plan"), call 'modifyMealPlan'.
+          * If the user wants to REPLACE/SWAP/CHANGE a specific meal in an EXISTING plan (e.g., "Replace X with Y", "Swap Tuesday dinner", "Change ugali to rice", "Replace ugali sukumawiki with rice and chapati beef"), call 'swapMeal'.
+            - For swapMeal, you MUST extract:
+              * The meal name to replace (e.g., "ugali sukumawiki", "Tuesday dinner")
+              * The replacement meal description (e.g., "rice and chapati beef")
+              * The day number (if mentioned, otherwise use 1 as default)
+              * The meal index (0=Breakfast, 1=Lunch, 2=Dinner - infer from meal name or use 2 for dinner if unclear)
+            - Example: "Replace ugali sukumawiki with rice and chapati beef" -> Call 'swapMeal' with args '{"day": 1, "mealIndex": 2, "reason": "User wants to replace ugali sukumawiki with rice and chapati beef", "mealNameToReplace": "ugali sukumawiki", "replacementDescription": "rice and chapati beef"}'.
+            - CRITICAL: If there's a meal plan in context and user says "replace", "swap", or "change" a meal, ALWAYS use 'swapMeal', NOT 'generateMealPlan' or 'modifyMealPlan'.
         - If the user asks for a grocery list, call 'generateGroceryList'.
           * If user says "for this meal plan", "for this plan", "for the meal plan", pass '{"source": "mealplan", "fromContext": "true"}' to use the current meal plan context.
           * If user says "for [recipe name]" or "for the recipe", pass '{"source": "recipe", "recipeName": "[recipe name]"}'.

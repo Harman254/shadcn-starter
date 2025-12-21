@@ -1334,15 +1334,17 @@ Items: ${JSON.stringify(itemsToOptimize)}
 // ============================================================================
 
 export const swapMeal = tool({
-    description: 'Swap a specific meal in a meal plan with a new option based on user preferences. Use this when the user wants to change just ONE meal (e.g., "Change Tuesday dinner") while keeping the rest of the plan.',
+    description: 'Swap a specific meal in a meal plan with a new option based on user preferences. Use this when the user wants to change just ONE meal (e.g., "Change Tuesday dinner", "Replace ugali with rice") while keeping the rest of the plan. This tool automatically finds the meal to replace by name if day/mealIndex are not specified.',
     parameters: z.object({
-        day: z.number().describe('The day number to swap (e.g., 1 for Day 1)'),
-        mealIndex: z.number().describe('The index of the meal to swap (0 for Breakfast, 1 for Lunch, 2 for Dinner, etc.)'),
-        reason: z.string().optional().describe('Why the user wants to swap (e.g., "I don\'t like fish", "Make it vegetarian")'),
+        day: z.number().optional().describe('The day number to swap (e.g., 1 for Day 1). If not provided, will search all days for the meal name.'),
+        mealIndex: z.number().optional().describe('The index of the meal to swap (0 for Breakfast, 1 for Lunch, 2 for Dinner, etc.). If not provided, will search all meals in the day(s).'),
+        reason: z.string().optional().describe('Why the user wants to swap (e.g., "I don\'t like fish", "Make it vegetarian", "User wants rice instead")'),
+        mealNameToReplace: z.string().optional().describe('The name or description of the meal to replace (e.g., "ugali sukumawiki", "Tuesday dinner"). Used to find the meal if day/mealIndex are not specified.'),
+        replacementDescription: z.string().optional().describe('Description of what the user wants as replacement (e.g., "rice and chapati beef", "vegetarian option")'),
     }),
-    execute: async ({ day, mealIndex, reason }, options): Promise<ToolResult> => {
+    execute: async ({ day, mealIndex, reason, mealNameToReplace, replacementDescription }, options): Promise<ToolResult> => {
         try {
-            console.log(`[swapMeal] 🔄 Swapping meal for Day ${day}, Index ${mealIndex}.Reason: ${reason || 'None'} `);
+            console.log(`[swapMeal] 🔄 Swapping meal. Day: ${day || 'auto'}, Index: ${mealIndex || 'auto'}, Reason: ${reason || 'None'}, Meal to replace: ${mealNameToReplace || 'not specified'}`);
 
             // 1. Get Current Meal Plan from Context
             // @ts-ignore - context is injected by ToolExecutor via options
@@ -1360,23 +1362,100 @@ export const swapMeal = tool({
                 return errorResponse("I can't find an active meal plan to modify. Please generate one first.", ErrorCode.INVALID_INPUT);
             }
 
-            // 2. Validate Target
-            const targetDay = lastMealPlan.days.find((d: any) => d.day === day);
-            if (!targetDay) {
-                return errorResponse(`Day ${day} not found in the current plan.`, ErrorCode.INVALID_INPUT);
+            // 2. Find the target meal
+            let targetDay: any = null;
+            let targetMeal: any = null;
+            let foundDay: number | null = null;
+            let foundMealIndex: number | null = null;
+
+            if (day !== undefined && mealIndex !== undefined) {
+                // Direct specification
+                targetDay = lastMealPlan.days.find((d: any) => d.day === day);
+                if (!targetDay) {
+                    return errorResponse(`Day ${day} not found in the current plan.`, ErrorCode.INVALID_INPUT);
+                }
+                targetMeal = targetDay.meals[mealIndex];
+                if (!targetMeal) {
+                    return errorResponse(`Meal index ${mealIndex} not found for Day ${day}.`, ErrorCode.INVALID_INPUT);
+                }
+                foundDay = day;
+                foundMealIndex = mealIndex;
+            } else if (mealNameToReplace) {
+                // Search by meal name - look through all days and meals
+                const searchTerm = mealNameToReplace.toLowerCase();
+                console.log(`[swapMeal] 🔍 Searching for meal matching: "${searchTerm}"`);
+                
+                for (const d of lastMealPlan.days) {
+                    for (let i = 0; i < d.meals.length; i++) {
+                        const meal = d.meals[i];
+                        const mealName = meal.name?.toLowerCase() || '';
+                        const mealDesc = meal.description?.toLowerCase() || '';
+                        
+                        // Check if meal name or description contains the search term
+                        if (mealName.includes(searchTerm) || mealDesc.includes(searchTerm) || 
+                            searchTerm.includes(mealName) || searchTerm.split(' ').some(word => mealName.includes(word))) {
+                            targetDay = d;
+                            targetMeal = meal;
+                            foundDay = d.day;
+                            foundMealIndex = i;
+                            console.log(`[swapMeal] ✅ Found match: Day ${foundDay}, Index ${foundMealIndex}, Meal: "${meal.name}"`);
+                            break;
+                        }
+                    }
+                    if (targetMeal) break;
+                }
+
+                if (!targetMeal) {
+                    // Try fuzzy matching - check if any meal name contains words from search term
+                    const searchWords = searchTerm.split(/\s+/).filter(w => w.length > 2);
+                    for (const d of lastMealPlan.days) {
+                        for (let i = 0; i < d.meals.length; i++) {
+                            const meal = d.meals[i];
+                            const mealName = meal.name?.toLowerCase() || '';
+                            if (searchWords.some(word => mealName.includes(word))) {
+                                targetDay = d;
+                                targetMeal = meal;
+                                foundDay = d.day;
+                                foundMealIndex = i;
+                                console.log(`[swapMeal] ✅ Found fuzzy match: Day ${foundDay}, Index ${foundMealIndex}, Meal: "${meal.name}"`);
+                                break;
+                            }
+                        }
+                        if (targetMeal) break;
+                    }
+                }
+
+                if (!targetMeal) {
+                    return errorResponse(
+                        `I couldn't find a meal matching "${mealNameToReplace}" in your meal plan. Please specify the exact meal name or the day and meal type (e.g., "Day 1 dinner").`,
+                        ErrorCode.INVALID_INPUT,
+                        false,
+                        `I searched through your meal plan but couldn't find "${mealNameToReplace}". Could you tell me which day and meal type you'd like to replace?`,
+                        ['Specify the day number (e.g., "Day 1")', 'Specify the meal type (breakfast, lunch, or dinner)', 'Check the exact meal name in your plan']
+                    );
+                }
+            } else {
+                // No specification at all - default to Day 1, Dinner (index 2)
+                targetDay = lastMealPlan.days.find((d: any) => d.day === 1);
+                if (!targetDay) {
+                    targetDay = lastMealPlan.days[0];
+                }
+                foundDay = targetDay.day;
+                foundMealIndex = targetDay.meals.length > 2 ? 2 : targetDay.meals.length - 1; // Default to dinner or last meal
+                targetMeal = targetDay.meals[foundMealIndex];
+                console.log(`[swapMeal] ⚠️ No meal specified, defaulting to Day ${foundDay}, Index ${foundMealIndex}`);
             }
 
-            const targetMeal = targetDay.meals[mealIndex];
-            if (!targetMeal) {
-                return errorResponse(`Meal index ${mealIndex} not found for Day ${day}.`, ErrorCode.INVALID_INPUT);
-            }
-
-            console.log(`[swapMeal] 🎯 Target: ${targetMeal.name} `);
+            console.log(`[swapMeal] 🎯 Target: Day ${foundDay}, Index ${foundMealIndex}, Meal: "${targetMeal.name}"`);
 
             // 3. Generate NEW Meal using AI
             const { generateObject } = await import('ai');
             const { google } = await import('@ai-sdk/google');
             const { z } = await import('zod');
+
+            // Determine meal type from index
+            const mealTypeNames = ['Breakfast', 'Lunch', 'Dinner', 'Snack'];
+            const mealType = mealTypeNames[foundMealIndex!] || 'Dinner';
 
             const result = await generateObject({
                 model: google('gemini-2.0-flash'),
@@ -1387,19 +1466,22 @@ export const swapMeal = tool({
                     ingredients: z.array(z.string()),
                     instructions: z.string(),
                 }),
-                prompt: `Generate a replacement meal for Day ${day}, Meal ${mealIndex + 1} of a meal plan.
+                prompt: `Generate a replacement meal for Day ${foundDay}, ${mealType} (Meal ${foundMealIndex! + 1}) of a meal plan.
                 
-CURRENT MEAL(To Replace): "${targetMeal.name}" - ${targetMeal.description}
-REASON FOR SWAP: ${reason || "User wants something different"}
+CURRENT MEAL (To Replace): "${targetMeal.name}" - ${targetMeal.description}
+REPLACEMENT REQUEST: ${replacementDescription || reason || "User wants something different"}
+REASON FOR SWAP: ${reason || "User wants a different meal"}
 
-CONTEXT(Other meals in the plan to avoid repetition):
+CONTEXT (Other meals in the plan to avoid repetition):
 ${lastMealPlan.days.map((d: any) => `Day ${d.day}: ${d.meals.map((m: any) => m.name).join(', ')}`).join('\n')}
 
 INSTRUCTIONS:
-1. Generate a COMPLETELY DIFFERENT meal than the current one.
-2. Respect the "Reason for Swap" strictly(e.g.if "vegetarian", no meat).
-3. Ensure it fits the meal type(Breakfast / Lunch / Dinner) based on index ${mealIndex}.
-4. Provide full details(ingredients, instructions).
+1. Generate a COMPLETELY DIFFERENT meal than "${targetMeal.name}".
+2. If replacement description is provided ("${replacementDescription}"), create a meal that matches that description.
+3. Respect the "Reason for Swap" strictly (e.g., if "vegetarian", no meat).
+4. Ensure it fits the meal type (${mealType}) - appropriate for ${mealType.toLowerCase()}.
+5. Provide full details (ingredients, instructions).
+6. Make sure the new meal name and description are distinct from the current meal.
 
 Return valid JSON.`,
             });
@@ -1413,7 +1495,12 @@ Return valid JSON.`,
             // 4. Construct Updated Plan
             // Deep copy the plan to avoid mutating the context directly (though context is likely immutable/copied)
             const updatedPlan = JSON.parse(JSON.stringify(lastMealPlan));
-            updatedPlan.days.find((d: any) => d.day === day).meals[mealIndex] = newMeal;
+            const mealTypeLower = mealType.toLowerCase() as 'breakfast' | 'lunch' | 'dinner' | 'snack';
+            updatedPlan.days.find((d: any) => d.day === foundDay).meals[foundMealIndex!] = {
+                ...newMeal,
+                type: mealTypeLower, // Preserve meal type
+                imageUrl: targetMeal.imageUrl || getRandomMealImage(mealTypeLower), // Preserve or generate image
+            };
 
             // 5. Create UI Metadata
             const uiMetadata = {
@@ -1435,7 +1522,7 @@ Return valid JSON.`,
                     swappedMeal: newMeal,
                     originalMeal: targetMeal
                 },
-                `✅ Swapped Day ${day} meal! Replaced "${targetMeal.name}" with "${newMeal.name}". [UI_METADATA:${uiMetadataEncoded}]`
+                `✅ Swapped Day ${foundDay} meal! Replaced "${targetMeal.name}" with "${newMeal.name}". [UI_METADATA:${uiMetadataEncoded}]`
             );
 
         } catch (error) {
