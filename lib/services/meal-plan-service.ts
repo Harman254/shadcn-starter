@@ -245,7 +245,7 @@ export async function saveMealPlanService(
     // Analytics Tracking (outside transaction)
     // This is also non-critical
     try {
-      const allMeals = savedMealPlan.days.flatMap((day) => day.meals);
+      const allMeals = completeMealPlan.days.flatMap((day) => day.meals);
       const totalMeals = allMeals.length;
       const uniqueRecipes = new Set(allMeals.map((meal) => meal.name)).size;
 
@@ -268,7 +268,7 @@ export async function saveMealPlanService(
 
     return {
       success: true,
-      mealPlan: savedMealPlan,
+      mealPlan: completeMealPlan,
     };
   } catch (error) {
     // Handle known error types
