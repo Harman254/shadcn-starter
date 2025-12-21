@@ -5,6 +5,8 @@ import { headers } from 'next/headers';
 import { UserPreference } from '@/types';
 import { getOrGeneratePreferencesSummary } from '@/lib/utils/preferences-cache';
 import { Metadata } from 'next';
+import { Suspense } from 'react';
+import { Loader2 } from 'lucide-react';
 
 export const metadata: Metadata = {
   title: 'Chat | Mealwise',
@@ -20,15 +22,19 @@ export default async function ChatPage() {
   let preferencesSummary = '';
   
   try {
-    let session;
+    let session = null;
     try {
+      const headersList = await headers();
       session = await auth.api.getSession({
-      headers: await headers(),
-    });
-    } catch (sessionError) {
+        headers: headersList,
+      });
+    } catch (sessionError: any) {
       // Handle database connection errors when fetching session
-      console.error('[ChatPage] Error fetching session:', sessionError);
-      if (process.env.NODE_ENV === 'development') {
+      // In production, log minimal info
+      if (process.env.NODE_ENV === 'production') {
+        console.error('[ChatPage] Session fetch error');
+      } else {
+        console.error('[ChatPage] Error fetching session:', sessionError);
         if (sessionError instanceof Error) {
           console.error('[ChatPage] Session error details:', {
             message: sessionError.message,
@@ -112,6 +118,19 @@ export default async function ChatPage() {
     }
   }
 
-  return <ChatPageClient preferences={preferences} preferencesSummary={preferencesSummary} />;
+  return (
+    <Suspense
+      fallback={
+        <div className="flex h-full w-full items-center justify-center">
+          <div className="flex flex-col items-center gap-4">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <p className="text-sm text-muted-foreground">Loading chat...</p>
+          </div>
+        </div>
+      }
+    >
+      <ChatPageClient preferences={preferences} preferencesSummary={preferencesSummary} />
+    </Suspense>
+  );
 }
 
