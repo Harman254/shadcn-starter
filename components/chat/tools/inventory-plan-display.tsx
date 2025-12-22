@@ -242,8 +242,9 @@ export function InventoryPlanDisplay({ data, availableIngredients, onActionClick
                   </Button>
                 </motion.div>
               )}
-            </motion.div>
-          ))}
+              </motion.div>
+            )
+          })}
         </div>
 
         {/* Shopping Additions */}
