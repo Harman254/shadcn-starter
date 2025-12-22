@@ -29,19 +29,28 @@ export const proactiveMealSuggestions = inngest.createFunction(
         },
         include: {
           Subscription: true,
-          MealPlan: {
-            where: {
-              createdAt: {
-                gte: today,
-                lt: tomorrow,
-              },
-            },
-          },
         },
       });
 
       // Filter users without meal plans today
-      return allUsers.filter((user) => user.MealPlan.length === 0);
+      const usersToNotify = [];
+      for (const user of allUsers) {
+        const mealPlanToday = await prisma.mealPlan.findFirst({
+          where: {
+            userId: user.id,
+            createdAt: {
+              gte: today,
+              lt: tomorrow,
+            },
+          },
+        });
+
+        if (!mealPlanToday) {
+          usersToNotify.push(user);
+        }
+      }
+
+      return usersToNotify;
     });
 
     // Send suggestions
