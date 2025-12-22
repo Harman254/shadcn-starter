@@ -15,20 +15,22 @@ export const usageLimitResetNotification = inngest.createFunction(
     cron: "0 9 * * 1", // Every Monday at 9 AM UTC
   },
   async ({ event, step }) => {
-    // Get all free tier users
+    // Get all free tier users (users without active subscriptions)
     const freeUsers = await step.run("get-free-users", async () => {
-      return await prisma.user.findMany({
+      // Get all users with email verified
+      const allUsers = await prisma.user.findMany({
         where: {
           emailVerified: true,
-          Subscription: {
-            none: {
-              status: "active",
-            },
-          },
         },
         include: {
           Subscription: true,
         },
+      });
+
+      // Filter to only users without active subscriptions
+      return allUsers.filter((user) => {
+        // User is free if they have no subscription OR subscription status is not "active"
+        return !user.Subscription || user.Subscription.status !== "active";
       });
     });
 
