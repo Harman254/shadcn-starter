@@ -164,7 +164,8 @@ function FeaturedPostCard({ post, isDark }: { post: BlogPost; isDark: boolean })
             </div>
           </div>
         </Link>
-      </section>
+      </div>
+    </section>
     );
   }
 
