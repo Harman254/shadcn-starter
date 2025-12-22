@@ -176,7 +176,6 @@ export default function BlogPostClient({ post, contentHtml }: BlogPostClientProp
             src={imageUrl}
             alt={post.title}
             className="absolute inset-0 w-full h-full object-cover"
-            priority
           />
         ) : imageUrl.includes('cloudinary.com') ? (
           <CldImage
