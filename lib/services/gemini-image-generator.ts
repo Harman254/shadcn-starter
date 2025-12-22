@@ -58,8 +58,8 @@ export async function generateGeminiImage(
     try {
       console.log(`[GeminiImageGen] Attempting model: ${modelName} (timeout: ${timeoutMs}ms)`)
 
-      const config = {
-        responseModalities: ['IMAGE', 'TEXT'] as const,
+      const config: { responseModalities: string[] } = {
+        responseModalities: ['IMAGE', 'TEXT'],
       }
 
       const contents = [
