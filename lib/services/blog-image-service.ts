@@ -6,7 +6,7 @@
 
 import { generateCacheKey, useImageCacheStore, isImageCached } from '@/store/image-cache-store';
 import { canGenerateRealisticImages } from '@/lib/utils/feature-gates';
-import { GoogleGenAI } from '@google/genai';
+import { generateGeminiImage } from '@/lib/services/gemini-image-generator';
 
 export interface BlogImageData {
   imageUrl: string;
@@ -73,56 +73,31 @@ export async function generateBlogImage(
     Modern, clean design, food and nutrition theme, professional blog header, 
     appetizing visuals, well-composed, high quality, blog article cover image style.`;
 
-    // Try server-side generation first
-    const apiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY;
-    
-    if (apiKey && typeof window === 'undefined') {
-      // Server-side generation
+    // Use the new generateGeminiImage service (works server-side)
+    // For client-side, fall back to API route
+    if (typeof window === 'undefined') {
+      // Server-side: Use generateGeminiImage directly
       try {
-        const genai = new GoogleGenAI({ apiKey });
-        const modelNames = [
-          process.env.IMAGE_GEN_MODEL,
-          'gemini-2.5-flash-image',
-          'gemini-2.5-flash-generate',
-          'imagen-3.0-generate-002',
-        ].filter(Boolean) as string[];
+        const result = await generateGeminiImage({
+          prompt: prompt.trim(),
+          model: process.env.IMAGE_GEN_MODEL || 'gemini-2.5-flash-image',
+        });
 
-        for (const modelName of modelNames) {
-          try {
-            const response = await genai.models.generateImages({
-              model: modelName,
-              prompt: prompt.trim(),
-              config: {
-                numberOfImages: 1,
-                aspectRatio: '16:9',
-                outputMimeType: 'image/png',
-              },
-            });
+        const imageResult = {
+          imageUrl: result.imageUrl,
+          isGenerated: true,
+          isPro: true,
+        };
 
-            if (response.generatedImages && response.generatedImages.length > 0) {
-              const imageData = response.generatedImages[0];
-              const base64Image = imageData.image?.imageBytes;
-              
-              if (base64Image) {
-                const dataUrl = `data:image/png;base64,${base64Image}`;
-                return {
-                  imageUrl: dataUrl,
-                  isGenerated: true,
-                  isPro: true,
-                };
-              }
-            }
-          } catch (modelError) {
-            console.warn(`[generateBlogImage] Model ${modelName} failed, trying next`);
-            continue;
-          }
-        }
-      } catch (serverError) {
-        console.warn('[generateBlogImage] Server-side generation failed');
+        // Cache will be handled when it reaches the client
+        return imageResult;
+      } catch (error) {
+        console.warn('[generateBlogImage] Server-side generation failed:', error);
+        // Fall through to API route fallback
       }
     }
 
-    // Fallback: Use API route
+    // Client-side or server-side fallback: Use API route
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 
                    (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000');
     

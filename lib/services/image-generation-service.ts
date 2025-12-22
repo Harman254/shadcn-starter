@@ -8,7 +8,7 @@
 
 import { getRandomMealImage, type MealType } from '@/lib/constants/meal-images';
 import { canGenerateRealisticImages } from '@/lib/utils/feature-gates';
-import { GoogleGenAI } from '@google/genai';
+import { generateGeminiImage } from '@/lib/services/gemini-image-generator';
 import { useImageCacheStore, generateCacheKey, isImageCached } from '@/store/image-cache-store';
 
 /**
@@ -93,70 +93,32 @@ High quality, appetizing, well-lit, restaurant style, food blog quality,
 realistic ingredients, proper plating, natural lighting, shallow depth of field, 
 professional food styling, vibrant colors, appetizing presentation.`;
 
-    // Check if we're in a server context (can use GoogleGenAI directly)
-    const apiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY;
-    
-    if (apiKey && typeof window === 'undefined') {
-      // Server-side: Use GoogleGenAI directly
+    // Use the new generateGeminiImage service (works server-side)
+    // For client-side, fall back to API route
+    if (typeof window === 'undefined') {
+      // Server-side: Use generateGeminiImage directly
       try {
-        const genai = new GoogleGenAI({ apiKey });
-        const modelNames = [
-          process.env.IMAGE_GEN_MODEL,
-          'gemini-2.5-flash-image',
-          'gemini-2.5-flash-generate',
-          'imagen-3.0-generate-002',
-        ].filter(Boolean) as string[];
+        const result = await generateGeminiImage({
+          prompt: prompt.trim(),
+          model: process.env.IMAGE_GEN_MODEL || 'gemini-2.5-flash-image',
+        });
 
-        for (const modelName of modelNames) {
-          try {
-            const response = await genai.models.generateImages({
-              model: modelName,
-              prompt: prompt.trim(),
-              config: {
-                numberOfImages: 1,
-                aspectRatio: '16:9',
-                outputMimeType: 'image/png',
-              },
-            });
+        const imageResult = {
+          imageUrl: result.imageUrl,
+          isGenerated: true,
+          isPro: true,
+        };
 
-            if (response.generatedImages && response.generatedImages.length > 0) {
-              const imageData = response.generatedImages[0];
-              const base64Image = imageData.image?.imageBytes;
-              
-              if (base64Image) {
-                const dataUrl = `data:image/png;base64,${base64Image}`;
-                const result = {
-                  imageUrl: dataUrl,
-                  isGenerated: true,
-                  isPro: true,
-                };
-                
-                // Cache the generated image
-                if (typeof window !== 'undefined') {
-                  useImageCacheStore.getState().setImage(cacheKey, {
-                    imageUrl: dataUrl,
-                    isGenerated: true,
-                    isPro: true,
-                    generatedAt: Date.now(),
-                    prompt: prompt.trim(),
-                    cacheKey,
-                  });
-                }
-                
-                return result;
-              }
-            }
-          } catch (modelError) {
-            console.warn(`[generateMealImage] Model ${modelName} failed, trying next`);
-            continue;
-          }
-        }
-      } catch (serverError) {
-        console.warn('[generateMealImage] Server-side generation failed, using fallback');
+        // Cache the generated image (if in browser context, this won't run)
+        // But we'll cache it when it reaches the client
+        return imageResult;
+      } catch (error) {
+        console.warn('[generateMealImage] Server-side generation failed:', error);
+        // Fall through to API route fallback
       }
     }
 
-    // Fallback: Use API route (works for both server and client)
+    // Client-side or server-side fallback: Use API route
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 
                    (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000');
     

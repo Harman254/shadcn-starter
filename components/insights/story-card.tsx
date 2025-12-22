@@ -126,7 +126,7 @@ export function StoryCard({
             </Badge>
           </div>
         )}
-        
+
         {/* AI Generated badge */}
         {isGenerated && !isPro && (
           <div className="absolute bottom-12 left-3 z-20">
