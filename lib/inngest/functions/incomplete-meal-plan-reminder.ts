@@ -20,37 +20,48 @@ export const incompleteMealPlanReminder = inngest.createFunction(
       const oneDayAgo = new Date();
       oneDayAgo.setDate(oneDayAgo.getDate() - 1);
 
-      // Get users with recent chat sessions but no saved meal plans
+      // Get unique user IDs with recent chat sessions
       const recentChatSessions = await prisma.chatSession.findMany({
         where: {
           createdAt: {
             gte: oneDayAgo,
           },
         },
-        include: {
-          user: {
-            include: {
-              Subscription: true,
-            },
-          },
+        select: {
+          userId: true,
         },
         distinct: ['userId'],
       });
 
+      // Get unique user IDs
+      const userIds = [...new Set(recentChatSessions.map(s => s.userId))];
+
+      // Fetch users with their subscriptions
+      const users = await prisma.user.findMany({
+        where: {
+          id: {
+            in: userIds,
+          },
+        },
+        include: {
+          Subscription: true,
+        },
+      });
+
       // Filter users who don't have saved meal plans
       const usersToNotify = [];
-      for (const session of recentChatSessions) {
+      for (const user of users) {
         const savedMealPlan = await prisma.mealPlan.findFirst({
           where: {
-            userId: session.userId,
+            userId: user.id,
             createdAt: {
               gte: oneDayAgo,
             },
           },
         });
 
-        if (!savedMealPlan && session.user) {
-          usersToNotify.push(session.user);
+        if (!savedMealPlan) {
+          usersToNotify.push(user);
         }
       }
 
