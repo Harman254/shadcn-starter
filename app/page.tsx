@@ -100,13 +100,16 @@ export default async function IndexPage() {
     });
   } catch (error) {
     console.error("DEBUG: auth.api.getSession failed:", error);
-    // Continue without session or rethrow depending on desired behavior.
-    // For debugging, we logging it is enough, but we need session for logic.
-    // If it fails, session is undefined, which falls through to landing page.
+    // If session fetch fails, continue to show landing page
+    session = null;
   }
 
-  // Show landing page for both authenticated and unauthenticated users
-  // Logged-in users can navigate to chat via navigation or homepage CTA
+  // Redirect authenticated users to chat page
+  if (session?.user?.id) {
+    redirect("/chat");
+  }
+
+  // Show landing page only for unauthenticated users
   const image = {
     src: "/image01.jpg",
     alt: "Hero section demo image showing interface components",

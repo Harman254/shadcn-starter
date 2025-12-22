@@ -135,8 +135,16 @@ export function MealPlanDisplay({ mealPlan, onActionClick, error }: MealPlanDisp
     mealPlan.days.forEach((day: any, dIndex: number) => {
       day.meals.forEach((meal: any, mIndex: number) => {
         const key = `${dIndex}-${mIndex}`
-        // Use meal.imageUrl if available (from AI generation), otherwise generate a fallback
-        images[key] = meal.imageUrl || MEAL_IMAGES[Math.floor(Math.random() * MEAL_IMAGES.length)]
+        // Use meal.imageUrl if available (from AI generation), otherwise use a deterministic fallback
+        // Use index-based selection instead of random to avoid hydration mismatches
+        if (meal.imageUrl) {
+          images[key] = meal.imageUrl
+        } else {
+          // Deterministic selection based on meal name and index to avoid hydration issues
+          const mealHash = (meal.name || '').split('').reduce((acc: number, char: string) => acc + char.charCodeAt(0), 0)
+          const imageIndex = (mealHash + dIndex + mIndex) % MEAL_IMAGES.length
+          images[key] = MEAL_IMAGES[imageIndex]
+        }
       })
     })
     return images

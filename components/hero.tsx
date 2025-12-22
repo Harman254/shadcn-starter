@@ -213,7 +213,6 @@ const  HeroGeometric = ({
                   width={700}
                   height={520}
                   className="rounded-3xl shadow-2xl border border-black/10 dark:border-white/10 object-cover max-h-[480px] w-full md:w-[600px] lg:w-[700px] scale-105 md:scale-110 rotate-6 bg-white/80 dark:bg-[#18181b]/80"
-                  priority
                   draggable={false}
                 />
               </motion.div>
