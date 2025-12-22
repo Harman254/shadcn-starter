@@ -64,7 +64,7 @@ export function useInsightImage({
         }
 
         // Generate image
-        const result = await generateInsightImage(title, description, mealPlanTitle, userId);
+        const result = await generateInsightImage(title, description, userId, mealPlanTitle);
         
         setImageUrl(result.imageUrl);
         setIsGenerated(result.isGenerated);

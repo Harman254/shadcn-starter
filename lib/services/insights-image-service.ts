@@ -19,8 +19,8 @@ export interface InsightImageData {
 export async function generateInsightImage(
   title: string,
   description: string,
-  mealPlanTitle?: string,
-  userId: string
+  userId: string,
+  mealPlanTitle?: string
 ): Promise<InsightImageData> {
   try {
     // Create a descriptive prompt for the insight
