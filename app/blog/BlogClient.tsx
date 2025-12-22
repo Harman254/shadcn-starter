@@ -169,148 +169,6 @@ function FeaturedPostCard({ post, isDark }: { post: BlogPost; isDark: boolean })
     );
   }
 
-export default function BlogClient({ posts }: BlogClientProps) {
-  const [selectedCategory, setSelectedCategory] = useState("All");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const [scrollY, setScrollY] = useState(0);
-  const [isDark, setIsDark] = useState(false);
-
-  useEffect(() => {
-    const handleScroll = () => setScrollY(window.scrollY);
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-
-  const filteredPosts = useMemo(() => {
-    return posts.filter(post => {
-      const matchesCategory = selectedCategory === "All" || post.category === selectedCategory;
-      const matchesSearch = post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        post.excerpt.toLowerCase().includes(searchQuery.toLowerCase());
-      return matchesCategory && matchesSearch;
-    });
-  }, [posts, selectedCategory, searchQuery]);
-
-  const featuredPost = filteredPosts.find(post => post.featured) || filteredPosts[0];
-  const regularPosts = filteredPosts.filter(post => post !== featuredPost);
-
-  return (
-    <div className={`min-h-screen transition-colors duration-500 ${isDark ? 'dark bg-gray-900' : 'bg-slate-50'}`}>
-      {/* Theme Toggle */}
-      <button
-        onClick={() => setIsDark(!isDark)}
-        className={`fixed top-6 right-6 z-50 p-3 rounded-full shadow-lg transition-all duration-300 ${
-          isDark 
-            ? 'bg-yellow-400 text-gray-900 hover:bg-yellow-300 shadow-yellow-400/25' 
-            : 'bg-gray-900 text-white hover:bg-gray-800 shadow-gray-900/25'
-        }`}
-      >
-        {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-      </button>
-
-      {/* Animated Background */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className={`absolute -top-40 -right-40 w-96 h-96 rounded-full blur-3xl animate-pulse transition-all duration-1000 ${
-          isDark 
-            ? 'bg-gradient-to-br from-purple-500/20 to-pink-500/20' 
-            : 'bg-gradient-to-br from-blue-400/20 to-purple-400/20'
-        }`}></div>
-        <div className={`absolute -bottom-40 -left-40 w-96 h-96 rounded-full blur-3xl animate-pulse delay-1000 transition-all duration-1000 ${
-          isDark 
-            ? 'bg-gradient-to-br from-blue-500/20 to-cyan-500/20' 
-            : 'bg-gradient-to-br from-indigo-400/20 to-pink-400/20'
-        }`}></div>
-      </div>
-
-      {/* Hero Section */}
-      <section className="relative py-24 px-4 sm:px-6 lg:px-8 overflow-hidden">
-        <div 
-          className={`absolute inset-0 transition-all duration-1000 ${
-            isDark 
-              ? 'bg-gradient-to-br from-gray-900 via-purple-900 to-pink-900' 
-              : 'bg-gradient-to-br from-slate-900 via-blue-900 to-purple-900'
-          }`}
-          style={{
-            transform: `translateY(${scrollY * 0.5}px)`,
-          }}
-        />
-        
-        <div className="relative max-w-7xl mx-auto text-center">
-          <div className="inline-flex items-center space-x-2 bg-white/10 backdrop-blur-sm text-white/90 px-6 py-3 rounded-full text-sm font-medium mb-8 border border-white/20">
-            <Zap className="w-4 h-4 text-yellow-400" />
-            <span>Latest insights on AI-powered nutrition</span>
-          </div>
-          
-          <h1 className="text-6xl md:text-8xl font-black tracking-tight leading-tight mb-6">
-            <span className="text-white">The Future of</span>
-            <br />
-            <span className={`text-transparent bg-clip-text animate-pulse transition-all duration-1000 ${
-              isDark 
-                ? 'bg-gradient-to-r from-purple-400 via-pink-400 to-cyan-400' 
-                : 'bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400'
-            }`}>
-              Meal Planning
-            </span>
-          </h1>
-          
-          <p className="text-xl text-slate-300 mb-12 max-w-3xl mx-auto leading-relaxed">
-            Discover expert insights, practical tips, and the latest innovations in AI-powered nutrition. 
-            Transform the way you plan, prepare, and enjoy your meals.
-          </p>
-
-          {/* Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12 max-w-4xl mx-auto">
-            <div className="text-center">
-              <div className="text-3xl font-bold text-white mb-2">12K+</div>
-              <div className="text-slate-300 text-sm">Active Readers</div>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl font-bold text-white mb-2">150+</div>
-              <div className="text-slate-300 text-sm">Articles Published</div>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl font-bold text-white mb-2">95%</div>
-              <div className="text-slate-300 text-sm">Reader Satisfaction</div>
-            </div>
-          </div>
-
-          {/* Search and Filter */}
-          <div className="max-w-2xl mx-auto">
-            <div className="relative mb-8">
-              <input
-                type="text"
-                placeholder="Search articles..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-12 pr-4 py-4 bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl focus:ring-2 focus:ring-blue-400 focus:border-transparent outline-none text-white placeholder-white/60 transition-all"
-              />
-              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-white/60 h-5 w-5" />
-            </div>
-            
-            <div className="flex flex-wrap justify-center gap-3">
-              {categories.map((category) => (
-                <button
-                  key={category}
-                  onClick={() => setSelectedCategory(category)}
-                  className={`px-6 py-3 rounded-full text-sm font-medium transition-all duration-300 ${
-                    selectedCategory === category
-                      ? 'bg-white text-slate-900 shadow-lg shadow-white/25 scale-105'
-                      : 'bg-white/10 backdrop-blur-sm text-white/90 hover:bg-white/20 border border-white/20'
-                  }`}
-                >
-                  {category}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Featured Post */}
-      {featuredPost && (
-        <FeaturedPostCard post={featuredPost} isDark={isDark} />
-      )}
-
 // Blog Post Card Component with AI Image Generation
 function BlogPostCard({ post, isDark }: { post: BlogPost; isDark: boolean }) {
   const { imageUrl, isGenerated, isPro, isLoading } = useBlogImage({
@@ -462,8 +320,116 @@ export default function BlogClient({ posts }: BlogClientProps) {
 
   return (
     <div className={`min-h-screen transition-colors duration-500 ${isDark ? 'dark bg-gray-900' : 'bg-slate-50'}`}>
-      {/* ... existing hero section code ... */}
-      
+      {/* Theme Toggle */}
+      <button
+        onClick={() => setIsDark(!isDark)}
+        className={`fixed top-6 right-6 z-50 p-3 rounded-full shadow-lg transition-all duration-300 ${
+          isDark 
+            ? 'bg-yellow-400 text-gray-900 hover:bg-yellow-300 shadow-yellow-400/25' 
+            : 'bg-gray-900 text-white hover:bg-gray-800 shadow-gray-900/25'
+        }`}
+      >
+        {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+      </button>
+
+      {/* Animated Background */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className={`absolute -top-40 -right-40 w-96 h-96 rounded-full blur-3xl animate-pulse transition-all duration-1000 ${
+          isDark 
+            ? 'bg-gradient-to-br from-purple-500/20 to-pink-500/20' 
+            : 'bg-gradient-to-br from-blue-400/20 to-purple-400/20'
+        }`}></div>
+        <div className={`absolute -bottom-40 -left-40 w-96 h-96 rounded-full blur-3xl animate-pulse delay-1000 transition-all duration-1000 ${
+          isDark 
+            ? 'bg-gradient-to-br from-blue-500/20 to-cyan-500/20' 
+            : 'bg-gradient-to-br from-indigo-400/20 to-pink-400/20'
+        }`}></div>
+      </div>
+
+      {/* Hero Section */}
+      <section className="relative py-24 px-4 sm:px-6 lg:px-8 overflow-hidden">
+        <div 
+          className={`absolute inset-0 transition-all duration-1000 ${
+            isDark 
+              ? 'bg-gradient-to-br from-gray-900 via-purple-900 to-pink-900' 
+              : 'bg-gradient-to-br from-slate-900 via-blue-900 to-purple-900'
+          }`}
+          style={{
+            transform: `translateY(${scrollY * 0.5}px)`,
+          }}
+        />
+        
+        <div className="relative max-w-7xl mx-auto text-center">
+          <div className="inline-flex items-center space-x-2 bg-white/10 backdrop-blur-sm text-white/90 px-6 py-3 rounded-full text-sm font-medium mb-8 border border-white/20">
+            <Zap className="w-4 h-4 text-yellow-400" />
+            <span>Latest insights on AI-powered nutrition</span>
+          </div>
+          
+          <h1 className="text-6xl md:text-8xl font-black tracking-tight leading-tight mb-6">
+            <span className="text-white">The Future of</span>
+            <br />
+            <span className={`text-transparent bg-clip-text animate-pulse transition-all duration-1000 ${
+              isDark 
+                ? 'bg-gradient-to-r from-purple-400 via-pink-400 to-cyan-400' 
+                : 'bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400'
+            }`}>
+              Meal Planning
+            </span>
+          </h1>
+          
+          <p className="text-xl text-slate-300 mb-12 max-w-3xl mx-auto leading-relaxed">
+            Discover expert insights, practical tips, and the latest innovations in AI-powered nutrition. 
+            Transform the way you plan, prepare, and enjoy your meals.
+          </p>
+
+          {/* Stats */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12 max-w-4xl mx-auto">
+            <div className="text-center">
+              <div className="text-3xl font-bold text-white mb-2">12K+</div>
+              <div className="text-slate-300 text-sm">Active Readers</div>
+            </div>
+            <div className="text-center">
+              <div className="text-3xl font-bold text-white mb-2">150+</div>
+              <div className="text-slate-300 text-sm">Articles Published</div>
+            </div>
+            <div className="text-center">
+              <div className="text-3xl font-bold text-white mb-2">95%</div>
+              <div className="text-slate-300 text-sm">Reader Satisfaction</div>
+            </div>
+          </div>
+
+          {/* Search and Filter */}
+          <div className="max-w-2xl mx-auto">
+            <div className="relative mb-8">
+              <input
+                type="text"
+                placeholder="Search articles..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-12 pr-4 py-4 bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl focus:ring-2 focus:ring-blue-400 focus:border-transparent outline-none text-white placeholder-white/60 transition-all"
+              />
+              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-white/60 h-5 w-5" />
+            </div>
+            
+            <div className="flex flex-wrap justify-center gap-3">
+              {categories.map((category) => (
+                <button
+                  key={category}
+                  onClick={() => setSelectedCategory(category)}
+                  className={`px-6 py-3 rounded-full text-sm font-medium transition-all duration-300 ${
+                    selectedCategory === category
+                      ? 'bg-white text-slate-900 shadow-lg shadow-white/25 scale-105'
+                      : 'bg-white/10 backdrop-blur-sm text-white/90 hover:bg-white/20 border border-white/20'
+                  }`}
+                >
+                  {category}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Featured Post */}
       {featuredPost && (
         <FeaturedPostCard post={featuredPost} isDark={isDark} />
