@@ -143,20 +143,21 @@ export const useImageCacheStore = create<ImageCacheState>()(
     {
       name: 'image-cache-storage',
       storage: createJSONStorage(() => localStorage),
-      // Custom serialization for Map
-      serialize: (state) => {
-        const cacheObj = mapToObject(state.state.cache);
-        return JSON.stringify({ ...state.state, cache: cacheObj });
-      },
-      deserialize: (str) => {
-        const parsed = JSON.parse(str);
-        return {
-          ...parsed,
-          state: {
-            ...parsed.state,
-            cache: objectToMap(parsed.state.cache || {}),
-          },
-        };
+      // Transform Map to object for persistence
+      partialize: (state) => ({
+        cache: mapToObject(state.cache),
+      }),
+      // Transform object back to Map on rehydration
+      onRehydrateStorage: () => (state) => {
+        if (state) {
+          // Convert the persisted object back to Map
+          const cacheObj = (state as any).cache as Record<string, CachedImage> | undefined;
+          if (cacheObj) {
+            state.cache = objectToMap(cacheObj);
+          } else {
+            state.cache = new Map();
+          }
+        }
       },
     }
   )
