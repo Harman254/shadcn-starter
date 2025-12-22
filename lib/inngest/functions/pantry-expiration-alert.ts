@@ -25,9 +25,10 @@ export const pantryExpirationAlert = inngest.createFunction(
       // Get all pantry items expiring in next 3 days
       const expiringItems = await prisma.pantryItem.findMany({
         where: {
-          expirationDate: {
+          expiry: {
             gte: today,
             lte: threeDaysFromNow,
+            not: null,
           },
         },
         include: {
@@ -92,7 +93,7 @@ export const pantryExpirationAlert = inngest.createFunction(
               expiringCount,
               expiringItems: expiringItems.map((item) => ({
                 name: item.name,
-                expirationDate: item.expirationDate,
+                expirationDate: item.expiry,
               })),
               suggestedMeals,
             },

@@ -63,7 +63,7 @@ export const mealPlanCompletionCelebration = inngest.createFunction(
         actionUrl: `${baseUrl}/dashboard/meal-plans/${mealPlanId}`,
         data: {
           userName: userData.user!.name,
-          mealPlanName: userData.mealPlan!.name || "Your Meal Plan",
+          mealPlanName: userData.mealPlan!.title || "Your Meal Plan",
           mealPlanId,
         },
       });
