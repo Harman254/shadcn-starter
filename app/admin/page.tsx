@@ -20,7 +20,14 @@ import {
   TrendingUp,
   RefreshCw,
   Trash2,
-  UserX
+  UserX,
+  Bell,
+  Mail,
+  MousePointerClick,
+  Eye,
+  BarChart3,
+  Target,
+  Zap
 } from 'lucide-react'
 
 interface AdminStats {
@@ -30,6 +37,42 @@ interface AdminStats {
   totalMealPlans: number
   totalRecipes: number
   totalChatSessions: number
+}
+
+interface NotificationAnalytics {
+  totalSent: number
+  totalOpened: number
+  totalClicked: number
+  openRate: number
+  clickRate: number
+  clickToOpenRate: number
+  byType: Record<string, {
+    sent: number
+    opened: number
+    clicked: number
+    openRate: number
+    clickRate: number
+  }>
+  byChannel: Record<string, {
+    sent: number
+    opened: number
+    clicked: number
+    openRate: number
+    clickRate: number
+  }>
+  conversions: {
+    upgrades: number
+    mealPlansCreated: number
+    recipesSaved: number
+  }
+  topPerforming: Array<{
+    type: string
+    channel: string
+    sent: number
+    openRate: number
+    clickRate: number
+    conversionRate: number
+  }>
 }
 
 const AdminPage = () => {
@@ -44,11 +87,36 @@ const AdminPage = () => {
   const [deleteUserEmail, setDeleteUserEmail] = useState('')
   const [deleteResult, setDeleteResult] = useState<string | null>(null)
   const [deleting, setDeleting] = useState(false)
+  const [notificationAnalytics, setNotificationAnalytics] = useState<NotificationAnalytics | null>(null)
+  const [loadingAnalytics, setLoadingAnalytics] = useState(true)
+  const [analyticsDateRange, setAnalyticsDateRange] = useState<'7d' | '30d' | '90d'>('30d')
 
   // Fetch admin stats on mount
   useEffect(() => {
     fetchStats()
-  }, [])
+    fetchNotificationAnalytics()
+  }, [analyticsDateRange])
+
+  const fetchNotificationAnalytics = async () => {
+    setLoadingAnalytics(true)
+    try {
+      const days = analyticsDateRange === '7d' ? 7 : analyticsDateRange === '30d' ? 30 : 90
+      const startDate = new Date()
+      startDate.setDate(startDate.getDate() - days)
+      
+      const response = await fetch(
+        `/api/admin/notifications/analytics?startDate=${startDate.toISOString()}`
+      )
+      if (response.ok) {
+        const data = await response.json()
+        setNotificationAnalytics(data)
+      }
+    } catch (error) {
+      console.error('Failed to fetch notification analytics:', error)
+    } finally {
+      setLoadingAnalytics(false)
+    }
+  }
 
   const fetchStats = async () => {
     setLoadingStats(true)
@@ -194,6 +262,290 @@ const AdminPage = () => {
             value={stats?.totalChatSessions ?? '-'}
             loading={loadingStats}
           />
+        </section>
+
+        {/* Notification Analytics Section */}
+        <section className="bg-white dark:bg-zinc-900 rounded-xl shadow-md p-6 border border-zinc-200 dark:border-zinc-800 mb-6">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-semibold text-zinc-800 dark:text-zinc-100 flex items-center gap-2">
+              <Bell className="h-5 w-5" />
+              Notification Analytics
+            </h2>
+            <div className="flex items-center gap-2">
+              <select
+                value={analyticsDateRange}
+                onChange={(e) => setAnalyticsDateRange(e.target.value as '7d' | '30d' | '90d')}
+                className="px-3 py-1.5 text-sm border rounded-md bg-zinc-50 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100"
+              >
+                <option value="7d">Last 7 days</option>
+                <option value="30d">Last 30 days</option>
+                <option value="90d">Last 90 days</option>
+              </select>
+              <Button
+                onClick={fetchNotificationAnalytics}
+                disabled={loadingAnalytics}
+                variant="outline"
+                size="sm"
+              >
+                <RefreshCw className={`h-4 w-4 ${loadingAnalytics ? 'animate-spin' : ''}`} />
+              </Button>
+            </div>
+          </div>
+
+          {loadingAnalytics ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-zinc-400" />
+            </div>
+          ) : notificationAnalytics ? (
+            <div className="space-y-6">
+              {/* Key Metrics */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 rounded-lg p-4 border border-blue-200 dark:border-blue-800">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Mail className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                    <span className="text-xs text-zinc-600 dark:text-zinc-400">Total Sent</span>
+                  </div>
+                  <p className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">
+                    {notificationAnalytics.totalSent.toLocaleString()}
+                  </p>
+                </div>
+                <div className="bg-gradient-to-br from-green-500/10 to-green-600/10 rounded-lg p-4 border border-green-200 dark:border-green-800">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Eye className="h-4 w-4 text-green-600 dark:text-green-400" />
+                    <span className="text-xs text-zinc-600 dark:text-zinc-400">Opened</span>
+                  </div>
+                  <p className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">
+                    {notificationAnalytics.totalOpened.toLocaleString()}
+                  </p>
+                  <p className="text-xs text-green-600 dark:text-green-400 mt-1">
+                    {notificationAnalytics.openRate.toFixed(1)}% open rate
+                  </p>
+                </div>
+                <div className="bg-gradient-to-br from-purple-500/10 to-purple-600/10 rounded-lg p-4 border border-purple-200 dark:border-purple-800">
+                  <div className="flex items-center gap-2 mb-2">
+                    <MousePointerClick className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                    <span className="text-xs text-zinc-600 dark:text-zinc-400">Clicked</span>
+                  </div>
+                  <p className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">
+                    {notificationAnalytics.totalClicked.toLocaleString()}
+                  </p>
+                  <p className="text-xs text-purple-600 dark:text-purple-400 mt-1">
+                    {notificationAnalytics.clickRate.toFixed(1)}% click rate
+                  </p>
+                </div>
+                <div className="bg-gradient-to-br from-amber-500/10 to-amber-600/10 rounded-lg p-4 border border-amber-200 dark:border-amber-800">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Target className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                    <span className="text-xs text-zinc-600 dark:text-zinc-400">CTOR</span>
+                  </div>
+                  <p className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">
+                    {notificationAnalytics.clickToOpenRate.toFixed(1)}%
+                  </p>
+                  <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                    Click-to-open rate
+                  </p>
+                </div>
+              </div>
+
+              {/* Conversions */}
+              <div className="bg-gradient-to-br from-emerald-500/10 to-emerald-600/10 rounded-lg p-4 border border-emerald-200 dark:border-emerald-800">
+                <h3 className="text-lg font-semibold text-zinc-800 dark:text-zinc-100 mb-4 flex items-center gap-2">
+                  <Zap className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                  Conversions
+                </h3>
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <p className="text-xs text-zinc-600 dark:text-zinc-400 mb-1">Upgrades</p>
+                    <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
+                      {notificationAnalytics.conversions.upgrades}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-zinc-600 dark:text-zinc-400 mb-1">Meal Plans Created</p>
+                    <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
+                      {notificationAnalytics.conversions.mealPlansCreated}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-zinc-600 dark:text-zinc-400 mb-1">Recipes Saved</p>
+                    <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
+                      {notificationAnalytics.conversions.recipesSaved}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Performance by Type */}
+              {Object.keys(notificationAnalytics.byType).length > 0 && (
+                <div>
+                  <h3 className="text-lg font-semibold text-zinc-800 dark:text-zinc-100 mb-4 flex items-center gap-2">
+                    <BarChart3 className="h-5 w-5" />
+                    Performance by Notification Type
+                  </h3>
+                  <div className="space-y-3">
+                    {Object.entries(notificationAnalytics.byType).map(([type, stats]) => (
+                      <div
+                        key={type}
+                        className="bg-zinc-50 dark:bg-zinc-800 rounded-lg p-4 border border-zinc-200 dark:border-zinc-700"
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="font-medium text-zinc-900 dark:text-zinc-100 capitalize">
+                            {type.replace(/-/g, ' ')}
+                          </span>
+                          <span className="text-sm text-zinc-600 dark:text-zinc-400">
+                            {stats.sent} sent
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-3 gap-4 mt-3">
+                          <div>
+                            <p className="text-xs text-zinc-600 dark:text-zinc-400 mb-1">Open Rate</p>
+                            <p className="text-lg font-bold text-green-600 dark:text-green-400">
+                              {stats.openRate.toFixed(1)}%
+                            </p>
+                            <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                              {stats.opened} opened
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-zinc-600 dark:text-zinc-400 mb-1">Click Rate</p>
+                            <p className="text-lg font-bold text-purple-600 dark:text-purple-400">
+                              {stats.clickRate.toFixed(1)}%
+                            </p>
+                            <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                              {stats.clicked} clicked
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-zinc-600 dark:text-zinc-400 mb-1">CTOR</p>
+                            <p className="text-lg font-bold text-amber-600 dark:text-amber-400">
+                              {stats.opened > 0 ? ((stats.clicked / stats.opened) * 100).toFixed(1) : '0.0'}%
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Performance by Channel */}
+              {Object.keys(notificationAnalytics.byChannel).length > 0 && (
+                <div>
+                  <h3 className="text-lg font-semibold text-zinc-800 dark:text-zinc-100 mb-4 flex items-center gap-2">
+                    <BarChart3 className="h-5 w-5" />
+                    Performance by Channel
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {Object.entries(notificationAnalytics.byChannel).map(([channel, stats]) => (
+                      <div
+                        key={channel}
+                        className="bg-zinc-50 dark:bg-zinc-800 rounded-lg p-4 border border-zinc-200 dark:border-zinc-700"
+                      >
+                        <div className="flex items-center justify-between mb-3">
+                          <span className="font-medium text-zinc-900 dark:text-zinc-100 capitalize">
+                            {channel === 'in-app' ? 'In-App' : channel}
+                          </span>
+                          <span className="text-sm text-zinc-600 dark:text-zinc-400">
+                            {stats.sent} sent
+                          </span>
+                        </div>
+                        <div className="space-y-2">
+                          <div>
+                            <div className="flex justify-between text-xs mb-1">
+                              <span className="text-zinc-600 dark:text-zinc-400">Open Rate</span>
+                              <span className="font-medium text-green-600 dark:text-green-400">
+                                {stats.openRate.toFixed(1)}%
+                              </span>
+                            </div>
+                            <div className="w-full bg-zinc-200 dark:bg-zinc-700 rounded-full h-2">
+                              <div
+                                className="bg-green-500 h-2 rounded-full"
+                                style={{ width: `${Math.min(stats.openRate, 100)}%` }}
+                              />
+                            </div>
+                          </div>
+                          <div>
+                            <div className="flex justify-between text-xs mb-1">
+                              <span className="text-zinc-600 dark:text-zinc-400">Click Rate</span>
+                              <span className="font-medium text-purple-600 dark:text-purple-400">
+                                {stats.clickRate.toFixed(1)}%
+                              </span>
+                            </div>
+                            <div className="w-full bg-zinc-200 dark:bg-zinc-700 rounded-full h-2">
+                              <div
+                                className="bg-purple-500 h-2 rounded-full"
+                                style={{ width: `${Math.min(stats.clickRate, 100)}%` }}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Top Performing */}
+              {notificationAnalytics.topPerforming.length > 0 && (
+                <div>
+                  <h3 className="text-lg font-semibold text-zinc-800 dark:text-zinc-100 mb-4 flex items-center gap-2">
+                    <TrendingUp className="h-5 w-5" />
+                    Top Performing Notifications
+                  </h3>
+                  <div className="space-y-2">
+                    {notificationAnalytics.topPerforming.map((perf, index) => (
+                      <div
+                        key={`${perf.type}-${perf.channel}`}
+                        className="bg-zinc-50 dark:bg-zinc-800 rounded-lg p-4 border border-zinc-200 dark:border-zinc-700"
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <span className="text-lg font-bold text-zinc-400 dark:text-zinc-500">
+                              #{index + 1}
+                            </span>
+                            <span className="font-medium text-zinc-900 dark:text-zinc-100 capitalize">
+                              {perf.type.replace(/-/g, ' ')}
+                            </span>
+                            <span className="text-xs px-2 py-0.5 bg-zinc-200 dark:bg-zinc-700 rounded text-zinc-600 dark:text-zinc-400 capitalize">
+                              {perf.channel}
+                            </span>
+                          </div>
+                          <span className="text-sm text-zinc-600 dark:text-zinc-400">
+                            {perf.sent} sent
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-3 gap-4">
+                          <div>
+                            <p className="text-xs text-zinc-600 dark:text-zinc-400 mb-1">Open Rate</p>
+                            <p className="text-lg font-bold text-green-600 dark:text-green-400">
+                              {perf.openRate.toFixed(1)}%
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-zinc-600 dark:text-zinc-400 mb-1">Click Rate</p>
+                            <p className="text-lg font-bold text-purple-600 dark:text-purple-400">
+                              {perf.clickRate.toFixed(1)}%
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-zinc-600 dark:text-zinc-400 mb-1">Conversion</p>
+                            <p className="text-lg font-bold text-emerald-600 dark:text-emerald-400">
+                              {perf.conversionRate.toFixed(1)}%
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-zinc-600 dark:text-zinc-400">
+              <AlertCircle className="h-8 w-8 mx-auto mb-2 opacity-50" />
+              <p>No notification data available</p>
+            </div>
+          )}
         </section>
         
         {/* Database Test Section */}
