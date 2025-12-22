@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getNotificationAnalytics } from '@/lib/notifications/tracking';
-import { getServerSession } from '@/lib/auth-server';
+import { auth } from '@/lib/auth';
+import { headers } from 'next/headers';
 import prisma from '@/lib/prisma';
 
 export const runtime = 'nodejs';
@@ -8,21 +9,22 @@ export const runtime = 'nodejs';
 export async function GET(request: NextRequest) {
   try {
     // Check authentication and admin access
-    const session = await getServerSession();
-    if (!session?.user) {
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    });
+
+    if (!session?.user?.id) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
       );
     }
 
-    // Check if user is admin (you may need to adjust this based on your admin check)
+    // Check if user exists (add proper admin check if needed)
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
     });
 
-    // TODO: Add proper admin check
-    // For now, allow if user exists
     if (!user) {
       return NextResponse.json(
         { error: 'Unauthorized' },
