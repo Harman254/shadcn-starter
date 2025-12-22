@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { Calendar, UtensilsCrossed, ChevronDown, ShoppingCart, Wand2, ChefHat, Check, Save, Loader2, Flame, Clock, TrendingUp, Timer, Users, Download } from "lucide-react"
+import { Calendar, UtensilsCrossed, ChevronDown, ShoppingCart, Wand2, ChefHat, Check, Save, Loader2, Flame, Clock, TrendingUp, Timer, Users, Download, Crown } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
@@ -382,6 +382,15 @@ export function MealPlanDisplay({ mealPlan, onActionClick, error }: MealPlanDisp
                               >
                                 {['Breakfast', 'Lunch', 'Dinner', 'Snack'][mealIndex % 4]}
                               </Badge>
+                              {/* Pro Image Badge - shows on AI-generated images */}
+                              {meal.imageIsPro && meal.imageIsGenerated && (
+                                <div className="absolute top-2 right-2 z-10">
+                                  <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white border-0 shadow-lg backdrop-blur-sm">
+                                    <Crown className="w-3 h-3 mr-1" />
+                                    Pro
+                                  </Badge>
+                                </div>
+                              )}
                             </div>
                             <CardContent className="p-3">
                               <h4 className="font-medium text-foreground text-sm line-clamp-1 mb-2 group-hover:text-primary transition-colors">

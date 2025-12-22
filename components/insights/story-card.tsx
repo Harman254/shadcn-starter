@@ -5,7 +5,9 @@ import Image from 'next/image'
 import { Bookmark, Clock, Flame, ChefHat, Loader2, Zap } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { FeedItem } from '@/lib/data/feed-data'
-import { useGeneratedImage } from '@/hooks/use-generated-image'
+import { useInsightImage } from '@/hooks/use-insight-image'
+import { Crown } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
 
 interface StoryCardProps {
   item: FeedItem
@@ -28,10 +30,9 @@ export function StoryCard({
   const [imageError, setImageError] = useState(false)
 
   // Use AI-generated image or fallback to static
-  const { imageUrl, isLoading: isGenerating, isGenerated } = useGeneratedImage({
-    id: item.id,
-    prompt: item.imagePrompt,
-    fallbackUrl: item.imageUrl,
+  const { imageUrl, isLoading: isGenerating, isGenerated, isPro } = useInsightImage({
+    title: item.title,
+    description: item.description,
     enabled: enableAIImage
   })
 
@@ -116,8 +117,18 @@ export function StoryCard({
           <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-shimmer" />
         )}
 
+        {/* Pro Image Badge - shows on AI-generated images */}
+        {isPro && isGenerated && (
+          <div className="absolute top-3 right-12 z-20">
+            <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white border-0 shadow-lg backdrop-blur-sm">
+              <Crown className="w-3 h-3 mr-1" />
+              Pro
+            </Badge>
+          </div>
+        )}
+        
         {/* AI Generated badge */}
-        {isGenerated && (
+        {isGenerated && !isPro && (
           <div className="absolute bottom-12 left-3 z-20">
             <span className="px-2 py-1 rounded-full text-xs font-medium bg-primary/80 backdrop-blur-md text-white flex items-center gap-1">
               <Zap className="w-3 h-3" />

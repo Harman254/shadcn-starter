@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { Clock, Users, ChefHat, Flame, Play, Check, ArrowLeft, ArrowRight, Save, ShoppingCart, Calendar, Loader2, Wand2, Timer, Gauge, Pause, RotateCcw, BookOpen, ExternalLink, Utensils, Download } from "lucide-react"
+import { Clock, Users, ChefHat, Flame, Play, Check, ArrowLeft, ArrowRight, Save, ShoppingCart, Calendar, Loader2, Wand2, Timer, Gauge, Pause, RotateCcw, BookOpen, ExternalLink, Utensils, Download, Crown } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 import { useToast } from "@/hooks/use-toast"
 import { CldImage } from 'next-cloudinary'
@@ -323,7 +324,7 @@ export function RecipeDisplay({ recipe, onActionClick, error }: RecipeDisplayPro
         <div className="absolute top-0 right-0 w-80 h-80 bg-orange-500/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
         
         {/* Hero Image */}
-        <div className="relative h-72 sm:h-80 w-full overflow-hidden">
+        <div className="relative h-72 sm:h-80 w-full overflow-hidden group">
           <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/50 to-transparent z-10" />
           <div className="absolute inset-0 bg-gradient-to-r from-orange-500/20 to-red-500/20 mix-blend-overlay z-10" />
           {recipe.imageUrl && recipe.imageUrl.includes('cloudinary.com') ? (
@@ -345,6 +346,15 @@ export function RecipeDisplay({ recipe, onActionClick, error }: RecipeDisplayPro
                 (e.target as HTMLImageElement).src = 'https://res.cloudinary.com/dcidanigq/image/upload/v1742112004/cld-sample-4.jpg';
               }}
             />
+          )}
+          {/* Pro Image Badge - shows on AI-generated images */}
+          {recipe.imageIsPro && recipe.imageIsGenerated && (
+            <div className="absolute top-4 right-4 z-20">
+              <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white border-0 shadow-lg backdrop-blur-sm">
+                <Crown className="w-3 h-3 mr-1" />
+                Pro
+              </Badge>
+            </div>
           )}
           
           {/* Source Link */}

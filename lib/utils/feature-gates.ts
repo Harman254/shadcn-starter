@@ -228,6 +228,25 @@ export async function canOptimizeGroceryList(
 }
 
 /**
+ * Check if user can generate realistic AI images for meals
+ * Pro feature - Free users get static placeholder images
+ */
+export async function canGenerateRealisticImages(
+  userId: string
+): Promise<FeatureAccessResult> {
+  const plan = await getUserPlan(userId);
+  
+  if (plan === 'pro' || plan === 'enterprise') {
+    return { allowed: true };
+  }
+
+  return {
+    allowed: false,
+    reason: 'Realistic AI-generated images are a Pro feature. Upgrade to Pro to see meal-specific, professional-quality images for all your meals.',
+  };
+}
+
+/**
  * Get user's feature limits
  */
 export async function getUserFeatureLimits(

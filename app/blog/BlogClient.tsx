@@ -1,9 +1,11 @@
 "use client";
 import React, { useState, useMemo, useEffect } from "react";
-import { Calendar, Clock, Heart, MessageCircle, ArrowRight, BookOpen, TrendingUp, Search, Filter, Star, Eye, Zap, Users, Award, Sun, Moon } from 'lucide-react';
+import { Calendar, Clock, Heart, MessageCircle, ArrowRight, BookOpen, TrendingUp, Search, Filter, Star, Eye, Zap, Users, Award, Sun, Moon, Crown } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { CldImage } from 'next-cloudinary';
+import { useBlogImage } from '@/hooks/use-blog-image';
+import { Badge } from '@/components/ui/badge';
 
 const categories = ["All", "AI & Technology", "Meal Prep", "Nutrition", "Sustainability", "Psychology", "Budget"];
 
@@ -24,6 +26,203 @@ interface BlogPost {
 
 interface BlogClientProps {
   posts: BlogPost[];
+}
+
+// Featured Post Card Component with AI Image Generation
+function FeaturedPostCard({ post, isDark }: { post: BlogPost; isDark: boolean }) {
+  const { imageUrl, isGenerated, isPro, isLoading } = useBlogImage({
+    title: post.title,
+    excerpt: post.excerpt,
+    category: post.category,
+    enabled: true,
+  });
+
+  return (
+    <section className="py-16 px-4 sm:px-6 lg:px-8 relative">
+      <div className="max-w-7xl mx-auto">
+        <div className="flex items-center space-x-3 mb-8">
+          <div className="w-2 h-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full"></div>
+          <h2 className={`text-3xl font-bold transition-colors duration-300 ${isDark ? 'text-white' : 'text-slate-900'}`}>
+            Featured Article
+          </h2>
+          <Award className="w-6 h-6 text-yellow-500" />
+        </div>
+        <Link href={`/blog/${post.slug}`} className="group cursor-pointer block">
+          <div className={`rounded-3xl shadow-2xl overflow-hidden hover:shadow-3xl transition-all duration-500 transform hover:-translate-y-2 ${
+            isDark 
+              ? 'bg-gray-800 border border-gray-700 hover:border-gray-600' 
+              : 'bg-white border border-slate-100'
+          }`}>
+            <div className="flex flex-col lg:flex-row">
+              <div className="relative lg:w-1/2 overflow-hidden">
+                {isLoading ? (
+                  <div className="w-full h-80 lg:h-full bg-gradient-to-br from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-800 animate-pulse" />
+                ) : imageUrl.startsWith('data:') ? (
+                  <img
+                    src={imageUrl}
+                    alt={post.title}
+                    className="w-full h-80 lg:h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                    loading="lazy"
+                  />
+                ) : imageUrl.includes('cloudinary.com') ? (
+                  <CldImage
+                    src={imageUrl}
+                    alt={post.title}
+                    width={800}
+                    height={600}
+                    className="w-full h-80 lg:h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                    loading="lazy"
+                  />
+                ) : (
+                  <Image
+                    src={imageUrl || post.image}
+                    alt={post.title}
+                    fill
+                    className="object-cover group-hover:scale-110 transition-transform duration-700"
+                    loading="lazy"
+                  />
+                )}
+                <div className="absolute top-6 left-6">
+                  <span className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 py-2 rounded-full text-sm font-bold shadow-lg">
+                    {post.category}
+                  </span>
+                </div>
+                {/* Pro Image Badge */}
+                {isPro && isGenerated && (
+                  <div className="absolute top-6 right-6 z-10">
+                    <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white border-0 shadow-lg backdrop-blur-sm">
+                      <Crown className="w-3 h-3 mr-1" />
+                      Pro
+                    </Badge>
+                  </div>
+                )}
+                <div className="absolute bottom-6 right-6">
+                  <div className="bg-black/50 backdrop-blur-sm text-white px-3 py-1 rounded-full text-xs flex items-center space-x-2">
+                    <Eye className="w-3 h-3" />
+                    <span>Featured</span>
+                  </div>
+                </div>
+              </div>
+  const { imageUrl, isGenerated, isPro, isLoading } = useBlogImage({
+    title: post.title,
+    excerpt: post.excerpt,
+    category: post.category,
+    enabled: true,
+  });
+
+  return (
+    <Link href={`/blog/${post.slug}`} className="group cursor-pointer block">
+      <div className={`rounded-2xl shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 ${
+        isDark 
+          ? 'bg-gray-800 border border-gray-700 hover:border-gray-600' 
+          : 'bg-white border border-slate-100'
+      }`}>
+        <div className="relative overflow-hidden h-48">
+          {isLoading ? (
+            <div className="w-full h-full bg-gradient-to-br from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-800 animate-pulse" />
+          ) : imageUrl.startsWith('data:') ? (
+            <img
+              src={imageUrl}
+              alt={post.title}
+              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+              loading="lazy"
+            />
+          ) : imageUrl.includes('cloudinary.com') ? (
+            <CldImage
+              src={imageUrl}
+              alt={post.title}
+              width={600}
+              height={400}
+              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+              loading="lazy"
+            />
+          ) : (
+            <Image
+              src={imageUrl || post.image}
+              alt={post.title}
+              fill
+              className="object-cover group-hover:scale-110 transition-transform duration-700"
+              loading="lazy"
+            />
+          )}
+          <div className="absolute top-4 left-4">
+            <span className={`backdrop-blur-sm px-3 py-1 rounded-full text-xs font-medium shadow-lg ${
+              isDark ? 'bg-gray-900/80 text-gray-200' : 'bg-white/95 text-slate-700'
+            }`}>
+              {post.category}
+            </span>
+          </div>
+          {/* Pro Image Badge */}
+          {isPro && isGenerated && (
+            <div className="absolute top-4 right-4 z-10">
+              <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white border-0 shadow-lg backdrop-blur-sm">
+                <Crown className="w-3 h-3 mr-1" />
+                Pro
+              </Badge>
+            </div>
+          )}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+        </div>
+        
+        <div className="p-6">
+          <h3 className={`text-xl font-bold mb-3 group-hover:text-blue-600 transition-colors leading-tight ${
+            isDark ? 'text-white' : 'text-slate-900'
+          }`}>
+            {post.title}
+          </h3>
+          <p className={`text-sm mb-4 leading-relaxed line-clamp-3 ${
+            isDark ? 'text-gray-300' : 'text-slate-600'
+          }`}>
+            {post.excerpt}
+          </p>
+          
+          <div className={`flex items-center justify-between text-xs mb-4 ${
+            isDark ? 'text-gray-400' : 'text-slate-500'
+          }`}>
+            <div className="flex items-center space-x-3">
+              <div className="flex items-center space-x-1">
+                <Calendar className="h-3 w-3" />
+                <span>{new Date(post.publishDate).toLocaleDateString()}</span>
+              </div>
+              <div className="flex items-center space-x-1">
+                <Clock className="h-3 w-3" />
+                <span>{post.readTime}</span>
+              </div>
+            </div>
+            <div className="flex items-center space-x-3">
+              <div className="flex items-center space-x-1 text-red-500">
+                <Heart className="h-3 w-3" />
+                <span>{post.likes}</span>
+              </div>
+              <div className="flex items-center space-x-1 text-blue-500">
+                <MessageCircle className="h-3 w-3" />
+                <span>{post.comments}</span>
+              </div>
+            </div>
+          </div>
+          
+          <div className={`flex items-center justify-between pt-4 border-t ${
+            isDark ? 'border-gray-700' : 'border-slate-100'
+          }`}>
+            <div className="flex items-center space-x-2">
+              <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
+                {post.author[0]}
+              </div>
+              <span className={`text-xs font-medium ${
+                isDark ? 'text-gray-300' : 'text-slate-600'
+              }`}>
+                {post.author}
+              </span>
+            </div>
+            <div className="flex items-center text-blue-600 text-sm font-medium group-hover:text-blue-700 transition-colors">
+              <span className="mr-1">Read</span>
+              <ArrowRight className="h-3 w-3 group-hover:translate-x-1 transition-transform" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </Link>
+  );
 }
 
 export default function BlogClient({ posts }: BlogClientProps) {
@@ -165,53 +364,8 @@ export default function BlogClient({ posts }: BlogClientProps) {
 
       {/* Featured Post */}
       {featuredPost && (
-        <section className="py-16 px-4 sm:px-6 lg:px-8 relative">
-          <div className="max-w-7xl mx-auto">
-            <div className="flex items-center space-x-3 mb-8">
-              <div className="w-2 h-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full"></div>
-              <h2 className={`text-3xl font-bold transition-colors duration-300 ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                Featured Article
-              </h2>
-              <Award className="w-6 h-6 text-yellow-500" />
-            </div>
-            <Link href={`/blog/${featuredPost.slug}`} className="group cursor-pointer block">
-              <div className={`rounded-3xl shadow-2xl overflow-hidden hover:shadow-3xl transition-all duration-500 transform hover:-translate-y-2 ${
-                isDark 
-                  ? 'bg-gray-800 border border-gray-700 hover:border-gray-600' 
-                  : 'bg-white border border-slate-100'
-              }`}>
-                <div className="flex flex-col lg:flex-row">
-                  <div className="relative lg:w-1/2 overflow-hidden">
-                    {featuredPost.image.includes('cloudinary.com') ? (
-                      <CldImage
-                        src={featuredPost.image}
-                        alt={featuredPost.title}
-                        width={800}
-                        height={600}
-                        className="w-full h-80 lg:h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                        loading="lazy"
-                      />
-                    ) : (
-                      <Image
-                        src={featuredPost.image}
-                        alt={featuredPost.title}
-                        fill
-                        className="object-cover group-hover:scale-110 transition-transform duration-700"
-                        loading="lazy"
-                      />
-                    )}
-                    <div className="absolute top-6 left-6">
-                      <span className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 py-2 rounded-full text-sm font-bold shadow-lg">
-                        {featuredPost.category}
-                      </span>
-                    </div>
-                    <div className="absolute bottom-6 right-6">
-                      <div className="bg-black/50 backdrop-blur-sm text-white px-3 py-1 rounded-full text-xs flex items-center space-x-2">
-                        <Eye className="w-3 h-3" />
-                        <span>Featured</span>
-                      </div>
-                    </div>
-                  </div>
+        <FeaturedPostCard post={featuredPost} isDark={isDark} />
+      )}
                   
                   <div className="lg:w-1/2 p-8 lg:p-12 flex flex-col justify-center">
                     <h3 className={`text-3xl lg:text-4xl font-bold mb-4 leading-tight group-hover:text-blue-600 transition-colors ${
@@ -276,7 +430,11 @@ export default function BlogClient({ posts }: BlogClientProps) {
             </Link>
           </div>
         </section>
-      )}
+  );
+}
+
+// Blog Post Card Component with AI Image Generation
+function BlogPostCard({ post, isDark }: { post: BlogPost; isDark: boolean }) {
 
       {/* Regular Posts Grid */}
       <section className="py-16 px-4 sm:px-6 lg:px-8">
@@ -296,40 +454,8 @@ export default function BlogClient({ posts }: BlogClientProps) {
           
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
             {regularPosts.map((post, index) => (
-              <Link key={post.id} href={`/blog/${post.slug}`} className="group cursor-pointer block">
-                <div className={`rounded-2xl shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 ${
-                  isDark 
-                    ? 'bg-gray-800 border border-gray-700 hover:border-gray-600' 
-                    : 'bg-white border border-slate-100'
-                }`}>
-                  <div className="relative overflow-hidden h-48">
-                    {post.image.includes('cloudinary.com') ? (
-                      <CldImage
-                        src={post.image}
-                        alt={post.title}
-                        width={600}
-                        height={400}
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                        loading="lazy"
-                      />
-                    ) : (
-                      <Image
-                        src={post.image}
-                        alt={post.title}
-                        fill
-                        className="object-cover group-hover:scale-110 transition-transform duration-700"
-                        loading="lazy"
-                      />
-                    )}
-                    <div className="absolute top-4 left-4">
-                      <span className={`backdrop-blur-sm px-3 py-1 rounded-full text-xs font-medium shadow-lg ${
-                        isDark ? 'bg-gray-900/80 text-gray-200' : 'bg-white/95 text-slate-700'
-                      }`}>
-                        {post.category}
-                      </span>
-                    </div>
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                  </div>
+              <BlogPostCard key={post.id} post={post} isDark={isDark} />
+            ))}
                   
                   <div className="p-6">
                     <h3 className={`text-xl font-bold mb-3 group-hover:text-blue-600 transition-colors leading-tight ${

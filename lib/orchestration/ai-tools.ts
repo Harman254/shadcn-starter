@@ -5,6 +5,7 @@ import { ToolResult, ErrorCode, successResponse, errorResponse } from '@/lib/typ
 import { trackToolUsage, extractTokensFromResponse } from '@/lib/utils/tool-usage-tracker';
 import { canGenerateMealPlan, canAnalyzePantryImage, canGenerateRecipe } from '@/lib/utils/feature-gates';
 import { getRandomMealImage, getRandomRecipeImage } from '@/lib/constants/meal-images';
+import { generateMealImage, generateRecipeImage } from '@/lib/services/image-generation-service';
 
 // Helper to validate URLs
 function isValidUrl(urlString: string | undefined): boolean {
@@ -258,17 +259,32 @@ Return a valid JSON object with exactly ${actualDuration} days in the days array
             }
 
             // 3. Enrich meals with images and meal types
-            let enrichedDays = result.object.days.map(day => ({
-                day: day.day,
-                meals: day.meals.map((meal, mealIndex) => {
-                    const mealType = getMealTypeFromIndex(mealIndex, mealsPerDay);
-                    return {
-                        ...meal,
-                        mealType,
-                        imageUrl: getRandomMealImage(mealType),
-                    };
-                })
-            }));
+            // For Pro users, generate realistic AI images; Free users get static placeholders
+            let enrichedDays = await Promise.all(
+                result.object.days.map(async (day) => ({
+                    day: day.day,
+                    meals: await Promise.all(
+                        day.meals.map(async (meal, mealIndex) => {
+                            const mealType = getMealTypeFromIndex(mealIndex, mealsPerDay);
+                            // Generate image based on user's plan (Pro = AI-generated, Free = static)
+                            const imageResult = await generateMealImage(
+                                meal.name,
+                                meal.description || '',
+                                session.user.id,
+                                mealType
+                            );
+                            return {
+                                ...meal,
+                                mealType,
+                                imageUrl: imageResult.imageUrl,
+                                // Store metadata for UI to show Pro badges
+                                imageIsGenerated: imageResult.isGenerated,
+                                imageIsPro: imageResult.isPro,
+                            };
+                        })
+                    )
+                }))
+            );
 
             // 3a. Check max recipes per meal plan limit
             const totalRecipes = enrichedDays.reduce((sum, day) => sum + day.meals.length, 0);
@@ -1920,10 +1936,30 @@ Return valid JSON.`,
                 throw new Error('Failed to generate recipe');
             }
 
+            // Generate image based on user's plan (Pro = AI-generated, Free = static)
+            // If there's no authenticated user/session, fall back to static image generation
+            let imageResult: { imageUrl: string; isGenerated: boolean; isPro: boolean };
+            if (session?.user?.id) {
+                imageResult = await generateRecipeImage(
+                    result.object.name,
+                    result.object.description || '',
+                    session.user.id
+                );
+            } else {
+                // No session: treat as free user and let service handle fallback behaviour
+                imageResult = await generateRecipeImage(
+                    result.object.name,
+                    result.object.description || '',
+                    ''
+                );
+            }
+
             const recipe = {
                 ...result.object,
-                // Use random Cloudinary image for variety
-                imageUrl: getRandomRecipeImage()
+                imageUrl: imageResult.imageUrl,
+                // Store metadata for UI to show Pro badges
+                imageIsGenerated: imageResult.isGenerated,
+                imageIsPro: imageResult.isPro,
             };
 
             // 3. Create UI Metadata with Save Action
