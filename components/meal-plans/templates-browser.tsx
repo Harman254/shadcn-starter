@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useProFeatures, PRO_FEATURES } from '@/hooks/use-pro-features';
-import { Loader2, Lock, Crown, Sparkles, Calendar, Users, DollarSign, Apple } from 'lucide-react';
+import { Loader2, Lock, Crown, Calendar, Users, DollarSign, Apple } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import SubscriptionModal from '@/components/SubscriptionModal';
 import { useRouter } from 'next/navigation';
@@ -80,7 +80,7 @@ export function TemplatesBrowser() {
       case 'budget':
         return <DollarSign className="h-5 w-5" />;
       default:
-        return <Sparkles className="h-5 w-5" />;
+        return <Apple className="h-5 w-5" />;
     }
   };
 
@@ -144,7 +144,6 @@ export function TemplatesBrowser() {
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-bold flex items-center gap-2">
-          <Sparkles className="h-6 w-6" />
           Premium Templates
         </h2>
         <p className="text-muted-foreground mt-1">
@@ -180,7 +179,6 @@ export function TemplatesBrowser() {
                   {template.duration} days
                 </div>
                 <div className="flex items-center gap-1">
-                  <Sparkles className="h-4 w-4" />
                   {template.mealsPerDay} meals/day
                 </div>
               </div>
