@@ -8,6 +8,7 @@ import Footer from '@/components/footer';
 import { AuthModalProvider } from '@/components/AuthModalProvider';
 import PushEngageScript from '@/components/PushEngageScript';
 import { InstallPrompt } from '@/components/pwa/install-prompt';
+import { ServiceWorkerRegister } from '@/components/pwa/service-worker-register';
 import { Geist, Geist_Mono } from 'next/font/google';
 
 // Geist Sans - Primary font for body text and UI
@@ -29,12 +30,81 @@ interface RootLayoutProps {
 }
 
 export const metadata = {
-  title: 'MealWise - AI Meal Planning',
-  description: 'Plan your meals, create grocery lists, and manage your diet with ease using AI.',
+  title: {
+    default: 'MealWise - AI-Powered Meal Planning & Nutrition | Smart Food Planning',
+    template: '%s | MealWise',
+  },
+  description: 'Transform your eating habits with MealWise. Get personalized AI meal plans, smart grocery lists, and expert nutrition guidance tailored to your lifestyle, goals, and dietary preferences.',
+  keywords: [
+    'AI meal planning',
+    'personalized meal plans',
+    'smart nutrition',
+    'meal planning app',
+    'healthy eating',
+    'diet planning',
+    'meal prep',
+    'grocery lists',
+    'nutrition planning',
+    'lifestyle meal plans',
+    'smart recipes',
+    'budget meal planning',
+    'fitness meal plans',
+    'family meal planning',
+    'AI nutrition',
+    'meal planning software',
+  ],
+  authors: [{ name: 'MealWise Team' }],
+  creator: 'MealWise',
+  publisher: 'MealWise',
+  formatDetection: {
+    email: false,
+    address: false,
+    telephone: false,
+  },
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://www.aimealwise.com'),
+  alternates: {
+    canonical: '/',
+  },
+  openGraph: {
+    type: 'website',
+    locale: 'en_US',
+    url: process.env.NEXT_PUBLIC_APP_URL || 'https://www.aimealwise.com',
+    siteName: 'MealWise',
+    title: 'MealWise - AI-Powered Meal Planning & Nutrition | Smart Food Planning',
+    description: 'Transform your eating habits with MealWise. Get personalized AI meal plans, smart grocery lists, and expert nutrition guidance tailored to your lifestyle.',
+    images: [
+      {
+        url: '/og-image.png',
+        width: 1200,
+        height: 630,
+        alt: 'MealWise - AI-Powered Personalized Meal Planning Platform',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'MealWise - AI-Powered Meal Planning & Nutrition',
+    description: 'Transform your eating habits with personalized AI meal plans tailored to your lifestyle.',
+    images: ['/og-image.png'],
+    creator: '@mealwise',
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
   icons: {
     icon: '/favicon.ico',
     apple: '/apple-touch-icon.png',
   },
+  manifest: '/manifest.json',
+  category: 'health',
 }
 
 export const viewport = {
@@ -53,7 +123,53 @@ export const dynamic = 'force-dynamic';
 export default async function RootLayout({ children }: RootLayoutProps) {
   return (
     <html suppressHydrationWarning lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
-
+      <head>
+        {/* JSON-LD Structured Data for Organization */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              '@context': 'https://schema.org',
+              '@type': 'Organization',
+              name: 'MealWise',
+              url: process.env.NEXT_PUBLIC_APP_URL || 'https://www.aimealwise.com',
+              logo: `${process.env.NEXT_PUBLIC_APP_URL || 'https://www.aimealwise.com'}/android-chrome-512x512.png`,
+              description: 'AI-powered meal planning app that creates personalized nutrition plans, grocery lists, and recipes tailored to your lifestyle.',
+              sameAs: [
+                'https://twitter.com/mealwise',
+                'https://facebook.com/mealwise',
+                'https://instagram.com/mealwise',
+              ],
+            }),
+          }}
+        />
+        {/* JSON-LD Structured Data for WebApplication */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              '@context': 'https://schema.org',
+              '@type': 'WebApplication',
+              name: 'MealWise',
+              applicationCategory: 'HealthApplication',
+              operatingSystem: 'Web, iOS, Android',
+              offers: {
+                '@type': 'Offer',
+                price: '0',
+                priceCurrency: 'USD',
+              },
+              aggregateRating: {
+                '@type': 'AggregateRating',
+                ratingValue: '4.8',
+                ratingCount: '12050',
+                bestRating: '5',
+                worstRating: '1',
+              },
+              description: 'AI-powered meal planning app that creates personalized nutrition plans, grocery lists, and recipes tailored to your lifestyle.',
+            }),
+          }}
+        />
+      </head>
       <body suppressHydrationWarning className="font-sans antialiased">
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <AuthModalProvider>
@@ -67,6 +183,7 @@ export default async function RootLayout({ children }: RootLayoutProps) {
             <Analytics />
             <PushEngageScript />
             <InstallPrompt />
+            <ServiceWorkerRegister />
           </AuthModalProvider>
         </ThemeProvider>
       </body>

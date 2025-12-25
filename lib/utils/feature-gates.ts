@@ -24,6 +24,10 @@ export interface FeatureLimits {
   aiSuggestions: 'basic' | 'advanced';
   maxMealPlanDuration: number; // days
   maxRecipesPerMealPlan: number;
+  maxFavorites: number; // Maximum saved recipes
+  recipeImport: boolean; // Can import recipes from external sources
+  mealPlanTemplates: boolean; // Access to premium templates
+  prioritySupport: boolean; // Priority customer support
 }
 
 export const FEATURE_LIMITS: Record<PlanType, FeatureLimits> = {
@@ -37,6 +41,10 @@ export const FEATURE_LIMITS: Record<PlanType, FeatureLimits> = {
     aiSuggestions: 'basic',
     maxMealPlanDuration: 7, // 1 week max
     maxRecipesPerMealPlan: 20,
+    maxFavorites: 20, // Free users can save up to 20 recipes
+    recipeImport: false,
+    mealPlanTemplates: false,
+    prioritySupport: false,
   },
   pro: {
     mealPlansPerWeek: Infinity,
@@ -48,6 +56,10 @@ export const FEATURE_LIMITS: Record<PlanType, FeatureLimits> = {
     aiSuggestions: 'advanced',
     maxMealPlanDuration: 30, // 1 month max (realistic limit)
     maxRecipesPerMealPlan: Infinity,
+    maxFavorites: Infinity, // Pro users can save unlimited recipes
+    recipeImport: true,
+    mealPlanTemplates: true,
+    prioritySupport: true,
   },
   enterprise: {
     mealPlansPerWeek: Infinity,
@@ -59,6 +71,10 @@ export const FEATURE_LIMITS: Record<PlanType, FeatureLimits> = {
     aiSuggestions: 'advanced',
     maxMealPlanDuration: 30, // Same as Pro (realistic limit)
     maxRecipesPerMealPlan: Infinity,
+    maxFavorites: Infinity,
+    recipeImport: true,
+    mealPlanTemplates: true,
+    prioritySupport: true,
   },
 };
 
@@ -244,6 +260,68 @@ export async function canGenerateRealisticImages(
     allowed: false,
     reason: 'Realistic AI-generated images are a Pro feature. Upgrade to Pro to see meal-specific, professional-quality images for all your meals.',
   };
+}
+
+/**
+ * Check if user can add more favorites
+ */
+export async function canAddFavorite(
+  userId: string
+): Promise<FeatureAccessResult> {
+  const plan = await getUserPlan(userId);
+  const limits = FEATURE_LIMITS[plan];
+
+  if (limits.maxFavorites === Infinity) {
+    return { allowed: true };
+  }
+
+  // Count current favorites
+  const favoriteCount = await prisma.favoriteRecipe.count({
+    where: { userId },
+  });
+
+  const remaining = limits.maxFavorites - favoriteCount;
+
+  if (favoriteCount >= limits.maxFavorites) {
+    return {
+      allowed: false,
+      reason: `You've reached your limit of ${limits.maxFavorites} saved recipes. Upgrade to Pro for unlimited favorites.`,
+      currentUsage: favoriteCount,
+      limit: limits.maxFavorites,
+      remaining: 0,
+    };
+  }
+
+  return {
+    allowed: true,
+    currentUsage: favoriteCount,
+    limit: limits.maxFavorites,
+    remaining,
+  };
+}
+
+/**
+ * Check if user can import recipes
+ */
+export async function canImportRecipes(userId: string): Promise<boolean> {
+  const plan = await getUserPlan(userId);
+  return FEATURE_LIMITS[plan].recipeImport;
+}
+
+/**
+ * Check if user has access to meal plan templates
+ */
+export async function hasMealPlanTemplates(userId: string): Promise<boolean> {
+  const plan = await getUserPlan(userId);
+  return FEATURE_LIMITS[plan].mealPlanTemplates;
+}
+
+/**
+ * Check if user has priority support
+ */
+export async function hasPrioritySupport(userId: string): Promise<boolean> {
+  const plan = await getUserPlan(userId);
+  return FEATURE_LIMITS[plan].prioritySupport;
 }
 
 /**

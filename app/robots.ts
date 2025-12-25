@@ -1,14 +1,27 @@
-import { MetadataRoute } from 'next'
+import { MetadataRoute } from 'next';
 
 export default function robots(): MetadataRoute.Robots {
-  const baseUrl = 'https://www.aimealwise.com'
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.aimealwise.com';
 
   return {
-    rules: {
-      userAgent: '*',
-      allow: '/',
-      disallow: ['/admin/', '/api/'], // Protect admin and API routes from crawling
-    },
+    rules: [
+      {
+        userAgent: '*',
+        allow: '/',
+        disallow: [
+          '/api/',
+          '/admin/',
+          '/dashboard/analytics', // Pro-only, but still indexable
+          '/_next/',
+          '/private/',
+        ],
+      },
+      {
+        userAgent: 'Googlebot',
+        allow: '/',
+        disallow: ['/api/', '/admin/', '/private/'],
+      },
+    ],
     sitemap: `${baseUrl}/sitemap.xml`,
-  }
+  };
 }

@@ -8,6 +8,9 @@
   "theme_color": "#6366f1",
   "orientation": "portrait-primary",
   "scope": "/",
+  "dir": "ltr",
+  "lang": "en-US",
+  "prefer_related_applications": false,
   "icons": [
     {
       "src": "/android-chrome-192x192.png",

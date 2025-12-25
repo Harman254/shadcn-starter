@@ -3,6 +3,7 @@ import { getUserFavorites, addToFavorites, removeFromFavorites } from '@/data/in
 import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
 import { revalidatePath } from 'next/cache';
+import { canAddFavorite } from '@/lib/utils/feature-gates';
 
 export async function GET(request: NextRequest) {
   try {
@@ -59,6 +60,22 @@ export async function POST(request: NextRequest) {
         { error: 'action must be either "add" or "remove"' },
         { status: 400 }
       );
+    }
+
+    // Check if user can add more favorites (for 'add' action)
+    if (action === 'add') {
+      const canAdd = await canAddFavorite(session.user.id);
+      if (!canAdd.allowed) {
+        return NextResponse.json(
+          { 
+            error: canAdd.reason || 'Cannot add more favorites',
+            limitReached: true,
+            currentUsage: canAdd.currentUsage,
+            limit: canAdd.limit,
+          },
+          { status: 403 }
+        );
+      }
     }
 
     let result;

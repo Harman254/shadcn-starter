@@ -11,6 +11,7 @@ import { headers } from "next/headers"
 import { auth } from "@/lib/auth"
 import { MetricCard, PlanCard } from "./components"
 import Footer from '@/components/footer'
+import { TemplatesBrowser } from '@/components/meal-plans/templates-browser'
 
 export const metadata: Metadata = {
   title: 'My Meal Plans | MealWise - Personalized AI Meal Planning',
@@ -269,6 +270,11 @@ const MealPlans = async () => {
               Avg per Day
             </p>
           </div>
+        </div>
+
+        {/* Meal Plan Templates Section */}
+        <div className="mb-8 sm:mb-10">
+          <TemplatesBrowser />
         </div>
 
         {/* Meal Plans Grid */}

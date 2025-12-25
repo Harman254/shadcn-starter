@@ -401,12 +401,56 @@ async function sendPushNotification(
   type: string,
   data: Record<string, any>
 ): Promise<void> {
-  // Implementation using PushEngage API
-  // Similar to existing app/api/notifications/send/route.ts
-  const actionUrl = data.actionUrl;
-  
-  // TODO: Integrate with PushEngage API
-  console.log(`[PushNotification] Sending ${type} to user ${userId}`, { actionUrl });
+  const PUSHENGAGE_API_KEY = process.env.PUSHENGAGE_API_KEY;
+  const PUSHENGAGE_SITE_ID = process.env.PUSHENGAGE_SITE_ID || 'cf02cb04-3bc3-40bc-aef1-dc98cb81379d';
+
+  // Skip if API key not configured
+  if (!PUSHENGAGE_API_KEY) {
+    console.warn('[sendPushNotification] PUSHENGAGE_API_KEY not configured. Skipping push notification.');
+    return;
+  }
+
+  const actionUrl = data.actionUrl || 'https://www.aimealwise.com';
+  const title = data.title || 'MealWise Notification';
+  const message = data.message || 'You have a new notification';
+  const icon = data.icon || 'https://www.aimealwise.com/favicon.ico';
+
+  try {
+    // Send notification via PushEngage API
+    const response = await fetch('https://api.pushengage.com/apiv1/notification/send', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${PUSHENGAGE_API_KEY}`,
+      },
+      body: JSON.stringify({
+        site_id: PUSHENGAGE_SITE_ID,
+        notification: {
+          title,
+          message,
+          url: actionUrl,
+          icon,
+          category: type || 'mealwise-general',
+        },
+        // Target specific user if userId is provided
+        // Note: PushEngage requires user subscription ID, not our internal userId
+        // For now, we'll send to all subscribers
+        // TODO: Map userId to PushEngage subscriber ID if available
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.text();
+      console.error('[sendPushNotification] PushEngage API error:', response.status, errorData);
+      throw new Error(`PushEngage API error: ${response.status}`);
+    }
+
+    const result = await response.json();
+    console.log(`[sendPushNotification] Successfully sent ${type} to user ${userId}`, result);
+  } catch (error) {
+    console.error(`[sendPushNotification] Error sending push notification to user ${userId}:`, error);
+    // Don't throw - allow other notification channels to proceed
+  }
 }
 
 /**

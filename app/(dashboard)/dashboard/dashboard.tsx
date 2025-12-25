@@ -17,6 +17,7 @@ import MealPlanStatusCard, { MealPlan } from '@/components/meal-plan-status';
 import { Meal } from '@/types';
 import Link from 'next/link';
 import { useSession } from '@/lib/auth-client';
+import { SupportForm } from '@/components/support/support-form';
 
 const  Dashboard = () =>{
   const {data: session, isPending, error} = useSession();
@@ -139,6 +140,11 @@ const  Dashboard = () =>{
               />
             </Link>
           )}
+        </div>
+
+        {/* Support Section */}
+        <div className="mt-10">
+          <SupportForm />
         </div>
       </div>
     </div>

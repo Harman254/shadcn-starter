@@ -6,6 +6,7 @@ import prisma from "@/lib/prisma"
 import { Suspense } from 'react'
 import { RecipesGrid } from './components/recipes-grid'
 import { LoadingFallback } from './components/loading-fallback'
+import { RecipeImport } from '@/components/recipes/recipe-import'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 60
@@ -63,6 +64,11 @@ async function RecipesContent() {
           <p className="text-base sm:text-lg text-muted-foreground ml-12 sm:ml-14">
             {recipes.length} recipe{recipes.length !== 1 ? "s" : ""} saved from chat
           </p>
+        </div>
+
+        {/* Recipe Import Section */}
+        <div className="mb-8 sm:mb-10">
+          <RecipeImport />
         </div>
 
         {/* Recipes Grid - Client Component */}
