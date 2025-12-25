@@ -111,7 +111,8 @@ async function importRecipeFromUrl(url: string): Promise<any> {
     const html = await response.text();
 
     // Try to extract structured data (JSON-LD)
-    const jsonLdMatch = html.match(/<script type="application\/ld\+json">(.*?)<\/script>/s);
+    // Use [\s\S] instead of . with s flag for ES2017 compatibility
+    const jsonLdMatch = html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/);
     if (jsonLdMatch) {
       const structuredData = JSON.parse(jsonLdMatch[1]);
       
