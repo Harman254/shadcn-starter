@@ -43,58 +43,161 @@ export default function SubscriptionModal({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       
-      <DialogContent>
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Choose Your Plan</DialogTitle>
-          <DialogDescription>
-            Compare plans and unlock premium features.
+          <DialogTitle className="text-2xl font-bold">Choose Your Plan</DialogTitle>
+          <DialogDescription className="text-base">
+            {feature ? (
+              <>
+                Unlock <span className="font-semibold">{feature.name}</span> and all Pro features
+              </>
+            ) : (
+              'Compare plans and unlock premium features to take your meal planning to the next level.'
+            )}
           </DialogDescription>
         </DialogHeader>
-        <div className="grid md:grid-cols-2 gap-4 mt-4">
+        <div className="grid md:grid-cols-2 gap-6 mt-6">
           {/* Free Plan */}
-          <div className="bg-background/95 rounded-lg shadow border border-gray-200 p-4">
-            <div className="uppercase tracking-wide text-xs text-gray-500 font-semibold">Basic Plan</div>
-            <h2 className="mt-1 text-lg font-bold">Free</h2>
-            <p className="mt-1 text-slate-500 text-xs">Get started with essential features.</p>
-            <div className="mt-2">
-              <div className="flex items-baseline">
-                <span className="text-xl font-bold">$0</span>
-                <span className="text-slate-500 ml-1 text-xs">/forever</span>
+          <div className={`bg-background/95 rounded-xl shadow-lg border-2 ${currentPlan === 'free' ? 'border-primary' : 'border-gray-200'} p-6 relative`}>
+            {currentPlan === 'free' && (
+              <div className="absolute top-3 right-3 bg-primary text-primary-foreground px-2 py-1 text-xs font-semibold rounded">
+                CURRENT
               </div>
-              <ul className="mt-3 space-y-2 text-xs">
-                <li className="flex items-center"><CheckIcon /><span className="ml-2">Basic features</span></li>
-                <li className="flex items-center"><CheckIcon /><span className="ml-2">3 AI meal plans/week</span></li>
-                <li className="flex items-center"><CheckIcon /><span className="ml-2">Community support</span></li>
+            )}
+            <div className="uppercase tracking-wide text-xs text-muted-foreground font-semibold">Basic Plan</div>
+            <h2 className="mt-2 text-2xl font-bold">Free</h2>
+            <p className="mt-1 text-muted-foreground text-sm">Perfect for getting started with meal planning.</p>
+            <div className="mt-4">
+              <div className="flex items-baseline">
+                <span className="text-3xl font-bold">$0</span>
+                <span className="text-muted-foreground ml-1 text-sm">/forever</span>
+              </div>
+              <ul className="mt-4 space-y-2.5 text-sm">
+                <li className="flex items-start">
+                  <CheckIcon />
+                  <span className="ml-2">3 AI meal plans per week</span>
+                </li>
+                <li className="flex items-start">
+                  <CheckIcon />
+                  <span className="ml-2">10 pantry analyses per month</span>
+                </li>
+                <li className="flex items-start">
+                  <CheckIcon />
+                  <span className="ml-2">5 recipe generations per week</span>
+                </li>
+                <li className="flex items-start">
+                  <CheckIcon />
+                  <span className="ml-2">Up to 7-day meal plans</span>
+                </li>
+                <li className="flex items-start">
+                  <CheckIcon />
+                  <span className="ml-2">20 saved favorite recipes</span>
+                </li>
+                <li className="flex items-start">
+                  <CheckIcon />
+                  <span className="ml-2">PDF export format</span>
+                </li>
+                <li className="flex items-start">
+                  <CheckIcon />
+                  <span className="ml-2">Basic meal planning features</span>
+                </li>
+                <li className="flex items-start">
+                  <CheckIcon />
+                  <span className="ml-2">Community support</span>
+                </li>
               </ul>
-              <div className="mt-4">
-                <button className="w-full px-3 py-2 bg-gray-200 text-gray-800 font-medium rounded hover:bg-gray-300 transition-all duration-200 text-xs" disabled>
-                  Current Plan
+              <div className="mt-6">
+                <button 
+                  className={`w-full px-4 py-2.5 font-medium rounded-lg transition-all duration-200 text-sm ${
+                    currentPlan === 'free' 
+                      ? 'bg-primary text-primary-foreground cursor-default' 
+                      : 'bg-muted text-muted-foreground cursor-not-allowed'
+                  }`} 
+                  disabled
+                >
+                  {currentPlan === 'free' ? 'Current Plan' : 'Free Forever'}
                 </button>
               </div>
             </div>
           </div>
           {/* Pro Plan */}
-          <div className="bg-background/95 rounded-lg shadow border-2 border-indigo-500 relative p-4">
-            <div className="absolute top-2 right-2 bg-indigo-500 text-white px-2 py-0.5 text-xs font-semibold rounded">RECOMMENDED</div>
-            <div className="uppercase tracking-wide text-xs text-indigo-500 font-semibold">Premium Plan</div>
-            <h2 className="mt-1 text-lg font-bold">Pro</h2>
-            <p className="mt-1 text-slate-500 text-xs">Unlock all premium features and support.</p>
-            <div className="mt-2">
-              <div className="flex items-baseline">
-                <span className="text-xl font-bold">$5</span>
-                <span className="text-slate-500 ml-1 text-xs">/month</span>
+          <div className={`bg-background/95 rounded-xl shadow-xl border-2 ${currentPlan === 'pro' ? 'border-primary' : 'border-indigo-500'} relative p-6`}>
+            <div className="absolute top-3 right-3 bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-3 py-1 text-xs font-semibold rounded-full shadow-md">
+              RECOMMENDED
+            </div>
+            {currentPlan === 'pro' && (
+              <div className="absolute top-3 left-3 bg-primary text-primary-foreground px-2 py-1 text-xs font-semibold rounded">
+                CURRENT
               </div>
-              <ul className="mt-3 space-y-2 text-xs">
-                <li className="flex items-center"><CheckIcon /><span className="ml-2">All features from Free plan</span></li>
-                <li className="flex items-center"><CheckIcon /><span className="ml-2">Unlimited AI meal plan generations</span></li>
-                <li className="flex items-center"><CheckIcon /><span className="ml-2">Unlimited meal swaps</span></li>
-                <li className="flex items-center"><CheckIcon /><span className="ml-2">Grocery lists with local pricing</span></li>
-                <li className="flex items-center"><CheckIcon /><span className="ml-2">Advanced nutrition insights</span></li>
-                <li className="flex items-center"><CheckIcon /><span className="ml-2">Priority support</span></li>
+            )}
+            <div className="uppercase tracking-wide text-xs text-indigo-500 dark:text-indigo-400 font-semibold">Premium Plan</div>
+            <h2 className="mt-2 text-2xl font-bold">Pro</h2>
+            <p className="mt-1 text-muted-foreground text-sm">Unlock unlimited access and premium features.</p>
+            <div className="mt-4">
+              <div className="flex items-baseline">
+                <span className="text-3xl font-bold">$5</span>
+                <span className="text-muted-foreground ml-1 text-sm">/month</span>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">Cancel anytime • 7-day money-back guarantee</p>
+              <ul className="mt-4 space-y-2.5 text-sm max-h-[300px] overflow-y-auto pr-2">
+                <li className="flex items-start">
+                  <CheckIcon />
+                  <span className="ml-2"><strong>Unlimited</strong> AI meal plan generations</span>
+                </li>
+                <li className="flex items-start">
+                  <CheckIcon />
+                  <span className="ml-2"><strong>Unlimited</strong> pantry analyses</span>
+                </li>
+                <li className="flex items-start">
+                  <CheckIcon />
+                  <span className="ml-2"><strong>Unlimited</strong> recipe generations</span>
+                </li>
+                <li className="flex items-start">
+                  <CheckIcon />
+                  <span className="ml-2">Up to <strong>30-day</strong> meal plans</span>
+                </li>
+                <li className="flex items-start">
+                  <CheckIcon />
+                  <span className="ml-2"><strong>Unlimited</strong> favorite recipes</span>
+                </li>
+                <li className="flex items-start">
+                  <CheckIcon />
+                  <span className="ml-2"><strong>Unlimited</strong> meal swaps</span>
+                </li>
+                <li className="flex items-start">
+                  <CheckIcon />
+                  <span className="ml-2">Grocery list <strong>optimization</strong></span>
+                </li>
+                <li className="flex items-start">
+                  <CheckIcon />
+                  <span className="ml-2"><strong>Advanced</strong> nutrition analytics</span>
+                </li>
+                <li className="flex items-start">
+                  <CheckIcon />
+                  <span className="ml-2">AI-generated <strong>realistic</strong> meal images</span>
+                </li>
+                <li className="flex items-start">
+                  <CheckIcon />
+                  <span className="ml-2">Recipe <strong>import</strong> from external sources</span>
+                </li>
+                <li className="flex items-start">
+                  <CheckIcon />
+                  <span className="ml-2"><strong>Premium</strong> meal plan templates</span>
+                </li>
+                <li className="flex items-start">
+                  <CheckIcon />
+                  <span className="ml-2">Multiple export formats (<strong>PDF, CSV, JSON</strong>)</span>
+                </li>
+                <li className="flex items-start">
+                  <CheckIcon />
+                  <span className="ml-2"><strong>Priority</strong> support (24-hour response)</span>
+                </li>
               </ul>
-              <div className="mt-4">
+              <div className="mt-6">
                 {currentPlan === "pro" || isUnlocked ? (
-                  <span className="w-full block text-green-600 font-semibold text-center">Already Unlocked!</span>
+                  <div className="w-full px-4 py-2.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 font-semibold rounded-lg text-center text-sm">
+                    ✓ Already Unlocked!
+                  </div>
                 ) : (
                   <button
                     onClick={async () => {
@@ -109,18 +212,30 @@ export default function SubscriptionModal({
                       }
                     }}
                     disabled={isPending}
-                    className="w-full px-3 py-2 bg-gradient-to-r from-blue-600 to-indigo-700 text-white font-medium rounded shadow hover:shadow-lg transition-all duration-200 text-xs"
+                    className="w-full px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-semibold rounded-lg shadow-md hover:shadow-lg transition-all duration-200 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {isPending ? "Processing..." : "Upgrade Now"}
+                    {isPending ? (
+                      <span className="flex items-center justify-center">
+                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Processing...
+                      </span>
+                    ) : (
+                      "Upgrade to Pro"
+                    )}
                   </button>
                 )}
               </div>
             </div>
           </div>
         </div>
-        <DialogFooter>
+        <DialogFooter className="mt-4">
           <DialogClose asChild>
-            <button className="btn btn-secondary w-full mt-2">Close</button>
+            <button className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+              Close
+            </button>
           </DialogClose>
         </DialogFooter>
       </DialogContent>

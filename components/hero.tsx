@@ -6,6 +6,8 @@ import { CldImage } from 'next-cloudinary'
 import { cn } from "@/lib/utils"
 import { Button } from "./ui/button"
 import { useRouter } from "next/navigation"
+import { useSession } from "@/lib/auth-client"
+import { useAuthModal } from "@/components/AuthModalProvider"
 
  const pacifico = Pacifico({
   subsets: ["latin"],
@@ -103,6 +105,18 @@ const  HeroGeometric = ({
     }),
   }
   const router = useRouter()
+  const { data: session, isPending } = useSession()
+  const { open } = useAuthModal()
+
+  const handleGetStarted = () => {
+    if (session?.user) {
+      // User is signed in, navigate to chat
+      router.push('/chat')
+    } else {
+      // User is signed out, open sign-up modal
+      open('sign-up')
+    }
+  }
 
   return (
     <div className="relative min-h-screen w-full flex items-center justify-center overflow-hidden bg-white dark:bg-[#030303]">
@@ -189,7 +203,14 @@ const  HeroGeometric = ({
               </p>
             </motion.div>
             <motion.div custom={3} variants={fadeUpVariants} initial="hidden" animate="visible">
-              <Button onClick={() => router.push('/chat')} size="lg" className="bg-gradient-to-r from-rose-500 to-indigo-500 text-white font-bold py-3 px-8 rounded-full shadow-lg hover:scale-105 transform transition-transform duration-300 ease-in-out">Generate a Meal Plan</Button>
+              <Button 
+                onClick={handleGetStarted} 
+                size="lg" 
+                disabled={isPending}
+                className="bg-gradient-to-r from-rose-500 to-indigo-500 text-white font-bold py-3 px-8 rounded-full shadow-lg hover:scale-105 transform transition-transform duration-300 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isPending ? 'Loading...' : 'Generate a Meal Plan'}
+              </Button>
             </motion.div>
           </div>
           <motion.div
