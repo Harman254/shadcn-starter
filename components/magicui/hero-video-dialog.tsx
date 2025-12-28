@@ -68,30 +68,16 @@ const animationVariants = {
 };
 
 export default function HeroVideoDialog({
-  animationStyle = "from-center",
   videoSrc,
   thumbnailSrc,
   thumbnailAlt = "Video thumbnail",
   className,
 }: HeroVideoProps) {
-  const [isVideoOpen, setIsVideoOpen] = useState(false);
-  const selectedAnimation = animationVariants[animationStyle];
-  const modalRef = useRef<HTMLDivElement>(null);
-
-  // Lock background scroll and scroll modal into view when open
-  useEffect(() => {
-    if (isVideoOpen) {
-      document.body.style.overflow = "hidden";
-      setTimeout(() => {
-        modalRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
-      }, 50);
-    } else {
-      document.body.style.overflow = "";
+  const handlePlayerClick = () => {
+    if (videoSrc) {
+      window.open(videoSrc, "_blank");
     }
-    return () => {
-      document.body.style.overflow = "";
-    };
-  }, [isVideoOpen]);
+  };
 
   return (
     <div className={cn("relative", className)}>
@@ -104,7 +90,7 @@ export default function HeroVideoDialog({
 
       <div
         className="group relative cursor-pointer"
-        onClick={() => setIsVideoOpen(true)}
+        onClick={handlePlayerClick}
       >
         <img
           src={thumbnailSrc}
@@ -129,62 +115,6 @@ export default function HeroVideoDialog({
           </div>
         </div>
       </div>
-      <AnimatePresence>
-        {isVideoOpen && (
-          <motion.div
-            ref={modalRef}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            onClick={() => setIsVideoOpen(false)}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-md"
-          >
-            <motion.div
-              {...selectedAnimation}
-              transition={{ type: "spring", damping: 30, stiffness: 300 }}
-              className="relative mx-4 aspect-video w-full max-w-4xl md:mx-0"
-            >
-              <motion.button className="absolute -top-16 right-0 rounded-full bg-neutral-900/50 p-2 text-xl text-white ring-1 backdrop-blur-md dark:bg-neutral-100/50 dark:text-black">
-                <XIcon className="size-5" />
-              </motion.button>
-              {/* Modal Title */}
-              <div className="w-full flex flex-col items-center mb-4">
-              </div>
-              <div className="relative isolate z-[1] size-full overflow-hidden rounded-2xl border-2 border-white">
-                <iframe
-                  src={(() => {
-                    if (!videoSrc) return videoSrc;
-                    
-                    // Handle youtu.be links
-                    if (videoSrc.includes("youtu.be/")) {
-                      const id = videoSrc.split("youtu.be/")[1]?.split("?")[0];
-                      return `https://www.youtube.com/embed/${id}`;
-                    }
-                    
-                    // Handle youtube.com/watch links
-                    if (videoSrc.includes("youtube.com/watch")) {
-                      try {
-                        const url = new URL(videoSrc);
-                        const id = url.searchParams.get("v");
-                        if (id) return `https://www.youtube.com/embed/${id}`;
-                      } catch (e) {
-                        // Fallback to regex if URL parsing fails
-                        const match = videoSrc.match(/[?&]v=([^&]+)/);
-                        if (match) return `https://www.youtube.com/embed/${match[1]}`;
-                      }
-                    }
-                    
-                    return videoSrc;
-                  })()}
-                  className="size-full rounded-2xl"
-                  allowFullScreen
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                ></iframe>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   );
 }

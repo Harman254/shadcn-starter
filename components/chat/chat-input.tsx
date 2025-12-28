@@ -119,23 +119,27 @@ export function ChatInput({ onSubmit, isLoading, disabled = false, input, handle
             initial={{ opacity: 0, y: 10, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 10, scale: 0.95 }}
-            className="absolute bottom-full left-0 mb-2 p-2 bg-background/95 backdrop-blur-sm rounded-xl border border-border shadow-lg z-10"
+            className="absolute bottom-full left-0 mb-4 p-1.5 bg-background/40 backdrop-blur-2xl rounded-2xl border border-white/20 shadow-2xl z-10 ring-1 ring-black/5 dark:ring-white/10"
           >
             <div className="relative group">
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-blue-500/20 rounded-xl animate-pulse" />
               <img 
                 src={imageUrl} 
                 alt="Upload preview" 
-                className="h-24 w-auto rounded-lg object-cover border border-border/50"
+                className="h-28 w-auto rounded-xl object-cover border border-white/30 shadow-sm relative z-10"
               />
               <button
                 onClick={() => setImageUrl(null)}
-                className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-1 hover:bg-destructive/90 transition-colors shadow-sm opacity-100 sm:opacity-0 group-hover:opacity-100"
+                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1.5 hover:bg-red-600 transition-all shadow-lg z-20 hover:scale-110 active:scale-90"
                 type="button"
               >
-                <X className="w-3 h-3" />
+                <X className="w-3.5 h-3.5 stroke-[3]" />
               </button>
             </div>
-            <p className="text-[10px] text-muted-foreground mt-1 text-center font-medium">Ready to send</p>
+            <div className="flex items-center justify-center gap-1.5 mt-1.5 px-2 py-0.5 rounded-full bg-primary/10 border border-primary/20 w-fit mx-auto">
+              <div className="w-1.5 h-1.5 rounded-full bg-primary animate-ping" />
+              <p className="text-[10px] text-primary font-bold uppercase tracking-wider">Image Ready</p>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -177,19 +181,19 @@ export function ChatInput({ onSubmit, isLoading, disabled = false, input, handle
                   maxImageFileSize: 5000000, // 5MB
                   styles: {
                     palette: {
-                      window: "#FFFFFF",
-                      windowBorder: "#90A0B3",
-                      tabIcon: "#0078FF",
-                      menuIcons: "#5A616A",
-                      textDark: "#000000",
+                      window: "#0F172A",
+                      windowBorder: "#1E293B",
+                      tabIcon: "#F97316",
+                      menuIcons: "#94A3B8",
+                      textDark: "#FFFFFF",
                       textLight: "#FFFFFF",
-                      link: "#0078FF",
-                      action: "#FF620C",
-                      inactiveTabIcon: "#0E2F5A",
-                      error: "#F44235",
-                      inProgress: "#0078FF",
-                      complete: "#20B832",
-                      sourceBg: "#E4EBF1"
+                      link: "#F97316",
+                      action: "#F97316",
+                      inactiveTabIcon: "#475569",
+                      error: "#EF4444",
+                      inProgress: "#3B82F6",
+                      complete: "#22C55E",
+                      sourceBg: "#1E293B"
                     }
                   }
                 }}
@@ -200,17 +204,36 @@ export function ChatInput({ onSubmit, isLoading, disabled = false, input, handle
                     onClick={() => open?.()}
                     disabled={isLoading || disabled}
                     className={cn(
-                      "h-8 w-8",
+                      "h-10 w-10",
                       "rounded-full",
                       "flex items-center justify-center",
-                      "transition-all duration-200",
-                      "hover:bg-muted text-muted-foreground hover:text-foreground active:scale-95",
-                      isLoading || disabled ? "opacity-50 cursor-not-allowed" : ""
+                      "transition-all duration-300",
+                      "relative group/btn",
+                      imageUrl 
+                        ? "bg-primary text-white shadow-lg shadow-primary/20" 
+                        : "hover:bg-primary/10 text-muted-foreground hover:text-primary active:scale-95",
+                      isLoading || disabled ? "opacity-30 cursor-not-allowed" : ""
                     )}
-                    whileHover={!isLoading && !disabled ? { scale: 1.05 } : {}}
+                    whileHover={!isLoading && !disabled ? { scale: 1.1 } : {}}
+                    whileTap={!isLoading && !disabled ? { scale: 0.9 } : {}}
                     title="Upload image"
                   >
-                   <Camera className="h-5 w-5" />
+                    {/* Animated Outer Ring */}
+                    <div className="absolute inset-0 rounded-full bg-primary/20 opacity-0 group-hover/btn:opacity-100 animate-ping duration-1000" />
+                    <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-primary/20 to-blue-500/20 opacity-0 group-hover/btn:opacity-100 transition-opacity" />
+                    
+                    <Camera className={cn(
+                      "h-5 w-5 relative z-10 transition-transform",
+                      imageUrl ? "scale-110" : "group-hover/btn:rotate-12"
+                    )} />
+                    
+                    {/* Ready indicator dot */}
+                    {imageUrl && (
+                      <motion.div 
+                        layoutId="dot"
+                        className="absolute top-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-background rounded-full z-20"
+                      />
+                    )}
                   </motion.button>
                 )}
               </CldUploadWidget>
