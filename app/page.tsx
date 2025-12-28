@@ -145,7 +145,7 @@ export default async function IndexPage() {
 
     {/* <Hero1 heading="Personalized AI Meal Plans for Your Lifestyle" image={image} description='this is all you need' /> */}
 <HeroGeometric />
-<VideoPlayer  videoSrc="https://drive.google.com/file/d/1EyHlEAckbXx4VtDgnTNuY0nYGzLs07PU/view?usp=sharing"
+<VideoPlayer  videoSrc="https://youtu.be/4d5KbrJWHJw"
             thumbnailSrc="https://res.cloudinary.com/dcidanigq/image/upload/v1766854811/unnamed_ylybka.jpg" />
 
 <Companies />
