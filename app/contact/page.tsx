@@ -1,6 +1,15 @@
 import { ContactForm } from "@/components/contact-form"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Mail, MessageSquare, Clock } from "lucide-react"
+import { Metadata } from 'next'
+
+export const metadata: Metadata = {
+  title: 'Contact MealWise | Get in Touch with Our Nutrition Experts',
+  description: 'Have questions about meal planning or need recipe suggestions? Reach out to the MealWise team for support and guidance.',
+  alternates: {
+    canonical: '/contact',
+  },
+};
 
 // Force dynamic rendering since Navbar uses headers() for session
 export const dynamic = 'force-dynamic';

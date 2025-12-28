@@ -1,10 +1,11 @@
 'use client';
 
-import { ArrowRight, LogIn, Wand2, ChefHat, UtensilsCrossed, BookOpen, Coffee, Pizza, RefreshCw } from 'lucide-react';
+import { ArrowRight, LogIn, Wand2, ChefHat, UtensilsCrossed, BookOpen, Coffee, Pizza, RefreshCw, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { useState, useEffect } from 'react';
+import { CldImage } from 'next-cloudinary';
 
 interface EmptyScreenProps {
   onExampleClick: (example: string) => void;
@@ -208,15 +209,60 @@ export function EmptyScreen({ onExampleClick, requireAuth = false }: EmptyScreen
             <Wand2 className="h-8 w-8 text-primary" />
           </motion.div>
           
-          <h2 
+          <h1 
             id="empty-title" 
             className="text-3xl sm:text-4xl font-bold tracking-tight text-foreground"
           >
             What are we cooking?
-          </h2>
+          </h1>
           <p className="text-muted-foreground text-base sm:text-lg max-w-md mx-auto leading-relaxed">
             I can help you plan meals, find recipes, or create a grocery list for your next shop.
           </p>
+        </motion.div>
+
+        {/* Decorative Image for SEO */}
+        <motion.div
+          variants={itemVariants}
+          className="relative w-full max-w-md aspect-video rounded-2xl overflow-hidden shadow-lg border border-border/40"
+        >
+          <CldImage
+            src="https://res.cloudinary.com/dcidanigq/image/upload/v1742111996/samples/food/spices.jpg"
+            alt="Vibrant spices and fresh ingredients for healthy meal planning"
+            fill
+            className="object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
+        </motion.div>
+
+        {/* Informative Content for SEO and Onboarding */}
+        <motion.div
+          variants={itemVariants}
+          className="bg-card/30 border border-border/40 rounded-2xl p-6 text-left max-w-2xl mx-auto shadow-sm"
+        >
+          <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
+            <ChefHat className="h-5 w-5 text-primary" />
+            About Your MealWise Assistant
+          </h2>
+          <div className="space-y-4 text-sm text-muted-foreground leading-relaxed">
+            <p>
+              Welcome to <strong>MealWise Chat</strong>, your ultimate destination for smarter nutrition and stress-free cooking. Our AI-powered assistant is designed to understand your unique lifestyle, dietary preferences, and health goals to provide truly personalized guidance.
+            </p>
+            <p>
+              Whether you're looking for a <strong>7-day keto meal plan</strong>, need to find a use for that leftover spinach in your fridge, or want to generate a <strong>smart grocery list</strong> that saves you money at the store, I'm here to help. Our system leverages advanced nutrition data to ensure every recommendation is both delicious and balanced.
+            </p>
+            <p>
+              By chatting with me, you can:
+              <ul className="list-disc ml-5 mt-2 space-y-1">
+                <li>Generate instant recipes based on ingredients you already have.</li>
+                <li>Receive personalized meal swaps that fit your calorie and macro targets.</li>
+                <li>Access expert cooking tips and techniques to level up your kitchen skills.</li>
+                <li>Stay informed with <a href="https://www.healthline.com/nutrition" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline inline-flex items-center gap-1">trusted nutrition resources <ExternalLink className="h-3 w-3" /></a>.</li>
+              </ul>
+            </p>
+            <p>
+              Start by choosing one of the suggestions below or just type your first message. Let's make healthy eating the easiest part of your day!
+            </p>
+          </div>
         </motion.div>
 
         {/* Example Messages - Redesigned as Chips */}

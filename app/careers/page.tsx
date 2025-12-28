@@ -1,6 +1,15 @@
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { Metadata } from 'next'
+
+export const metadata: Metadata = {
+  title: 'Careers at MealWise | Join the Future of AI Nutrition',
+  description: 'Join our mission to revolutionize how the world eats. Explore open roles in engineering, design, and marketing at MealWise.',
+  alternates: {
+    canonical: '/careers',
+  },
+};
 
 // Force dynamic rendering since Navbar uses headers() for session
 export const dynamic = 'force-dynamic';

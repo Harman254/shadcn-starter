@@ -13,7 +13,7 @@ const CheckoutPage = () => {
   const [isPending, setIsPending] = useState(false);
   return (
     <div className="max-w-6xl mx-auto p-6">
-      <h1 className="text-3xl font-bold mb-8 text-center">Choose Your Plan</h1>
+      <h2 className="text-3xl font-bold mb-8 text-center" id="pricing-heading">Choose Your Plan</h2>
 
       <div className="grid md:grid-cols-2 gap-8">
         {/* Free Plan */}

@@ -5,6 +5,30 @@ import html from 'remark-html';
 import BlogPostClient from './BlogPostClient';
 import { Suspense } from 'react';
 import { Loader2 } from 'lucide-react';
+import { Metadata } from 'next';
+
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params;
+  const posts = getAllPosts();
+  const post = posts.find((p) => p.slug === slug);
+  
+  if (!post) return {};
+  
+  return {
+    title: `${post.title} | MealWise Blog`,
+    description: post.excerpt || `Read more about ${post.title} on the MealWise blog.`,
+    alternates: {
+      canonical: `/blog/${slug}`,
+    },
+    openGraph: {
+      title: post.title,
+      description: post.excerpt,
+      type: 'article',
+      publishedTime: post.publishDate,
+      authors: [post.author || 'MealWise Team'],
+    },
+  };
+}
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 3600; // Revalidate every hour

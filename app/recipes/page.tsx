@@ -7,6 +7,12 @@ import { Suspense } from 'react'
 import { RecipesGrid } from './components/recipes-grid'
 import { LoadingFallback } from './components/loading-fallback'
 import { RecipeImport } from '@/components/recipes/recipe-import'
+import { Metadata } from 'next'
+
+export const metadata: Metadata = {
+  title: 'My Saved Recipes | Personalized Meal Collection | MealWise',
+  description: 'Access and manage your personal collection of AI-generated recipes. Organize your favorites for quick and easy meal preparation.',
+};
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 60

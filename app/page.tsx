@@ -15,8 +15,8 @@ import AboutUs1 from '@/components/about';
 
 
 export const metadata: Metadata = {
-  title: 'MealWise - Personalized AI Meal Plans for Your Lifestyle | Smart Nutrition Planning',
-  description: 'Transform your eating habits with MealWise. Get personalized AI meal plans tailored to your lifestyle, goals, and preferences. Save time, eat healthier, and enjoy delicious meals with smart grocery lists and expert nutrition guidance.',
+  title: 'MealWise - Personalized AI Meal Plans for Your Lifestyle',
+  description: 'Transform your eating habits with MealWise. Get personalized AI meal plans tailored to your lifestyle, goals, and preferences. Save time and eat healthier.',
   keywords: [
     'AI meal planning',
     'personalized meal plans',
@@ -41,14 +41,14 @@ export const metadata: Metadata = {
     address: false,
     telephone: false,
   },
-  metadataBase: new URL('https://www.aimealwise.com'),
+  metadataBase: new URL('https://aimealwise.com'),
   alternates: {
     canonical: '/',
   },
   openGraph: {
-    title: 'MealWise - Personalized AI Meal Plans for Your Lifestyle | Smart Nutrition Planning',
-    description: 'Transform your eating habits with MealWise. Get personalized AI meal plans tailored to your lifestyle, goals, and preferences. Save time, eat healthier, and enjoy delicious meals with smart grocery lists and expert nutrition guidance.',
-    url: 'https://www.aimealwise.com',
+    title: 'MealWise - Personalized AI Meal Plans for Your Lifestyle',
+    description: 'Transform your eating habits with MealWise. Get personalized AI meal plans tailored to your lifestyle, goals, and preferences. Save time and eat healthier.',
+    url: 'https://aimealwise.com',
     siteName: 'MealWise',
     images: [
       {
@@ -63,8 +63,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'MealWise - Personalized AI Meal Plans for Your Lifestyle | Smart Nutrition Planning',
-    description: 'Transform your eating habits with MealWise. Get personalized AI meal plans tailored to your lifestyle, goals, and preferences. Save time, eat healthier, and enjoy delicious meals with smart grocery lists and expert nutrition guidance.',
+    title: 'MealWise - Personalized AI Meal Plans for Your Lifestyle',
+    description: 'Transform your eating habits with MealWise. Get personalized AI meal plans tailored to your lifestyle, goals, and preferences. Save time and eat healthier.',
     images: ['/og-home.png'],
     creator: '@mealwise',
     site: '@mealwise',

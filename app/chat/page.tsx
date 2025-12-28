@@ -9,8 +9,12 @@ import { Suspense } from 'react';
 import { Loader2 } from 'lucide-react';
 
 export const metadata: Metadata = {
-  title: 'Chat | Mealwise',
-  description: 'Chat with your AI kitchen assistant for personalized meal planning, recipes, and cooking tips.',
+  title: 'Chat | MealWise | Personalized AI Kitchen Assistant & Meal Planner',
+  description: 'Chat with your personal AI kitchen assistant for smart meal planning, custom recipes, and expert nutrition advice. Save time and eat healthier with MealWise.',
+  metadataBase: new URL('https://aimealwise.com'),
+  alternates: {
+    canonical: '/chat',
+  },
 };
 
 // Force dynamic rendering since we use headers() for auth

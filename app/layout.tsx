@@ -61,14 +61,14 @@ export const metadata = {
     address: false,
     telephone: false,
   },
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://www.aimealwise.com'),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://aimealwise.com'),
   alternates: {
     canonical: '/',
   },
   openGraph: {
     type: 'website',
     locale: 'en_US',
-    url: process.env.NEXT_PUBLIC_APP_URL || 'https://www.aimealwise.com',
+    url: process.env.NEXT_PUBLIC_APP_URL || 'https://aimealwise.com',
     siteName: 'MealWise',
     title: 'MealWise - AI-Powered Meal Planning & Nutrition | Smart Food Planning',
     description: 'Transform your eating habits with MealWise. Get personalized AI meal plans, smart grocery lists, and expert nutrition guidance tailored to your lifestyle.',
@@ -132,8 +132,8 @@ export default async function RootLayout({ children }: RootLayoutProps) {
               '@context': 'https://schema.org',
               '@type': 'Organization',
               name: 'MealWise',
-              url: process.env.NEXT_PUBLIC_APP_URL || 'https://www.aimealwise.com',
-              logo: `${process.env.NEXT_PUBLIC_APP_URL || 'https://www.aimealwise.com'}/android-chrome-512x512.png`,
+              url: process.env.NEXT_PUBLIC_APP_URL || 'https://aimealwise.com',
+              logo: `${process.env.NEXT_PUBLIC_APP_URL || 'https://aimealwise.com'}/android-chrome-512x512.png`,
               description: 'AI-powered meal planning app that creates personalized nutrition plans, grocery lists, and recipes tailored to your lifestyle.',
               sameAs: [
                 'https://twitter.com/mealwise',

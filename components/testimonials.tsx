@@ -170,9 +170,9 @@ const  TestimonialsCarousel = ({
           viewport={{ once: true }}
           className="relative mb-12 text-center md:mb-16"
         >
-          <h1 className="mb-4 bg-gradient-to-b from-foreground to-foreground/40 bg-clip-text text-3xl font-bold text-transparent md:text-5xl lg:text-6xl">
+          <h2 className="mb-4 bg-gradient-to-b from-foreground to-foreground/40 bg-clip-text text-3xl font-bold text-transparent md:text-5xl lg:text-6xl">
             {title}
-          </h1>
+          </h2>
  
           <motion.p
             className="mx-auto max-w-2xl text-base text-muted-foreground md:text-lg"

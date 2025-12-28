@@ -3,6 +3,29 @@ import { auth } from "@/lib/auth"
 import { headers } from "next/headers"
 import prisma from "@/lib/prisma"
 import { RecipeDetailClient } from "./components/recipe-detail-client"
+import { Metadata } from 'next'
+
+export async function generateMetadata({ 
+  params 
+}: { 
+  params: Promise<{ id: string }> 
+}): Promise<Metadata> {
+  const { id } = await params;
+  
+  // We can't easily get the session here without performance hit or duplicating logic,
+  // but we can try to fetch the recipe name at least.
+  const recipe = await prisma.recipe.findUnique({
+    where: { id },
+    select: { name: true }
+  });
+
+  if (!recipe) return { title: 'Recipe Not Found' };
+
+  return {
+    title: `${recipe.name} | MealWise Recipes`,
+    description: `View details and instructions for ${recipe.name} on MealWise.`,
+  };
+}
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 60

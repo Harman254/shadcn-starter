@@ -130,13 +130,13 @@ export default function AboutUs1() {
           transition={{ duration: 0.8, ease: 'easeOut' }}
           className="mx-auto mb-16 max-w-2xl text-center"
         >
-          <h1 className='tracking-tighter font-bold text-5xl'>About <span
+          <h2 className='tracking-tighter font-bold text-5xl'>About <span
                 className={cn(
                   "bg-clip-text tracking-tighter text-5xl text-transparent bg-gradient-to-r from-indigo-500 via-black/90 to-rose-500 dark:from-indigo-300 dark:via-white/90 dark:to-rose-300 ",
                   pacifico.className,
                 )}
               >Mealwise
-                </span></h1>
+                </span></h2>
           <p className="mt-6 text-xl text-muted-foreground">
             {aboutData.subtitle}
           </p>
@@ -172,7 +172,7 @@ export default function AboutUs1() {
                 </h2>
  
                 <p className="text-lg leading-relaxed text-muted-foreground">
-                  {aboutData.mission}
+                  {aboutData.mission} Based on <a href="https://www.who.int/health-topics/nutrition" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">WHO nutrition guidelines</a>.
                 </p>
               </div>
             </motion.div>
