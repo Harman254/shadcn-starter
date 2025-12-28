@@ -152,7 +152,30 @@ export default function HeroVideoDialog({
               </div>
               <div className="relative isolate z-[1] size-full overflow-hidden rounded-2xl border-2 border-white">
                 <iframe
-                  src={videoSrc}
+                  src={(() => {
+                    if (!videoSrc) return videoSrc;
+                    
+                    // Handle youtu.be links
+                    if (videoSrc.includes("youtu.be/")) {
+                      const id = videoSrc.split("youtu.be/")[1]?.split("?")[0];
+                      return `https://www.youtube.com/embed/${id}`;
+                    }
+                    
+                    // Handle youtube.com/watch links
+                    if (videoSrc.includes("youtube.com/watch")) {
+                      try {
+                        const url = new URL(videoSrc);
+                        const id = url.searchParams.get("v");
+                        if (id) return `https://www.youtube.com/embed/${id}`;
+                      } catch (e) {
+                        // Fallback to regex if URL parsing fails
+                        const match = videoSrc.match(/[?&]v=([^&]+)/);
+                        if (match) return `https://www.youtube.com/embed/${match[1]}`;
+                      }
+                    }
+                    
+                    return videoSrc;
+                  })()}
                   className="size-full rounded-2xl"
                   allowFullScreen
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
